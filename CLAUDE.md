@@ -749,6 +749,16 @@ Autres pistes :
   serait le chiffrement au repos, pas le réseau.
 - **Agrégation bancaire automatique** : contrat pro + validation réglementaire,
   hors de portée d'une app locale. D'où la saisie mensuelle du patrimoine.
+- **Passer le dépôt en privé** : écarté par Arthur le 20/09/2026. `updater.py`
+  interroge l'API des releases **sans jeton** (en-têtes `User-Agent` + `Accept`
+  seulement, `_fetch()` et le téléchargement) ; sur un dépôt privé cet endpoint
+  répond 404, indistinguable d'une absence de nouvelle version — l'app se croirait
+  à jour pour toujours, et la panne serait silencieuse. Le gain serait par ailleurs
+  nul : aucune donnée n'est exposée, `.gitignore` écarte `Donnees/`, `pea_data*.json`,
+  `pin.hash` et `profiles.json`, et **aucun fichier de données n'apparaît dans
+  l'historique complet** (vérifié sur les 71 commits, pas seulement sur l'état
+  courant). Si la question revient, le prérequis serait un second dépôt public dédié
+  aux releases — surtout pas un jeton embarqué dans l'exe, il serait extractible.
 
 **Traité depuis** : l'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,
