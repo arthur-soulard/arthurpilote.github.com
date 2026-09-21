@@ -1789,6 +1789,157 @@ label.fo-check {
   background: var(--bg3); border: 1px solid var(--brd2);
   border-radius: var(--rad); cursor: pointer;
 }
+/* ══════════ Vocabulaire ══════════ */
+/* Choix de la liste et du sens : l'écran qui précède toute session */
+.vo-start { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.vo-card {
+  border: 1px solid var(--brd); border-radius: var(--rad); padding: 16px;
+  background: var(--bg2); display: flex; flex-direction: column; gap: 11px;
+}
+.vo-card.due { border-color: var(--accent); }
+.vo-card-h { display: flex; align-items: center; gap: 10px; }
+.vo-card-ico {
+  width: 36px; height: 36px; border-radius: 10px; flex: 0 0 auto; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.vo-card-t { font-size: 13.5px; font-weight: 700; letter-spacing: -.2px; }
+.vo-card-s { font-size: 10.5px; color: var(--txt3); font-weight: 600; }
+.vo-card-due { font-size: 27px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.vo-card-due small { font-size: 12px; font-weight: 700; letter-spacing: -.2px; color: var(--txt3); }
+.vo-card-due.none { color: var(--txt3); font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
+.vo-sens { display: flex; flex-direction: column; gap: 6px; }
+.vo-sens .btn { justify-content: center; }
+
+/* La carte de révision */
+.vo-run { max-width: 640px; margin: 0 auto; }
+.vo-runbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.vo-prog { flex: 1; height: 5px; border-radius: 3px; background: var(--bg3); overflow: hidden; }
+.vo-prog-in { height: 100%; background: var(--accent); transition: width .25s; }
+.vo-count { font-family: var(--mono); font-size: 11px; color: var(--txt3); white-space: nowrap; }
+.vo-face {
+  border: 1px solid var(--brd); border-radius: var(--rad); background: var(--bg2);
+  padding: 26px 22px; text-align: center;
+}
+.vo-ask {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--txt3);
+}
+.vo-q {
+  font-size: clamp(21px, 3.3vw, 31px); font-weight: 800; letter-spacing: -.8px;
+  margin: 10px 0 0; line-height: 1.25; overflow-wrap: anywhere;
+}
+.vo-ex { font-size: 12px; color: var(--txt2); font-style: italic; margin-top: 10px; line-height: 1.5; }
+.vo-input {
+  width: 100%; margin-top: 18px; font-family: var(--font); font-size: 15px;
+  text-align: center; padding: 11px 12px; border-radius: var(--rad);
+  background: var(--bg3); border: 1px solid var(--brd2); color: var(--txt);
+}
+.vo-input:focus { outline: none; border-color: var(--accent); }
+.vo-sep { height: 1px; background: var(--brd); margin: 20px 0; }
+.vo-mine { font-size: 12px; color: var(--txt3); overflow-wrap: anywhere; }
+.vo-mine b { color: var(--txt2); font-weight: 700; }
+.vo-a {
+  font-size: clamp(17px, 2.5vw, 24px); font-weight: 700; letter-spacing: -.4px;
+  color: var(--g); line-height: 1.35; overflow-wrap: anywhere;
+}
+.vo-note { font-size: 11.5px; color: var(--txt2); margin-top: 9px; line-height: 1.5; }
+.vo-grade { display: flex; gap: 10px; margin-top: 18px; }
+.vo-grade .btn { flex: 1; padding: 11px 10px; font-size: 13px; flex-direction: column; line-height: 1.25; }
+/* La conséquence du clic, écrite sous le bouton : on voit où part le mot
+   AVANT de trancher, pas après. */
+.vo-grade .btn small { display: block; font-size: 9.5px; font-weight: 600; opacity: .72; margin-top: 3px; }
+.vo-btn-ok { border-color: var(--g); color: var(--g); background: var(--g2); }
+.vo-btn-ko { border-color: var(--r); color: var(--r); background: var(--r2); }
+.vo-btn-ok:hover, .vo-btn-ko:hover { filter: brightness(1.1); }
+.vo-hint { font-size: 10.5px; color: var(--txt3); margin-top: 13px; }
+.vo-hint kbd {
+  font-family: var(--mono); font-size: 9.5px; background: var(--bg3);
+  border: 1px solid var(--brd2); border-radius: 4px; padding: 1px 5px;
+}
+/* Fin de session, et liste déjà à jour : le même bloc centré */
+.vo-done { text-align: center; padding: 34px 20px; }
+.vo-done-ico { font-size: 38px; line-height: 1; }
+.vo-done-t { font-size: 17px; font-weight: 800; letter-spacing: -.4px; margin-top: 12px; }
+.vo-done-s { font-size: 12px; color: var(--txt2); margin-top: 7px; line-height: 1.55; }
+
+/* Les quatre boîtes d'une liste */
+.vo-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+@media (max-width: 760px) { .vo-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.vo-box {
+  border: 1px solid var(--brd); border-radius: var(--rad); background: var(--bg2);
+  padding: 14px; cursor: pointer; text-align: left; font-family: var(--font);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.vo-box:hover { border-color: var(--accent); }
+.vo-box-t { font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.vo-box-n { font-size: 25px; font-weight: 800; letter-spacing: -1px; line-height: 1.15; color: var(--txt); }
+.vo-box-s { font-size: 10.5px; color: var(--txt3); font-weight: 600; }
+.vo-box-s.due { color: var(--accent); }
+.vo-lihdr { display: flex; align-items: center; gap: 9px; }
+.vo-lihdr-ico {
+  width: 28px; height: 28px; border-radius: 8px; flex: 0 0 auto; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Tableau des mots */
+.vo-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 13px; }
+.vo-search, .vo-filters select {
+  font-family: var(--font); font-size: 12px; padding: 8px 11px;
+  border-radius: var(--rad); background: var(--bg3);
+  border: 1px solid var(--brd2); color: var(--txt);
+}
+.vo-search { flex: 1; min-width: 150px; }
+.vo-search:focus, .vo-filters select:focus { outline: none; border-color: var(--accent); }
+.vo-pill {
+  display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 7px; border-radius: 999px; border: 1px solid var(--brd);
+  background: var(--bg3); color: var(--txt2); white-space: nowrap;
+}
+.vo-when { font-family: var(--mono); font-size: 10.5px; color: var(--txt3); white-space: nowrap; }
+.vo-when.now { color: var(--accent); font-weight: 700; }
+.vo-word { font-weight: 700; overflow-wrap: anywhere; }
+.vo-rep { color: var(--txt2); overflow-wrap: anywhere; }
+
+/* Ajout en masse : une ligne = un mot */
+.vo-bulk {
+  width: 100%; min-height: 210px; font-family: var(--mono); font-size: 12px;
+  line-height: 1.65; background: var(--bg3); border: 1px solid var(--brd2);
+  border-radius: var(--rad); padding: 12px; color: var(--txt); resize: vertical;
+}
+.vo-bulk:focus { outline: none; border-color: var(--accent); }
+
+/* Réglage des listes (Paramètres → Vocabulaire) */
+.vo-li-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 0; border-bottom: 1px solid var(--brd);
+}
+.vo-li-row:last-child { border-bottom: none; }
+.vo-li-ico {
+  width: 32px; height: 32px; flex: 0 0 auto; border-radius: 9px;
+  border: 1px solid var(--brd); cursor: pointer; font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.vo-li-ico:hover { border-color: var(--accent); }
+.vo-li-name { flex: 1; min-width: 0; }
+.vo-li-mode { width: 122px; flex: 0 0 auto; }
+.vo-li-col {
+  width: 34px; height: 30px; flex: 0 0 auto; padding: 2px;
+  background: var(--bg3); border: 1px solid var(--brd2);
+  border-radius: var(--rad); cursor: pointer;
+}
+.vo-charts { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; }
+@media (max-width: 860px) { .vo-charts { grid-template-columns: 1fr; } }
+.vo-chart { position: relative; height: 260px; }
+.vo-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .vo-row2 { grid-template-columns: 1fr; } }
+/* Texte courant dans un `.fg` : on annule les MAJUSCULES que `.fg label` impose. */
+label.vo-check {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 500; color: var(--txt2);
+  text-transform: none; letter-spacing: normal; margin-bottom: 0; cursor: pointer;
+}
+.vo-check input { width: auto; margin: 0; }
+
 .m-iconbtn:disabled { opacity: .28; cursor: default; }
 .m-iconbtn:disabled:hover { background: transparent; color: var(--txt3); }
 
@@ -2734,6 +2885,78 @@ label.fo-check {
   </div>
 </div>
 
+<!-- ════════════════════ VOCABULAIRE ════════════════════ -->
+
+<!-- Tout le contenu est rendu par voRenderReviser() : l'écran change selon
+     qu'on choisit une liste, qu'on révise, ou qu'on a fini. -->
+<div class="pane" id="pane-vo-reviser">
+  <div class="m-head">
+    <span class="m-nav-lbl">Réviser</span>
+    <div class="m-spacer"></div>
+    <button class="btn btn-primary" onclick="voOpenMot(null)">+ Mot</button>
+    <button class="btn btn-ghost" onclick="openSettings('vocabulaire')">⚙ Mes listes</button>
+  </div>
+  <div id="vo-rev-body"></div>
+</div>
+
+<div class="pane" id="pane-vo-boites">
+  <div class="m-head">
+    <span class="m-nav-lbl">Boîtes</span>
+    <div class="m-spacer"></div>
+    <button class="btn btn-primary" onclick="goTab('vo-reviser')">▶ Réviser</button>
+  </div>
+  <div class="mkpis" id="vo-boites-kpis"></div>
+  <div id="vo-boites-body"></div>
+</div>
+
+<div class="pane" id="pane-vo-mots">
+  <div class="m-head">
+    <span class="m-nav-lbl">Mots</span>
+    <div class="m-spacer"></div>
+    <button class="btn btn-primary" onclick="voOpenMot(null)">+ Mot</button>
+    <button class="btn btn-ghost" onclick="voOpenBulk()">≡ Ajout en masse</button>
+  </div>
+
+  <div class="card" id="card-vo-mots">
+    <div class="card-h"><span class="card-t">Tous les mots</span>
+      <span class="m-note" style="margin:0" id="vo-mots-count"></span></div>
+    <div class="card-b">
+      <div class="vo-filters">
+        <input class="vo-search" id="vo-q" type="search" autocomplete="off"
+               placeholder="Chercher un mot, une réponse…" oninput="voRenderMots()">
+        <select id="vo-f-liste" onchange="voRenderMots()"></select>
+        <select id="vo-f-boite" onchange="voRenderMots()"></select>
+      </div>
+      <div id="vo-mots-body"></div>
+    </div>
+  </div>
+</div>
+
+<div class="pane" id="pane-vo-stats">
+  <div class="m-head">
+    <span class="m-nav-lbl">Statistiques</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="mkpis" id="vo-stats-kpis"></div>
+
+  <div class="card" id="card-vo-graphs">
+    <div class="card-h"><span class="card-t">Répartition</span>
+      <span class="m-note" style="margin:0">Où en sont tes mots, et ce que tu as révisé</span></div>
+    <div class="card-b">
+      <div class="vo-charts">
+        <div class="vo-chart"><canvas id="vo-chart-boites"></canvas></div>
+        <div class="vo-chart"><canvas id="vo-chart-jours"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-vo-listes">
+    <div class="card-h"><span class="card-t">Par liste</span>
+      <span class="m-note" style="margin:0">Les listes ne se mélangent jamais</span></div>
+    <div class="card-b"><div id="vo-stats-listes"></div></div>
+  </div>
+</div>
+
 </div><!-- /wrap -->
 
 <!-- ════════════════════ MODALES SPORTS ════════════════════ -->
@@ -3264,6 +3487,8 @@ label.fo-check {
                 onclick="setGoSection('sport')"><span class="set-nav-ico">🏃</span>Sports</button>
         <button type="button" class="set-nav-btn" data-set="formation"
                 onclick="setGoSection('formation')"><span class="set-nav-ico">🎓</span>Formation</button>
+        <button type="button" class="set-nav-btn" data-set="vocabulaire"
+                onclick="setGoSection('vocabulaire')"><span class="set-nav-ico">🔤</span>Vocabulaire</button>
         <button type="button" class="set-nav-btn" data-set="sauvegarde"
                 onclick="setGoSection('sauvegarde')"><span class="set-nav-ico">🔑</span>Sauvegarde USB</button>
         <button type="button" class="set-nav-btn" data-set="donnees"
@@ -3430,6 +3655,29 @@ label.fo-check {
             supprime pas son certificat — comme pour un utilisateur supprimé, le
             fichier reste sur le disque. Ce bouton efface ceux qu'aucune formation
             ne référence plus.</p>
+        </div>
+
+        <div class="set-sec" data-sec="vocabulaire">
+          <h3>Vocabulaire</h3>
+          <p class="set-lead">Anglais et Français sont livrées pour démarrer, mais
+            rien n'est gravé : renomme-les, change leur emoji, ajoute-en d'autres.
+            Chaque liste garde ses propres boîtes.</p>
+          <div class="set-links">
+            <button type="button" class="btn btn-ghost btn-sm"
+                    onclick="closeOv('ov-config');voOpenListes()">📚 Mes listes</button>
+            <button type="button" class="btn btn-ghost btn-sm"
+                    onclick="closeOv('ov-config');voOpenBulk()">≡ Ajout en masse</button>
+          </div>
+
+          <h3 style="margin-top:22px">Les quatre boîtes</h3>
+          <p class="set-lead">Un mot su monte d'une boîte, un mot raté en descend
+            d'une — et reste en boîte 1 s'il y est déjà. Sa prochaine révision tombe
+            à l'intervalle de sa <b>nouvelle</b> boîte : un mot raté en « 6 mois »
+            revient dans un mois, pas dans six.</p>
+          <div id="vo-set-boites" class="sv-dest">…</div>
+          <p class="set-lead" style="margin-top:10px">Ces intervalles ne se règlent
+            pas : c'est le principe même du système, et les changer en cours de route
+            décalerait toutes les révisions déjà programmées.</p>
         </div>
 
         <!-- ──── DONNÉES & APP ──── -->
@@ -3751,6 +3999,95 @@ label.fo-check {
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-fo-cv')">Fermer</button>
       <button class="btn btn-primary" onclick="foCopyCv()">📋 Copier</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ MODALES VOCABULAIRE ════════════ -->
+
+<!-- Ajout / édition d'un mot -->
+<div class="ov" id="ov-vo-mot" onclick="if(event.target===this)closeOv('ov-vo-mot')">
+  <div class="modal" style="max-width:520px">
+    <h2 id="vo-mot-title">Nouveau mot</h2>
+
+    <div class="fg"><label>Liste</label><select id="vo-mot-liste" onchange="voMotListeChanged()"></select></div>
+
+    <div class="vo-row2">
+      <div class="fg"><label>Mot</label>
+        <input id="vo-mot-mot" placeholder="ex : resilient" autocomplete="off"></div>
+      <div class="fg"><label id="vo-mot-rep-lbl">Traduction</label>
+        <input id="vo-mot-rep" placeholder="ex : résilient" autocomplete="off"></div>
+    </div>
+
+    <div class="fg"><label>Exemple</label>
+      <input id="vo-mot-ex" placeholder="optionnel — une phrase où le mot apparaît" autocomplete="off"></div>
+    <div class="fg"><label>Note</label>
+      <input id="vo-mot-note" placeholder="optionnel — piège, nuance, moyen mnémotechnique" autocomplete="off"></div>
+
+    <div class="vo-row2">
+      <div class="fg"><label>Boîte</label><select id="vo-mot-boite"></select></div>
+      <div class="fg"><label>Prochaine révision</label><input id="vo-mot-date" type="date"></div>
+    </div>
+    <p class="m-note" style="margin:0">Un mot ajouté part en boîte 1 et se révise
+      le jour même. Change la boîte si tu le connais déjà.</p>
+
+    <div class="mact">
+      <button class="btn btn-ghost" id="vo-mot-del" style="display:none"
+              onclick="voDeleteMot()">🗑 Supprimer</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeOv('ov-vo-mot')">Annuler</button>
+      <button class="btn btn-primary" onclick="voSaveMot()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contenu d'une boîte -->
+<div class="ov" id="ov-vo-boite" onclick="if(event.target===this)closeOv('ov-vo-boite')">
+  <div class="modal" style="max-width:640px">
+    <h2 id="vo-boite-title">Boîte</h2>
+    <p class="m-note" id="vo-boite-sub" style="margin:0 0 14px"></p>
+    <div id="vo-boite-list" style="max-height:52vh;overflow:auto"></div>
+    <div class="mact">
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" onclick="closeOv('ov-vo-boite')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mes listes -->
+<div class="ov" id="ov-vo-listes" onclick="if(event.target===this)closeOv('ov-vo-listes')">
+  <div class="modal" style="max-width:560px">
+    <h2>Mes listes</h2>
+    <p class="m-note">Chaque liste a ses propres boîtes : réviser l'anglais ne touche
+      pas au français. Le mode décide seulement du libellé de la seconde face.
+      Une liste qui contient des mots ne peut pas être supprimée.</p>
+    <div id="vo-li-list"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="voAddListe()">+ Liste</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" onclick="closeOv('ov-vo-listes')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ajout en masse -->
+<div class="ov" id="ov-vo-bulk" onclick="if(event.target===this)closeOv('ov-vo-bulk')">
+  <div class="modal" style="max-width:640px">
+    <h2>Ajout en masse</h2>
+    <p class="m-note" style="margin:0 0 12px">
+      Une ligne par mot, le mot et sa réponse séparés par <b>=</b> ou par une
+      <b>tabulation</b> (ce que colle un tableur). La coupure se fait au premier
+      séparateur : une définition peut donc contenir des « = » ensuite.
+      Les lignes vides sont ignorées, un mot déjà présent dans la liste aussi.
+    </p>
+    <div class="fg"><label>Liste</label><select id="vo-bulk-liste"></select></div>
+    <textarea class="vo-bulk" id="vo-bulk-text" spellcheck="false"
+      placeholder="resilient = résilient&#10;to thrive = prospérer, s'épanouir&#10;véhément = qui s'exprime avec force et passion"></textarea>
+    <div id="vo-bulk-prev" class="m-note" style="margin-top:10px"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-vo-bulk')">Annuler</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" onclick="voBulkAdd()">Ajouter</button>
     </div>
   </div>
 </div>
@@ -8883,6 +9220,7 @@ function setGoSection(id) {
   if (id === "accueil" && typeof dashRenderConfig === "function") dashRenderConfig();
   // Même raison : l'état des certificats se lit sur le disque.
   if (id === "formation" && typeof foRefreshCerts === "function") foRefreshCerts();
+  if (id === "vocabulaire" && typeof voRenderSetBoites === "function") voRenderSetBoites();
 }
 
 /* ══════════ Sauvegarde externe (clé USB) ══════════ */
@@ -10124,6 +10462,12 @@ const NAV_SECTIONS = [
     { id: "fo-done",  label: "Terminées"     },
     { id: "fo-cv",    label: "Mon CV"        },
     { id: "fo-stats", label: "Statistiques"  },
+  ]},
+  { id: "sec-voc", label: "Vocabulaire", children: [
+    { id: "vo-reviser", label: "Réviser"      },
+    { id: "vo-boites",  label: "Boîtes"       },
+    { id: "vo-mots",    label: "Mots"         },
+    { id: "vo-stats",   label: "Statistiques" },
   ]},
 ];
 
@@ -16346,6 +16690,1023 @@ async function foCopyCv() {
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════
+   MODULE VOCABULAIRE
+   Données : <app_dir>/users/<slug>/vocabulaire.json
+             (load_vocabulaire / save_vocabulaire)
+
+   Quatre boîtes — 1 jour, 1 semaine, 1 mois, 6 mois — et trois règles qui
+   portent tout le module :
+
+   1. Un mot su MONTE d'une boîte, un mot raté en DESCEND d'une, et reste en
+      boîte 1 s'il y est déjà. Dans les deux cas sa prochaine révision tombe
+      à l'intervalle de sa NOUVELLE boîte (voAppliquer). Un mot raté en
+      « 6 mois » revient donc dans un mois : celui qu'on ne sait plus ne doit
+      pas pouvoir se cacher une demi-année de plus.
+   2. Rien n'est corrigé automatiquement. La saisie sert à s'engager sur une
+      réponse avant de la découvrir ; seul le clic sur « Je savais » ou
+      « Raté » compte. Comparer deux chaînes donnerait des faux négatifs sur
+      un accent, un synonyme ou un pluriel, et pourrirait la boîte d'un mot
+      pour des mois.
+   3. Les listes ne se mélangent jamais : la file d'une session est bornée à
+      une liste, et chaque liste a ses propres boîtes.
+
+   Le sens de la question est choisi au lancement de la session et vaut pour
+   toute la session — il vit dans VO_SESS, jamais dans le fichier.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+let VO = null;
+let VO_BOITES = [], VO_MODES = [];
+let _voBootstrapped = false;
+let _voCharts  = {};
+let _voEditMot = null;          // id du mot en cours d'édition (null = ajout)
+let _voBoiteVue = null;         // {listeId, boite} affiché dans ov-vo-boite
+
+/**
+ * Session en cours, ou null quand on est sur l'écran de choix.
+ * { listeId, sens:"mot"|"rep", file:[id], i, revealed, saisie, ok, ko, total }
+ * `sens` vaut pour toute la session : "mot" = on montre le mot et tu écris la
+ * réponse, "rep" = l'inverse.
+ */
+let VO_SESS = null;
+
+/* ── Accès et catalogues ───────────────────────────────────────────────── */
+
+function voListes() { return (VO && VO.listes) ? VO.listes : []; }
+function voMots()   { return (VO && VO.mots)   ? VO.mots   : []; }
+function voHisto()  { return (VO && Array.isArray(VO.historique)) ? VO.historique : []; }
+
+const VO_BOITE_FALLBACK = { id: 1, label: "1 jour", court: "1 j", jours: 1, color: "#dc2626" };
+const VO_LISTE_FALLBACK = { id: "", label: "Liste", icon: "📚", color: "#2563eb", mode: "trad" };
+
+function voBoitesCat() { return VO_BOITES.length ? VO_BOITES : [VO_BOITE_FALLBACK]; }
+function voBoiteMin()  { return voBoitesCat()[0].id; }
+function voBoiteMax()  { return voBoitesCat()[voBoitesCat().length - 1].id; }
+
+/** Repli explicite sur la boîte 1, jamais sur le dernier élément du tableau :
+    une boîte inconnue ne doit pas propulser un mot à six mois. */
+function voBoite(id) {
+  return voBoitesCat().find(b => b.id === Number(id)) || voBoitesCat()[0] || VO_BOITE_FALLBACK;
+}
+
+/** Même prudence pour les listes : repli sur la PREMIÈRE, pas sur la dernière. */
+function voListe(id) {
+  return voListes().find(l => l.id === id) || voListes()[0] || VO_LISTE_FALLBACK;
+}
+
+function voMode(id) {
+  return VO_MODES.find(m => m.id === id)
+      || { id: "trad", label: "Traduction", reponse: "Traduction", icon: "🔁" };
+}
+
+/** Le libellé de la seconde face : « Traduction » ou « Définition ». */
+function voRepLabel(listeId) { return voMode(voListe(listeId).mode).reponse; }
+
+function voMotById(id) { return voMots().find(m => m.id === id) || null; }
+
+function voNextId(kind) {
+  if (!VO._nid) VO._nid = {};
+  const n = VO._nid[kind] || 1;
+  VO._nid[kind] = n + 1;
+  return kind + "_" + n;
+}
+
+/* ── Dates ─────────────────────────────────────────────────────────────── */
+
+function voToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function voAddDays(iso, n) {
+  const d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return iso;
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Jours d'ici à une date ISO. Négatif = déjà passée, donc en retard. */
+function voDaysTo(iso) {
+  if (!iso) return null;
+  const a = new Date(iso + "T00:00:00");
+  if (isNaN(a)) return null;
+  return Math.round((a - new Date(voToday() + "T00:00:00")) / 86400000);
+}
+
+function voDateLabel(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" });
+}
+
+/** « aujourd'hui », « demain », « dans 12 j », « en retard de 3 j ». */
+function voEcheanceLabel(iso) {
+  const j = voDaysTo(iso);
+  if (j === null) return "—";
+  if (j < 0)  return "en retard de " + (-j) + " j";
+  if (j === 0) return "aujourd'hui";
+  if (j === 1) return "demain";
+  if (j < 31)  return "dans " + j + " j";
+  return "le " + voDateLabel(iso);
+}
+
+/* ── Ce qui est dû ─────────────────────────────────────────────────────── */
+
+function voClampBoite(v) {
+  const n = Number(v);
+  if (!isFinite(n)) return voBoiteMin();
+  return Math.max(voBoiteMin(), Math.min(voBoiteMax(), Math.round(n)));
+}
+
+/** Un mot est dû dès que sa date de révision est atteinte ou dépassée. */
+function voEstDu(m) { return !m.prochaine || m.prochaine <= voToday(); }
+
+function voMotsDe(listeId)  { return voMots().filter(m => m.listeId === listeId); }
+function voDus(listeId)     { return voMotsDe(listeId).filter(voEstDu); }
+function voDusTotal()       { return voMots().filter(voEstDu).length; }
+
+/** La date de la prochaine révision d'une liste, quand plus rien n'est dû. */
+function voProchaineDe(listeId) {
+  const dates = voMotsDe(listeId).map(m => m.prochaine).filter(Boolean).sort();
+  return dates.length ? dates[0] : "";
+}
+
+/**
+ * Le cœur du module. Su → on monte d'une boîte, raté → on descend d'une, et
+ * la prochaine révision tombe à l'intervalle de la boîte d'ARRIVÉE.
+ * Les bornes font le reste : on ne descend pas sous la boîte 1, on ne monte
+ * pas au-dessus de la dernière — un mot en « 6 mois » y repart pour 6 mois.
+ */
+function voAppliquer(m, ok) {
+  const avant = voClampBoite(m.boite);
+  const apres = ok ? Math.min(voBoiteMax(), avant + 1)
+                   : Math.max(voBoiteMin(), avant - 1);
+  m.boite         = apres;
+  m.prochaine     = voAddDays(voToday(), voBoite(apres).jours);
+  m.derniereRevue = voToday();
+  m.nbVus         = (Number(m.nbVus) || 0) + 1;
+  if (ok) m.nbReussis = (Number(m.nbReussis) || 0) + 1;
+  return { avant, apres };
+}
+
+/** Où partirait le mot si on cliquait — affiché SOUS les deux boutons. */
+function voDestination(m, ok) {
+  const avant = voClampBoite(m.boite);
+  const apres = ok ? Math.min(voBoiteMax(), avant + 1)
+                   : Math.max(voBoiteMin(), avant - 1);
+  const b = voBoite(apres);
+  if (apres === avant) return ok ? "reste en " + b.court : "reste en " + b.court;
+  return (ok ? "passe en " : "retombe en ") + b.court;
+}
+
+/* ── Chargement / enregistrement ───────────────────────────────────────── */
+
+async function voLoad() {
+  if (!window.pywebview || !pywebview.api) return false;
+  try {
+    const r = await pywebview.api.load_vocabulaire();
+    if (!r || !r.ok) return false;
+    VO        = r.data   || {};
+    VO_BOITES = r.boites || [];
+    VO_MODES  = r.modes  || [];
+    ["listes", "mots", "historique"].forEach(k => { if (!Array.isArray(VO[k])) VO[k] = []; });
+    return true;
+  } catch (e) { return false; }
+}
+
+async function voSave() {
+  if (!VO || !window.pywebview || !pywebview.api) return false;
+  try {
+    const r = await pywebview.api.save_vocabulaire(VO);
+    if (!r || !r.ok) {
+      showToastModern((r && r.error) || "Enregistrement impossible", "err");
+      return false;
+    }
+    return true;
+  } catch (e) { showToastModern("Erreur : " + e, "err"); return false; }
+}
+
+/**
+ * Chaque validation part sur le disque, une à la fois : fermer l'app en
+ * plein milieu d'une session ne doit pas rejouer les mots déjà tranchés.
+ * La file évite que deux clics rapides s'écrasent l'un l'autre.
+ */
+let _voSaveChain = Promise.resolve();
+function voSaveQueued() {
+  _voSaveChain = _voSaveChain.then(() => voSave()).catch(() => {});
+  return _voSaveChain;
+}
+
+async function voBootstrap(discret) {
+  if (_voBootstrapped) return;
+  const ok = await voLoad();
+  if (!ok || !VO) return;
+  _voBootstrapped = true;
+  if (!discret) voRenderAll();
+}
+
+function voRenderAll() {
+  voRenderReviser();
+  voRenderBoites();
+  voFillFilters();
+  voRenderMots();
+  voRenderStats();
+  voRenderSetBoites();
+  if (typeof homeRender === "function") homeRender();
+}
+
+/* ══ ONGLET RÉVISER ═════════════════════════════════════════════════════
+   Un seul conteneur, trois états : choix de la liste, carte en cours, bilan.
+   ═════════════════════════════════════════════════════════════════════ */
+
+function voRenderReviser() {
+  const box = document.getElementById("vo-rev-body");
+  if (!box || !VO) return;
+  if (!VO_SESS)                          box.innerHTML = voStartHtml();
+  else if (VO_SESS.i >= VO_SESS.file.length) box.innerHTML = voBilanHtml();
+  else                                   box.innerHTML = voCarteHtml();
+}
+
+function voStartHtml() {
+  const listes = voListes();
+  if (!listes.length) {
+    return `<div class="card"><div class="card-b"><div class="m-empty">
+      Aucune liste. Crée-en une depuis ⚙ Mes listes.</div></div></div>`;
+  }
+  const cards = listes.map(l => {
+    const tous = voMotsDe(l.id);
+    const dus  = voDus(l.id);
+    const rep  = voRepLabel(l.id);
+    const mode = voMode(l.mode);
+
+    let bloc;
+    if (!tous.length) {
+      bloc = `<div class="vo-card-due none">Aucun mot dans cette liste</div>
+        <div class="vo-sens">
+          <button class="btn btn-ghost" onclick="voOpenMot(null, '${l.id}')">+ Ajouter un mot</button>
+        </div>`;
+    } else if (!dus.length) {
+      const pro = voProchaineDe(l.id);
+      bloc = `<div class="vo-card-due none">À jour ✓</div>
+        <div class="vo-card-s">prochaine révision ${escHtml(voEcheanceLabel(pro))}</div>
+        <div class="vo-sens">
+          <button class="btn btn-ghost" onclick="goTab('vo-boites')">Voir les boîtes</button>
+        </div>`;
+    } else {
+      bloc = `<div class="vo-card-due">${dus.length}
+          <small>mot${dus.length > 1 ? "s" : ""} à réviser</small></div>
+        <div class="vo-sens">
+          <button class="btn btn-primary" onclick="voStart('${l.id}','mot')">
+            Le mot → la ${escHtml(rep.toLowerCase())}</button>
+          <button class="btn btn-ghost" onclick="voStart('${l.id}','rep')">
+            La ${escHtml(rep.toLowerCase())} → le mot</button>
+        </div>`;
+    }
+
+    return `<div class="vo-card${dus.length ? " due" : ""}">
+      <div class="vo-card-h">
+        <div class="vo-card-ico" style="background:${l.color}22;color:${l.color}">${escHtml(l.icon || "📚")}</div>
+        <div style="min-width:0">
+          <div class="vo-card-t">${escHtml(l.label)}</div>
+          <div class="vo-card-s">${escHtml(mode.label)} · ${tous.length} mot${tous.length > 1 ? "s" : ""}</div>
+        </div>
+      </div>
+      ${bloc}
+    </div>`;
+  }).join("");
+
+  return `<div class="vo-start">${cards}</div>
+    <p class="m-note" style="margin-top:16px">Choisis une liste, puis le sens de la
+      question — il vaut pour toute la session. Les listes ne se mélangent jamais.</p>`;
+}
+
+function voCarteHtml() {
+  const s = VO_SESS;
+  // Un mot supprimé depuis l'onglet Mots pendant la session : on saute les
+  // fiches devenues introuvables, et on s'arrête à la fin de la file — sans
+  // ce garde-fou la boucle sortait du tableau et n'en revenait pas.
+  while (s.i < s.file.length && !voMotById(s.file[s.i])) s.i++;
+  if (s.i >= s.file.length) return voBilanHtml();
+  const m = voMotById(s.file[s.i]);
+
+  const l      = voListe(s.listeId);
+  const rep    = voRepLabel(s.listeId);
+  const demande = s.sens === "mot" ? "la " + rep.toLowerCase() : "le mot";
+  const question = s.sens === "mot" ? m.mot : m.reponse;
+  const reponse  = s.sens === "mot" ? m.reponse : m.mot;
+  const pct = Math.round((s.i / Math.max(1, s.total)) * 100);
+
+  let bas;
+  if (!s.revealed) {
+    // L'exemple contient presque toujours le mot : le montrer avant la
+    // réponse reviendrait à donner la solution. Il attend la révélation.
+    bas = `
+      <input class="vo-input" id="vo-answer" autocomplete="off" autocapitalize="off"
+             spellcheck="false" placeholder="Écris ta réponse…"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();voReveal();}">
+      <div class="vo-grade">
+        <button class="btn btn-primary" onclick="voReveal()">Révéler la réponse</button>
+      </div>
+      <div class="vo-hint"><kbd>Entrée</kbd> pour révéler — tu peux révéler sans rien écrire</div>`;
+  } else {
+    const mine = (s.saisie || "").trim();
+    bas = `
+      <div class="vo-sep"></div>
+      ${mine ? `<div class="vo-mine">Ta réponse : <b>${escHtml(mine)}</b></div>` : ""}
+      <div class="vo-a" style="margin-top:${mine ? "8px" : "0"}">${escHtml(reponse)}</div>
+      ${m.exemple ? `<div class="vo-ex">« ${escHtml(m.exemple)} »</div>` : ""}
+      ${m.note ? `<div class="vo-note">${escHtml(m.note)}</div>` : ""}
+      <div class="vo-grade">
+        <button class="btn vo-btn-ko" onclick="voGrade(false)">✗ Raté
+          <small>${escHtml(voDestination(m, false))}</small></button>
+        <button class="btn vo-btn-ok" onclick="voGrade(true)">✓ Je savais
+          <small>${escHtml(voDestination(m, true))}</small></button>
+      </div>
+      <div class="vo-hint">C'est toi qui juges, pas l'app —
+        <kbd>1</kbd> raté · <kbd>2</kbd> je savais</div>`;
+  }
+
+  return `<div class="vo-run">
+    <div class="vo-runbar">
+      <button class="btn btn-ghost btn-sm" onclick="voQuit()">✕ Quitter</button>
+      <div class="vo-prog"><div class="vo-prog-in" style="width:${pct}%"></div></div>
+      <span class="vo-count">${s.i + 1}/${s.total} · ✓${s.ok} ✗${s.ko}</span>
+    </div>
+    <div class="vo-face">
+      <div class="vo-ask">${escHtml(l.label)} · boîte ${escHtml(voBoite(m.boite).court)} ·
+        écris ${escHtml(demande)}</div>
+      <div class="vo-q">${escHtml(question)}</div>
+      ${bas}
+    </div>
+  </div>`;
+}
+
+function voBilanHtml() {
+  const s = VO_SESS;
+  const l = voListe(s.listeId);
+  const reste = voDus(s.listeId).length;
+  return `<div class="card"><div class="card-b"><div class="vo-done">
+    <div class="vo-done-ico">${reste ? "⏸" : "✓"}</div>
+    <div class="vo-done-t">${reste ? "Session interrompue" : escHtml(l.label) + " : c'est fait"}</div>
+    <div class="vo-done-s">
+      ${s.ok} su${s.ok > 1 ? "s" : ""} · ${s.ko} raté${s.ko > 1 ? "s" : ""} sur ${s.total}
+      ${reste ? `<br>Il reste ${reste} mot${reste > 1 ? "s" : ""} dû${reste > 1 ? "s" : ""} dans cette liste.`
+              : `<br>Prochaine révision ${escHtml(voEcheanceLabel(voProchaineDe(s.listeId)))}.`}
+    </div>
+    <div class="vo-grade" style="max-width:420px;margin:20px auto 0">
+      <button class="btn btn-ghost" onclick="goTab('vo-boites')">Voir les boîtes</button>
+      <button class="btn btn-primary" onclick="voQuit()">Retour aux listes</button>
+    </div>
+  </div></div></div>`;
+}
+
+/* ── Déroulé d'une session ─────────────────────────────────────────────── */
+
+function voShuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function voStart(listeId, sens) {
+  const dus = voDus(listeId);
+  if (!dus.length) { showToastModern("Rien à réviser dans cette liste", "warn"); return; }
+  VO_SESS = { listeId, sens, file: voShuffle(dus.map(m => m.id)), i: 0,
+              revealed: false, saisie: "", ok: 0, ko: 0, total: dus.length };
+  voRenderReviser();
+  voFocusAnswer();
+}
+
+function voFocusAnswer() {
+  setTimeout(() => {
+    const el = document.getElementById("vo-answer");
+    if (el) el.focus();
+  }, 30);
+}
+
+function voReveal() {
+  if (!VO_SESS || VO_SESS.revealed) return;
+  const el = document.getElementById("vo-answer");
+  VO_SESS.saisie = el ? el.value : "";
+  // On rend le focus au document : sans ça les raccourcis 1 et 2 iraient
+  // s'écrire dans le champ au lieu de trancher.
+  if (el) el.blur();
+  VO_SESS.revealed = true;
+  voRenderReviser();
+}
+
+function voGrade(ok) {
+  if (!VO_SESS || !VO_SESS.revealed) return;
+  const m = voMotById(VO_SESS.file[VO_SESS.i]);
+  if (m) {
+    voAppliquer(m, ok);
+    voLogRevision(VO_SESS.listeId, ok);
+    VO_SESS[ok ? "ok" : "ko"]++;
+  }
+  VO_SESS.i++;
+  VO_SESS.revealed = false;
+  VO_SESS.saisie   = "";
+  voRenderReviser();
+  voSaveQueued();
+  if (VO_SESS.i >= VO_SESS.file.length) {
+    if (typeof homeRender === "function") homeRender();
+  } else {
+    voFocusAnswer();
+  }
+}
+
+function voQuit() {
+  VO_SESS = null;
+  voRenderReviser();
+  voRenderBoites();
+  voRenderMots();
+  voRenderStats();
+  if (typeof homeRender === "function") homeRender();
+}
+
+/** Un agrégat par jour et par liste : de quoi tracer une courbe, rien de plus. */
+function voLogRevision(listeId, ok) {
+  if (!Array.isArray(VO.historique)) VO.historique = [];
+  const d = voToday();
+  let h = VO.historique.find(x => x.date === d && x.listeId === listeId);
+  if (!h) { h = { date: d, listeId, vus: 0, ok: 0 }; VO.historique.push(h); }
+  h.vus++;
+  if (ok) h.ok++;
+}
+
+/* Raccourcis 1 / 2 pendant une révision. Volontairement hors du gestionnaire
+   global : celui-ci se coupe dès qu'un champ a le focus, or on veut pouvoir
+   trancher au clavier juste après avoir tapé une réponse. */
+document.addEventListener("keydown", e => {
+  if (!VO_SESS || !VO_SESS.revealed) return;
+  const pane = document.getElementById("pane-vo-reviser");
+  if (!pane || !pane.classList.contains("active")) return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  const t = e.target.tagName;
+  if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return;
+  if (e.key === "1") { e.preventDefault(); voGrade(false); }
+  if (e.key === "2") { e.preventDefault(); voGrade(true);  }
+});
+
+/* ══ ONGLET BOÎTES ══════════════════════════════════════════════════════ */
+
+function voRenderBoites() {
+  const kpis = document.getElementById("vo-boites-kpis");
+  const body = document.getElementById("vo-boites-body");
+  if (!kpis || !body || !VO) return;
+
+  const tous = voMots();
+  const dus  = tous.filter(voEstDu);
+  const acquis = tous.filter(m => voClampBoite(m.boite) === voBoiteMax()).length;
+  const prochaines = tous.map(m => m.prochaine).filter(Boolean).sort();
+
+  kpis.innerHTML = `
+    <div class="mkpi accent"><span class="mkpi-lbl">À réviser</span>
+      <span class="mkpi-val">${dus.length}</span>
+      <span class="mkpi-sub">${dus.length ? "toutes listes confondues" : "tout est à jour"}</span></div>
+    <div class="mkpi"><span class="mkpi-lbl">Mots suivis</span>
+      <span class="mkpi-val">${tous.length}</span>
+      <span class="mkpi-sub">${voListes().length} liste${voListes().length > 1 ? "s" : ""}</span></div>
+    <div class="mkpi"><span class="mkpi-lbl">En dernière boîte</span>
+      <span class="mkpi-val">${acquis}</span>
+      <span class="mkpi-sub">revus tous les ${voBoite(voBoiteMax()).label}</span></div>
+    <div class="mkpi"><span class="mkpi-lbl">Prochaine révision</span>
+      <span class="mkpi-val">${dus.length ? "maintenant"
+        : escHtml(prochaines.length ? voEcheanceLabel(prochaines[0]) : "—")}</span>
+      <span class="mkpi-sub">${tous.length ? "" : "commence par ajouter des mots"}</span></div>`;
+
+  if (!voListes().length) {
+    body.innerHTML = `<div class="card"><div class="card-b"><div class="m-empty">
+      Aucune liste.</div></div></div>`;
+    return;
+  }
+
+  body.innerHTML = voListes().map(l => {
+    const mots = voMotsDe(l.id);
+    const cases = voBoitesCat().map(b => {
+      const dans = mots.filter(m => voClampBoite(m.boite) === b.id);
+      const d    = dans.filter(voEstDu).length;
+      return `<button class="vo-box" onclick="voOpenBoite('${l.id}',${b.id})">
+        <span class="vo-box-t" style="color:${b.color}">${escHtml(b.label)}</span>
+        <span class="vo-box-n">${dans.length}</span>
+        <span class="vo-box-s${d ? " due" : ""}">${d ? d + " à réviser" : "rien à faire"}</span>
+      </button>`;
+    }).join("");
+
+    return `<div class="card" id="card-vo-box-${l.id}">
+      <div class="card-h">
+        <span class="card-t">
+          <span class="vo-lihdr">
+            <span class="vo-lihdr-ico" style="background:${l.color}22;color:${l.color}">${escHtml(l.icon || "📚")}</span>
+            ${escHtml(l.label)}
+          </span>
+        </span>
+        <span class="m-note" style="margin:0">${mots.length} mot${mots.length > 1 ? "s" : ""} ·
+          ${escHtml(voMode(l.mode).label)}</span>
+      </div>
+      <div class="card-b">
+        ${mots.length ? `<div class="vo-grid">${cases}</div>`
+          : `<div class="m-empty">Aucun mot ici. Onglet <b>Mots</b> pour en ajouter.</div>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function voOpenBoite(listeId, boiteId) {
+  _voBoiteVue = { listeId, boite: boiteId };
+  voRenderBoiteVue();
+  document.getElementById("ov-vo-boite").classList.add("open");
+}
+
+function voRenderBoiteVue() {
+  if (!_voBoiteVue) return;
+  const { listeId, boite } = _voBoiteVue;
+  const l = voListe(listeId);
+  const b = voBoite(boite);
+  const rep = voRepLabel(listeId);
+
+  const mots = voMotsDe(listeId)
+    .filter(m => voClampBoite(m.boite) === b.id)
+    .sort((a, c) => (a.prochaine || "").localeCompare(c.prochaine || "")
+                 || a.mot.localeCompare(c.mot, "fr"));
+
+  document.getElementById("vo-boite-title").textContent = `${l.icon || "📚"} ${l.label} — boîte ${b.label}`;
+  const pl = mots.length > 1;
+  document.getElementById("vo-boite-sub").innerHTML =
+    `${mots.length} mot${pl ? "s" : ""} · revu${pl ? "s" : ""} après ${escHtml(b.label)} ·
+     un mot su passe à la boîte suivante, un mot raté redescend d'une.`;
+
+  const box = document.getElementById("vo-boite-list");
+  if (!mots.length) {
+    box.innerHTML = `<div class="m-empty">Cette boîte est vide.</div>`;
+    return;
+  }
+  box.innerHTML = `<table class="tw"><thead><tr>
+      <th>Mot</th><th>${escHtml(rep)}</th><th>Prochaine</th><th></th>
+    </tr></thead><tbody>${mots.map(m => {
+      const du = voEstDu(m);
+      return `<tr>
+        <td class="vo-word">${escHtml(m.mot)}</td>
+        <td class="vo-rep">${escHtml(m.reponse)}</td>
+        <td class="vo-when${du ? " now" : ""}">${escHtml(voEcheanceLabel(m.prochaine))}</td>
+        <td><div class="m-acts">
+          <button class="m-iconbtn" title="Modifier"
+                  onclick="closeOv('ov-vo-boite');voOpenMot('${m.id}')">✎</button>
+        </div></td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+/* ══ ONGLET MOTS ════════════════════════════════════════════════════════ */
+
+/** Remplit les deux filtres. Rappelée dès que les listes changent. */
+function voFillFilters() {
+  const fl = document.getElementById("vo-f-liste");
+  const fb = document.getElementById("vo-f-boite");
+  if (!fl || !fb || !VO) return;
+  const kl = fl.value, kb = fb.value;
+  fl.innerHTML = `<option value="">Toutes les listes</option>` +
+    voListes().map(l => `<option value="${l.id}">${escHtml((l.icon || "") + " " + l.label)}</option>`).join("");
+  fb.innerHTML = `<option value="">Toutes les boîtes</option>` +
+    `<option value="due">Seulement ce qui est dû</option>` +
+    voBoitesCat().map(b => `<option value="${b.id}">Boîte ${escHtml(b.label)}</option>`).join("");
+  fl.value = kl; fb.value = kb;
+}
+
+function voRenderMots() {
+  const body  = document.getElementById("vo-mots-body");
+  const count = document.getElementById("vo-mots-count");
+  if (!body || !VO) return;
+
+  const q  = ((document.getElementById("vo-q") || {}).value || "").trim().toLowerCase();
+  const fl = (document.getElementById("vo-f-liste") || {}).value || "";
+  const fb = (document.getElementById("vo-f-boite") || {}).value || "";
+
+  let mots = voMots().slice();
+  if (fl) mots = mots.filter(m => m.listeId === fl);
+  if (fb === "due") mots = mots.filter(voEstDu);
+  else if (fb)      mots = mots.filter(m => voClampBoite(m.boite) === Number(fb));
+  if (q) mots = mots.filter(m =>
+    (m.mot || "").toLowerCase().includes(q) ||
+    (m.reponse || "").toLowerCase().includes(q) ||
+    (m.note || "").toLowerCase().includes(q));
+
+  mots.sort((a, b) => (a.prochaine || "").localeCompare(b.prochaine || "")
+                   || (a.mot || "").localeCompare(b.mot || "", "fr"));
+
+  if (count) {
+    count.textContent = mots.length === voMots().length
+      ? `${mots.length} mot${mots.length > 1 ? "s" : ""}`
+      : `${mots.length} sur ${voMots().length}`;
+  }
+
+  if (!voMots().length) {
+    body.innerHTML = `<div class="m-empty">
+      Aucun mot pour l'instant. <b>+ Mot</b> pour en saisir un,
+      ou <b>≡ Ajout en masse</b> pour en coller toute une liste.</div>`;
+    return;
+  }
+  if (!mots.length) {
+    body.innerHTML = `<div class="m-empty">Aucun mot ne correspond à ce filtre.</div>`;
+    return;
+  }
+
+  body.innerHTML = `<table class="tw"><thead><tr>
+      <th>Liste</th><th>Mot</th><th>Réponse</th><th>Boîte</th>
+      <th>Prochaine</th><th>Réussite</th><th></th>
+    </tr></thead><tbody>${mots.map(m => {
+      const l = voListe(m.listeId);
+      const b = voBoite(voClampBoite(m.boite));
+      const du = voEstDu(m);
+      const taux = m.nbVus ? Math.round((m.nbReussis / m.nbVus) * 100) + " %" : "—";
+      return `<tr>
+        <td><span class="vo-pill" style="border-color:${l.color}55;color:${l.color}">${escHtml((l.icon || "") + " " + l.label)}</span></td>
+        <td class="vo-word">${escHtml(m.mot)}</td>
+        <td class="vo-rep">${escHtml(m.reponse)}</td>
+        <td><span class="vo-pill" style="border-color:${b.color}55;color:${b.color}">${escHtml(b.court)}</span></td>
+        <td class="vo-when${du ? " now" : ""}">${escHtml(voEcheanceLabel(m.prochaine))}</td>
+        <td class="vo-when">${taux}${m.nbVus ? ` <span style="opacity:.6">(${m.nbVus})</span>` : ""}</td>
+        <td><div class="m-acts">
+          <button class="m-iconbtn" title="Modifier" onclick="voOpenMot('${m.id}')">✎</button>
+        </div></td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+/* ── Fiche d'un mot ────────────────────────────────────────────────────── */
+
+function voOpenMot(id, listeIdParDefaut) {
+  if (!VO) { showToastModern("Vocabulaire en cours de chargement…", "warn"); return; }
+  if (!voListes().length) { showToastModern("Crée d'abord une liste", "warn"); return; }
+  _voEditMot = id || null;
+  const m = id ? voMotById(id) : null;
+
+  const sel = document.getElementById("vo-mot-liste");
+  sel.innerHTML = voListes()
+    .map(l => `<option value="${l.id}">${escHtml((l.icon || "") + " " + l.label)}</option>`).join("");
+  sel.value = m ? m.listeId : (listeIdParDefaut || voListes()[0].id);
+
+  const bsel = document.getElementById("vo-mot-boite");
+  bsel.innerHTML = voBoitesCat()
+    .map(b => `<option value="${b.id}">${escHtml(b.label)}</option>`).join("");
+  bsel.value = String(m ? voClampBoite(m.boite) : voBoiteMin());
+
+  document.getElementById("vo-mot-title").textContent = m ? "Modifier le mot" : "Nouveau mot";
+  document.getElementById("vo-mot-mot").value   = m ? m.mot : "";
+  document.getElementById("vo-mot-rep").value   = m ? m.reponse : "";
+  document.getElementById("vo-mot-ex").value    = m ? (m.exemple || "") : "";
+  document.getElementById("vo-mot-note").value  = m ? (m.note || "") : "";
+  document.getElementById("vo-mot-date").value  = m ? (m.prochaine || voToday()) : voToday();
+  document.getElementById("vo-mot-del").style.display = m ? "" : "none";
+
+  voMotListeChanged();
+  document.getElementById("ov-vo-mot").classList.add("open");
+  setTimeout(() => { const el = document.getElementById("vo-mot-mot"); if (el) el.focus(); }, 40);
+}
+
+/** Le libellé de la seconde face suit la liste choisie, pas l'inverse. */
+function voMotListeChanged() {
+  const sel = document.getElementById("vo-mot-liste");
+  const lbl = document.getElementById("vo-mot-rep-lbl");
+  if (sel && lbl) lbl.textContent = voRepLabel(sel.value);
+}
+
+async function voSaveMot() {
+  const mot = (document.getElementById("vo-mot-mot").value || "").trim();
+  const rep = (document.getElementById("vo-mot-rep").value || "").trim();
+  if (!mot) { showToastModern("Écris le mot", "warn"); return; }
+  if (!rep) { showToastModern("Écris la réponse", "warn"); return; }
+
+  const rec = {
+    listeId:   document.getElementById("vo-mot-liste").value,
+    mot, reponse: rep,
+    exemple:   (document.getElementById("vo-mot-ex").value || "").trim(),
+    note:      (document.getElementById("vo-mot-note").value || "").trim(),
+    boite:     voClampBoite(document.getElementById("vo-mot-boite").value),
+    prochaine: document.getElementById("vo-mot-date").value || voToday(),
+  };
+
+  const cur = _voEditMot ? voMotById(_voEditMot) : null;
+  if (cur) Object.assign(cur, rec);
+  else VO.mots.push(Object.assign({
+    id: voNextId("mot"), creeLe: voToday(), derniereRevue: "", nbVus: 0, nbReussis: 0,
+  }, rec));
+
+  if (await voSave()) {
+    closeOv("ov-vo-mot");
+    showToastModern(cur ? "Mot mis à jour" : "Mot ajouté", "ok");
+    voRenderAll();
+  }
+}
+
+async function voDeleteMot() {
+  if (!_voEditMot) return;
+  const m = voMotById(_voEditMot);
+  if (!m) return;
+  if (!confirm(`Supprimer « ${m.mot} » ? Son historique part avec lui.`)) return;
+  VO.mots = VO.mots.filter(x => x.id !== _voEditMot);
+  if (await voSave()) {
+    closeOv("ov-vo-mot");
+    showToastModern("Mot supprimé", "ok");
+    voRenderAll();
+  }
+}
+
+/* ── Ajout en masse ────────────────────────────────────────────────────── */
+
+function voOpenBulk() {
+  if (!VO) { showToastModern("Vocabulaire en cours de chargement…", "warn"); return; }
+  if (!voListes().length) { showToastModern("Crée d'abord une liste", "warn"); return; }
+  const sel = document.getElementById("vo-bulk-liste");
+  sel.innerHTML = voListes()
+    .map(l => `<option value="${l.id}">${escHtml((l.icon || "") + " " + l.label)}</option>`).join("");
+  document.getElementById("vo-bulk-text").value = "";
+  document.getElementById("vo-bulk-prev").textContent = "";
+  document.getElementById("ov-vo-bulk").classList.add("open");
+}
+
+/** Coupe au PREMIER séparateur : une définition peut contenir des « = ». */
+function voBulkParse(texte) {
+  const out = [], rejets = [];
+  (texte || "").split("\n").forEach(ligne => {
+    const l = ligne.trim();
+    if (!l) return;
+    let i = l.indexOf("\t");
+    if (i < 0) i = l.indexOf("=");
+    if (i < 0) { rejets.push(l); return; }
+    const mot = l.slice(0, i).trim();
+    const rep = l.slice(i + 1).trim();
+    if (!mot || !rep) { rejets.push(l); return; }
+    out.push({ mot, reponse: rep });
+  });
+  return { lignes: out, rejets };
+}
+
+async function voBulkAdd() {
+  const listeId = document.getElementById("vo-bulk-liste").value;
+  const { lignes, rejets } = voBulkParse(document.getElementById("vo-bulk-text").value);
+  if (!lignes.length) {
+    showToastModern("Aucune ligne exploitable — sépare le mot et sa réponse par =", "warn");
+    return;
+  }
+
+  // Un mot déjà présent dans CETTE liste n'est pas réimporté : sa boîte et son
+  // historique passeraient à la trappe. Le même mot dans une autre liste, si.
+  const deja = new Set(voMotsDe(listeId).map(m => m.mot.toLowerCase()));
+  let ajoutes = 0, doublons = 0;
+  lignes.forEach(({ mot, reponse }) => {
+    if (deja.has(mot.toLowerCase())) { doublons++; return; }
+    deja.add(mot.toLowerCase());
+    VO.mots.push({
+      id: voNextId("mot"), listeId, mot, reponse, exemple: "", note: "",
+      boite: voBoiteMin(), prochaine: voToday(), creeLe: voToday(),
+      derniereRevue: "", nbVus: 0, nbReussis: 0,
+    });
+    ajoutes++;
+  });
+
+  if (!ajoutes) { showToastModern("Tous ces mots sont déjà dans la liste", "warn"); return; }
+  if (await voSave()) {
+    closeOv("ov-vo-bulk");
+    let msg = `${ajoutes} mot${ajoutes > 1 ? "s" : ""} ajouté${ajoutes > 1 ? "s" : ""}`;
+    if (doublons) msg += ` · ${doublons} déjà présent${doublons > 1 ? "s" : ""}`;
+    if (rejets.length) msg += ` · ${rejets.length} ligne${rejets.length > 1 ? "s" : ""} sans séparateur`;
+    showToastModern(msg, rejets.length ? "warn" : "ok");
+    voRenderAll();
+  }
+}
+
+/* ── Mes listes ────────────────────────────────────────────────────────── */
+
+function voOpenListes() {
+  if (!VO) { showToastModern("Vocabulaire en cours de chargement…", "warn"); return; }
+  voRenderListes();
+  document.getElementById("ov-vo-listes").classList.add("open");
+}
+
+function voRenderListes() {
+  const box = document.getElementById("vo-li-list");
+  if (!box) return;
+  box.innerHTML = voListes().map(l => {
+    const n = voMotsDe(l.id).length;
+    return `<div class="vo-li-row">
+      <button class="vo-li-ico" style="background:${l.color}22"
+              onclick="voPickIconListe('${l.id}')" title="Changer l'emoji">${escHtml(l.icon || "📚")}</button>
+      <input class="vo-li-name" value="${escHtml(l.label)}"
+             oninput="voSetListe('${l.id}','label',this.value)">
+      <select class="vo-li-mode" onchange="voSetListe('${l.id}','mode',this.value)">
+        ${VO_MODES.map(m => `<option value="${m.id}"${m.id === l.mode ? " selected" : ""}
+          >${escHtml(m.label)}</option>`).join("")}
+      </select>
+      <input class="vo-li-col" type="color" value="${l.color}"
+             onchange="voSetListe('${l.id}','color',this.value)">
+      <button class="m-iconbtn" title="${n ? n + " mot(s) dedans : suppression impossible" : "Supprimer"}"
+              ${n ? "disabled" : ""} onclick="voDeleteListe('${l.id}')">🗑</button>
+    </div>`;
+  }).join("");
+}
+
+let _voListeSaveT = null;
+function voSetListe(id, champ, valeur) {
+  const l = voListes().find(x => x.id === id);
+  if (!l) return;
+  l[champ] = champ === "label" ? valeur : valeur;
+  // La frappe dans le champ nom ne déclenche pas une écriture par caractère.
+  clearTimeout(_voListeSaveT);
+  _voListeSaveT = setTimeout(async () => {
+    if (await voSave()) { voFillFilters(); voRenderAll(); }
+  }, 450);
+}
+
+function voPickIconListe(id) {
+  const l = voListes().find(x => x.id === id);
+  if (!l) return;
+  finPickIcon(l.icon, "Emoji de la liste", async e => {
+    l.icon = e;
+    if (await voSave()) { voRenderListes(); voFillFilters(); voRenderAll(); }
+  });
+}
+
+async function voAddListe() {
+  VO.listes.push({ id: voNextId("li"), label: "Nouvelle liste", icon: "📚",
+                   color: "#0d9488", mode: "trad" });
+  if (await voSave()) { voRenderListes(); voFillFilters(); voRenderAll(); }
+}
+
+/** Une liste qui contient des mots ne se supprime pas : ils deviendraient
+    invisibles alors qu'ils resteraient dans le fichier. */
+async function voDeleteListe(id) {
+  if (voMotsDe(id).length) {
+    showToastModern("Cette liste contient des mots — vide-la d'abord", "warn");
+    return;
+  }
+  if (voListes().length <= 1) {
+    showToastModern("Garde au moins une liste", "warn");
+    return;
+  }
+  VO.listes = VO.listes.filter(l => l.id !== id);
+  if (await voSave()) { voRenderListes(); voFillFilters(); voRenderAll(); }
+}
+
+/* ══ ONGLET STATISTIQUES ════════════════════════════════════════════════ */
+
+function voRenderStats() {
+  const kpis = document.getElementById("vo-stats-kpis");
+  if (!kpis || !VO) return;
+
+  const tous = voMots();
+  const hist = voHisto();
+  const d30  = voAddDays(voToday(), -30);
+  const rec  = hist.filter(h => h.date >= d30);
+  const vus  = rec.reduce((s, h) => s + (h.vus || 0), 0);
+  const ok   = rec.reduce((s, h) => s + (h.ok  || 0), 0);
+  const moisIso = voToday().slice(0, 7);
+  const nouveaux = tous.filter(m => (m.creeLe || "").slice(0, 7) === moisIso).length;
+
+  kpis.innerHTML = `
+    <div class="mkpi accent"><span class="mkpi-lbl">Révisions (30 j)</span>
+      <span class="mkpi-val">${vus}</span>
+      <span class="mkpi-sub">${voSerieJours()} jour${voSerieJours() > 1 ? "s" : ""} d'affilée</span></div>
+    <div class="mkpi"><span class="mkpi-lbl">Taux de réussite</span>
+      <span class="mkpi-val">${vus ? Math.round((ok / vus) * 100) + " %" : "—"}</span>
+      <span class="mkpi-sub">sur les 30 derniers jours</span></div>
+    <div class="mkpi"><span class="mkpi-lbl">Mots suivis</span>
+      <span class="mkpi-val">${tous.length}</span>
+      <span class="mkpi-sub">+${nouveaux} ce mois-ci</span></div>
+    <div class="mkpi"><span class="mkpi-lbl">En dernière boîte</span>
+      <span class="mkpi-val">${tous.filter(m => voClampBoite(m.boite) === voBoiteMax()).length}</span>
+      <span class="mkpi-sub">sur ${tous.length || "—"}</span></div>`;
+
+  voRenderChartBoites();
+  voRenderChartJours();
+  voRenderStatsListes();
+}
+
+/** Jours consécutifs, en remontant depuis aujourd'hui, avec au moins une revue.
+    On tolère de ne pas avoir révisé aujourd'hui : la série court jusqu'à hier. */
+function voSerieJours() {
+  const jours = new Set(voHisto().filter(h => (h.vus || 0) > 0).map(h => h.date));
+  if (!jours.size) return 0;
+  let n = 0;
+  let d = jours.has(voToday()) ? voToday() : voAddDays(voToday(), -1);
+  while (jours.has(d)) { n++; d = voAddDays(d, -1); }
+  return n;
+}
+
+function voRenderChartBoites() {
+  const cv = document.getElementById("vo-chart-boites");
+  if (!cv || !window.Chart) return;
+  if (_voCharts.boites) _voCharts.boites.destroy();
+  const cats = voBoitesCat();
+  const data = cats.map(b => voMots().filter(m => voClampBoite(m.boite) === b.id).length);
+  if (!data.some(n => n)) { cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
+  _voCharts.boites = new Chart(cv, {
+    type: "doughnut",
+    data: { labels: cats.map(b => b.label),
+            datasets: [{ data, backgroundColor: cats.map(b => b.color), borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "58%",
+      plugins: { legend: { position: "bottom",
+        labels: { color: saCssVar("--txt2", "#888"), boxWidth: 10, font: { size: 10 } } } },
+    },
+  });
+}
+
+function voRenderChartJours() {
+  const cv = document.getElementById("vo-chart-jours");
+  if (!cv || !window.Chart) return;
+  if (_voCharts.jours) _voCharts.jours.destroy();
+
+  const jours = [];
+  for (let i = 29; i >= 0; i--) jours.push(voAddDays(voToday(), -i));
+  const par = {};
+  voHisto().forEach(h => { par[h.date] = (par[h.date] || 0) + (h.vus || 0); });
+  const data = jours.map(d => par[d] || 0);
+  if (!data.some(n => n)) { cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
+
+  const acc  = saCssVar("--accent", "#e07a2f");
+  const grid = saCssVar("--brd", "rgba(128,128,128,.2)");
+  const txt  = saCssVar("--txt2", "#888");
+  _voCharts.jours = new Chart(cv, {
+    type: "bar",
+    data: {
+      labels: jours.map(d => voDateLabel(d).replace(/ \d{2}$/, "")),
+      datasets: [{ label: "Mots revus", data, backgroundColor: acc,
+                   borderRadius: 4, maxBarThickness: 16 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false },
+             ticks: { color: txt, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+        y: { beginAtZero: true, grid: { color: grid },
+             ticks: { color: txt, precision: 0, font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+function voRenderStatsListes() {
+  const box = document.getElementById("vo-stats-listes");
+  if (!box) return;
+  if (!voMots().length) {
+    box.innerHTML = `<div class="m-empty">Rien à compter pour l'instant.</div>`;
+    return;
+  }
+  box.innerHTML = `<table class="tw"><thead><tr>
+      <th>Liste</th><th>Mots</th>
+      ${voBoitesCat().map(b => `<th>${escHtml(b.court)}</th>`).join("")}
+      <th>À réviser</th><th>Réussite</th>
+    </tr></thead><tbody>${voListes().map(l => {
+      const mots = voMotsDe(l.id);
+      const vus  = mots.reduce((s, m) => s + (m.nbVus || 0), 0);
+      const ok   = mots.reduce((s, m) => s + (m.nbReussis || 0), 0);
+      const dus  = mots.filter(voEstDu).length;
+      return `<tr>
+        <td><span class="vo-pill" style="border-color:${l.color}55;color:${l.color}"
+          >${escHtml((l.icon || "") + " " + l.label)}</span></td>
+        <td>${mots.length}</td>
+        ${voBoitesCat().map(b =>
+          `<td>${mots.filter(m => voClampBoite(m.boite) === b.id).length}</td>`).join("")}
+        <td class="${dus ? "vo-when now" : "vo-when"}">${dus || "—"}</td>
+        <td class="vo-when">${vus ? Math.round((ok / vus) * 100) + " %" : "—"}</td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+/* ── Paramètres → Vocabulaire ──────────────────────────────────────────── */
+
+function voRenderSetBoites() {
+  const el = document.getElementById("vo-set-boites");
+  if (!el) return;
+  el.innerHTML = voBoitesCat().map(b => {
+    const n = VO ? voMots().filter(m => voClampBoite(m.boite) === b.id).length : 0;
+    return `<div><b style="color:${b.color}">Boîte ${escHtml(b.label)}</b> —
+      un mot y revient après ${escHtml(b.label)} · ${n} mot${n > 1 ? "s" : ""} dedans</div>`;
+  }).join("");
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────── */
+
+(function patchGoTabVoc() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    if (n !== "vo-reviser" && n !== "vo-boites" && n !== "vo-mots" && n !== "vo-stats") return;
+    if (!_voBootstrapped) { voBootstrap(); return; }
+    if (n === "vo-reviser") voRenderReviser();
+    if (n === "vo-boites")  voRenderBoites();
+    if (n === "vo-mots")    { voFillFilters(); voRenderMots(); }
+    if (n === "vo-stats")   voRenderStats();
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
    ACCUEIL : TABLEAU DE BORD MODULAIRE
    Chaque tuile est un widget déclaré dans DASH_WIDGETS. L'utilisateur choisit
    lesquels afficher et dans quel ordre (Paramètres → Accueil, glisser-déposer).
@@ -16499,6 +17860,36 @@ const DASH_WIDGETS = [
     },
   },
   {
+    id: "voc-jour", label: "Vocabulaire du jour", module: "Vocabulaire", tab: "vo-reviser",
+    render() {
+      if (typeof VO === "undefined" || !VO) return null;
+      // Rien de dû = rien à rappeler : la tuile s'efface d'elle-même dès que
+      // les listes du jour sont faites. C'est tout l'intérêt du rappel.
+      const parts = voListes()
+        .map(l => ({ l, n: voDus(l.id).length }))
+        .filter(x => x.n > 0);
+      if (!parts.length) return null;
+      const tot = parts.reduce((s, x) => s + x.n, 0);
+      return { lbl: parts.length > 1 ? "Listes du jour à faire" : "Liste du jour à faire",
+               val: tot + " mot" + (tot > 1 ? "s" : ""),
+               cls: "c-a",
+               sub: parts.map(x => (x.l.icon || "") + " " + x.l.label + " : " + x.n).join(" · "),
+               go: "Réviser maintenant" };
+    },
+  },
+  {
+    id: "voc-acquis", label: "Vocabulaire · dernière boîte", module: "Vocabulaire", tab: "vo-boites",
+    render() {
+      if (typeof VO === "undefined" || !VO) return null;
+      const tous = voMots();
+      if (!tous.length) return null;
+      const n = tous.filter(m => voClampBoite(m.boite) === voBoiteMax()).length;
+      return { lbl: "Mots en dernière boîte", val: String(n),
+               sub: "sur " + tous.length + " suivi" + (tous.length > 1 ? "s" : ""),
+               go: "Voir les boîtes" };
+    },
+  },
+  {
     id: "usb", label: "Sauvegarde USB", module: "Sauvegarde", tab: null,
     render() {
       const s = window._dashUsb;
@@ -16559,6 +17950,7 @@ function dashModuleReady(mod) {
     case "Santé":      return _saBootstrapped;
     case "Patrimoine": return _paBootstrapped;
     case "Formation":  return _foBootstrapped;
+    case "Vocabulaire": return _voBootstrapped;
     case "Sauvegarde": return !!window._dashUsb;
   }
   return true;
@@ -16852,6 +18244,7 @@ function dashWireDnd(box) {
         ["sante",      saBootstrap(true)],
         ["patrimoine", paBootstrap(true)],
         ["formation",  foBootstrap(true)],
+        ["vocabulaire", voBootstrap(true)],
         ["usb",        svRenderUsbState()],
       ];
       await Promise.all(boots.map(([nom, pr]) =>
