@@ -31,12 +31,13 @@ import pret
 import patrimoine
 import sante
 import formation
+import vocabulaire
 import sauvegarde
 import notifications
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.2.2"
+APP_VERSION = "4.2.3"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -466,6 +467,23 @@ class Api:
                 import subprocess
                 subprocess.Popen(["xdg-open", path])
             return {"ok": True, "path": path}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # -- Vocabulaire (propre a l'utilisateur actif) -----------------------
+
+    def load_vocabulaire(self) -> dict:
+        try:
+            return {"ok": True, "data": vocabulaire.load_data(),
+                    "boites": vocabulaire.BOITES,
+                    "modes":  vocabulaire.MODES}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
+
+    def save_vocabulaire(self, data: dict) -> dict:
+        try:
+            vocabulaire.save_data(data or {})
+            return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

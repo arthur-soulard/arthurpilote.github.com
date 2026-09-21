@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.2**
+**Version actuelle : 4.2.3**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -29,13 +29,14 @@ Pilote/
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── formation.py    # Module « Formation »     (formation.json) + certificats
+│   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
 │   ├── updater.py      # Auto-updater (check + download + install)
 │   ├── notifications.py
 │   └── ui/
-│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~15 100 lignes)
+│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~18 258 lignes)
 │       └── vendor/     # Chart.js + polices woff2, servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
@@ -66,6 +67,7 @@ Donnees/
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── formation.json        # Formation        (+ backups_formation/)
+│   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
 │   ├── certificats/          # PDF et images des formations validées
 │   └── pin.hash              # code PIN de CET utilisateur (si configuré)
 ├── icones/                   # .ico générés à la couleur d'accent
@@ -248,7 +250,7 @@ Titlebar custom (fenêtre frameless, 36 px) : logo + « Pilote » + boutons fen�
 Topbar minimale : logo + « Pilote », indicateur « Dernière actualisation HH:MM » avec
 ↻ Actualiser (`.refresh-grp`), et ↩ Retour (undo).
 
-Sidebar : un onglet **Accueil** seul en tête, puis 7 sections en accordéon
+Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
 (`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
@@ -264,6 +266,7 @@ Paramètres.
 | Patrimoine      | pa-vue, pa-comptes                                                 |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
 | Formation       | fo-todo, fo-done, fo-cv, fo-stats                                  |
+| Vocabulaire     | vo-reviser, vo-boites, vo-mots, vo-stats                            |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
 `_navSectionOf(tabId)`. Section dépliée persistée dans `S.uiPrefs.navOpen` ("" = tout
@@ -311,6 +314,7 @@ Modale unique à colonne de sections (`setGoSection(id)`), plus « paramètres d
 | pret       | renvoi vers l'onglet `pr-params`                                    |
 | sport      | mes sports, types de séance, routines                               |
 | formation  | domaines, dossier des certificats, nettoyage des orphelins          |
+| vocabulaire| mes listes, ajout en masse, rappel des quatre boîtes                |
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | sauvegarde | destination USB, sauvegarde auto, rotation, restauration            |
 | donnees    | dossier, export/import, mise à jour, réinitialisation, version      |
@@ -558,6 +562,69 @@ Tuiles d'accueil : `formation-encours`, `formation-annee`, `formation-todo`.
 Les échéances restent dans le module (badge dans la liste `fo-todo`) : elles ne
 remontent volontairement pas sur l'accueil.
 
+## Module Vocabulaire (vocabulaire.json)
+
+Apprendre des mots par répétition espacée. Quatre boîtes — **1 jour, 1 semaine,
+1 mois, 6 mois** — et un principe qui tient en une phrase : un mot su monte
+d'une boîte, un mot raté en descend d'une.
+
+API Python : `load_vocabulaire()` / `save_vocabulaire()` — `load_vocabulaire`
+renvoie aussi les catalogues (`BOITES`, `MODES`).
+
+Données :
+
+* listes     : `{id, label, icon, color, mode: "trad"|"def"}`
+* mots       : `{id, listeId, mot, reponse, exemple, note, boite 1-4,
+                prochaine "YYYY-MM-DD", creeLe, derniereRevue, nbVus, nbReussis}`
+* historique : `[{date, listeId, vus, ok}]` — un agrégat par jour et par liste,
+                purgé au-delà de deux ans. Il ne sert qu'aux courbes.
+
+**Cinq décisions à ne pas défaire :**
+
+1. **Raté = on DESCEND d'une boîte** (et on reste en boîte 1 si on y est déjà),
+   su = on monte d'une. Dans les deux cas la prochaine révision tombe à
+   l'intervalle de la boîte **d'arrivée** — c'est `voAppliquer()` et rien
+   d'autre qui décide. Conséquence voulue : un mot raté en « 6 mois » repasse
+   en « 1 mois » et revient donc dans un mois, pas dans six.
+2. **Rien n'est corrigé automatiquement.** La saisie sert à s'engager sur une
+   réponse avant de la découvrir ; seul le clic sur « Je savais » / « Raté »
+   compte. Comparer deux chaînes produirait des faux négatifs sur un accent,
+   un synonyme ou un pluriel — et une révision fausse pourrit la boîte d'un
+   mot pour des mois. Ne pas « améliorer » ça en comparant les textes.
+3. **Les listes ne se mélangent jamais.** La file d'une session est bornée à
+   une liste, et chaque liste a ses propres boîtes. C'est la raison d'être de
+   `listeId` sur chaque mot, et de listes créables plutôt que deux langues
+   codées en dur. Anglais (traduction) et Français (définition) sont livrées
+   pour démarrer ; le `mode` ne change que le libellé de la seconde face.
+4. **Le sens de la question se choisit au lancement de la session**, pour
+   toute la session. Il vit dans `VO_SESS`, jamais dans le fichier : c'est un
+   choix du moment, pas une propriété du mot.
+5. **Aucun mot n'est livré.** L'intérêt du module est ce qu'Arthur y met.
+   `default_data()` ne pose que les deux listes.
+
+Détails qui ont une raison :
+
+* `voBoite()` et `voListe()` retombent explicitement sur la **première** entrée,
+  jamais sur la dernière : une boîte inconnue ne doit pas propulser un mot à
+  six mois.
+* **Chaque validation est écrite sur le disque**, une à la fois (`voSaveQueued`,
+  chaînée) : fermer l'app en plein milieu d'une session ne rejoue pas les mots
+  déjà tranchés, et deux clics rapides ne s'écrasent pas.
+* L'exemple et la note n'apparaissent **qu'après** la révélation : l'exemple
+  contient presque toujours le mot, le montrer avant donnerait la solution.
+* Les deux boutons de validation affichent **où part le mot** (« passe en
+  1 sem », « retombe en 1 j ») : on voit la conséquence avant de trancher.
+* Une liste qui contient des mots ne peut pas être supprimée, et il en reste
+  toujours au moins une.
+* L'ajout en masse coupe au **premier** séparateur (tabulation ou `=`) : une
+  définition peut donc en contenir d'autres ensuite. Un mot déjà présent dans
+  la même liste n'est pas réimporté — sa boîte et son historique sauteraient.
+* Les intervalles des boîtes ne se règlent pas : les changer en cours de route
+  décalerait toutes les révisions déjà programmées.
+
+Tuiles d'accueil : `voc-jour` (« Liste du jour à faire », qui **disparaît** dès
+qu'il n'y a plus rien de dû — c'est tout son intérêt) et `voc-acquis`.
+
 ## Module Santé (sante.json)
 
 Pesées de la balance connectée, saisies depuis les captures d'écran de l'app
@@ -681,10 +748,10 @@ Points critiques :
 
 ## Conventions de code
 
-* Tout l'UI vit dans `index.html` (~15 100 lignes). Les modules annexes sont des blocs
-  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `dash*`,
-  `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Formation → Tableau de bord → `boot()`.** Les patches de `goTab`
+* Tout l'UI vit dans `index.html` (~18 258 lignes). Les modules annexes sont des blocs
+  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`,
+  `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
+  Prêt → Santé → Patrimoine → Formation → Vocabulaire → Tableau de bord → `boot()`.** Les patches de `goTab`
   s'enchaînent, ne pas casser l'ordre.
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,
