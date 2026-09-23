@@ -36,8 +36,8 @@ Pilote/
 │   ├── updater.py      # Auto-updater (check + download + install)
 │   ├── notifications.py
 │   └── ui/
-│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~18 258 lignes)
-│       └── vendor/     # Chart.js + polices woff2, servis en local (aucun CDN)
+│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~18 560 lignes)
+│       └── vendor/     # Chart.js, polices woff2, icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
 │   ├── pilote.spec     # Spec PyInstaller → dist/Pilote.exe
@@ -120,9 +120,10 @@ jour : 10 Ko au lieu de 418 Ko. Ne pas « simplifier » en resérialisant `data`
    chaîne dans `Pilote.exe`.
 
 5. **`src/ui/vendor/` dans les `datas` de `build/pilote.spec`** → même piège que
-   `ocr_win.ps1` : sans cette ligne, Chart.js et les polices sont introuvables dans
-   l'exe compilé. Les graphiques disparaissent et la typo retombe sur celle du
-   système, alors que tout marche parfaitement en dev.
+   `ocr_win.ps1` : sans cette ligne, Chart.js, les polices et les icônes sont
+   introuvables dans l'exe compilé. Les graphiques disparaissent, la typo retombe sur
+   celle du système et les boutons perdent leurs icônes, alors que tout marche
+   parfaitement en dev.
 ## Sauvegarde externe sur clé USB (`sauvegarde.py`)
 
 Contrairement à tout le reste, ce module est au niveau de **l'installation**, pas de
@@ -247,8 +248,12 @@ Points critiques :
 ## Navigation
 
 Titlebar custom (fenêtre frameless, 36 px) : logo + « Pilote » + boutons fenêtre.
-Topbar minimale : logo + « Pilote », indicateur « Dernière actualisation HH:MM » avec
-↻ Actualiser (`.refresh-grp`), et ↩ Retour (undo).
+C'est le seul endroit où « Pilote » est écrit.
+Topbar minimale : fil d'Ariane (« Accueil », « PEA › Positions »), indicateur
+« Dernière actualisation HH:MM » avec Actualiser (`.refresh-grp`), et Retour (undo).
+Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
+**d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
+suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
 Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
 (`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
@@ -276,15 +281,59 @@ replié). `SIDEBAR_ITEMS` reste dérivé à plat de `NAV_SECTIONS` pour l'API hi
 Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
 (finances, sports, prêt, accueil) : ils s'enchaînent, ne pas casser l'ordre.
 
+## Identité visuelle « Carnet » (septembre 2026)
+
+Choisie par Arthur parmi trois maquettes (Net, Carnet, Cockpit) : un carnet de bord
+plutôt qu'un logiciel de bureau.
+
+* **Polices** : Newsreader (`--serif`) pour la salutation, les titres de carte et les
+  grands chiffres ; Onest (`--font`) pour tout le reste. `--mono` garde son nom
+  historique mais pointe sur Onest : les deux polices ont des chiffres de largeur
+  fixe, les colonnes restent alignées (vérifié : « 111111 » et « 000000 » ont la même
+  largeur). Plus Jakarta Sans et JetBrains Mono restent dans `vendor/fonts/`, gardées
+  à la demande d'Arthur, mais plus rien ne les utilise.
+* **Couleurs** : fond papier (`--bg #f1ebe0`), cartes crème (`--bg2`), thème sombre
+  brun chaud. Le vert et le rouge ne disent que hausse ou baisse : les montants neutres
+  (dépôts, valeur, frais, dividendes) restent à la couleur du texte, fini les cartes
+  arc-en-ciel. `--accent-soft` et `--accent-text` sont dérivés de l'accent choisi par
+  `color-mix()` : lisibles quelle que soit la couleur réglée dans les paramètres.
+* **Formes** : cartes sans bordure avec une ombre douce (`--radl` 16 px), boutons et
+  entrées de la barre latérale en pilule, un point d'accent sur l'onglet ouvert,
+  libellés en casse normale (plus de petites MAJUSCULES espacées).
+* **Icônes** : Phosphor regular, servies par `/vendor/phosphor/` (woff2 seul, licence
+  MIT). Les emoji des catégories, des sports, des domaines… sont des DONNÉES de
+  l'utilisateur et restent. Les boutons internes des modules gardent encore leurs
+  caractères (+, ✎, ✕…) : piste de suite, pas un oubli.
+* **Où c'est** : les jetons dans `:root` et `html[data-theme="dark"]`, puis un bloc
+  « IDENTITÉ CARNET » **en fin de la première feuille de style**, qui surcharge les
+  composants plutôt que de réécrire chaque règle. Un nouveau composant réutilise ces
+  jetons, jamais une couleur en dur.
+* **Graphiques** : un `<canvas>` n'hérite pas du CSS. `Chart.defaults.font.family`
+  (Onest) et `Chart.defaults.color` (`#8b8072`, lisible sur les deux fonds) sont posés
+  en tête du premier script ; les graphiques du PEA qui forçaient JetBrains Mono et
+  `#71717a` ont été alignés.
+* **Tableaux** : dans un `.tw`, les cellules chiffrées ne passent plus à la ligne
+  (« 70,64 » / « € ») : le tableau défile dans son cadre.
+* **Cache** : `/vendor/` est servi avec `max-age` d'un jour. Le lien porte
+  `fonts.css?v=2` : **incrémenter ce numéro à chaque modification de `fonts.css`**,
+  sinon un navigateur garde l'ancienne feuille et les nouvelles polices n'existent pas.
+
 ## Page d'accueil (`pane-home`)
 
 Ouverte au démarrage. `homeGreeting()` renvoie « Bonjour » avant 18 h, « Bonsoir » après ;
 `homeDisplayName()` prend le nom de l'utilisateur actif (sinon `S.prenom`).
 
-Mise en page centrée : grande salutation (`clamp(38px, 5.2vw, 62px)`), date, rang des
-utilisateurs (`#home-users`, cliquable pour basculer + « Nouvel utilisateur »), boutons
-⚙ Paramètres / ↓ Exporter / ↑ Importer / 🔑 Téléverser vers clé USB, l'état de la clé
-(`#home-usb-state`), puis les tuiles décalées vers le bas.
+Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 60px)`),
+écrite par `homeRenderGreeting()` avec le prénom dans un `<em>` (italique, couleur
+d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arrive.
+Puis la date en italique, le rang des utilisateurs à gauche (`#home-users`, cliquable
+pour basculer + « Nouvel utilisateur ») et à droite les boutons Paramètres / Exporter /
+Importer / Téléverser vers clé USB avec l'état de la clé (`#home-usb-state`). Sous
+1150 px de large, tout s'empile. Enfin « Tableau de bord » (`.dash-title`), le crayon
+et les tuiles, chacune avec l'icône de son module (`DASH_ICONS`).
+
+`svPushToUsb()` sauve et restaure le libellé du bouton USB en `innerHTML`, pas en
+`textContent` : sinon l'icône disparaît après la première copie.
 
 Depuis la 4.1.4, `homeRender()` ne fait plus que la salutation et la date : **les tuiles
 sont déléguées à `dashRender()`** (voir « Accueil : tableau de bord modulaire »). Il n'y
@@ -335,7 +384,7 @@ leur section.
 * `GET /scan-orphan-data` → candidats de récupération (installations extérieures)
 * `GET /recover-data?from=…` → **le chemin doit figurer dans le scan**, sinon 403 :
   cet endpoint écrase le `pea_data.json` actif, il ne prend pas un chemin libre
-* `GET /vendor/<fichier>` → Chart.js et polices, liste blanche d'extensions
+* `GET /vendor/<fichier>` → Chart.js, polices et icônes, liste blanche d'extensions
   (`.js`, `.css`, `.woff2`), confiné sous `ui/vendor/`
 * Cache serveur : 1 h pour l'historique, 60 s pour les cours
 * Tickers : `EPA:XXX` → `XXX.PA` (`AMS:`→`.AS`, `ETR:`→`.DE`, `LON:`→`.L`) ; un ticker
@@ -748,7 +797,7 @@ Points critiques :
 
 ## Conventions de code
 
-* Tout l'UI vit dans `index.html` (~18 258 lignes). Les modules annexes sont des blocs
+* Tout l'UI vit dans `index.html` (~18 560 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`,
   `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
   Prêt → Santé → Patrimoine → Formation → Vocabulaire → Tableau de bord → `boot()`.** Les patches de `goTab`
@@ -766,11 +815,17 @@ Points critiques :
 * Les `.ov` sont en `z-index: 9500` (au-dessus de la sidebar 9000, sous la titlebar
   10000). Une modale ouverte **depuis** une autre doit passer par `openOvTop(id)`,
   sinon l'ordre du DOM décide qui est devant.
-* Attention à la spécificité : `.fg label` (0-1-1) impose MAJUSCULES + interlettrage.
-  Un libellé de texte courant dans un `.fg` doit être ciblé en `label.ma-classe`,
-  sinon la règle générale gagne.
+* Attention à la spécificité : `.fg label` (0-1-1) imposait MAJUSCULES + interlettrage
+  avant l'identité « Carnet », qui l'a remis en casse normale. Les règles
+  `label.sv-check`, `label.fo-check`, `label.vo-check` restent : elles règlent aussi la
+  taille et l'alignement. Un libellé de texte courant dans un `.fg` se cible toujours
+  en `label.ma-classe`.
 * Couleurs uniquement via les variables CSS (`--bg2`, `--brd`, `--accent`, `--g`, `--r`,
-  `--mono`…) : thème clair ET sombre, plus une couleur d'accent au choix.
+  `--hover`, `--accent-soft`, `--accent-text`…) et polices via `--font` / `--serif`
+  (`--mono` pointe sur Onest) : thème clair ET sombre, plus une couleur d'accent au choix.
+  Voir « Identité visuelle Carnet ».
+* Icônes : Phosphor, `<i class="ph ph-nom"></i>`. Pas de nouvel emoji dans un bouton de
+  l'interface. Un libellé qui porte une icône se sauve et se restaure en `innerHTML`.
 * Un nouveau module de données = un fichier `src/<nom>.py` basé sur
   `jsonstore.JsonStore` + deux méthodes `load_`/`save_` dans la classe `Api` de `app.py`.
   Il sera automatiquement propre à chaque utilisateur. Penser à l'ajouter aussi
