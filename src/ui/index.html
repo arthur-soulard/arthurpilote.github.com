@@ -7,39 +7,48 @@
 <!-- Polices et Chart.js servis par le serveur local (/vendor/).
      Rien n'est charge depuis Internet : l'app doit s'afficher a l'identique
      hors ligne, et ne doit signaler son demarrage a aucun CDN. -->
-<link href="/vendor/fonts.css" rel="stylesheet">
+<!-- ?v= : /vendor/ est servi avec un cache d'un jour. Changer ce numero a
+     chaque modification de fonts.css, sinon l'ancienne feuille peut survivre. -->
+<link href="/vendor/fonts.css?v=2" rel="stylesheet">
+<link href="/vendor/phosphor/phosphor.css" rel="stylesheet">
 <script src="/vendor/chart.umd.js"></script>
 <style>
 /* ── Design tokens ───────────────────────────────── */
+/* Identité « Carnet » : fond papier chaud, titres et grands chiffres en
+   Newsreader (serif), texte en Onest. --mono garde son nom historique mais
+   pointe sur Onest : les chiffres restent alignés grâce aux chiffres
+   tabulaires posés sur <body>, sans police à chasse fixe. */
 :root {
-  --bg:     #f6f5f1;
-  --bg2:    #ffffff;
-  --bg3:    #f0ede6;
-  --bg4:    #e5e0d6;
-  --brd:    rgba(0,0,0,0.07);
-  --brd2:   rgba(0,0,0,0.13);
-  --brd3:   rgba(0,0,0,0.22);
-  --txt:    #18181b;
-  --txt2:   #71717a;
-  --txt3:   #a1a1aa;
-  --g:      #16a34a;
-  --g2:     rgba(22,163,74,0.10);
-  --r:      #dc2626;
-  --r2:     rgba(220,38,38,0.10);
-  --a:      #d97706;
-  --a2:     rgba(217,119,6,0.10);
-  --b:      #2563eb;
-  --b2:     rgba(37,99,235,0.10);
-  --p:      #7c3aed;
-  --p2:     rgba(124,58,237,0.10);
+  --bg:     #f1ebe0;
+  --bg2:    #fbf8f1;
+  --bg3:    #efe8db;
+  --bg4:    #e2d9c9;
+  --brd:    rgba(70,45,20,0.10);
+  --brd2:   rgba(70,45,20,0.17);
+  --brd3:   rgba(70,45,20,0.28);
+  --txt:    #2a231b;
+  --txt2:   #6a5e4d;
+  --txt3:   #998c79;
+  --g:      #2b784a;
+  --g2:     rgba(43,120,74,0.12);
+  --r:      #b03a28;
+  --r2:     rgba(176,58,40,0.11);
+  --a:      #a8660f;
+  --a2:     rgba(168,102,15,0.13);
+  --b:      #3b62a3;
+  --b2:     rgba(59,98,163,0.11);
+  --p:      #7b4ea3;
+  --p2:     rgba(123,78,163,0.12);
   --accent: #d97706;
-  --rad:    8px;
-  --radl:   12px;
-  --radxl:  18px;
-  --sh:     0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  --sh-md:  0 4px 16px rgba(0,0,0,0.09), 0 2px 4px rgba(0,0,0,0.05);
-  --font:   "Plus Jakarta Sans", system-ui, sans-serif;
-  --mono:   "JetBrains Mono", "Fira Mono", monospace;
+  --hover:  rgba(70,45,20,0.06);
+  --rad:    10px;
+  --radl:   16px;
+  --radxl:  20px;
+  --sh:     0 1px 2px rgba(70,45,20,0.05), 0 8px 22px -12px rgba(70,45,20,0.22);
+  --sh-md:  0 2px 4px rgba(70,45,20,0.06), 0 18px 38px -16px rgba(70,45,20,0.32);
+  --font:   "Onest", system-ui, sans-serif;
+  --mono:   "Onest", system-ui, sans-serif;
+  --serif:  "Newsreader", Georgia, serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -466,23 +475,29 @@ td:first-child { text-align: left; padding-left: 2px; font-family: var(--font); 
 
 /* — Theme sombre via [data-theme="dark"] sur <html> — */
 html[data-theme="dark"] {
-  --bg:     #15151a;
-  --bg2:    #1c1c22;
-  --bg3:    #232329;
-  --bg4:    #2c2c34;
-  --brd:    rgba(255,255,255,0.07);
-  --brd2:   rgba(255,255,255,0.13);
-  --brd3:   rgba(255,255,255,0.22);
-  --txt:    #ececf1;
-  --txt2:   #9a9aa3;
-  --txt3:   #6b6b75;
-  --g2:     rgba(22,163,74,0.18);
-  --r2:     rgba(220,38,38,0.18);
-  --a2:     rgba(217,119,6,0.20);
-  --b2:     rgba(37,99,235,0.18);
-  --p2:     rgba(124,58,237,0.20);
-  --sh:     0 1px 3px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.25);
-  --sh-md:  0 4px 16px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.3);
+  --bg:     #191613;
+  --bg2:    #221e1a;
+  --bg3:    #2a2520;
+  --bg4:    #36302a;
+  --brd:    rgba(255,230,200,0.07);
+  --brd2:   rgba(255,230,200,0.13);
+  --brd3:   rgba(255,230,200,0.22);
+  --txt:    #efe7d9;
+  --txt2:   #b1a592;
+  --txt3:   #7f7466;
+  --g:      #74c493;
+  --g2:     rgba(116,196,147,0.15);
+  --r:      #ef8472;
+  --r2:     rgba(239,132,114,0.15);
+  --a:      #e3a95e;
+  --a2:     rgba(227,169,94,0.16);
+  --b:      #8fb0e6;
+  --b2:     rgba(143,176,230,0.15);
+  --p:      #b99be0;
+  --p2:     rgba(185,155,224,0.16);
+  --hover:  rgba(255,230,200,0.06);
+  --sh:     0 1px 2px rgba(0,0,0,0.30), 0 10px 24px -14px rgba(0,0,0,0.65);
+  --sh-md:  0 2px 6px rgba(0,0,0,0.35), 0 20px 42px -18px rgba(0,0,0,0.80);
 }
 html[data-theme="dark"] body { background: var(--bg); color: var(--txt); }
 html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--brd2); }
@@ -1943,6 +1958,240 @@ label.vo-check {
 .m-iconbtn:disabled { opacity: .28; cursor: default; }
 .m-iconbtn:disabled:hover { background: transparent; color: var(--txt3); }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   IDENTITÉ « CARNET »
+   Un carnet de bord plutôt qu'un logiciel de bureau : titres et grands
+   chiffres en Newsreader, texte en Onest, cartes douces sans bordure,
+   boutons arrondis, couleurs qui veulent dire quelque chose (vert et rouge
+   pour les hausses et les baisses, l'accent pour l'action).
+
+   Ce bloc vient EN DERNIER et surcharge les règles d'origine plutôt que de
+   les réécrire une à une : l'ancien rendu reste lisible au-dessus, et tout
+   le changement d'apparence tient ici plus dans les jetons de :root.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* — Base — */
+:root {
+  /* L'accent choisi par l'utilisateur, en fond léger et en texte lisible
+     sur le fond : mélangé au texte, il fonce en clair et s'éclaircit en
+     sombre, quelle que soit la couleur choisie. */
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, transparent);
+  --accent-text: color-mix(in srgb, var(--accent) 72%, var(--txt));
+}
+html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent); }
+body { font-variant-numeric: tabular-nums; }
+::selection { background: var(--accent-soft); }
+.ph { vertical-align: -0.125em; }
+.btn:focus-visible, .sb-item:focus-visible, .sb-sec-btn:focus-visible,
+.home-card:focus-visible, .home-user:focus-visible, .set-nav-btn:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* — Barre de titre — */
+.titlebar { background: var(--bg); border-bottom-color: var(--brd); }
+.titlebar-logo {
+  border-radius: 7px; box-shadow: none;
+  font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 15px;
+}
+.titlebar-title { font-family: var(--serif); font-weight: 500; font-size: 17px; letter-spacing: 0; }
+.tb-btn { font-size: 15px; }
+.tb-btn:hover { background: var(--hover); }
+
+/* — Barre latérale — */
+.sidebar { background: var(--bg); border-right-color: transparent; padding: 14px 10px; gap: 2px; }
+.sb-item, .sb-sec-btn {
+  border-radius: 999px; padding: 8px 12px;
+  font-size: 13.5px; font-weight: 500;
+}
+.sb-item:hover, .sb-sec-btn:hover { background: var(--hover); }
+.sb-item.active, .sb-sub .sb-item.active {
+  background: var(--bg2); color: var(--txt); box-shadow: var(--sh);
+}
+/* Le point d'accent marque l'onglet ouvert */
+.sb-item.active::after {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0; margin-left: auto;
+}
+.sb-ico { font-size: 17px; flex-shrink: 0; }
+.sb-icon { width: auto; font-size: 17px; opacity: 1; }
+.sb-chev { font-size: 11px; }
+.sb-sub { border-left: 0; margin: 2px 0 8px 0; padding-left: 27px; gap: 1px; }
+.sb-sub .sb-item { padding: 6px 12px; font-size: 13px; font-weight: 400; }
+.sb-home { margin-bottom: 10px; }
+.sb-bottom { border-top-color: var(--brd); }
+
+/* — Barre du haut : un fil d'Ariane à la place d'un second « Pilote » — */
+.topbar {
+  align-items: center; border-bottom-color: transparent;
+  padding-bottom: .25rem; margin-bottom: 1.1rem;
+}
+.topbar-brand { height: auto; min-height: 32px; }
+.topbar-crumb { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--txt2); }
+.topbar-crumb b { color: var(--txt); font-weight: 600; }
+.topbar-crumb .ph { font-size: 11px; color: var(--txt3); }
+.refresh-grp { border-radius: 999px; background: transparent; border-color: var(--brd2); }
+.refresh-lbl { font-size: 12px; padding: 6px 6px 6px 14px; }
+.refresh-grp .btn { border-left-color: var(--brd2); padding-right: 14px; }
+.refresh-grp .btn:hover { background: var(--hover); }
+.spill, .cours-health { font-size: 12px; background: transparent; border-color: var(--brd2); }
+
+/* — Boutons — */
+.btn {
+  border-radius: 999px; padding: 7px 15px; gap: 6px;
+  font-size: 12.5px; font-weight: 500; letter-spacing: 0;
+  background: var(--bg2); border-color: var(--brd2); box-shadow: none;
+  transition: background-color .15s, border-color .15s, color .15s, transform .1s;
+}
+.btn:hover { background: var(--bg3); border-color: var(--brd3); }
+.btn:active { transform: scale(.97); }
+.btn-ghost { background: transparent; border-color: var(--brd2); }
+.btn-ghost:hover { background: var(--hover); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn .ph { font-size: 15px; }
+
+/* — Champs — */
+.fg label { font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.fg input, .fg select, .fg textarea { font-size: 13px; }
+.fg input:focus, .fg select:focus, .fg textarea:focus,
+.cinp:focus, .fin-input-sm:focus, .vo-input:focus, .vo-search:focus {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* — Cartes : plus de bordure, une ombre douce ; le titre passe en serif — */
+.card, .dash-card, .reco-card, .sec-detail-card, .fin-header, .fin-kpi, .mkpi,
+.sp-goal, .sa-goal, .pea-info, .mc, .home-card, .vo-card, .vo-face, .vo-box {
+  border-color: transparent;
+}
+.vo-card, .vo-face, .vo-box { border-radius: var(--radl); box-shadow: var(--sh); }
+.card-h, .dash-card-h, .sec-detail-card-h {
+  background: transparent; border-bottom-color: transparent;
+  padding: 1rem 1.25rem .3rem;
+}
+.card-t, .dash-card-t {
+  font-family: var(--serif); font-size: 19px; font-weight: 500;
+  text-transform: none; letter-spacing: -.005em; color: var(--txt);
+}
+.card-b, .dash-card-b { padding: .9rem 1.25rem 1.1rem; }
+.sec-header-row { background: transparent; text-transform: none; letter-spacing: 0; font-size: 11.5px; font-weight: 500; }
+.sec-threshold-row { background: transparent; }
+
+/* — Chiffres clés : grands chiffres serif, libellés en casse normale — */
+.mets { grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; }
+.mc { box-shadow: var(--sh); padding: 1.1rem 1.3rem 1.1rem; }
+.mc-accent { display: none; }
+.mc-lbl, .mkpi-lbl, .fin-kpi-lbl, .fin-balance-lbl, .pea-days-lbl, .sa-cell-lbl,
+.home-card-lbl {
+  font-size: 12.5px; font-weight: 500; color: var(--txt2);
+  text-transform: none; letter-spacing: 0;
+}
+.mc-lbl { margin-bottom: 4px; }
+.mc-val, .mkpi-val, .fin-kpi-val, .fin-balance-val, .home-card-val {
+  font-family: var(--serif); font-weight: 500; letter-spacing: -.01em;
+}
+.mc-val { font-size: 30px; line-height: 1.1; }
+/* La couleur ne sert qu'à dire hausse ou baisse : les montants neutres
+   (dépôts, valeur, frais, dividendes) restent à la couleur du texte. */
+.mc-val.c-b, .mc-val.c-a, .mc-val.c-p { color: var(--txt); }
+.mc-sub { font-family: var(--font); margin-top: 6px; }
+.mkpi-val, .fin-kpi-val { font-size: 27px; }
+.fin-balance-val { font-size: 31px; white-space: nowrap; }
+.mkpi-sub, .fin-kpi-sub { font-family: var(--font); font-size: 12px; color: var(--txt2); }
+.sa-cell-val { font-family: var(--serif); font-size: 22px; font-weight: 500; }
+.fin-month-label { font-family: var(--serif); font-size: 20px; font-weight: 500; }
+.m-nav-lbl { font-family: var(--serif); font-size: 20px; font-weight: 500; letter-spacing: 0; }
+.sp-cd { font-family: var(--serif); font-size: 32px; font-weight: 500; letter-spacing: -.01em; }
+.sp-goal-t, .sa-goal-name { font-family: var(--serif); font-size: 18px; font-weight: 500; letter-spacing: 0; }
+.vo-card-due, .vo-box-n { font-family: var(--serif); font-weight: 500; letter-spacing: -.01em; }
+.vo-q { font-family: var(--serif); font-weight: 500; letter-spacing: -.01em; }
+.vo-done-t { font-family: var(--serif); font-size: 23px; font-weight: 500; letter-spacing: 0; }
+.set-sec h3 { font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: 0; }
+
+/* — Bandeau fiscal du PEA — */
+.pea-info { box-shadow: var(--sh); }
+.pea-days { font-family: var(--serif); font-size: 21px; font-weight: 500; }
+.pea-fill-lbl { font-size: 12px; }
+.pea-fill-bar { background: var(--accent); }
+
+/* — Tableaux — */
+table, td, .wish-table td { font-size: 12.5px; }
+thead th, .wish-table thead th {
+  font-size: 11.5px; font-weight: 500; color: var(--txt2);
+  text-transform: none; letter-spacing: 0;
+}
+/* Un montant ne se coupe jamais entre le nombre et son unité (« 70,64 » / « € ») :
+   le tableau défile plutôt dans son cadre .tw, prévu pour ça. */
+.tw td:not(:first-child), .tw thead th, .wish-table td:not(:first-child) { white-space: nowrap; }
+.tk { font-weight: 600; }
+.tk2 { font-size: 11px; }
+.badge {
+  text-transform: none; letter-spacing: 0; font-size: 10.5px; font-weight: 600;
+  border-radius: 999px; padding: 1px 8px;
+}
+
+/* — Modales et paramètres — */
+.ov { background: rgba(35,24,12,.30); }
+.modal { border-color: transparent; box-shadow: var(--sh-md); padding: 1.7rem; }
+.modal h2 { font-family: var(--serif); font-size: 23px; font-weight: 500; letter-spacing: -.01em; }
+.set-nav-btn { border-radius: 999px; font-weight: 500; }
+.set-nav-btn:hover { background: var(--hover); }
+.set-nav-btn.active { background: var(--accent-soft); box-shadow: none; }
+.toast-stack .toast { border-radius: 12px; font-weight: 500; font-size: 12.5px; }
+.sbadge, .sb-badge { color: var(--bg2); }
+
+/* — États « choisi » : l'accent, et non plus l'ambre des alertes — */
+.sp-pick.active, .sp-field.active, .sp-group.active {
+  background: var(--accent-soft); color: var(--accent-text);
+}
+.m-tag.accent, .fo-tag.acc { background: var(--accent-soft); color: var(--accent-text); }
+.m-note { background: var(--accent-soft); }
+.sp-hm-c.l1 { background: color-mix(in srgb, var(--accent) 28%, var(--bg4)); }
+.sp-hm-c.l2 { background: color-mix(in srgb, var(--accent) 52%, var(--bg4)); }
+.sp-hm-c.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--bg4)); }
+
+/* — Accueil — */
+.home-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 24px; row-gap: 8px; align-items: start; text-align: left;
+  padding-top: clamp(.25rem, 3vh, 2rem); margin-bottom: 0;
+}
+.home-hero-txt { grid-column: 1 / -1; margin-bottom: 20px; }
+.home-greet {
+  font-family: var(--serif); font-size: clamp(40px, 5vw, 60px); font-weight: 400;
+  letter-spacing: -.015em; line-height: 1.02;
+}
+.home-greet em { font-style: italic; color: var(--accent-text); }
+.home-date {
+  font-family: var(--serif); font-style: italic; font-size: 20px;
+  color: var(--txt2); text-transform: none; margin-top: 10px;
+}
+.home-users { grid-column: 1; grid-row: 2 / span 2; justify-content: flex-start; margin-top: 0; }
+.home-user { box-shadow: none; font-weight: 500; }
+.home-user-add { background: transparent; }
+.home-actions { grid-column: 2; grid-row: 2; justify-content: flex-end; margin-top: 0; }
+.home-usb-state { grid-column: 2; grid-row: 3; text-align: right; font-size: 12px; color: var(--txt2); margin-top: 2px; }
+@media (max-width: 1150px) {
+  .home-hero { grid-template-columns: minmax(0, 1fr); }
+  .home-users, .home-actions, .home-usb-state { grid-column: 1; grid-row: auto; }
+  .home-actions { justify-content: flex-start; margin-top: 6px; }
+  .home-usb-state { text-align: left; }
+}
+.dash-bar {
+  justify-content: space-between; align-items: center; gap: 12px;
+  margin-top: clamp(1.75rem, 5vh, 3rem); margin-bottom: 14px;
+}
+.dash-title { font-family: var(--serif); font-size: 25px; font-weight: 500; letter-spacing: -.01em; margin: 0; }
+.dash-bar .btn { font-size: 12px; }
+.home-cards { margin-top: 0; }
+.home-card { padding: 1.1rem 1.25rem 1.05rem; gap: 4px; min-height: 146px; }
+.home-card:hover { border-color: transparent; box-shadow: var(--sh-md); }
+.home-card-lbl { display: flex; align-items: center; gap: 7px; }
+.home-card-lbl .ph { font-size: 15px; }
+.home-card-val { font-size: 34px; line-height: 1.1; margin-top: 4px; overflow-wrap: anywhere; }
+.home-card-sub { font-family: var(--font); font-size: 12.5px; color: var(--txt2); }
+.home-card-go { font-size: 12px; font-weight: 500; color: var(--txt2); }
+.dash-add { border-color: var(--brd2); box-shadow: none; }
+.dash-add:hover { border-color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -1951,18 +2200,17 @@ label.vo-check {
 
 <!-- TOPBAR -->
 <div class="topbar">
+  <!-- « Pilote » est déjà dans la barre de titre : ici, on dit où l'on est
+       (rempli par _updateCrumb() à chaque changement d'onglet). -->
   <div class="topbar-brand">
-    <div class="topbar-logo">P</div>
-    <div>
-      <div class="topbar-title" id="topbar-title">Pilote</div>
-    </div>
+    <div class="topbar-crumb" id="topbar-crumb"></div>
   </div>
   <div class="topbar-right">
     <div class="refresh-grp">
       <span class="refresh-lbl" id="stext">Dernière actualisation —</span>
-      <button class="btn btn-ghost btn-sm" onclick="manualRefresh()" title="Actualiser les cours Yahoo Finance (Ctrl+R)">↻ Actualiser</button>
+      <button class="btn btn-ghost btn-sm" onclick="manualRefresh()" title="Actualiser les cours Yahoo Finance (Ctrl+R)"><i class="ph ph-arrows-clockwise"></i> Actualiser</button>
     </div>
-    <button class="btn btn-ghost btn-sm" id="btn-undo" onclick="undoLast()" disabled title="Annuler la dernière action">↩ Retour</button>
+    <button class="btn btn-ghost btn-sm" id="btn-undo" onclick="undoLast()" disabled title="Annuler la dernière action"><i class="ph ph-arrow-u-up-left"></i> Retour</button>
     <button class="btn btn-ghost btn-sm" onclick="openCours()">✎ Cours manuels</button>
   </div>
 </div>
@@ -2015,18 +2263,19 @@ label.vo-check {
     <!-- Utilisateurs : on change de compte directement ici -->
     <div class="home-users" id="home-users"></div>
     <div class="home-actions">
-      <button class="btn btn-ghost btn-sm" onclick="openSettings()" title="Paramètres de Pilote">⚙ Paramètres</button>
-      <button class="btn btn-ghost btn-sm" onclick="doExport()"       title="Exporter mes données (Ctrl+E)">↓ Exporter</button>
-      <button class="btn btn-ghost btn-sm" onclick="doImportDialog()" title="Importer des données (Ctrl+I)">↑ Importer</button>
+      <button class="btn btn-ghost btn-sm" onclick="openSettings()" title="Paramètres de Pilote"><i class="ph ph-gear-six"></i> Paramètres</button>
+      <button class="btn btn-ghost btn-sm" onclick="doExport()"       title="Exporter mes données (Ctrl+E)"><i class="ph ph-download-simple"></i> Exporter</button>
+      <button class="btn btn-ghost btn-sm" onclick="doImportDialog()" title="Importer des données (Ctrl+I)"><i class="ph ph-upload-simple"></i> Importer</button>
       <button class="btn btn-ghost btn-sm" id="home-usb-btn" onclick="svPushToUsb()"
-              title="Copier toutes les données sur la clé USB">🔑 Téléverser vers clé USB</button>
+              title="Copier toutes les données sur la clé USB"><i class="ph ph-usb"></i> Téléverser vers clé USB</button>
     </div>
     <div class="home-usb-state" id="home-usb-state"></div>
   </div>
   <div class="dash-bar" id="dash-bar">
+    <h2 class="dash-title">Tableau de bord</h2>
     <button type="button" class="btn btn-ghost btn-sm" id="dash-edit-btn"
             onclick="dashToggleEdit()"
-            title="Choisir les tuiles affichees ici">&#9998; Modifier les tuiles</button>
+            title="Choisir les tuiles affichees ici"><i class="ph ph-pencil-simple"></i> Modifier les tuiles</button>
   </div>
   <div class="home-cards" id="home-cards"></div>
 </div>
@@ -4438,6 +4687,14 @@ label.vo-check {
 <script>
 "use strict";
 
+/* ─── Graphiques : la police et le gris du texte courant (identité « Carnet ») ───
+   Les graphiques sont dessinés dans un <canvas> : ils n'héritent pas du CSS.
+   #8b8072 reste lisible sur le fond clair comme sur le fond sombre. */
+if (window.Chart) {
+  Chart.defaults.font.family = '"Onest", system-ui, sans-serif';
+  Chart.defaults.color = "#8b8072";
+}
+
 /* ─── URL Google Sheets pré-configurée ─── */
 
 /* ─── Données par défaut ─── */
@@ -5781,8 +6038,8 @@ function drawPerfChart() {
           display: true,
           align:   "end",
           labels:  {
-            color:     "#71717a",
-            font:      {size: 10, family: "JetBrains Mono"},
+            color: "#8b8072",
+            font:      {size: 10, family: "Onest"},
             boxWidth:  14,
             boxHeight: 3,
             padding:   16,
@@ -5812,11 +6069,11 @@ function drawPerfChart() {
       },
       scales: {
         x: {
-          ticks: {color: "#71717a", maxTicksLimit: maxTicks, font: {size: 10, family: "JetBrains Mono"}},
+          ticks: {color: "#8b8072", maxTicksLimit: maxTicks, font: {size: 10, family: "Onest"}},
           grid:  {color: "rgba(0,0,0,0.04)"}
         },
         y: {
-          ticks: {color: "#71717a", callback: v => v.toLocaleString("fr-FR", {maximumFractionDigits: 0}) + " \u20AC", font: {size: 10, family: "JetBrains Mono"}},
+          ticks: {color: "#8b8072", callback: v => v.toLocaleString("fr-FR", {maximumFractionDigits: 0}) + " \u20AC", font: {size: 10, family: "Onest"}},
           grid:  {color: "rgba(0,0,0,0.04)"}
         }
       }
@@ -6048,7 +6305,7 @@ function makePie(cid, data, labels) {
         ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
         ctx.strokeStyle = CLRS[i%CLRS.length]; ctx.lineWidth=1.5; ctx.stroke();
         ctx.fillStyle="#18181b";
-        ctx.font="600 9px 'Plus Jakarta Sans',sans-serif";
+        ctx.font="600 9px 'Onest',sans-serif";
         ctx.textAlign = right?"left":"right"; ctx.textBaseline="middle";
         let lbl = labels[i]; if(lbl.length>15) lbl=lbl.slice(0,14)+"…";
         ctx.fillText(lbl+" "+share.toFixed(0)+"%", x2+(right?4:-4), y2);
@@ -6194,13 +6451,13 @@ function renderDivChart(received) {
       },
       scales: {
         x: {
-          ticks: {color:"#71717a", font:{size:11, family:"JetBrains Mono"}},
+          ticks: {color: "#8b8072", font:{size:11, family: "Onest"}},
           grid: {display:false},
           categoryPercentage: 0.5,
           barPercentage: 0.85
         },
         y: {
-          ticks: {color:"#71717a", callback:v=>v+" \u20AC", font:{size:10, family:"JetBrains Mono"}},
+          ticks: {color: "#8b8072", callback:v=>v+" \u20AC", font:{size:10, family: "Onest"}},
           grid: {color:"rgba(0,0,0,0.04)"},
           beginAtZero: true
         }
@@ -7518,8 +7775,8 @@ function runDcaSim() {
     ]},
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, align: "end", labels: { font: {size: 10, family: "JetBrains Mono"}, color: "#71717a" }}},
-      scales: { y: { ticks: { callback: v => _eurFmt(v), color: "#71717a", font:{size:10,family:"JetBrains Mono"} }, grid: { color: "rgba(0,0,0,0.04)" }}, x: { ticks:{color:"#71717a", font:{size:10}}, grid:{color:"rgba(0,0,0,0.04)"}}}
+      plugins: { legend: { display: true, align: "end", labels: { font: {size: 10, family: "Onest"}, color: "#8b8072" }}},
+      scales: { y: { ticks: { callback: v => _eurFmt(v), color: "#8b8072", font:{size:10,family: "Onest"} }, grid: { color: "rgba(0,0,0,0.04)" }}, x: { ticks:{color: "#8b8072", font:{size:10}}, grid:{color:"rgba(0,0,0,0.04)"}}}
     }
   });
 }
@@ -7749,12 +8006,12 @@ function _drawCmpChart() {
       responsive: true, maintainAspectRatio: false,
       interaction: {mode: "index", intersect: false},
       plugins: {
-        legend: { display: true, align: "end", labels: {color: "#71717a", font: {size: 10, family: "JetBrains Mono"}, boxWidth: 14, boxHeight: 3, padding: 12}},
+        legend: { display: true, align: "end", labels: {color: "#8b8072", font: {size: 10, family: "Onest"}, boxWidth: 14, boxHeight: 3, padding: 12}},
         tooltip: { callbacks: { label: c => " " + c.dataset.label + " : " + (c.raw||0).toLocaleString("fr-FR",{maximumFractionDigits:0}) + " €" }}
       },
       scales: {
-        x: { ticks: {color:"#71717a", maxTicksLimit:10, font:{size:10, family:"JetBrains Mono"}}, grid:{color:"rgba(0,0,0,0.04)"}},
-        y: { ticks: {color:"#71717a", callback: v => v.toLocaleString("fr-FR",{maximumFractionDigits:0}) + " €", font:{size:10, family:"JetBrains Mono"}}, grid:{color:"rgba(0,0,0,0.04)"}}
+        x: { ticks: {color: "#8b8072", maxTicksLimit:10, font:{size:10, family: "Onest"}}, grid:{color:"rgba(0,0,0,0.04)"}},
+        y: { ticks: {color: "#8b8072", callback: v => v.toLocaleString("fr-FR",{maximumFractionDigits:0}) + " €", font:{size:10, family: "Onest"}}, grid:{color:"rgba(0,0,0,0.04)"}}
       }
     }
   });
@@ -7876,6 +8133,9 @@ function goTab(n) {
   if (n==="sim" && typeof _initSimulateurs === "function") _initSimulateurs();
   // Memorise pour le prochain lancement
   try { document.body.dataset.activeTab = n; } catch(e) {}
+  // Ici et pas dans un patch de goTab : chaque patch appelle cette version
+  // d'origine, le fil d'Ariane suit donc tous les chemins de navigation.
+  if (typeof _updateCrumb === "function") _updateCrumb(n);
 }
 
 /* ─── Modals ─── */
@@ -8410,10 +8670,7 @@ async function renderHomeUsers() {
   const state = await _loadUsers();
   if (!state) { box.innerHTML = ""; return; }
   // L'etat vient d'arriver : la salutation peut enfin porter le bon prenom
-  const greetEl = document.getElementById("home-greet");
-  if (greetEl && typeof homeGreeting === "function") {
-    greetEl.textContent = homeGreeting() + (homeDisplayName() ? " " + homeDisplayName() : "");
-  }
+  if (typeof homeRenderGreeting === "function") homeRenderGreeting();
   box.innerHTML = state.users.map(u => {
     const active = u.slug === state.active;
     return `<button class="home-user${active ? " active" : ""}"
@@ -10512,6 +10769,17 @@ const CARD_ITEMS = [
   { id: "card-fin-year-top",     label: "Mes comptes · Top dépenses (année)" },
 ];
 
+/* Fil d'Ariane de la barre du haut : « Accueil », ou « PEA › Positions ». */
+function _updateCrumb(id) {
+  const el = document.getElementById("topbar-crumb");
+  if (!el) return;
+  const sec  = _navSectionOf(id);
+  const item = sec && sec.children.find(c => c.id === id);
+  el.innerHTML = (sec && item)
+    ? `${escHtml(sec.label)} <i class="ph ph-caret-right"></i> <b>${escHtml(item.label)}</b>`
+    : (id === "home" ? "<b>Accueil</b>" : "");
+}
+
 function _setActiveSidebar(id) {
   document.querySelectorAll(".sb-item[data-tab]").forEach(el => {
     el.classList.toggle("active", el.dataset.tab === id);
@@ -10553,9 +10821,9 @@ function _injectTitlebar() {
       </div>
       <div class="titlebar-spacer"></div>
       <div class="titlebar-btns">
-        <button class="tb-btn" id="tb-min"   title="Réduire">—</button>
-        <button class="tb-btn" id="tb-max"   title="Agrandir">▢</button>
-        <button class="tb-btn tb-close" id="tb-close" title="Fermer">×</button>
+        <button class="tb-btn" id="tb-min"   title="Réduire"><i class="ph ph-minus"></i></button>
+        <button class="tb-btn" id="tb-max"   title="Agrandir"><i class="ph ph-square"></i></button>
+        <button class="tb-btn tb-close" id="tb-close" title="Fermer"><i class="ph ph-x"></i></button>
       </div>
     </div>`;
   document.body.insertAdjacentHTML("afterbegin", html);
@@ -10577,8 +10845,14 @@ function _injectSidebar() {
   const openId = (S.uiPrefs && S.uiPrefs.navOpen !== undefined)
     ? S.uiPrefs.navOpen                 // "" = toutes repliees
     : NAV_SECTIONS[0].id;               // premier lancement : PEA deplie
+  // Icones Phosphor (servies par /vendor/phosphor/) : une par section
+  const NAV_ICONS = {
+    "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "graduation-cap",
+    "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
+    "sec-formation": "certificate", "sec-voc": "cards",
+  };
   let html = `<aside class="sidebar" id="app-sidebar">
-    <button class="sb-item sb-home" data-tab="home"><span>Accueil</span></button>`;
+    <button class="sb-item sb-home" data-tab="home"><i class="ph ph-house sb-ico"></i><span>Accueil</span></button>`;
 
   NAV_SECTIONS.forEach(sec => {
     const kids = sec.children.filter(c => !hidden.includes(c.id));
@@ -10586,8 +10860,9 @@ function _injectSidebar() {
     const isOpen = (sec.id === openId);
     html += `<div class="sb-sec${isOpen ? " open" : ""}" data-sec="${sec.id}">
       <button class="sb-sec-btn" data-sec-btn="${sec.id}">
+        <i class="ph ph-${NAV_ICONS[sec.id] || "circle"} sb-ico"></i>
         <span>${sec.label}</span>
-        <span class="sb-chev">▶</span>
+        <i class="ph ph-caret-right sb-chev"></i>
         <span class="sb-dot"></span>
       </button>
       <div class="sb-sub">`;
@@ -10603,10 +10878,10 @@ function _injectSidebar() {
   html += `
     <div class="sb-bottom">
       <button class="sb-item" id="sb-theme">
-        <span class="sb-icon">☾</span><span id="sb-theme-lbl">Thème sombre</span>
+        <i class="ph ph-moon sb-icon" id="sb-theme-ico"></i><span id="sb-theme-lbl">Thème sombre</span>
       </button>
       <button class="sb-item" onclick="openSettings('general')">
-        <span class="sb-icon">⚙</span><span>Paramètres</span>
+        <i class="ph ph-gear-six sb-icon"></i><span>Paramètres</span>
       </button>
     </div>
   </aside>`;
@@ -10731,6 +11006,8 @@ function _refreshThemeLabel() {
   const cur = document.documentElement.getAttribute("data-theme") || "light";
   const lbl = document.getElementById("sb-theme-lbl");
   if (lbl) lbl.textContent = cur === "dark" ? "Thème clair" : "Thème sombre";
+  const ico = document.getElementById("sb-theme-ico");
+  if (ico) ico.className = "ph " + (cur === "dark" ? "ph-sun" : "ph-moon") + " sb-icon";
 }
 
 async function toggleTheme() {
@@ -14442,6 +14719,16 @@ function homeGreeting() {
   return new Date().getHours() < 18 ? "Bonjour" : "Bonsoir";
 }
 
+/** « Bonsoir <em>Arthur</em> » : le prénom en italique, à la couleur d'accent
+    (voir .home-greet em). Appelée aussi par renderHomeUsers() quand la liste
+    des utilisateurs arrive, pour que le prénom soit le bon. */
+function homeRenderGreeting() {
+  const el = document.getElementById("home-greet");
+  if (!el) return;
+  const nom = homeDisplayName();
+  el.innerHTML = escHtml(homeGreeting()) + (nom ? " <em>" + escHtml(nom) + "</em>" : "");
+}
+
 /** Nom affiche : celui de l'utilisateur actif, sinon le prenom saisi dans le PEA. */
 function homeDisplayName() {
   if (typeof USERS_STATE !== "undefined" && USERS_STATE) {
@@ -14469,7 +14756,7 @@ function homeRender() {
   if (!greetEl) return;
   if (typeof renderHomeUsers === "function") renderHomeUsers();
 
-  greetEl.textContent = homeGreeting() + (homeDisplayName() ? " " + homeDisplayName() : "");
+  homeRenderGreeting();
   const d = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   document.getElementById("home-date").textContent = d.charAt(0).toUpperCase() + d.slice(1);
 
@@ -15128,12 +15415,13 @@ async function svPushToUsb(root) {
   if (!window.pywebview || !pywebview.api) return;
   const btn = document.getElementById("home-usb-btn");
   const st  = document.getElementById("home-usb-state");
-  const label0 = btn ? btn.textContent : "";
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Copie en cours…"; }
+  // innerHTML et non textContent : le libellé porte une icône
+  const label0 = btn ? btn.innerHTML : "";
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph ph-hourglass-medium"></i> Copie en cours…'; }
   let res;
   try { res = await pywebview.api.sauvegarde_push_usb(root || null); }
   catch (e) { res = { ok: false, error: String(e) }; }
-  if (btn) { btn.disabled = false; btn.textContent = label0; }
+  if (btn) { btn.disabled = false; btn.innerHTML = label0; }
 
   if (res && res.ok) {
     showToastModern(`Copié sur ${res.drive} · ${res.files} fichiers`, "ok");
@@ -17964,7 +18252,8 @@ function dashToggleEdit(on) {
 function dashRenderBar() {
   const btn = document.getElementById("dash-edit-btn");
   if (!btn) return;
-  btn.innerHTML = _dashEdit ? "✓ Terminé" : "✎ Modifier les tuiles";
+  btn.innerHTML = _dashEdit ? '<i class="ph ph-check"></i> Terminé'
+                            : '<i class="ph ph-pencil-simple"></i> Modifier les tuiles';
   btn.classList.toggle("btn-primary", _dashEdit);
   btn.classList.toggle("btn-ghost", !_dashEdit);
 }
@@ -17984,16 +18273,27 @@ function dashCardHtml(w, d, muted) {
     : "";
   return `<div class="home-card${muted ? " dash-muted" : ""}"${act}>
     ${outils}
-    <span class="home-card-lbl">${escHtml(d.lbl)}</span>
+    <span class="home-card-lbl">${dashIcon(w)}${escHtml(d.lbl)}</span>
     <span class="home-card-val ${d.cls || ""}">${d.val}</span>
     <span class="home-card-sub">${escHtml(d.sub || "")}</span>
     ${(!_dashEdit && d.go && w.tab) ? `<span class="home-card-go">${escHtml(d.go)} →</span>` : ""}
   </div>`;
 }
 
+/** Icône du module d'une tuile, la même que dans la barre latérale. */
+const DASH_ICONS = {
+  "PEA": "chart-line-up", "Patrimoine": "bank", "Sports": "person-simple-run",
+  "Santé": "heartbeat", "Prêt": "graduation-cap", "Formation": "certificate",
+  "Vocabulaire": "cards", "Sauvegarde": "usb",
+};
+function dashIcon(w) {
+  const ic = DASH_ICONS[w.module];
+  return ic ? `<i class="ph ph-${ic}"></i>` : "";
+}
+
 function dashSkeletonHtml(w) {
   return `<div class="home-card" style="cursor:default">
-    <span class="home-card-lbl">${escHtml(w.label)}</span>
+    <span class="home-card-lbl">${dashIcon(w)}${escHtml(w.label)}</span>
     <span class="dash-skel-bar"></span>
     <span class="dash-skel-bar sm"></span>
   </div>`;
