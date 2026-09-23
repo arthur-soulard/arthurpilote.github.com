@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.3**
+**Version actuelle : 4.2.4**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -297,6 +297,13 @@ plutôt qu'un logiciel de bureau.
   (dépôts, valeur, frais, dividendes) restent à la couleur du texte, fini les cartes
   arc-en-ciel. `--accent-soft` et `--accent-text` sont dérivés de l'accent choisi par
   `color-mix()` : lisibles quelle que soit la couleur réglée dans les paramètres.
+* **Accent par défaut : prune `#9c4a7a`** (4.2.4), à trois endroits qui doivent rester
+  égaux : `--accent` dans `:root`, `ACCENT_DEFAULT` (index.html, aussi ajoutée aux
+  pastilles) et `DEFAULT_COLOR` dans `appicon.py`. Choisie parce qu'elle ne ressemble
+  ni au vert des gains, ni au rouge des pertes, ni à l'ambre des alertes : la terre
+  cuite a été écartée pour cette raison, le bleu encre parce qu'il doublait le bleu
+  des badges d'information. Un utilisateur qui a déjà choisi sa couleur la garde ;
+  celui qui n'en a jamais choisi passe de l'ambre à la prune.
 * **Formes** : cartes sans bordure avec une ombre douce (`--radl` 16 px), boutons et
   entrées de la barre latérale en pilule, un point d'accent sur l'onglet ouvert,
   libellés en casse normale (plus de petites MAJUSCULES espacées).

@@ -39,7 +39,7 @@
   --b2:     rgba(59,98,163,0.11);
   --p:      #7b4ea3;
   --p2:     rgba(123,78,163,0.12);
-  --accent: #d97706;
+  --accent: #9c4a7a;   /* prune : l'accent par défaut du Carnet (ACCENT_DEFAULT) */
   --hover:  rgba(70,45,20,0.06);
   --rad:    10px;
   --radl:   16px;
@@ -8656,7 +8656,7 @@ function userInitial(u) {
 }
 function userColor(u) {
   return (u && u.color) || getComputedStyle(document.documentElement)
-    .getPropertyValue("--accent").trim() || "#d97706";
+    .getPropertyValue("--accent").trim() || "#9c4a7a";
 }
 function userAvatarHtml(u, cls) {
   const inner = (u && u.emoji) ? u.emoji : userInitial(u);
@@ -9372,8 +9372,13 @@ async function openDataFolder() {
 }
 
 /* ─── Couleur d'accent : preset rapide + spectre complet ─── */
+/* Accent par defaut depuis l'identite « Carnet » : une prune qui s'accorde au fond
+   papier sans ressembler ni au vert des gains, ni au rouge des pertes, ni a l'ambre
+   des alertes. Meme valeur que --accent dans :root et DEFAULT_COLOR dans appicon.py.
+   Un utilisateur qui a deja choisi sa couleur la garde. */
+const ACCENT_DEFAULT = "#9c4a7a";
 const ACCENT_PRESETS = [
-  "#d97706", "#ea580c", "#dc2626", "#e11d48", "#db2777", "#c026d3",
+  "#d97706", "#ea580c", "#dc2626", "#e11d48", "#db2777", "#c026d3", ACCENT_DEFAULT,
   "#9333ea", "#7c3aed", "#6366f1", "#2563eb", "#0284c7", "#0891b2",
   "#0d9488", "#059669", "#16a34a", "#65a30d", "#ca8a04", "#a16207",
   "#78716c", "#475569", "#1f2937",
@@ -9394,7 +9399,7 @@ function applyAccent(color) {
   const LEGACY = {orange:"#d97706", blue:"#2563eb", green:"#16a34a", violet:"#7c3aed",
                   rose:"#e11d48", teal:"#0d9488", slate:"#475569"};
   if (LEGACY[color]) color = LEGACY[color];
-  if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) color = "#d97706";
+  if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) color = ACCENT_DEFAULT;
   const dark = _darken(color, 0.78);
   document.documentElement.style.setProperty("--accent", color);
   document.documentElement.style.setProperty("--accent-dark", dark);
@@ -9414,7 +9419,7 @@ function applyAccent(color) {
 function _renderAccentPicker() {
   const row = document.getElementById("cfg-accent-row");
   if (!row) return;
-  const current = (S.uiPrefs && S.uiPrefs.accent) || "#d97706";
+  const current = (S.uiPrefs && S.uiPrefs.accent) || ACCENT_DEFAULT;
   // Si l'accent est une vieille cle ("orange"), on l'affiche quand meme
   const LEGACY = {orange:"#d97706", blue:"#2563eb", green:"#16a34a", violet:"#7c3aed",
                   rose:"#e11d48", teal:"#0d9488", slate:"#475569"};
@@ -9740,7 +9745,7 @@ async function applyIconToShortcuts() {
     return;
   }
   const row = document.getElementById("cfg-accent-row");
-  const color = (row && row.dataset.selected) || (S.uiPrefs && S.uiPrefs.accent) || "#d97706";
+  const color = (row && row.dataset.selected) || (S.uiPrefs && S.uiPrefs.accent) || ACCENT_DEFAULT;
   if (st) st.textContent = "Application\u2026";
   try {
     const r = await api.apply_icon_to_shortcuts(color);
@@ -13521,7 +13526,7 @@ function spRenderStatsCharts() {
   const txtColor  = getComputedStyle(document.body).getPropertyValue("color") || "#18181b";
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--brd").trim() || "rgba(0,0,0,0.07)";
   const bg2       = getComputedStyle(document.documentElement).getPropertyValue("--bg2") || "#fff";
-  const accent    = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#d97706";
+  const accent    = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#9c4a7a";
 
   const vals = [];
   for (let m = 0; m < 12; m++) {
@@ -18514,7 +18519,7 @@ function dashWireDnd(box) {
     loadState();
     // Restaure la couleur d'accent sauvegardee
     try {
-      const accentKey = (S.uiPrefs && S.uiPrefs.accent) || "orange";
+      const accentKey = (S.uiPrefs && S.uiPrefs.accent) || ACCENT_DEFAULT;
       if (typeof applyAccent === "function") applyAccent(accentKey);
     } catch(e) {}
     // Restaure le theme sauvegarde
