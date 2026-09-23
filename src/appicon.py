@@ -26,7 +26,7 @@ from typing import Optional
 import storage
 
 
-DEFAULT_COLOR = "#d97706"
+DEFAULT_COLOR = "#9c4a7a"   # prune, accent par defaut du Carnet (ACCENT_DEFAULT dans index.html)
 _ICON_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
 
 # Handles HICON gardes vivants : Windows lit l'icone tant que la fenetre existe
