@@ -2192,6 +2192,52 @@ thead th, .wish-table thead th {
 .dash-add { border-color: var(--brd2); box-shadow: none; }
 .dash-add:hover { border-color: var(--accent); }
 
+/* — Graphiques « Carnet » : mini-graphiques des tuiles — */
+.home-card-viz { margin-top: auto; padding-top: 10px; }
+.home-card-viz + .home-card-go { margin-top: 0; padding-top: 8px; }
+.dash-spark { display: block; width: 100%; height: 34px; overflow: visible; }
+.dash-spark path {
+  fill: none; stroke: var(--accent); stroke-width: 1.7;
+  vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round;
+}
+.dash-bars { display: flex; align-items: flex-end; gap: 6px; height: 34px; }
+.dash-bars span { flex: 1; background: var(--accent-soft); border-radius: 4px 4px 1px 1px; }
+.dash-bars span:last-child { background: var(--accent); }
+.dash-bars-l { display: flex; gap: 6px; margin-top: 4px; font-size: 10.5px; color: var(--txt2); }
+.dash-bars-l span { flex: 1; text-align: center; }
+.dash-prog { height: 6px; border-radius: 99px; background: var(--bg4); overflow: hidden; }
+.dash-prog i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.dash-prog-l { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; font-size: 11.5px; color: var(--txt2); }
+
+/* — Vue d'ensemble du PEA : courbe du capital + répartition — */
+.dash-duo { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 1080px) { .dash-duo { grid-template-columns: 1fr; } }
+.dash-evo-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.dash-evo-v { font-family: var(--serif); font-size: 30px; font-weight: 500; letter-spacing: -.01em; }
+.dash-evo-d { font-size: 12.5px; color: var(--txt2); }
+.dash-evo-chart { position: relative; height: 220px; }
+.dash-evo-msg { font-size: 12px; color: var(--txt2); margin-top: 6px; }
+.dash-evo-msg:empty { display: none; }
+.dash-rep-sub { font-size: 12px; color: var(--txt2); }
+.rep-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; font-size: 12.5px; margin-bottom: 12px; }
+.rep-row:last-child { margin-bottom: 0; }
+.rep-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rep-p { color: var(--txt2); }
+.rep-bar { grid-column: 1 / -1; height: 5px; border-radius: 99px; background: var(--bg4); overflow: hidden; margin-top: 5px; }
+.rep-bar i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+
+/* — Pastilles de période (vue d'ensemble et onglet Performance) — */
+.rng { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--bg3); }
+.rng button, .rng .btn {
+  all: unset; box-sizing: border-box; cursor: pointer;
+  font-size: 12px; line-height: 1.5; padding: 3px 11px; border-radius: 999px; color: var(--txt2);
+}
+.rng button:hover, .rng .btn:hover { color: var(--txt); }
+.rng button[aria-pressed="true"], .rng .btn.btn-primary {
+  background: var(--bg2); color: var(--txt); box-shadow: 0 0 0 1px var(--brd2);
+}
+.rng button:focus-visible, .rng .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 </style>
 </head>
 <body>
@@ -2239,6 +2285,38 @@ thead th, .wish-table thead th {
   <div class="mc" id="mc-pv"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total</div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
+</div>
+
+<!-- VUE D'ENSEMBLE : courbe du capital + répartition (identité « Carnet »).
+     Déplacé dans pane-dash par _injectDashboardPane(), comme les deux blocs
+     au-dessus. Aucun chiffre n'est recalculé à part : la courbe vient de
+     buildTwrSeries/computePnl (onglet Performance), la répartition de
+     computePos (onglet Positions). Rendu : dashRenderOverview(). -->
+<div class="dash-duo" id="dash-duo">
+  <div class="card">
+    <div class="card-h">
+      <span class="card-t">Évolution du capital</span>
+      <div class="rng" id="dash-rng" role="group" aria-label="Période">
+        <button type="button" data-r="1W" onclick="dashSetRange('1W')">1S</button>
+        <button type="button" data-r="1M" onclick="dashSetRange('1M')">1M</button>
+        <button type="button" data-r="6M" onclick="dashSetRange('6M')">6M</button>
+        <button type="button" data-r="YTD" onclick="dashSetRange('YTD')">YTD</button>
+        <button type="button" data-r="MAX" onclick="dashSetRange('MAX')">Max</button>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="dash-evo-top"><span class="dash-evo-v" id="dash-evo-v">—</span><span class="dash-evo-d" id="dash-evo-d"></span></div>
+      <div class="dash-evo-chart"><canvas id="c-dash-evo" aria-label="Courbe de la valeur du PEA"></canvas></div>
+      <div class="dash-evo-msg" id="dash-evo-msg"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">
+      <span class="card-t">Répartition</span>
+      <span class="dash-rep-sub">part de chaque ligne, hors espèces</span>
+    </div>
+    <div class="card-b" id="dash-rep"></div>
+  </div>
 </div>
 
 <!-- TABS -->
@@ -2310,7 +2388,7 @@ thead th, .wish-table thead th {
       <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
         <!-- Comparaison vs benchmarks (off par defaut) -->
         <div id="perf-bench-toggles" style="display:flex;gap:10px;align-items:center;font-size:11px">
-          <span style="color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:9px">Comparer à :</span>
+          <span style="color:var(--txt2);font-size:12px">Comparer à&nbsp;:</span>
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
             <input type="checkbox" data-bench="cac40">
             <span style="color:#7c3aed;font-weight:600">CAC 40</span>
@@ -2324,7 +2402,7 @@ thead th, .wish-table thead th {
             <span style="color:#0d9488;font-weight:600">ETF World</span>
           </label>
         </div>
-        <div id="perf-range-btns" style="display:flex;gap:4px">
+        <div id="perf-range-btns" class="rng">
           <button class="btn btn-sm" id="prb-1w"  onclick="setPerfRange('1W')">1S</button>
           <button class="btn btn-sm" id="prb-1m"  onclick="setPerfRange('1M')">1M</button>
           <button class="btn btn-sm" id="prb-6m"  onclick="setPerfRange('6M')">6M</button>
@@ -2337,12 +2415,12 @@ thead th, .wish-table thead th {
     <!-- Résumé P&L période -->
     <div id="twr-summary" style="display:none;padding:.75rem 1.25rem .25rem;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:baseline">
       <div>
-        <div id="twr-pnl-val" style="font-size:22px;font-weight:800;letter-spacing:-.5px;font-family:var(--mono)">—</div>
-        <div style="font-size:10px;color:var(--txt2);margin-top:2px">Valeur − versements cumulés</div>
+        <div id="twr-pnl-val" style="font-size:30px;font-weight:500;letter-spacing:-.01em;font-family:var(--serif)">—</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:2px">Valeur − versements cumulés</div>
       </div>
       <div>
-        <div id="twr-pnl-pct" style="font-size:18px;font-weight:700;font-family:var(--mono)">—</div>
-        <div style="font-size:10px;color:var(--txt2);margin-top:2px">Rendement vs versements</div>
+        <div id="twr-pnl-pct" style="font-size:22px;font-weight:500;font-family:var(--serif)">—</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:2px">Rendement vs versements</div>
       </div>
       <div id="twr-cache-lbl" style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--txt3);align-self:center;display:none"></div>
       <div id="twr-range-lbl" style="width:100%;font-size:10px;font-family:var(--mono);color:var(--txt3);padding-top:2px;display:none"></div>
@@ -4693,6 +4771,46 @@ thead th, .wish-table thead th {
 if (window.Chart) {
   Chart.defaults.font.family = '"Onest", system-ui, sans-serif';
   Chart.defaults.color = "#8b8072";
+  // Style commun : grille fine et chaude, pas de cadre, barres arrondies,
+  // légendes en pastilles, infobulle sombre lisible sur les deux fonds.
+  Chart.defaults.scale.grid.color = "rgba(139,128,114,0.16)";
+  Chart.defaults.scale.border.display = false;
+  Chart.defaults.elements.bar.borderRadius = 5;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+  Chart.defaults.plugins.legend.labels.boxHeight = 8;
+  Object.assign(Chart.defaults.plugins.tooltip, {
+    backgroundColor: "rgba(42,35,27,0.94)", titleColor: "#efe7d9", bodyColor: "#efe7d9",
+    borderColor: "rgba(255,230,200,0.16)", borderWidth: 1,
+    cornerRadius: 10, padding: 10, boxPadding: 4,
+  });
+}
+
+/** Couleurs du thème courant, lues au moment de dessiner : un <canvas> ne suit
+    pas les variables CSS tout seul (voir carnetRedrawCharts). */
+function carnetChartColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const v  = n => cs.getPropertyValue(n).trim();
+  return { accent: v("--accent") || "#9c4a7a", txt: v("--txt") || "#2a231b",
+           txt2: v("--txt2") || "#6a5e4d", bg2: v("--bg2") || "#fbf8f1" };
+}
+/** "#rrggbb" + opacité -> "rgba(...)" */
+function carnetAlpha(hex, a) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+/** Dégradé vertical sous une courbe (la surface de la maquette « Carnet »). */
+function carnetAreaFill(hex) {
+  return ctx => {
+    const area = ctx.chart.chartArea;
+    if (!area) return carnetAlpha(hex, 0.12);
+    const g = ctx.chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+    g.addColorStop(0, carnetAlpha(hex, 0.26));
+    g.addColorStop(1, carnetAlpha(hex, 0));
+    return g;
+  };
 }
 
 /* ─── URL Google Sheets pré-configurée ─── */
@@ -5045,7 +5163,10 @@ function updateGreeting() {
 }
 
 const MNS  = ["Jan","Fév","Mar","Avr","Mai","Jun","Juil","Aoû","Sep","Oct","Nov","Déc"];
-const CLRS = ["#2563eb","#16a34a","#d97706","#dc2626","#7c3aed","#059669","#f59e0b","#db2777","#0891b2","#be185d","#0f766e","#92400e","#4f46e5","#065f46"];
+/* Palette des séries sans couleur propre (camemberts du PEA) : tons sourds de
+   l'identité « Carnet », accordés au fond papier. Les couleurs portées par les
+   données (secteurs, catégories, sports, domaines) restent celles choisies. */
+const CLRS = ["#9c4a7a","#3a6a9a","#6b7d3a","#b8862b","#3f7f7a","#b5552e","#7a5c8f","#8f6b4a","#2f4a6b","#7f9a74","#a86a6a","#4f6b3a","#c07a4f","#5e5a8a"];
 
 /* ─── PRU auto ─── */
 function computePos(p) {
@@ -5202,6 +5323,10 @@ function renderMetrics() {
   if (typeof homeRender === "function") homeRender();
   document.getElementById("m-fees").textContent = fees>0 ? eur(fees) : "—";
   document.getElementById("m-div").textContent  = divRec>0 ? eur(divRec) : "—";
+  // Les cours viennent de changer : la vue d'ensemble suit si elle est affichée
+  const paneDash = document.getElementById("pane-dash");
+  if (paneDash && paneDash.classList.contains("active") && typeof dashRenderOverview === "function")
+    dashRenderOverview();
 }
 
 /* ─── Positions ─── */
@@ -5957,9 +6082,13 @@ function drawPerfChart() {
                  : (_perfRange === "YTD") ? 8
                  : 10;
 
-  /* ── Couleurs dynamiques ─────────────────────────────────────────────────── */
-  const portColor = isPos ? "#16a34a" : "#dc2626";
-  const portFill  = isPos ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)";
+  /* ── Couleurs (identité « Carnet ») ──────────────────────────────────────────
+     La courbe prend l'accent et une surface en dégradé ; le gain ou la perte se
+     lit dans le résumé au-dessus, en vert ou en rouge, pas dans la couleur du
+     trait. Les versements restent un pointillé discret. */
+  const col       = carnetChartColors();
+  const portColor = col.accent;
+  const portFill  = carnetAreaFill(col.accent);
 
   /* ── Construction du graphique ───────────────────────────────────────────── */
   const c = document.getElementById("c-perf");
@@ -5970,31 +6099,32 @@ function drawPerfChart() {
       labels,
       datasets: [
         {
-          /* Dataset 0 — Versements cumules (courbe en escalier, bleu) */
-          label:            "Versements cumules",
+          /* Dataset 0 — Versements cumules (escalier en pointille discret) */
+          label:            "Versements cumulés",
           data:             depVals,
-          borderColor:      "#2563eb",
-          backgroundColor:  "rgba(37,99,235,0.07)",
-          fill:             true,
+          borderColor:      col.txt2,
+          backgroundColor:  "transparent",
+          fill:             false,
           stepped:          "before",
           tension:          0,
           pointRadius:      0,
           pointHoverRadius: 4,
-          borderWidth:      1.5,
-          borderDash:       [5, 4],
+          borderWidth:      1.3,
+          borderDash:       [4, 4],
           order:            2
         },
         {
-          /* Dataset 1 — Valeur portefeuille (courbe pleine, vert/rouge, sans points) */
-          label:            "Valeur portefeuille",
+          /* Dataset 1 — Valeur portefeuille (accent + surface en degrade) */
+          label:            "Valeur du portefeuille",
           data:             portVals,
           borderColor:      portColor,
           backgroundColor:  portFill,
-          fill:             "-1",
-          tension:          0.15,
+          fill:             "start",
+          tension:          0.2,
           pointRadius:      0,
           pointHoverRadius: 4,
-          borderWidth:      2.2,
+          pointHoverBackgroundColor: portColor,
+          borderWidth:      2,
           order:            1
         },
         ...(function(){
@@ -6038,12 +6168,8 @@ function drawPerfChart() {
           display: true,
           align:   "end",
           labels:  {
-            color: "#8b8072",
-            font:      {size: 10, family: "Onest"},
-            boxWidth:  14,
-            boxHeight: 3,
-            padding:   16,
-            usePointStyle: false
+            font:      {size: 11, family: "Onest"},
+            padding:   16
           }
         },
         tooltip: {
@@ -6069,17 +6195,165 @@ function drawPerfChart() {
       },
       scales: {
         x: {
-          ticks: {color: "#8b8072", maxTicksLimit: maxTicks, font: {size: 10, family: "Onest"}},
-          grid:  {color: "rgba(0,0,0,0.04)"}
+          ticks: {maxTicksLimit: maxTicks, maxRotation: 0, font: {size: 10.5, family: "Onest"}},
+          grid:  {display: false}
         },
         y: {
-          ticks: {color: "#8b8072", callback: v => v.toLocaleString("fr-FR", {maximumFractionDigits: 0}) + " \u20AC", font: {size: 10, family: "Onest"}},
-          grid:  {color: "rgba(0,0,0,0.04)"}
+          ticks: {maxTicksLimit: 6, callback: v => v.toLocaleString("fr-FR", {maximumFractionDigits: 0}) + "\u00A0\u20AC", font: {size: 10.5, family: "Onest"}}
         }
       }
     }
   });
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VUE D'ENSEMBLE (pane-dash) : courbe du capital + répartition
+   Les graphiques de la maquette « Carnet ». Rien n'est recalculé à part :
+   même historique (_perfHistory), même série (_perfFullSeries, buildTwrSeries),
+   même plus-value sur la plage (computePnl) que l'onglet Performance ; même
+   répartition (computePos, base = valeur des titres) que l'onglet Positions.
+───────────────────────────────────────────────────────────────────────── */
+let _dashRange = "MAX";          /* plage de la vue d'ensemble, non mémorisée */
+let _perfHistPromise = null;     /* un seul chargement d'historique à la fois */
+
+/** Série complète du PEA ; charge l'historique la première fois (même cache
+    que l'onglet Performance). Promesse de la série, ou de null. */
+function perfSeriesAsync() {
+  if (_perfHistory) {
+    if (!_perfFullSeries) _perfFullSeries = buildTwrSeries(_perfHistory);
+    return Promise.resolve(_perfFullSeries);
+  }
+  if (!(S.transactions || []).some(t => t.type === "Achat")) return Promise.resolve(null);
+  if (!_perfHistPromise) {
+    _perfHistPromise = loadPerfHistory()
+      .then(h => { if (h) { _perfHistory = h; _perfFullSeries = null; } return h; })
+      .catch(() => null)
+      .finally(() => { _perfHistPromise = null; });
+  }
+  return _perfHistPromise.then(h => {
+    if (!h) return null;
+    if (!_perfFullSeries) _perfFullSeries = buildTwrSeries(_perfHistory);
+    return _perfFullSeries;
+  });
+}
+
+function dashSetRange(r) {
+  _dashRange = r;
+  dashRenderEvo();
+}
+
+function dashRenderOverview() {
+  dashRenderRep();
+  dashRenderEvo();
+}
+
+async function dashRenderEvo() {
+  const canvas = document.getElementById("c-dash-evo");
+  if (!canvas) return;
+  const vEl = document.getElementById("dash-evo-v");
+  const dEl = document.getElementById("dash-evo-d");
+  const msg = document.getElementById("dash-evo-msg");
+  document.querySelectorAll("#dash-rng button").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.r === _dashRange)));
+
+  const full = await perfSeriesAsync();
+  if (!full || full.length < 2) {
+    if (_ch.dashEvo) { _ch.dashEvo.destroy(); _ch.dashEvo = null; }
+    vEl.textContent = "—"; dEl.textContent = "";
+    msg.textContent = (S.transactions || []).length
+      ? "Historique des cours indisponible pour l'instant : la courbe apparaîtra dès qu'il sera chargé."
+      : "La courbe apparaîtra après ton premier achat.";
+    return;
+  }
+
+  let range  = _dashRange;
+  let series = filterByRange(full, range);
+  msg.textContent = "";
+  if (!series || series.length < 2) {
+    series = full; range = "MAX";
+    msg.textContent = "Pas assez de points sur cette période : affichage depuis l'ouverture.";
+  }
+
+  const pnl = computePnl(series, range);
+  // Le grand chiffre est la valorisation officielle (window._peaPv.total, posée
+  // par renderMetrics, la même que la tuile « Valeur du PEA ») : le dernier
+  // point de la courbe est une clôture, il peut différer du cours du moment.
+  const total = (window._peaPv && window._peaPv.total != null)
+    ? window._peaPv.total : series[series.length - 1].val;
+  vEl.textContent = eur(total);
+  dEl.innerHTML = "lignes + espèces" + (pnl.pnlEur == null ? "" :
+    ` · <span class="${pnl.pnlEur >= 0 ? "c-g" : "c-r"}">${eur(pnl.pnlEur, true)}`
+    + `${pnl.pnlPct != null ? " (" + pct(pnl.pnlPct) + ")" : ""}</span> `
+    + (range === "MAX" ? "depuis l'ouverture" : "sur la période"));
+
+  const dates  = series.map(p => p.date);
+  const court  = range === "1W" || range === "1M" || range === "YTD";
+  const labels = dates.map(d => {
+    const [y, m, dd] = normDate(d).split("-").map(Number);
+    return new Date(y, m - 1, dd).toLocaleDateString("fr-FR",
+      court ? {day: "numeric", month: "short"} : {month: "short", year: "2-digit"});
+  });
+  const col = carnetChartColors();
+  if (_ch.dashEvo) { _ch.dashEvo.destroy(); _ch.dashEvo = null; }
+  _ch.dashEvo = new Chart(canvas, {
+    type: "line",
+    data: { labels, datasets: [
+      { label: "Valeur du portefeuille", data: series.map(p => p.val),
+        borderColor: col.accent, backgroundColor: carnetAreaFill(col.accent), fill: "start",
+        tension: 0.2, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4,
+        pointHoverBackgroundColor: col.accent, order: 1 },
+      { label: "Versements cumulés", data: buildDepositSeries(dates),
+        borderColor: col.txt2, borderDash: [4, 4], borderWidth: 1.2, stepped: "before",
+        fill: false, pointRadius: 0, pointHoverRadius: 0, order: 2 },
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => " " + c.dataset.label + " : " + eur(c.raw) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 5, maxRotation: 0, font: { size: 10.5 } } },
+        y: { ticks: { maxTicksLimit: 4, font: { size: 10.5 },
+                      callback: v => Math.round(v).toLocaleString("fr-FR") + " €" } },
+      },
+    },
+  });
+}
+
+function dashRenderRep() {
+  const box = document.getElementById("dash-rep");
+  if (!box) return;
+  const eps = S.positions.map(p => ({ p, e: computePos(p) }));
+  if (!eps.length) {
+    box.innerHTML = `<div class="m-empty">Aucune ligne en portefeuille.</div>`;
+    return;
+  }
+  // Même base que la colonne « Répartition » de l'onglet Positions
+  const ti = eps.reduce((s, x) => s + x.e.inv, 0);
+  const tv = eps.reduce((s, x) => x.e.val != null ? s + x.e.val : s, 0);
+  const rows = eps.map(({ p, e }) => ({
+    nom: p.name || p.ticker,
+    r: (tv > 0 && e.val != null) ? e.val / tv * 100 : (ti > 0 ? e.inv / ti * 100 : 0),
+  })).sort((a, b) => b.r - a.r);
+  box.innerHTML = rows.map(x => `<div class="rep-row">
+      <span class="rep-nm" title="${escHtml(x.nom)}">${escHtml(x.nom)}</span>
+      <span class="rep-p">${x.r.toFixed(1).replace(".", ",")}&nbsp;%</span>
+      <div class="rep-bar"><i style="width:${Math.max(0, Math.min(100, x.r)).toFixed(1)}%"></i></div>
+    </div>`).join("");
+}
+
+/** Un <canvas> garde les couleurs du moment où il a été dessiné : on redessine
+    les courbes du Carnet quand le thème ou la couleur d'accent change. */
+function carnetRedrawCharts() {
+  if (_ch.perf && typeof drawPerfChart === "function") drawPerfChart();
+  if (_ch.dashEvo) dashRenderEvo();
+}
+new MutationObserver(() => {
+  clearTimeout(carnetRedrawCharts._t);
+  carnetRedrawCharts._t = setTimeout(carnetRedrawCharts, 60);
+}).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style"] });
 
 /* ─────────────────────────────────────────────────────────────────────────
    POINT D'ENTREE : appele par goTab("perf")
@@ -6304,7 +6578,7 @@ function makePie(cid, data, labels) {
         const right = Math.cos(mid)>0;
         ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
         ctx.strokeStyle = CLRS[i%CLRS.length]; ctx.lineWidth=1.5; ctx.stroke();
-        ctx.fillStyle="#18181b";
+        ctx.fillStyle = carnetChartColors().txt;   // lisible en sombre aussi
         ctx.font="600 9px 'Onest',sans-serif";
         ctx.textAlign = right?"left":"right"; ctx.textBaseline="middle";
         let lbl = labels[i]; if(lbl.length>15) lbl=lbl.slice(0,14)+"…";
@@ -6316,7 +6590,7 @@ function makePie(cid, data, labels) {
 
   _ch[cid] = new Chart(c,{
     type:"doughnut",
-    data:{labels,datasets:[{data,backgroundColor:CLRS.slice(0,data.length),borderWidth:2,borderColor:"#ffffff"}]},
+    data:{labels,datasets:[{data,backgroundColor:CLRS.slice(0,data.length),borderWidth:2,borderColor:carnetChartColors().bg2}]},
     options:{
       responsive:true,maintainAspectRatio:false,cutout:"58%",
       layout:{padding:{top:32,bottom:32,left:60,right:60}},
@@ -8131,6 +8405,7 @@ function goTab(n) {
   if (n==="div") renderDividends();
   if (n==="reco") { renderReco(); fetchAnalysts(); fetchKeystats(); }
   if (n==="sim" && typeof _initSimulateurs === "function") _initSimulateurs();
+  if (n==="dash" && typeof dashRenderOverview === "function") dashRenderOverview();
   // Memorise pour le prochain lancement
   try { document.body.dataset.activeTab = n; } catch(e) {}
   // Ici et pas dans un patch de goTab : chaque patch appelle cette version
@@ -11188,6 +11463,8 @@ function _injectDashboardPane() {
   }
   pane.appendChild(pea);
   pane.appendChild(mets);
+  const duo = document.getElementById("dash-duo");   // courbe + répartition
+  if (duo) pane.appendChild(duo);
 }
 
 /* — Installation finale du shell — */
@@ -13407,17 +13684,25 @@ function spVolumeSince(iso, sport) {
     String(s.date || "") >= iso && (!sport || s.sport === sport)));
 }
 
+/** Où en est un objectif « événement » : jours restants, part du temps écoulé
+    depuis qu'il a été fixé, volume d'entraînement depuis. Partagé par la carte
+    de l'onglet Objectifs et la tuile de l'accueil. */
+function spGoalTimeline(g) {
+  const today = spDateISO(new Date());
+  const days  = Math.round((spParseISO(g.date) - spParseISO(today)) / 86400000);
+  const t     = spVolumeSince(g.createdAt, g.sport);
+  const total = Math.max(1, Math.round((spParseISO(g.date) - spParseISO(g.createdAt)) / 86400000));
+  const pct   = Math.max(0, Math.min(100, Math.round((total - Math.max(0, days)) / total * 100)));
+  return { days, t, total, pct };
+}
+
 function spGoalCard(g) {
   const sp   = g.sport ? spSportById(g.sport) : null;
   const done = g.status === "done";
   let body = "", urgent = false;
 
   if (g.kind === "event" && g.date) {
-    const today = spDateISO(new Date());
-    const days  = Math.round((spParseISO(g.date) - spParseISO(today)) / 86400000);
-    const t     = spVolumeSince(g.createdAt, g.sport);
-    const total = Math.max(1, Math.round((spParseISO(g.date) - spParseISO(g.createdAt)) / 86400000));
-    const pct   = Math.max(0, Math.min(100, Math.round((total - Math.max(0, days)) / total * 100)));
+    const { days, t, pct } = spGoalTimeline(g);
     urgent = !done && days >= 0 && days <= 14;
     body = `
       <div>
@@ -18019,7 +18304,8 @@ const DASH_WIDGETS = [
                                    sub: "En attente des cours", go: "Voir la performance" };
       return { lbl: "Rendement total du PEA", val: eur(pv.eur, true),
                cls: pv.eur >= 0 ? "c-g" : "c-r",
-               sub: pv.pct != null ? pct(pv.pct) : "", go: "Voir la performance" };
+               sub: pv.pct != null ? pct(pv.pct) : "", go: "Voir la performance",
+               viz: dashPeaSpark("pv") };
     },
   },
   {
@@ -18028,7 +18314,8 @@ const DASH_WIDGETS = [
       const pv = window._peaPv || {};
       if (pv.total == null) return null;
       return { lbl: "Valeur du PEA", val: eur(pv.total),
-               sub: "lignes + espèces", go: "Vue d'ensemble" };
+               sub: "lignes + espèces", go: "Vue d'ensemble",
+               viz: dashPeaSpark("val") };
     },
   },
   {
@@ -18042,7 +18329,8 @@ const DASH_WIDGETS = [
         sub = (d >= 0 ? "+" : "−") + paEur(Math.abs(d)) + " ce mois-ci";
       }
       return { lbl: "Patrimoine net", val: paEur(_paNet.net),
-               cls: _paNet.net >= 0 ? "" : "c-r", sub, go: "Voir le patrimoine" };
+               cls: _paNet.net >= 0 ? "" : "c-r", sub, go: "Voir le patrimoine",
+               viz: dashSpark((typeof _paSerie !== "undefined" ? _paSerie : []).map(x => x.net)) };
     },
   },
   {
@@ -18063,7 +18351,7 @@ const DASH_WIDGETS = [
       return { lbl: "Sport ce mois-ci", val: spFmtDur(t.min),
                sub: t.n ? t.n + " séance" + (t.n > 1 ? "s" : "") + " en " + SP_MONTHS[now.getMonth()]
                         : "Aucune séance ce mois-ci",
-               go: "Ouvrir l'agenda" };
+               go: "Ouvrir l'agenda", viz: dashSportWeeks() };
     },
   },
   {
@@ -18074,8 +18362,11 @@ const DASH_WIDGETS = [
       if (!g) return null;
       if (g.kind === "event" && g.date) {
         const days = Math.round((spParseISO(g.date) - spParseISO(spDateISO(new Date()))) / 86400000);
+        const tl = spGoalTimeline(g);
         return { lbl: "Prochain objectif", val: days === 0 ? "Aujourd'hui" : "J−" + days,
-                 sub: g.title, go: "Voir les objectifs" };
+                 sub: g.title, go: "Voir les objectifs",
+                 viz: dashProgress(tl.pct, "Préparation : " + spFmtDur(tl.t.min),
+                                   tl.t.n + " séance" + (tl.t.n > 1 ? "s" : "")) };
       }
       return { lbl: "Prochain objectif", val: "◎", sub: g.title, go: "Voir les objectifs" };
     },
@@ -18089,7 +18380,9 @@ const DASH_WIDGETS = [
       const d = saDelta("poids", last.poids, prev ? prev.poids : null);
       return { lbl: "Poids", val: saFmt("poids", last.poids),
                cls: saDeltaClass("poids", last.poids, prev ? prev.poids : null) === "down" ? "c-g" : "",
-               sub: d ? d + " vs pesée précédente" : "première pesée", go: "Voir le suivi" };
+               sub: d ? d + " vs pesée précédente" : "première pesée", go: "Voir le suivi",
+               viz: dashSpark(saSorted().filter(m => m.poids != null && m.poids !== "")
+                                        .slice(-12).map(m => Number(m.poids))) };
     },
   },
   {
@@ -18104,7 +18397,7 @@ const DASH_WIDGETS = [
                val: p.pct.toFixed(0) + " %",
                sub: p.done ? "objectif atteint"
                            : "reste " + saFmt(g.metric, Math.abs(g.target - p.current)),
-               go: "Voir les objectifs" };
+               go: "Voir les objectifs", viz: dashProgress(p.pct) };
     },
   },
   {
@@ -18281,8 +18574,84 @@ function dashCardHtml(w, d, muted) {
     <span class="home-card-lbl">${dashIcon(w)}${escHtml(d.lbl)}</span>
     <span class="home-card-val ${d.cls || ""}">${d.val}</span>
     <span class="home-card-sub">${escHtml(d.sub || "")}</span>
+    ${d.viz ? `<div class="home-card-viz">${d.viz}</div>` : ""}
     ${(!_dashEdit && d.go && w.tab) ? `<span class="home-card-go">${escHtml(d.go)} →</span>` : ""}
   </div>`;
+}
+
+/* ── Mini-graphiques des tuiles (maquette « Carnet ») ────────────────────────
+   Uniquement là où le module a de vraies données : une tuile sans historique
+   garde son chiffre, sans graphique inventé. SVG et HTML simples colorés par le
+   CSS (--accent) : ils suivent le thème et l'accent sans être redessinés. */
+
+/** Courbe miniature d'une suite de nombres (au moins deux). */
+function dashSpark(vals) {
+  const v = (vals || []).map(Number).filter(x => isFinite(x));
+  if (v.length < 2) return "";
+  const mn = Math.min(...v), mx = Math.max(...v), d = (mx - mn) || 1;
+  const path = v.map((x, i) => (i ? "L" : "M") + (i / (v.length - 1) * 100).toFixed(2)
+                              + "," + (28 - (x - mn) / d * 26).toFixed(2)).join("");
+  return `<svg class="dash-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="${path}"/></svg>`;
+}
+
+/** Barre de progression, avec deux libellés facultatifs dessous. */
+function dashProgress(pct, gauche, droite) {
+  const p = Math.max(0, Math.min(100, Number(pct) || 0));
+  const lib = (gauche || droite)
+    ? `<div class="dash-prog-l"><span>${escHtml(gauche || "")}</span><span>${escHtml(droite || "")}</span></div>` : "";
+  return `<div class="dash-prog" role="img" aria-label="${Math.round(p)} %"><i style="width:${p.toFixed(1)}%"></i></div>${lib}`;
+}
+
+/** Numéro de semaine ISO (1 à 53) d'une date locale. */
+function dashIsoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+}
+
+/** Heures de sport des quatre dernières semaines ; la semaine en cours en plein. */
+function dashSportWeeks() {
+  if (typeof SP === "undefined" || !SP) return "";
+  const now = new Date();
+  const lundi = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+  const sem = [];
+  for (let k = 3; k >= 0; k--) {
+    const a = new Date(lundi.getFullYear(), lundi.getMonth(), lundi.getDate() - 7 * k);
+    const b = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 6);
+    const du = spDateISO(a), au = spDateISO(b);
+    const min = spSessions().filter(x => x.date >= du && x.date <= au)
+                            .reduce((t, x) => t + spNum(x.duration), 0);
+    sem.push({ min, lbl: "S" + dashIsoWeek(a) });
+  }
+  const max = Math.max(...sem.map(x => x.min));
+  if (!max) return "";
+  return `<div class="dash-bars">${sem.map(x =>
+      `<span title="${x.lbl} : ${spFmtDur(x.min)}" style="height:${Math.max(6, x.min / max * 100).toFixed(0)}%"></span>`).join("")}</div>`
+    + `<div class="dash-bars-l">${sem.map(x => `<span>${x.lbl}</span>`).join("")}</div>`;
+}
+
+/** Courbe du PEA sur six mois, tirée de la série de l'onglet Performance.
+    "pv" : plus-value (valeur − versements) ; "val" : valeur du portefeuille.
+    Au premier affichage l'historique n'est pas encore chargé : on le demande
+    une seule fois, et l'accueil se redessine quand il arrive. */
+let _dashPerfAsked = false;
+function dashPeaSpark(kind) {
+  let full = _perfFullSeries;
+  if (!full && _perfHistory) full = _perfFullSeries = buildTwrSeries(_perfHistory);
+  if (!full) {
+    if (!_dashPerfAsked) {
+      _dashPerfAsked = true;
+      perfSeriesAsync().then(f => { if (f) dashRender(); });
+    }
+    return "";
+  }
+  let serie = filterByRange(full, "6M");
+  if (!serie || serie.length < 2) serie = full;
+  if (kind === "pv") {
+    const dep = buildDepositSeries(serie.map(p => p.date));
+    return dashSpark(serie.map((p, i) => p.val - dep[i]));
+  }
+  return dashSpark(serie.map(p => p.val));
 }
 
 /** Icône du module d'une tuile, la même que dans la barre latérale. */

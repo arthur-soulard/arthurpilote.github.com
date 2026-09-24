@@ -13,12 +13,24 @@ import sys
 import tempfile
 import threading
 import traceback
+import urllib.error
 import urllib.request
 import urllib.parse
 from datetime import datetime
 from pathlib import Path
 
 RELEASES_API = "https://api.github.com/repos/arthur-soulard/arthurpilote.github.com/releases/latest"
+
+# Solution de secours quand l'API refuse de repondre. Sans jeton, elle accepte
+# 60 requetes par heure et par adresse IP ; une adresse partagee (box, reseau
+# d'ecole) peut epuiser ce quota sans que Pilote y soit pour rien, et l'API
+# repond alors 403. Constate le 23/09/2026 : huit verifications refusees de
+# suite, l'app se croyait a jour. La page publique n'est pas soumise a ce quota :
+# /releases/latest redirige vers /releases/tag/vX.Y.Z, et l'installeur a une URL
+# fixe (meme nom que dans release.yml et OutputBaseFilename de installer.iss).
+RELEASES_PAGE = "https://github.com/arthur-soulard/arthurpilote.github.com/releases"
+SETUP_ASSET   = "Pilote_Setup.exe"
+_UA = "Suivi-PEA-Updater/2"
 
 _lock = threading.Lock()
 
@@ -88,34 +100,92 @@ def _set_progress(step: str, pct: int, error: str | None = None) -> None:
 
 # ── Check update ──────────────────────────────────────────────────────────────
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Ne suit pas les redirections : c'est l'adresse de destination qu'on veut lire."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _redirect_target(url: str) -> str | None:
+    """Adresse vers laquelle `url` redirige (en-tete Location), sans la suivre."""
+    req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": _UA})
+    try:
+        with urllib.request.build_opener(_NoRedirect).open(req, timeout=8):
+            return None                     # 200 : pas de redirection
+    except urllib.error.HTTPError as e:
+        if e.code in (301, 302, 303, 307, 308):
+            return e.headers.get("Location")
+        raise
+
+
+def _latest_from_api() -> tuple:
+    """(version, page de la release, URL de l'installeur) lus dans l'API GitHub."""
+    req = urllib.request.Request(
+        RELEASES_API,
+        headers={"User-Agent": _UA, "Accept": "application/vnd.github+json"},
+    )
+    with urllib.request.urlopen(req, timeout=8) as r:
+        data = json.loads(r.read())
+
+    latest = data.get("tag_name", "").lstrip("v")
+    html_url = data.get("html_url", "")
+    download_url = None
+    for asset in data.get("assets", []):
+        if asset.get("name", "").endswith("Setup.exe"):
+            url = asset.get("browser_download_url")
+            # Ce fichier sera EXECUTE avec les droits de l'utilisateur.
+            # On n'accepte qu'une URL https servie par GitHub : une reponse
+            # d'API alteree ne doit pas pouvoir rediriger l'auto-update
+            # vers un binaire quelconque.
+            if _is_github_https(url):
+                download_url = url
+            else:
+                _log(f"CHECK: asset ignore, URL non GitHub : {url}")
+            break
+    return latest, html_url, download_url
+
+
+def _latest_from_page() -> tuple:
+    """Meme resultat, lu sur la page publique (pas de quota) : voir RELEASES_PAGE."""
+    html_url = _redirect_target(RELEASES_PAGE + "/latest") or ""
+    marker = "/releases/tag/"
+    if marker not in html_url or not _is_github_https(html_url):
+        raise ValueError(f"redirection inattendue : {html_url!r}")
+    tag = urllib.parse.unquote(html_url.split(marker, 1)[1].split("?")[0].strip("/"))
+    latest = tag.lstrip("v")
+    if _parse_ver(latest) == (0, 0, 0):
+        raise ValueError(f"tag illisible : {tag!r}")
+
+    # L'installeur doit exister vraiment : une release tout juste creee peut
+    # encore attendre ses fichiers. Pas d'installeur -> pas de mise a jour
+    # proposee, on reessaiera au prochain lancement.
+    download_url = f"{RELEASES_PAGE}/download/{urllib.parse.quote(tag)}/{SETUP_ASSET}"
+    try:
+        present = bool(_redirect_target(download_url))   # 302 vers le stockage GitHub
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+        present = False
+    if not present:
+        _log(f"CHECK: {SETUP_ASSET} absent de la release {tag}")
+        download_url = None
+    return latest, html_url, download_url
+
+
 def _fetch(current: str) -> None:
     try:
         _log(f"CHECK current_version={current}")
-        req = urllib.request.Request(
-            RELEASES_API,
-            headers={"User-Agent": "Suivi-PEA-Updater/2", "Accept": "application/vnd.github+json"},
-        )
-        with urllib.request.urlopen(req, timeout=8) as r:
-            data = json.loads(r.read())
+        try:
+            latest, html_url, download_url = _latest_from_api()
+        except Exception as e:
+            _log(f"CHECK API KO ({e}) -> page publique des releases")
+            latest, html_url, download_url = _latest_from_page()
+            _log(f"CHECK via page publique : latest={latest}")
 
-        tag = data.get("tag_name", "")
-        latest = tag.lstrip("v")
-        html_url = data.get("html_url", "")
-        has_update = bool(latest) and _parse_ver(latest) > _parse_ver(current)
-
-        download_url = None
-        for asset in data.get("assets", []):
-            if asset.get("name", "").endswith("Setup.exe"):
-                url = asset.get("browser_download_url")
-                # Ce fichier sera EXECUTE avec les droits de l'utilisateur.
-                # On n'accepte qu'une URL https servie par GitHub : une reponse
-                # d'API alteree ne doit pas pouvoir rediriger l'auto-update
-                # vers un binaire quelconque.
-                if _is_github_https(url):
-                    download_url = url
-                else:
-                    _log(f"CHECK: asset ignore, URL non GitHub : {url}")
-                break
+        # Sans installeur telechargeable, proposer la mise a jour ne menerait
+        # qu'a un echec au moment d'installer : on attend le prochain lancement.
+        has_update = (bool(latest) and bool(download_url)
+                      and _parse_ver(latest) > _parse_ver(current))
 
         with _lock:
             _state.update({
