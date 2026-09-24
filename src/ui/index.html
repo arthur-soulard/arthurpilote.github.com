@@ -2209,15 +2209,9 @@ thead th, .wish-table thead th {
 .dash-prog i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
 .dash-prog-l { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; font-size: 11.5px; color: var(--txt2); }
 
-/* — Vue d'ensemble du PEA : courbe du capital + répartition — */
+/* — Vue d'ensemble du PEA : plus/moins-values réalisées + répartition — */
 .dash-duo { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; }
 @media (max-width: 1080px) { .dash-duo { grid-template-columns: 1fr; } }
-.dash-evo-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-.dash-evo-v { font-family: var(--serif); font-size: 30px; font-weight: 500; letter-spacing: -.01em; }
-.dash-evo-d { font-size: 12.5px; color: var(--txt2); }
-.dash-evo-chart { position: relative; height: 220px; }
-.dash-evo-msg { font-size: 12px; color: var(--txt2); margin-top: 6px; }
-.dash-evo-msg:empty { display: none; }
 .dash-rep-sub { font-size: 12px; color: var(--txt2); }
 .rep-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; font-size: 12.5px; margin-bottom: 12px; }
 .rep-row:last-child { margin-bottom: 0; }
@@ -2226,7 +2220,25 @@ thead th, .wish-table thead th {
 .rep-bar { grid-column: 1 / -1; height: 5px; border-radius: 99px; background: var(--bg4); overflow: hidden; margin-top: 5px; }
 .rep-bar i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
 
-/* — Pastilles de période (vue d'ensemble et onglet Performance) — */
+.home-card-viz .dash-add-exp { align-self: flex-start; }
+.home-cards.dash-editing .dash-add-exp { pointer-events: none; opacity: .6; }
+
+/* — Icônes dans les petits boutons des modules — */
+.m-iconbtn .ph, .fin-tx-act-btn .ph { font-size: 15px; vertical-align: -0.15em; }
+.sb-eye-btn .ph, .card-eye-btn .ph { font-size: 14px; }
+.sp-pick-ico .ph, .dash-add-plus .ph { vertical-align: 0; }
+.set-nav-ico .ph { font-size: 16px; vertical-align: -0.2em; }
+
+/* — Santé : « Comparer avec » — */
+label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--txt2); }
+.sa-cmp select {
+  font: inherit; font-size: 12.5px; color: var(--txt); background: var(--bg2);
+  border: 1px solid var(--brd2); border-radius: 999px; padding: 5px 12px; cursor: pointer;
+}
+.sa-cmp select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sa-cmp select:disabled { opacity: .5; cursor: default; }
+
+/* — Pastilles de période (vue d'ensemble) — */
 .rng { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--bg3); }
 .rng button, .rng .btn {
   all: unset; box-sizing: border-box; cursor: pointer;
@@ -2257,7 +2269,7 @@ thead th, .wish-table thead th {
       <button class="btn btn-ghost btn-sm" onclick="manualRefresh()" title="Actualiser les cours Yahoo Finance (Ctrl+R)"><i class="ph ph-arrows-clockwise"></i> Actualiser</button>
     </div>
     <button class="btn btn-ghost btn-sm" id="btn-undo" onclick="undoLast()" disabled title="Annuler la dernière action"><i class="ph ph-arrow-u-up-left"></i> Retour</button>
-    <button class="btn btn-ghost btn-sm" onclick="openCours()">✎ Cours manuels</button>
+    <button class="btn btn-ghost btn-sm" onclick="openCours()"><i class="ph ph-pencil-simple"></i> Cours manuels</button>
   </div>
 </div>
 
@@ -2281,34 +2293,83 @@ thead th, .wish-table thead th {
 <!-- METRICS -->
 <div class="mets">
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl">Total déposé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
-  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl">Valeur portefeuille</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
+  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
   <div class="mc" id="mc-pv"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total</div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
 </div>
 
-<!-- VUE D'ENSEMBLE : courbe du capital + répartition (identité « Carnet »).
-     Déplacé dans pane-dash par _injectDashboardPane(), comme les deux blocs
-     au-dessus. Aucun chiffre n'est recalculé à part : la courbe vient de
-     buildTwrSeries/computePnl (onglet Performance), la répartition de
-     computePos (onglet Positions). Rendu : dashRenderOverview(). -->
+<!-- VUE D'ENSEMBLE, suite (4.2.6) : l'ex-onglet Performance y est fusionné.
+     Déplacés dans pane-dash par _injectDashboardPane(), comme les deux blocs
+     au-dessus : la courbe « Évolution du capital » (drawPerfChart), puis les
+     plus/moins-values réalisées à côté de la répartition. Rendus par
+     renderPerf() et dashRenderOverview(), appelées par goTab("dash"). -->
+<!-- Graphique interactif TWR -->
+<div class="card" id="card-twr">
+  <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
+    <span class="card-t">Évolution du capital</span>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <!-- Comparaison vs benchmarks (off par defaut) -->
+      <div id="perf-bench-toggles" style="display:flex;gap:10px;align-items:center;font-size:11px">
+        <span style="color:var(--txt2);font-size:12px">Comparer à&nbsp;:</span>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
+          <input type="checkbox" data-bench="cac40">
+          <span style="color:#7c3aed;font-weight:600">CAC 40</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
+          <input type="checkbox" data-bench="sp500">
+          <span style="color:#ea580c;font-weight:600">S&P 500</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
+          <input type="checkbox" data-bench="world">
+          <span style="color:#0d9488;font-weight:600">ETF World</span>
+        </label>
+      </div>
+      <div id="perf-range-btns" class="rng">
+        <button class="btn btn-sm" id="prb-1w"  onclick="setPerfRange('1W')">1S</button>
+        <button class="btn btn-sm" id="prb-1m"  onclick="setPerfRange('1M')">1M</button>
+        <button class="btn btn-sm" id="prb-6m"  onclick="setPerfRange('6M')">6M</button>
+        <button class="btn btn-sm" id="prb-ytd" onclick="setPerfRange('YTD')">YTD</button>
+        <button class="btn btn-sm btn-primary" id="prb-max" onclick="setPerfRange('MAX')">Max</button>
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="resetPerf()" title="Réinitialiser les benchmarks + la plage" style="margin-left:6px"><i class="ph ph-arrow-counter-clockwise"></i> Effacer</button>
+    </div>
+  </div>
+  <!-- Résumé P&L période -->
+  <div id="twr-summary" style="display:none;padding:.75rem 1.25rem .25rem;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:baseline">
+    <div>
+      <div id="twr-pnl-val" style="font-size:30px;font-weight:500;letter-spacing:-.01em;font-family:var(--serif)">—</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:2px">Valeur − versements cumulés</div>
+    </div>
+    <div>
+      <div id="twr-pnl-pct" style="font-size:22px;font-weight:500;font-family:var(--serif)">—</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:2px">Rendement vs versements</div>
+    </div>
+    <div id="twr-cache-lbl" style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--txt3);align-self:center;display:none"></div>
+    <div id="twr-range-lbl" style="width:100%;font-size:10px;font-family:var(--mono);color:var(--txt3);padding-top:2px;display:none"></div>
+  </div>
+  <div class="card-b" style="padding-top:.5rem">
+    <div id="perf-loading" style="display:none;text-align:center;padding:2rem;font-size:12px;color:var(--txt2);font-family:var(--mono)">
+      <span id="perf-loading-txt">Chargement de l'historique…</span>
+    </div>
+    <div id="perf-nodata" style="display:none;text-align:center;padding:2rem;font-size:12px;color:var(--txt2)">
+      Aucune transaction — ajoutez des positions pour voir la courbe.
+    </div>
+    <div style="position:relative;height:300px"><canvas id="c-perf"></canvas></div>
+  </div>
+</div>
+
 <div class="dash-duo" id="dash-duo">
-  <div class="card">
-    <div class="card-h">
-      <span class="card-t">Évolution du capital</span>
-      <div class="rng" id="dash-rng" role="group" aria-label="Période">
-        <button type="button" data-r="1W" onclick="dashSetRange('1W')">1S</button>
-        <button type="button" data-r="1M" onclick="dashSetRange('1M')">1M</button>
-        <button type="button" data-r="6M" onclick="dashSetRange('6M')">6M</button>
-        <button type="button" data-r="YTD" onclick="dashSetRange('YTD')">YTD</button>
-        <button type="button" data-r="MAX" onclick="dashSetRange('MAX')">Max</button>
+  <!-- Plus/moins-values réalisées -->
+  <div class="card" id="card-realized">
+    <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
+      <span class="card-t">Plus/moins-values réalisées</span>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-left:auto">
+        <span style="font-size:12px;color:var(--txt2)">Total réalisé</span>
+        <span id="realized-total" style="font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:-.01em">—</span>
       </div>
     </div>
-    <div class="card-b">
-      <div class="dash-evo-top"><span class="dash-evo-v" id="dash-evo-v">—</span><span class="dash-evo-d" id="dash-evo-d"></span></div>
-      <div class="dash-evo-chart"><canvas id="c-dash-evo" aria-label="Courbe de la valeur du PEA"></canvas></div>
-      <div class="dash-evo-msg" id="dash-evo-msg"></div>
-    </div>
+    <div class="card-b" id="realized-body" style="padding:.75rem 1rem 1rem"></div>
   </div>
   <div class="card">
     <div class="card-h">
@@ -2322,7 +2383,6 @@ thead th, .wish-table thead th {
 <!-- TABS -->
 <div class="tabs">
   <button class="tab active" onclick="goTab('pos')">Positions</button>
-  <button class="tab" onclick="goTab('perf')">Performance</button>
   <button class="tab" onclick="goTab('div')">Dividendes</button>
   <button class="tab" onclick="goTab('tx')">Transactions</button>
   <button class="tab" onclick="goTab('wish')">Wishlist</button>
@@ -2362,7 +2422,7 @@ thead th, .wish-table thead th {
   <div class="card" id="card-pos">
     <div class="card-h">
       <span class="card-t">Lignes en portefeuille</span>
-      <button class="btn btn-sm btn-ghost" onclick="openAddPos()">+ Ajouter</button>
+      <button class="btn btn-sm btn-ghost" onclick="openAddPos()"><i class="ph ph-plus"></i> Ajouter</button>
     </div>
     <div class="tw"><table>
       <thead><tr>
@@ -2378,101 +2438,6 @@ thead th, .wish-table thead th {
   </div>
 </div>
 
-<!-- ═══════════════════ PERFORMANCE ═══════════════════ -->
-<div class="pane" id="pane-perf">
-
-  <!-- Graphique interactif TWR -->
-  <div class="card" id="card-twr">
-    <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
-      <span class="card-t">Évolution du capital</span>
-      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-        <!-- Comparaison vs benchmarks (off par defaut) -->
-        <div id="perf-bench-toggles" style="display:flex;gap:10px;align-items:center;font-size:11px">
-          <span style="color:var(--txt2);font-size:12px">Comparer à&nbsp;:</span>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-            <input type="checkbox" data-bench="cac40">
-            <span style="color:#7c3aed;font-weight:600">CAC 40</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-            <input type="checkbox" data-bench="sp500">
-            <span style="color:#ea580c;font-weight:600">S&P 500</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-            <input type="checkbox" data-bench="world">
-            <span style="color:#0d9488;font-weight:600">ETF World</span>
-          </label>
-        </div>
-        <div id="perf-range-btns" class="rng">
-          <button class="btn btn-sm" id="prb-1w"  onclick="setPerfRange('1W')">1S</button>
-          <button class="btn btn-sm" id="prb-1m"  onclick="setPerfRange('1M')">1M</button>
-          <button class="btn btn-sm" id="prb-6m"  onclick="setPerfRange('6M')">6M</button>
-          <button class="btn btn-sm" id="prb-ytd" onclick="setPerfRange('YTD')">YTD</button>
-          <button class="btn btn-sm btn-primary" id="prb-max" onclick="setPerfRange('MAX')">Max</button>
-        </div>
-        <button class="btn btn-sm btn-ghost" onclick="resetPerf()" title="Réinitialiser les benchmarks + la plage" style="font-size:10px;margin-left:6px">↺ Effacer</button>
-      </div>
-    </div>
-    <!-- Résumé P&L période -->
-    <div id="twr-summary" style="display:none;padding:.75rem 1.25rem .25rem;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:baseline">
-      <div>
-        <div id="twr-pnl-val" style="font-size:30px;font-weight:500;letter-spacing:-.01em;font-family:var(--serif)">—</div>
-        <div style="font-size:12px;color:var(--txt2);margin-top:2px">Valeur − versements cumulés</div>
-      </div>
-      <div>
-        <div id="twr-pnl-pct" style="font-size:22px;font-weight:500;font-family:var(--serif)">—</div>
-        <div style="font-size:12px;color:var(--txt2);margin-top:2px">Rendement vs versements</div>
-      </div>
-      <div id="twr-cache-lbl" style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--txt3);align-self:center;display:none"></div>
-      <div id="twr-range-lbl" style="width:100%;font-size:10px;font-family:var(--mono);color:var(--txt3);padding-top:2px;display:none"></div>
-    </div>
-    <div class="card-b" style="padding-top:.5rem">
-      <div id="perf-loading" style="display:none;text-align:center;padding:2rem;font-size:12px;color:var(--txt2);font-family:var(--mono)">
-        <span id="perf-loading-txt">Chargement de l'historique…</span>
-      </div>
-      <div id="perf-nodata" style="display:none;text-align:center;padding:2rem;font-size:12px;color:var(--txt2)">
-        Aucune transaction — ajoutez des positions pour voir la courbe.
-      </div>
-      <div style="position:relative;height:300px"><canvas id="c-perf"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Plus/moins-values réalisées -->
-  <div class="card" id="card-realized">
-    <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
-      <span class="card-t">Plus/moins-values réalisées</span>
-      <div style="display:flex;align-items:baseline;gap:8px;margin-left:auto">
-        <span style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em">Total réalisé</span>
-        <span id="realized-total" style="font-family:var(--mono);font-weight:800;font-size:18px;letter-spacing:-.5px">—</span>
-      </div>
-    </div>
-    <div class="card-b" id="realized-body" style="padding:.75rem 1rem 1rem"></div>
-  </div>
-
-  <!-- Camemberts -->
-  <div class="cgrid">
-    <div class="card" id="card-pie-val">
-      <div class="card-h"><span class="card-t">Répartition valeur</span></div>
-      <div class="card-b"><div style="position:relative;height:230px"><canvas id="c-piev"></canvas></div></div>
-    </div>
-    <div class="card" id="card-pie-inv">
-      <div class="card-h"><span class="card-t">Répartition capital investi</span></div>
-      <div class="card-b"><div style="position:relative;height:230px"><canvas id="c-piei"></canvas></div></div>
-    </div>
-  </div>
-
-  <!-- Carte thermique -->
-  <div class="card" id="card-heatmap">
-    <div class="card-h">
-      <span class="card-t">Carte thermique du portefeuille</span>
-      <span style="font-size:10px;color:var(--txt3);font-family:var(--mono)">Perf. depuis l'achat</span>
-    </div>
-    <div class="card-b" style="padding:.75rem">
-      <div class="hm-wrap" id="hm-wrap"></div>
-      <div id="hm-legend" style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
-    </div>
-  </div>
-</div>
-
 <!-- ═══════════════════ DIVIDENDES ═══════════════════ -->
 <div class="pane" id="pane-div">
   <div class="card" id="card-div-chart">
@@ -2484,8 +2449,8 @@ thead th, .wish-table thead th {
       <span class="card-t">Dividendes reçus</span>
       <div style="display:flex;gap:8px;align-items:center">
         <span id="div-rec-total" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
-        <button class="btn btn-sm btn-ghost" onclick="openAddDivFuture(null)">+ Estimatif</button>
-        <button class="btn btn-sm btn-primary" onclick="openAddDiv()">+ Saisir</button>
+        <button class="btn btn-sm btn-ghost" onclick="openAddDivFuture(null)"><i class="ph ph-plus"></i> Estimatif</button>
+        <button class="btn btn-sm btn-primary" onclick="openAddDiv()"><i class="ph ph-plus"></i> Saisir</button>
       </div>
     </div>
     <div class="tw"><table>
@@ -2527,7 +2492,7 @@ thead th, .wish-table thead th {
         <select id="tx-filter-sector" onchange="renderTx()" style="font-family:var(--mono);background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rad);padding:5px 8px;font-size:11px;color:var(--txt)">
           <option value="">Tous secteurs</option>
         </select>
-        <button class="btn btn-sm btn-ghost" onclick="openAddTx()">+ Ajouter</button>
+        <button class="btn btn-sm btn-ghost" onclick="openAddTx()"><i class="ph ph-plus"></i> Ajouter</button>
       </div>
     </div>
     <div class="card-b" id="tx-list"></div>
@@ -2545,7 +2510,7 @@ thead th, .wish-table thead th {
           onchange="renderSectors()" title="% du portefeuille au-delà duquel une alerte est affichée"
           style="width:56px;font-family:var(--mono);font-size:12px;padding:3px 6px;border:1px solid var(--brd2);border-radius:var(--rad);background:var(--bg2);color:var(--txt)">
         <span style="font-size:11px;color:var(--txt2)">%</span>
-        <button class="btn btn-sm btn-ghost" onclick="goTab('pos')" title="Aller aux positions pour modifier les secteurs">✎ Modifier secteurs</button>
+        <button class="btn btn-sm btn-ghost" onclick="goTab('pos')" title="Aller aux positions pour modifier les secteurs"><i class="ph ph-pencil-simple"></i> Modifier secteurs</button>
       </div>
     </div>
     <div id="sector-alerts-bar" style="display:none;padding:.6rem 1rem;background:var(--r2);border-bottom:1px solid var(--brd);font-size:11px;color:var(--r);font-weight:700"></div>
@@ -2569,7 +2534,7 @@ thead th, .wish-table thead th {
           onchange="renderGeo()" title="% du portefeuille au-delà duquel une alerte de concentration géographique est affichée"
           style="width:56px;font-family:var(--mono);font-size:12px;padding:3px 6px;border:1px solid var(--brd2);border-radius:var(--rad);background:var(--bg2);color:var(--txt)">
         <span style="font-size:11px;color:var(--txt2)">%</span>
-        <button class="btn btn-sm btn-ghost" onclick="goTab('pos')" title="Aller aux positions pour ajuster les zones">✎ Modifier zones</button>
+        <button class="btn btn-sm btn-ghost" onclick="goTab('pos')" title="Aller aux positions pour ajuster les zones"><i class="ph ph-pencil-simple"></i> Modifier zones</button>
       </div>
     </div>
     <div id="geo-alerts-bar" style="display:none;padding:.6rem 1rem;background:var(--r2);border-bottom:1px solid var(--brd);font-size:11px;color:var(--r);font-weight:700"></div>
@@ -2604,7 +2569,7 @@ thead th, .wish-table thead th {
       <span class="card-t">Wishlist · Actions</span>
       <div style="display:flex;gap:8px;align-items:center">
         <span id="wish-update" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
-        <button class="btn btn-sm btn-ghost" onclick="openAddWish('pea','action')">+ Action</button>
+        <button class="btn btn-sm btn-ghost" onclick="openAddWish('pea','action')"><i class="ph ph-plus"></i> Action</button>
       </div>
     </div>
     <div class="tw"><table class="wish-table">
@@ -2628,7 +2593,7 @@ thead th, .wish-table thead th {
   <div class="card" id="card-wish-etf">
     <div class="card-h">
       <span class="card-t">Wishlist · ETF</span>
-      <button class="btn btn-sm btn-ghost" onclick="openAddWish('pea','etf')">+ ETF</button>
+      <button class="btn btn-sm btn-ghost" onclick="openAddWish('pea','etf')"><i class="ph ph-plus"></i> ETF</button>
     </div>
     <div class="tw"><table class="wish-table">
       <thead><tr id="wl-etf-headers">
@@ -2655,7 +2620,7 @@ thead th, .wish-table thead th {
       <span class="card-t">Dépôts PEA</span>
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-size:10px;color:var(--txt2);font-family:var(--mono)" id="dep-total-lbl"></span>
-        <button class="btn btn-sm btn-primary" onclick="openAddDepot()">+ Ajouter</button>
+        <button class="btn btn-sm btn-primary" onclick="openAddDepot()"><i class="ph ph-plus"></i> Ajouter</button>
       </div>
     </div>
     <div class="tw"><table>
@@ -2670,7 +2635,7 @@ thead th, .wish-table thead th {
   <div class="card" id="card-strat">
     <div class="card-h">
       <span class="card-t">Règles de stratégie</span>
-      <button class="btn btn-sm btn-primary" onclick="openAddRule()">+ Ajouter une règle</button>
+      <button class="btn btn-sm btn-primary" onclick="openAddRule()"><i class="ph ph-plus"></i> Ajouter une règle</button>
     </div>
     <div class="card-b" id="strat-list">
       <div style="text-align:center;color:var(--txt2);padding:1.5rem;font-size:12px">Aucune règle — cliquez sur "+ Ajouter une règle" pour commencer.</div>
@@ -2694,7 +2659,7 @@ thead th, .wish-table thead th {
 <!-- ═══════════════════ SIMULATEURS ═══════════════════ -->
 <div class="pane" id="pane-sim">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-    <button type="button" class="btn btn-ghost btn-sm" onclick="resetSimulators()" style="font-size:11px">↺ Effacer mes simulations</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="resetSimulators()" style="font-size:11px"><i class="ph ph-arrow-counter-clockwise"></i> Effacer mes simulations</button>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
 
@@ -2771,9 +2736,9 @@ thead th, .wish-table thead th {
   <!-- Header : navigateur mois + bilan + actions -->
   <div class="fin-header">
     <div class="fin-month-nav">
-      <button class="btn btn-sm btn-ghost" onclick="finChangeMonth(-1)" title="Mois précédent">←</button>
+      <button class="btn btn-sm btn-ghost" onclick="finChangeMonth(-1)" title="Mois précédent"><i class="ph ph-caret-left"></i></button>
       <span class="fin-month-label" id="fin-month-lbl">—</span>
-      <button class="btn btn-sm btn-ghost" onclick="finChangeMonth(1)" title="Mois suivant">→</button>
+      <button class="btn btn-sm btn-ghost" onclick="finChangeMonth(1)" title="Mois suivant"><i class="ph ph-caret-right"></i></button>
       <button class="btn btn-sm btn-ghost" onclick="finGoToday()" title="Mois courant" style="margin-left:6px">Aujourd'hui</button>
     </div>
     <div class="fin-balance">
@@ -2781,12 +2746,12 @@ thead th, .wish-table thead th {
       <span class="fin-balance-val neu" id="fin-balance-val">+0,00 €</span>
     </div>
     <div class="fin-actions">
-      <button class="btn btn-primary"  onclick="finOpenTx('expense')">+ Dépense</button>
-      <button class="btn btn-primary"  onclick="finOpenTx('income')">+ Revenu</button>
-      <button class="btn btn-ghost"    onclick="finOpenRecurrences()">↻ Récurrents</button>
-      <button class="btn btn-ghost"    onclick="finOpenCategories()">▦ Catégories</button>
-      <button class="btn btn-ghost"    onclick="finOpenSources()">⊳ Sources</button>
-      <button class="btn btn-ghost" onclick="openSettings('comptes')" title="Paramètres de Mes comptes">⚙</button>
+      <button class="btn btn-primary"  onclick="finOpenTx('expense')"><i class="ph ph-plus"></i> Dépense</button>
+      <button class="btn btn-primary"  onclick="finOpenTx('income')"><i class="ph ph-plus"></i> Revenu</button>
+      <button class="btn btn-ghost"    onclick="finOpenRecurrences()"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
+      <button class="btn btn-ghost"    onclick="finOpenCategories()"><i class="ph ph-squares-four"></i> Catégories</button>
+      <button class="btn btn-ghost"    onclick="finOpenSources()"><i class="ph ph-credit-card"></i> Sources</button>
+      <button class="btn btn-ghost" onclick="openSettings('comptes')" title="Paramètres de Mes comptes"><i class="ph ph-gear-six"></i></button>
     </div>
   </div>
 
@@ -2867,9 +2832,9 @@ thead th, .wish-table thead th {
   <!-- ──────────── RÉCAP DE L'ANNÉE ──────────── -->
   <div class="fin-year-header">
     <div class="fin-year-nav">
-      <button class="btn btn-sm btn-ghost" onclick="finChangeYear(-1)" title="Année précédente">←</button>
+      <button class="btn btn-sm btn-ghost" onclick="finChangeYear(-1)" title="Année précédente"><i class="ph ph-caret-left"></i></button>
       <span class="fin-year-label">Récap de l'année <span id="fin-year-lbl">—</span></span>
-      <button class="btn btn-sm btn-ghost" onclick="finChangeYear(1)" title="Année suivante">→</button>
+      <button class="btn btn-sm btn-ghost" onclick="finChangeYear(1)" title="Année suivante"><i class="ph ph-caret-right"></i></button>
       <button class="btn btn-sm btn-ghost" onclick="finGoCurrentYear()" style="margin-left:6px">Cette année</button>
     </div>
   </div>
@@ -2924,15 +2889,15 @@ thead th, .wish-table thead th {
 <div class="pane" id="pane-sp-agenda">
   <div class="m-head">
     <div class="m-nav">
-      <button class="btn btn-sm btn-ghost" onclick="spChangeMonth(-1)" title="Mois précédent">←</button>
+      <button class="btn btn-sm btn-ghost" onclick="spChangeMonth(-1)" title="Mois précédent"><i class="ph ph-caret-left"></i></button>
       <span class="m-nav-lbl" id="sp-month-lbl">—</span>
-      <button class="btn btn-sm btn-ghost" onclick="spChangeMonth(1)" title="Mois suivant">→</button>
+      <button class="btn btn-sm btn-ghost" onclick="spChangeMonth(1)" title="Mois suivant"><i class="ph ph-caret-right"></i></button>
       <button class="btn btn-sm btn-ghost" onclick="spGoToday()" style="margin-left:6px">Aujourd'hui</button>
     </div>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="spOpenSession(null, null)">+ Séance</button>
+    <button class="btn btn-primary" onclick="spOpenSession(null, null)"><i class="ph ph-plus"></i> Séance</button>
     <button class="btn btn-ghost"   onclick="spOpenRoutines()">Routines</button>
-    <button class="btn btn-ghost" onclick="openSettings('sport')" title="Paramètres des Sports">⚙</button>
+    <button class="btn btn-ghost" onclick="openSettings('sport')" title="Paramètres des Sports"><i class="ph ph-gear-six"></i></button>
   </div>
 
   <div class="mkpis" id="sp-month-kpis"></div>
@@ -2952,7 +2917,7 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <div class="m-nav-lbl" style="min-width:auto;text-align:left;text-transform:none">Objectifs</div>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="spOpenGoal(null)">+ Objectif</button>
+    <button class="btn btn-primary" onclick="spOpenGoal(null)"><i class="ph ph-plus"></i> Objectif</button>
   </div>
 
   <div class="card" id="card-sp-goals-active">
@@ -2969,9 +2934,9 @@ thead th, .wish-table thead th {
 <div class="pane" id="pane-sp-stats">
   <div class="m-head">
     <div class="m-nav">
-      <button class="btn btn-sm btn-ghost" onclick="spChangeStatsYear(-1)" title="Année précédente">←</button>
+      <button class="btn btn-sm btn-ghost" onclick="spChangeStatsYear(-1)" title="Année précédente"><i class="ph ph-caret-left"></i></button>
       <span class="m-nav-lbl" id="sp-stats-year-lbl">—</span>
-      <button class="btn btn-sm btn-ghost" onclick="spChangeStatsYear(1)" title="Année suivante">→</button>
+      <button class="btn btn-sm btn-ghost" onclick="spChangeStatsYear(1)" title="Année suivante"><i class="ph ph-caret-right"></i></button>
     </div>
   </div>
 
@@ -3022,7 +2987,7 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Patrimoine net</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="paOpenSaisie()">📝 Relevé du mois</button>
+    <button class="btn btn-primary" onclick="paOpenSaisie()"><i class="ph ph-note-pencil"></i> Relevé du mois</button>
     <button class="btn btn-ghost"   onclick="goTab('pa-comptes');_setActiveSidebar('pa-comptes')">Comptes</button>
   </div>
   <div id="pa-rappel"></div>
@@ -3050,8 +3015,8 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Comptes et relevés</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="paOpenCompte(null)">+ Compte</button>
-    <button class="btn btn-ghost"   onclick="paOpenSaisie()">📝 Relevé du mois</button>
+    <button class="btn btn-primary" onclick="paOpenCompte(null)"><i class="ph ph-plus"></i> Compte</button>
+    <button class="btn btn-ghost"   onclick="paOpenSaisie()"><i class="ph ph-note-pencil"></i> Relevé du mois</button>
   </div>
   <div class="card" id="card-pa-comptes">
     <div class="card-h"><span class="card-t">Mes comptes</span>
@@ -3069,8 +3034,10 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl" id="sa-suivi-lbl">Composition corporelle</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="saImportScreens()">📷 Envoyer les captures</button>
-    <button class="btn btn-ghost"   onclick="saOpenMesure(null)">+ Pesée</button>
+    <label class="sa-cmp" for="sa-cmp">Comparer avec
+      <select id="sa-cmp" onchange="saSetCompare(this.value)"></select></label>
+    <button class="btn btn-primary" onclick="saImportScreens()"><i class="ph ph-camera"></i> Envoyer les captures</button>
+    <button class="btn btn-ghost"   onclick="saOpenMesure(null)"><i class="ph ph-plus"></i> Pesée</button>
   </div>
   <div class="mkpis" id="sa-kpis"></div>
 
@@ -3104,8 +3071,8 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Historique des pesées</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="saImportScreens()">📷 Envoyer les captures</button>
-    <button class="btn btn-ghost"   onclick="saOpenMesure(null)">+ Pesée</button>
+    <button class="btn btn-primary" onclick="saImportScreens()"><i class="ph ph-camera"></i> Envoyer les captures</button>
+    <button class="btn btn-ghost"   onclick="saOpenMesure(null)"><i class="ph ph-plus"></i> Pesée</button>
   </div>
   <div class="card" id="card-sa-hist">
     <div class="card-h"><span class="card-t">Toutes les mesures</span>
@@ -3118,7 +3085,7 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Objectifs</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="saOpenGoal(null)">+ Objectif</button>
+    <button class="btn btn-primary" onclick="saOpenGoal(null)"><i class="ph ph-plus"></i> Objectif</button>
   </div>
   <div id="sa-goals-body"></div>
 </div>
@@ -3128,8 +3095,8 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">À faire</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="foOpenForm(null)">+ Formation</button>
-    <button class="btn btn-ghost" onclick="openSettings('formation')">⚙ Domaines</button>
+    <button class="btn btn-primary" onclick="foOpenForm(null)"><i class="ph ph-plus"></i> Formation</button>
+    <button class="btn btn-ghost" onclick="openSettings('formation')"><i class="ph ph-gear-six"></i> Domaines</button>
   </div>
   <div class="mkpis" id="fo-todo-kpis"></div>
 
@@ -3149,8 +3116,8 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Terminées</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="foOpenCv()">📋 Générer mon CV</button>
-    <button class="btn btn-ghost" onclick="foOpenCertFolder()">📁 Certificats</button>
+    <button class="btn btn-primary" onclick="foOpenCv()"><i class="ph ph-clipboard-text"></i> Générer mon CV</button>
+    <button class="btn btn-ghost" onclick="foOpenCertFolder()"><i class="ph ph-folder-open"></i> Certificats</button>
   </div>
   <div class="mkpis" id="fo-done-kpis"></div>
 
@@ -3165,24 +3132,24 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Mon CV</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="foOpenCv()">📋 Générer mon CV</button>
+    <button class="btn btn-primary" onclick="foOpenCv()"><i class="ph ph-clipboard-text"></i> Générer mon CV</button>
   </div>
 
   <div class="card" id="card-fo-exp">
     <div class="card-h"><span class="card-t">Expériences</span>
-      <button class="btn btn-ghost btn-sm" onclick="foOpenExp(null)">+ Expérience</button></div>
+      <button class="btn btn-ghost btn-sm" onclick="foOpenExp(null)"><i class="ph ph-plus"></i> Expérience</button></div>
     <div class="card-b"><div id="fo-list-exp"></div></div>
   </div>
 
   <div class="card" id="card-fo-proj">
     <div class="card-h"><span class="card-t">Projets</span>
-      <button class="btn btn-ghost btn-sm" onclick="foOpenProj(null)">+ Projet</button></div>
+      <button class="btn btn-ghost btn-sm" onclick="foOpenProj(null)"><i class="ph ph-plus"></i> Projet</button></div>
     <div class="card-b"><div id="fo-list-proj"></div></div>
   </div>
 
   <div class="card" id="card-fo-comp">
     <div class="card-h"><span class="card-t">Compétences</span>
-      <button class="btn btn-ghost btn-sm" onclick="foOpenComp(null)">+ Compétence</button></div>
+      <button class="btn btn-ghost btn-sm" onclick="foOpenComp(null)"><i class="ph ph-plus"></i> Compétence</button></div>
     <div class="card-b"><div id="fo-list-comp"></div></div>
   </div>
 </div>
@@ -3220,8 +3187,8 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Réviser</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="voOpenMot(null)">+ Mot</button>
-    <button class="btn btn-ghost" onclick="openSettings('vocabulaire')">⚙ Mes listes</button>
+    <button class="btn btn-primary" onclick="voOpenMot(null)"><i class="ph ph-plus"></i> Mot</button>
+    <button class="btn btn-ghost" onclick="openSettings('vocabulaire')"><i class="ph ph-gear-six"></i> Mes listes</button>
   </div>
   <div id="vo-rev-body"></div>
 </div>
@@ -3230,7 +3197,7 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Boîtes</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="goTab('vo-reviser')">▶ Réviser</button>
+    <button class="btn btn-primary" onclick="goTab('vo-reviser')"><i class="ph ph-play"></i> Réviser</button>
   </div>
   <div class="mkpis" id="vo-boites-kpis"></div>
   <div id="vo-boites-body"></div>
@@ -3240,8 +3207,8 @@ thead th, .wish-table thead th {
   <div class="m-head">
     <span class="m-nav-lbl">Mots</span>
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="voOpenMot(null)">+ Mot</button>
-    <button class="btn btn-ghost" onclick="voOpenBulk()">≡ Ajout en masse</button>
+    <button class="btn btn-primary" onclick="voOpenMot(null)"><i class="ph ph-plus"></i> Mot</button>
+    <button class="btn btn-ghost" onclick="voOpenBulk()"><i class="ph ph-list-plus"></i> Ajout en masse</button>
   </div>
 
   <div class="card" id="card-vo-mots">
@@ -3297,7 +3264,7 @@ thead th, .wish-table thead th {
     <div class="sp-slist" id="sp-day-list"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-day')">Fermer</button>
-      <button class="btn btn-primary" id="sp-day-add">+ Ajouter une séance</button>
+      <button class="btn btn-primary" id="sp-day-add"><i class="ph ph-plus"></i> Ajouter une séance</button>
     </div>
   </div>
 </div>
@@ -3335,7 +3302,7 @@ thead th, .wish-table thead th {
     <div class="sp-frow">
       <div class="fg" id="sp-w-subtype">
         <label style="display:flex;align-items:center;gap:8px">Type de séance
-          <button type="button" class="m-iconbtn" style="margin-left:auto" title="Gérer les types" onclick="spOpenSubtypes()">✎</button>
+          <button type="button" class="m-iconbtn" style="margin-left:auto" title="Gérer les types" onclick="spOpenSubtypes()"><i class="ph ph-pencil-simple"></i></button>
         </label>
         <select id="sp-f-subtype"></select>
       </div>
@@ -3356,7 +3323,7 @@ thead th, .wish-table thead th {
       </div>
       <div class="fg" id="sp-w-routine">
         <label style="display:flex;align-items:center;gap:8px">Routine
-          <button type="button" class="m-iconbtn" style="margin-left:auto" title="Gérer les routines" onclick="spOpenRoutines()">✎</button>
+          <button type="button" class="m-iconbtn" style="margin-left:auto" title="Gérer les routines" onclick="spOpenRoutines()"><i class="ph ph-pencil-simple"></i></button>
         </label>
         <select id="sp-f-routine"></select>
       </div>
@@ -3392,7 +3359,7 @@ thead th, .wish-table thead th {
     <div class="sp-slist" id="sp-sports-list"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-sports')">Fermer</button>
-      <button class="btn btn-primary" onclick="spOpenCustomSport(null)">+ Nouveau sport</button>
+      <button class="btn btn-primary" onclick="spOpenCustomSport(null)"><i class="ph ph-plus"></i> Nouveau sport</button>
     </div>
   </div>
 </div>
@@ -3420,7 +3387,7 @@ thead th, .wish-table thead th {
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-sport')">Annuler</button>
       <button class="btn btn-ghost" id="sp-sport-del" style="color:var(--r);border-color:var(--r)"
-              onclick="spDeleteCustomSportFromModal()">🗑 Supprimer</button>
+              onclick="spDeleteCustomSportFromModal()"><i class="ph ph-trash"></i> Supprimer</button>
       <button class="btn btn-primary" onclick="spSaveCustomSport()">Enregistrer</button>
     </div>
   </div>
@@ -3596,7 +3563,7 @@ thead th, .wish-table thead th {
              style="text-align:center" title="Emoji de la catégorie">
       <input id="fin-newcat-name" type="text" placeholder="Nouvelle catégorie…">
       <input id="fin-newcat-color" type="color" value="#7c3aed" style="width:38px;height:34px;padding:2px;cursor:pointer">
-      <button class="btn btn-primary btn-sm" onclick="finAddCategory()">+ Ajouter</button>
+      <button class="btn btn-primary btn-sm" onclick="finAddCategory()"><i class="ph ph-plus"></i> Ajouter</button>
     </div>
 
     <div class="mact">
@@ -3630,7 +3597,7 @@ thead th, .wish-table thead th {
 
     <div class="fin-add-line">
       <input id="fin-newsrc-name" type="text" placeholder="Ex. Compte joint, Revolut…">
-      <button class="btn btn-primary btn-sm" onclick="finAddSource()">+ Ajouter</button>
+      <button class="btn btn-primary btn-sm" onclick="finAddSource()"><i class="ph ph-plus"></i> Ajouter</button>
     </div>
 
     <div class="mact">
@@ -3644,7 +3611,7 @@ thead th, .wish-table thead th {
   <div class="modal" style="max-width:680px">
     <h2 style="display:flex;justify-content:space-between;align-items:center">
       <span>↻ Transactions récurrentes</span>
-      <button class="btn btn-primary btn-sm" onclick="finOpenRecEdit()">+ Nouveau</button>
+      <button class="btn btn-primary btn-sm" onclick="finOpenRecEdit()"><i class="ph ph-plus"></i> Nouveau</button>
     </h2>
     <div id="fin-recs-list" style="max-height:60vh;overflow-y:auto"></div>
     <div class="mact">
@@ -3783,7 +3750,7 @@ thead th, .wish-table thead th {
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-user')">Annuler</button>
       <button class="btn btn-ghost" id="user-f-del" style="color:var(--r);border-color:var(--r)"
-              onclick="deleteUserFromModal()">🗑 Supprimer</button>
+              onclick="deleteUserFromModal()"><i class="ph ph-trash"></i> Supprimer</button>
       <button class="btn btn-primary" onclick="saveUserModal()">Enregistrer</button>
     </div>
   </div>
@@ -3797,29 +3764,29 @@ thead th, .wish-table thead th {
       <!-- Colonne de gauche : une entrée par domaine de l'app -->
       <div class="set-nav" id="set-nav">
         <button type="button" class="set-nav-btn active" data-set="general"
-                onclick="setGoSection('general')"><span class="set-nav-ico">⚙</span>Général</button>
+                onclick="setGoSection('general')"><span class="set-nav-ico"><i class="ph ph-gear-six"></i></span>Général</button>
         <button type="button" class="set-nav-btn" data-set="users"
-                onclick="setGoSection('users')"><span class="set-nav-ico">👥</span>Utilisateurs</button>
+                onclick="setGoSection('users')"><span class="set-nav-ico"><i class="ph ph-users"></i></span>Utilisateurs</button>
         <button type="button" class="set-nav-btn" data-set="accueil"
-                onclick="setGoSection('accueil')"><span class="set-nav-ico">▤</span>Accueil</button>
+                onclick="setGoSection('accueil')"><span class="set-nav-ico"><i class="ph ph-house"></i></span>Accueil</button>
         <button type="button" class="set-nav-btn" data-set="nav"
-                onclick="setGoSection('nav')"><span class="set-nav-ico">☰</span>Navigation</button>
+                onclick="setGoSection('nav')"><span class="set-nav-ico"><i class="ph ph-list"></i></span>Navigation</button>
         <button type="button" class="set-nav-btn" data-set="pea"
-                onclick="setGoSection('pea')"><span class="set-nav-ico">↗</span>PEA</button>
+                onclick="setGoSection('pea')"><span class="set-nav-ico"><i class="ph ph-chart-line-up"></i></span>PEA</button>
         <button type="button" class="set-nav-btn" data-set="comptes"
-                onclick="setGoSection('comptes')"><span class="set-nav-ico">▦</span>Mes comptes</button>
+                onclick="setGoSection('comptes')"><span class="set-nav-ico"><i class="ph ph-wallet"></i></span>Mes comptes</button>
         <button type="button" class="set-nav-btn" data-set="pret"
-                onclick="setGoSection('pret')"><span class="set-nav-ico">🎓</span>Prêt étudiant</button>
+                onclick="setGoSection('pret')"><span class="set-nav-ico"><i class="ph ph-graduation-cap"></i></span>Prêt étudiant</button>
         <button type="button" class="set-nav-btn" data-set="sport"
-                onclick="setGoSection('sport')"><span class="set-nav-ico">🏃</span>Sports</button>
+                onclick="setGoSection('sport')"><span class="set-nav-ico"><i class="ph ph-person-simple-run"></i></span>Sports</button>
         <button type="button" class="set-nav-btn" data-set="formation"
-                onclick="setGoSection('formation')"><span class="set-nav-ico">🎓</span>Formation</button>
+                onclick="setGoSection('formation')"><span class="set-nav-ico"><i class="ph ph-certificate"></i></span>Formation</button>
         <button type="button" class="set-nav-btn" data-set="vocabulaire"
-                onclick="setGoSection('vocabulaire')"><span class="set-nav-ico">🔤</span>Vocabulaire</button>
+                onclick="setGoSection('vocabulaire')"><span class="set-nav-ico"><i class="ph ph-cards"></i></span>Vocabulaire</button>
         <button type="button" class="set-nav-btn" data-set="sauvegarde"
-                onclick="setGoSection('sauvegarde')"><span class="set-nav-ico">🔑</span>Sauvegarde USB</button>
+                onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-usb"></i></span>Sauvegarde USB</button>
         <button type="button" class="set-nav-btn" data-set="donnees"
-                onclick="setGoSection('donnees')"><span class="set-nav-ico">💾</span>Données &amp; app</button>
+                onclick="setGoSection('donnees')"><span class="set-nav-ico"><i class="ph ph-database"></i></span>Données &amp; app</button>
       </div>
 
       <div class="set-body">
@@ -3831,8 +3798,8 @@ thead th, .wish-table thead th {
           <div class="fg">
             <label>Thème</label>
             <div style="display:flex;gap:8px;align-items:center">
-              <button type="button" class="btn btn-ghost btn-sm" data-theme-btn="light" style="font-size:11px">☀ Clair</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-theme-btn="dark"  style="font-size:11px">🌙 Sombre</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-theme-btn="light" style="font-size:11px"><i class="ph ph-sun"></i> Clair</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-theme-btn="dark"  style="font-size:11px"><i class="ph ph-moon"></i> Sombre</button>
             </div>
           </div>
           <div class="fg">
@@ -3843,7 +3810,7 @@ thead th, .wish-table thead th {
             <label>Icône de l'application</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" onclick="applyIconToShortcuts()"
-                      style="font-size:11px">🎨 Recolorer les raccourcis</button>
+                      style="font-size:11px"><i class="ph ph-palette"></i> Recolorer les raccourcis</button>
               <span id="cfg-icon-state" style="font-size:10px;color:var(--txt3);font-family:var(--mono)">
                 Bureau, menu Démarrer et barre des tâches</span>
             </div>
@@ -3882,13 +3849,13 @@ thead th, .wish-table thead th {
           </p>
           <div id="cfg-users-list" style="display:flex;flex-direction:column;gap:6px"></div>
           <button type="button" class="btn btn-ghost btn-sm" onclick="openUserModal(null)"
-                  style="margin-top:10px;font-size:11px">+ Nouvel utilisateur</button>
+                  style="margin-top:10px;font-size:11px"><i class="ph ph-plus"></i> Nouvel utilisateur</button>
         </div>
 
         <!-- ──── NAVIGATION ──── -->
         <div class="set-sec" data-sec="nav">
           <h3>Navigation</h3>
-          <p class="set-lead">Ce que tu as masqué avec l'icône ⊘ se restaure ici.</p>
+          <p class="set-lead">Ce que tu as masqué avec l'icône <i class="ph ph-eye-slash"></i> se restaure ici.</p>
           <div class="fg" id="cfg-hidden-section">
             <label>Onglets masqués <span style="color:var(--txt3);font-weight:400">(icône œil sur la barre latérale)</span></label>
             <div id="cfg-hidden-list" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;min-height:22px"></div>
@@ -3922,7 +3889,7 @@ thead th, .wish-table thead th {
             <label>Rapport annuel</label>
             <div style="display:flex;gap:6px;align-items:center">
               <select id="cfg-report-year" style="font-family:var(--mono);background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rad);padding:6px 10px;font-size:12px;color:var(--txt)"></select>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="openAnnualReport()" style="font-size:11px">📄 Générer</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="openAnnualReport()" style="font-size:11px"><i class="ph ph-file-text"></i> Générer</button>
             </div>
           </div>
         </div>
@@ -3932,9 +3899,9 @@ thead th, .wish-table thead th {
           <h3>Mes comptes</h3>
           <p class="set-lead">Les listes qui alimentent la saisie des transactions.</p>
           <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenCategories()">▦ Catégories &amp; emoji</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenSources()">⊳ Sources</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenRecurrences()">↻ Récurrents</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenCategories()"><i class="ph ph-squares-four"></i> Catégories &amp; emoji</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenSources()"><i class="ph ph-credit-card"></i> Sources</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenRecurrences()"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
           </div>
         </div>
 
@@ -3954,9 +3921,9 @@ thead th, .wish-table thead th {
           <h3>Sports</h3>
           <p class="set-lead">Ajoute tes propres sports et choisis les informations à saisir pour chacun.</p>
           <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenCustomSports()">🏅 Mes sports</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenSubtypes()">✎ Types de séance</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenRoutines()">↺ Routines</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenCustomSports()"><i class="ph ph-medal"></i> Mes sports</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenSubtypes()"><i class="ph ph-pencil-simple"></i> Types de séance</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenRoutines()"><i class="ph ph-arrow-counter-clockwise"></i> Routines</button>
           </div>
         </div>
 
@@ -3967,16 +3934,16 @@ thead th, .wish-table thead th {
             dans la sauvegarde USB, pas dans les backups quotidiens.</p>
           <div class="set-links">
             <button type="button" class="btn btn-ghost btn-sm"
-                    onclick="closeOv('ov-config');foOpenDomaines()">🏷️ Domaines</button>
+                    onclick="closeOv('ov-config');foOpenDomaines()"><i class="ph ph-tag"></i> Domaines</button>
             <button type="button" class="btn btn-ghost btn-sm"
-                    onclick="foOpenCertFolder()">📁 Ouvrir le dossier</button>
+                    onclick="foOpenCertFolder()"><i class="ph ph-folder-open"></i> Ouvrir le dossier</button>
           </div>
 
           <h3 style="margin-top:22px">Certificats déposés</h3>
           <div id="fo-cert-state" class="sv-dest">…</div>
           <div class="set-links" style="margin-top:10px">
             <button type="button" class="btn btn-ghost btn-sm"
-                    onclick="foCleanOrphans()">🧹 Nettoyer les orphelins</button>
+                    onclick="foCleanOrphans()"><i class="ph ph-broom"></i> Nettoyer les orphelins</button>
           </div>
           <p class="set-lead" style="margin-top:10px">Supprimer une formation ne
             supprime pas son certificat — comme pour un utilisateur supprimé, le
@@ -3991,9 +3958,9 @@ thead th, .wish-table thead th {
             Chaque liste garde ses propres boîtes.</p>
           <div class="set-links">
             <button type="button" class="btn btn-ghost btn-sm"
-                    onclick="closeOv('ov-config');voOpenListes()">📚 Mes listes</button>
+                    onclick="closeOv('ov-config');voOpenListes()"><i class="ph ph-books"></i> Mes listes</button>
             <button type="button" class="btn btn-ghost btn-sm"
-                    onclick="closeOv('ov-config');voOpenBulk()">≡ Ajout en masse</button>
+                    onclick="closeOv('ov-config');voOpenBulk()"><i class="ph ph-list-plus"></i> Ajout en masse</button>
           </div>
 
           <h3 style="margin-top:22px">Les quatre boîtes</h3>
@@ -4028,11 +3995,11 @@ thead th, .wish-table thead th {
             <div id="sv-dest" class="sv-dest">…</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
               <button type="button" class="btn btn-ghost btn-sm" onclick="svPickFolder()"
-                      style="font-size:11px">📁 Choisir un dossier…</button>
+                      style="font-size:11px"><i class="ph ph-folder-open"></i> Choisir un dossier…</button>
               <button type="button" class="btn btn-ghost btn-sm" onclick="svRefresh()"
-                      style="font-size:11px">↻ Détecter les clés</button>
+                      style="font-size:11px"><i class="ph ph-arrows-clockwise"></i> Détecter les clés</button>
               <button type="button" class="btn btn-ghost btn-sm" id="sv-open"
-                      onclick="svOpenFolder()" style="font-size:11px">📂 Ouvrir</button>
+                      onclick="svOpenFolder()" style="font-size:11px"><i class="ph ph-folder-open"></i> Ouvrir</button>
             </div>
             <div id="sv-drives" class="sv-drives"></div>
           </div>
@@ -4061,7 +4028,7 @@ thead th, .wish-table thead th {
             <label>Maintenant</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button type="button" class="btn btn-primary btn-sm" id="sv-run"
-                      onclick="svRunNow()" style="font-size:11px">💾 Sauvegarder maintenant</button>
+                      onclick="svRunNow()" style="font-size:11px"><i class="ph ph-floppy-disk"></i> Sauvegarder maintenant</button>
               <span id="sv-last" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
             </div>
           </div>
@@ -4078,28 +4045,28 @@ thead th, .wish-table thead th {
           <div class="fg">
             <label>Dossier</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="openDataFolder()" style="font-size:11px">📁 Ouvrir le dossier Données</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="openDataFolder()" style="font-size:11px"><i class="ph ph-folder-open"></i> Ouvrir le dossier Données</button>
               <span style="font-size:10px;color:var(--txt3);font-family:var(--mono)">Backups + JSON</span>
             </div>
           </div>
           <div class="fg">
             <label>Sauvegarde</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="doExport()" style="font-size:11px">↓ Exporter</button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="doImportDialog()" style="font-size:11px">↑ Importer</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="doExport()" style="font-size:11px"><i class="ph ph-download-simple"></i> Exporter</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="doImportDialog()" style="font-size:11px"><i class="ph ph-upload-simple"></i> Importer</button>
             </div>
           </div>
           <div class="fg">
             <label>Mise à jour</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" id="btn-check-update" onclick="manualCheckUpdate()" style="font-size:11px">↻ Vérifier les mises à jour</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-check-update" onclick="manualCheckUpdate()" style="font-size:11px"><i class="ph ph-arrows-clockwise"></i> Vérifier les mises à jour</button>
               <span id="cfg-update-status" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
             </div>
           </div>
           <div class="fg">
             <label style="color:var(--r)">Zone sensible</label>
             <button type="button" class="btn btn-ghost btn-sm" style="color:var(--r);border-color:var(--r);font-size:11px"
-                    onclick="resetFromConfig()">🗑 Réinitialiser les données PEA</button>
+                    onclick="resetFromConfig()"><i class="ph ph-trash"></i> Réinitialiser les données PEA</button>
           </div>
           <div id="cfg-version" style="font-size:10px;color:var(--txt3);font-family:var(--mono);margin-top:.9rem"></div>
         </div>
@@ -4151,7 +4118,7 @@ thead th, .wish-table thead th {
     </p>
     <div class="mact">
       <button class="btn btn-ghost" id="pa-cpt-del" style="display:none"
-              onclick="paDeleteCompte()">🗑 Supprimer</button>
+              onclick="paDeleteCompte()"><i class="ph ph-trash"></i> Supprimer</button>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-pa-compte')">Annuler</button>
       <button class="btn btn-primary" onclick="paSaveCompte()">Enregistrer</button>
@@ -4219,7 +4186,7 @@ thead th, .wish-table thead th {
 
     <div class="mact">
       <button class="btn btn-ghost" id="fo-f-del" style="display:none"
-              onclick="foDeleteFormation()">🗑 Supprimer</button>
+              onclick="foDeleteFormation()"><i class="ph ph-trash"></i> Supprimer</button>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-fo-form')">Annuler</button>
       <button class="btn btn-primary" onclick="foSaveFormation()">Enregistrer</button>
@@ -4247,7 +4214,7 @@ thead th, .wish-table thead th {
     <div class="fg"><label>Note</label><input id="fo-e-note" placeholder="optionnel"></div>
     <div class="mact">
       <button class="btn btn-ghost" id="fo-e-del" style="display:none"
-              onclick="foDeleteExp()">🗑 Supprimer</button>
+              onclick="foDeleteExp()"><i class="ph ph-trash"></i> Supprimer</button>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-fo-exp')">Annuler</button>
       <button class="btn btn-primary" onclick="foSaveExp()">Enregistrer</button>
@@ -4272,7 +4239,7 @@ thead th, .wish-table thead th {
     <div class="fg"><label>Note</label><input id="fo-p-note" placeholder="optionnel"></div>
     <div class="mact">
       <button class="btn btn-ghost" id="fo-p-del" style="display:none"
-              onclick="foDeleteProj()">🗑 Supprimer</button>
+              onclick="foDeleteProj()"><i class="ph ph-trash"></i> Supprimer</button>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-fo-proj')">Annuler</button>
       <button class="btn btn-primary" onclick="foSaveProj()">Enregistrer</button>
@@ -4289,7 +4256,7 @@ thead th, .wish-table thead th {
     <div class="fg"><label>Niveau</label><select id="fo-c-niv"></select></div>
     <div class="mact">
       <button class="btn btn-ghost" id="fo-c-del" style="display:none"
-              onclick="foDeleteComp()">🗑 Supprimer</button>
+              onclick="foDeleteComp()"><i class="ph ph-trash"></i> Supprimer</button>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-fo-comp')">Annuler</button>
       <button class="btn btn-primary" onclick="foSaveComp()">Enregistrer</button>
@@ -4304,7 +4271,7 @@ thead th, .wish-table thead th {
       ses formations se retrouveraient sans étiquette.</p>
     <div id="fo-dom-list"></div>
     <div class="mact">
-      <button class="btn btn-ghost" onclick="foAddDomaine()">+ Domaine</button>
+      <button class="btn btn-ghost" onclick="foAddDomaine()"><i class="ph ph-plus"></i> Domaine</button>
       <div style="flex:1"></div>
       <button class="btn btn-primary" onclick="closeOv('ov-fo-dom')">Fermer</button>
     </div>
@@ -4325,7 +4292,7 @@ thead th, .wish-table thead th {
     <div class="mact">
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-fo-cv')">Fermer</button>
-      <button class="btn btn-primary" onclick="foCopyCv()">📋 Copier</button>
+      <button class="btn btn-primary" onclick="foCopyCv()"><i class="ph ph-copy"></i> Copier</button>
     </div>
   </div>
 </div>
@@ -4360,7 +4327,7 @@ thead th, .wish-table thead th {
 
     <div class="mact">
       <button class="btn btn-ghost" id="vo-mot-del" style="display:none"
-              onclick="voDeleteMot()">🗑 Supprimer</button>
+              onclick="voDeleteMot()"><i class="ph ph-trash"></i> Supprimer</button>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-vo-mot')">Annuler</button>
       <button class="btn btn-primary" onclick="voSaveMot()">Enregistrer</button>
@@ -4390,7 +4357,7 @@ thead th, .wish-table thead th {
       Une liste qui contient des mots ne peut pas être supprimée.</p>
     <div id="vo-li-list"></div>
     <div class="mact">
-      <button class="btn btn-ghost" onclick="voAddListe()">+ Liste</button>
+      <button class="btn btn-ghost" onclick="voAddListe()"><i class="ph ph-plus"></i> Liste</button>
       <div style="flex:1"></div>
       <button class="btn btn-primary" onclick="closeOv('ov-vo-listes')">Fermer</button>
     </div>
@@ -4491,7 +4458,7 @@ thead th, .wish-table thead th {
     <div class="fg"><label>Note</label><input id="sa-mes-note" placeholder="à jeun, après sport…"></div>
     <div class="mact">
       <button class="btn btn-ghost" id="sa-mes-del" style="display:none"
-              onclick="saDeleteMesure()">🗑 Supprimer</button>
+              onclick="saDeleteMesure()"><i class="ph ph-trash"></i> Supprimer</button>
       <div class="m-spacer" style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-sa-mesure')">Annuler</button>
       <button class="btn btn-primary" onclick="saSaveMesure()">Enregistrer</button>
@@ -4518,7 +4485,7 @@ thead th, .wish-table thead th {
     <div class="fg"><label>Note</label><input id="sa-goal-note" placeholder="pourquoi cet objectif"></div>
     <div class="mact">
       <button class="btn btn-ghost" id="sa-goal-del" style="display:none"
-              onclick="saDeleteGoal()">🗑 Supprimer</button>
+              onclick="saDeleteGoal()"><i class="ph ph-trash"></i> Supprimer</button>
       <div class="m-spacer" style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-sa-goal')">Annuler</button>
       <button class="btn btn-primary" onclick="saSaveGoal()">Enregistrer</button>
@@ -5124,10 +5091,10 @@ function vfmt(n)  {
   return `<span class="${vcls(n)}">${n > 0 ? "+" : ""}${n.toFixed(2).replace(".",",")}%</span>`;
 }
 function dbtn(fn, id) {
-  return `<button onclick="${fn}(${id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:13px;padding:2px 5px" onmouseover="this.style.color='var(--r)'" onmouseout="this.style.color='var(--txt3)'">✕</button>`;
+  return `<button onclick="${fn}(${id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:13px;padding:2px 5px" onmouseover="this.style.color='var(--r)'" onmouseout="this.style.color='var(--txt3)'" title="Supprimer" aria-label="Supprimer"><i class="ph ph-trash"></i></button>`;
 }
 function ebtn(fn, id) {
-  return `<button onclick="${fn}(${id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:12px;padding:2px 5px" onmouseover="this.style.color='var(--b)'" onmouseout="this.style.color='var(--txt3)'">✎</button>`;
+  return `<button onclick="${fn}(${id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:12px;padding:2px 5px" onmouseover="this.style.color='var(--b)'" onmouseout="this.style.color='var(--txt3)'" title="Modifier" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>`;
 }
 
 /* Convert .PA ticker to EPA: form and vice-versa */
@@ -5308,9 +5275,15 @@ function renderMetrics() {
   const pvP = (pv != null && depSum > 0) ? (pv / depSum) * 100 : null;
   document.getElementById("m-dep").textContent     = depSum>0 ? eur(depSum) : "—";
   document.getElementById("m-dep-sub").textContent = "";
-  document.getElementById("m-val").textContent  = nc>0 ? eur(tv) : "—";
+  // Valeur du PEA = titres + espèces : la même que window._peaPv.total (tuile
+  // « Valeur du PEA », module Patrimoine) et que la courbe « Évolution du
+  // capital ». Jusqu'en 4.2.5 la carte n'affichait que les titres, d'où un écart
+  // égal au solde espèces avec la courbe. C'est aussi la valeur à laquelle se
+  // mesure le rendement : valeur − versements.
+  document.getElementById("m-val").textContent  = nc>0 ? eur(Math.round((tv + cash) * 100) / 100) : "—";
   document.getElementById("m-val-sub").innerHTML =
-    "Espèces : " + eur(cash) + (nc>0 ? "<br>Investi : " + eur(ti) : "");
+    (nc>0 ? "Titres : " + eur(tv) + "<br>" : "") + "Espèces : " + eur(cash)
+    + (nc>0 ? "<br>Investi : " + eur(ti) : "");
   const pvEl = document.getElementById("m-pv");
   pvEl.textContent = pv!=null ? eur(pv,true) : "—";
   pvEl.className   = "mc-val " + (pv==null ? "" : pv>=0 ? "c-g" : "c-r");
@@ -6207,13 +6180,11 @@ function drawPerfChart() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   VUE D'ENSEMBLE (pane-dash) : courbe du capital + répartition
-   Les graphiques de la maquette « Carnet ». Rien n'est recalculé à part :
-   même historique (_perfHistory), même série (_perfFullSeries, buildTwrSeries),
-   même plus-value sur la plage (computePnl) que l'onglet Performance ; même
-   répartition (computePos, base = valeur des titres) que l'onglet Positions.
+   VUE D'ENSEMBLE (pane-dash) : répartition + série partagée avec l'accueil
+   La courbe « Évolution du capital » est celle de l'ex-onglet Performance
+   (drawPerfChart). La répartition prend la même base que la colonne de
+   l'onglet Positions (computePos, valeur des titres, hors espèces).
 ───────────────────────────────────────────────────────────────────────── */
-let _dashRange = "MAX";          /* plage de la vue d'ensemble, non mémorisée */
 let _perfHistPromise = null;     /* un seul chargement d'historique à la fois */
 
 /** Série complète du PEA ; charge l'historique la première fois (même cache
@@ -6237,89 +6208,10 @@ function perfSeriesAsync() {
   });
 }
 
-function dashSetRange(r) {
-  _dashRange = r;
-  dashRenderEvo();
-}
-
+/** Ce qui est propre à la vue d'ensemble. La courbe et les plus/moins-values
+    réalisées (ex-onglet Performance) sont dessinées par renderPerf(). */
 function dashRenderOverview() {
   dashRenderRep();
-  dashRenderEvo();
-}
-
-async function dashRenderEvo() {
-  const canvas = document.getElementById("c-dash-evo");
-  if (!canvas) return;
-  const vEl = document.getElementById("dash-evo-v");
-  const dEl = document.getElementById("dash-evo-d");
-  const msg = document.getElementById("dash-evo-msg");
-  document.querySelectorAll("#dash-rng button").forEach(b =>
-    b.setAttribute("aria-pressed", String(b.dataset.r === _dashRange)));
-
-  const full = await perfSeriesAsync();
-  if (!full || full.length < 2) {
-    if (_ch.dashEvo) { _ch.dashEvo.destroy(); _ch.dashEvo = null; }
-    vEl.textContent = "—"; dEl.textContent = "";
-    msg.textContent = (S.transactions || []).length
-      ? "Historique des cours indisponible pour l'instant : la courbe apparaîtra dès qu'il sera chargé."
-      : "La courbe apparaîtra après ton premier achat.";
-    return;
-  }
-
-  let range  = _dashRange;
-  let series = filterByRange(full, range);
-  msg.textContent = "";
-  if (!series || series.length < 2) {
-    series = full; range = "MAX";
-    msg.textContent = "Pas assez de points sur cette période : affichage depuis l'ouverture.";
-  }
-
-  const pnl = computePnl(series, range);
-  // Le grand chiffre est la valorisation officielle (window._peaPv.total, posée
-  // par renderMetrics, la même que la tuile « Valeur du PEA ») : le dernier
-  // point de la courbe est une clôture, il peut différer du cours du moment.
-  const total = (window._peaPv && window._peaPv.total != null)
-    ? window._peaPv.total : series[series.length - 1].val;
-  vEl.textContent = eur(total);
-  dEl.innerHTML = "lignes + espèces" + (pnl.pnlEur == null ? "" :
-    ` · <span class="${pnl.pnlEur >= 0 ? "c-g" : "c-r"}">${eur(pnl.pnlEur, true)}`
-    + `${pnl.pnlPct != null ? " (" + pct(pnl.pnlPct) + ")" : ""}</span> `
-    + (range === "MAX" ? "depuis l'ouverture" : "sur la période"));
-
-  const dates  = series.map(p => p.date);
-  const court  = range === "1W" || range === "1M" || range === "YTD";
-  const labels = dates.map(d => {
-    const [y, m, dd] = normDate(d).split("-").map(Number);
-    return new Date(y, m - 1, dd).toLocaleDateString("fr-FR",
-      court ? {day: "numeric", month: "short"} : {month: "short", year: "2-digit"});
-  });
-  const col = carnetChartColors();
-  if (_ch.dashEvo) { _ch.dashEvo.destroy(); _ch.dashEvo = null; }
-  _ch.dashEvo = new Chart(canvas, {
-    type: "line",
-    data: { labels, datasets: [
-      { label: "Valeur du portefeuille", data: series.map(p => p.val),
-        borderColor: col.accent, backgroundColor: carnetAreaFill(col.accent), fill: "start",
-        tension: 0.2, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4,
-        pointHoverBackgroundColor: col.accent, order: 1 },
-      { label: "Versements cumulés", data: buildDepositSeries(dates),
-        borderColor: col.txt2, borderDash: [4, 4], borderWidth: 1.2, stepped: "before",
-        fill: false, pointRadius: 0, pointHoverRadius: 0, order: 2 },
-    ]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => " " + c.dataset.label + " : " + eur(c.raw) } },
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 5, maxRotation: 0, font: { size: 10.5 } } },
-        y: { ticks: { maxTicksLimit: 4, font: { size: 10.5 },
-                      callback: v => Math.round(v).toLocaleString("fr-FR") + " €" } },
-      },
-    },
-  });
 }
 
 function dashRenderRep() {
@@ -6345,10 +6237,9 @@ function dashRenderRep() {
 }
 
 /** Un <canvas> garde les couleurs du moment où il a été dessiné : on redessine
-    les courbes du Carnet quand le thème ou la couleur d'accent change. */
+    la courbe du Carnet quand le thème ou la couleur d'accent change. */
 function carnetRedrawCharts() {
   if (_ch.perf && typeof drawPerfChart === "function") drawPerfChart();
-  if (_ch.dashEvo) dashRenderEvo();
 }
 new MutationObserver(() => {
   clearTimeout(carnetRedrawCharts._t);
@@ -6356,7 +6247,7 @@ new MutationObserver(() => {
 }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style"] });
 
 /* ─────────────────────────────────────────────────────────────────────────
-   POINT D'ENTREE : appele par goTab("perf")
+   POINT D'ENTREE : appele par goTab("dash") (vue d'ensemble, ex-onglet Performance)
 ───────────────────────────────────────────────────────────────────────── */
 async function renderPerf() {
   // Restaure les prefs benchmarks et branche les checkboxes
@@ -6376,15 +6267,8 @@ async function renderPerf() {
   );
   if (!txs.length) {
     document.getElementById("perf-nodata").style.display = "block";
-    makePie("c-piev", [], []);
-    makePie("c-piei", [], []);
-    renderHeatmap();   // affiche la heat map même sans historique de transactions
     return;
   }
-
-  // Affiche la heat map immédiatement avec les données déjà disponibles
-  // (avant l'await ci-dessous qui peut prendre plusieurs secondes)
-  renderHeatmap();
 
   const loadEl  = document.getElementById("perf-loading");
   const loadTxt = document.getElementById("perf-loading-txt");
@@ -6405,200 +6289,6 @@ async function renderPerf() {
     document.getElementById("perf-nodata").style.display = "none";
     setPerfRange(_perfRange);
   }
-
-  const names = S.positions.map(p => p.name);
-  makePie("c-piev", S.positions.map(p => { const e = computePos(p); return e.val || e.inv; }), names);
-  makePie("c-piei", S.positions.map(p => computePos(p).inv), names);
-  renderHeatmap();
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   HEAT MAP DU PORTEFEUILLE
-   Treemap squarified : taille et couleur = valeur et plus-value depuis l'achat.
-   (Un mode "variation du jour" a existe ; ses deux boutons ont disparu du
-   DOM et la branche etait devenue inatteignable.)
-═══════════════════════════════════════════════════════════════════════ */
-
-function _hmColor(pct) {
-  if (pct === null || pct === undefined) return { bg: "var(--bg4)", fg: "var(--txt2)" };
-  const v = Math.max(-20, Math.min(20, pct));
-  let r, g, b;
-  if (v >= 0) {
-    // vert très clair (#dcfce7) → vert foncé (#15803d)
-    const t = Math.min(v / 12, 1);
-    r = Math.round(220 * (1-t) + 21  * t);
-    g = Math.round(252 * (1-t) + 128 * t);
-    b = Math.round(231 * (1-t) + 61  * t);
-  } else {
-    // rouge très clair (#fee2e2) → rouge foncé (#b91c1c)
-    const t = Math.min(-v / 12, 1);
-    r = Math.round(254 * (1-t) + 185 * t);
-    g = Math.round(226 * (1-t) + 28  * t);
-    b = Math.round(226 * (1-t) + 28  * t);
-  }
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return { bg: `rgb(${r},${g},${b})`, fg: brightness > 160 ? "rgba(0,0,0,0.70)" : "#ffffff" };
-}
-
-function _layoutTreemap(items, x, y, w, h) {
-  if (!items.length) return [];
-  if (items.length === 1) return [{ ...items[0], x, y, w, h }];
-  const total = items.reduce((s, i) => s + i.val, 0);
-  if (!total) return items.map((i, k) => ({ ...i, x: x + k * w / items.length, y, w: w / items.length, h }));
-
-  const isHoriz = w >= h;
-  let best = { split: 1, worst: Infinity };
-  let runSum = 0;
-  for (let i = 0; i < items.length - 1; i++) {
-    runSum += items[i].val;
-    const frac = runSum / total;
-    const dim1 = isHoriz ? w * frac : h * frac;
-    const dim2 = isHoriz ? h : w;
-    let worst = 0;
-    for (let j = 0; j <= i; j++) {
-      const a = dim1, b = dim2 * (items[j].val / runSum);
-      worst = Math.max(worst, (a > 0 && b > 0) ? Math.max(a / b, b / a) : 999);
-    }
-    if (worst < best.worst) { best = { split: i + 1, worst }; } else break;
-  }
-
-  const row = items.slice(0, best.split);
-  const rest = items.slice(best.split);
-  const rowSum = row.reduce((s, i) => s + i.val, 0);
-  const frac = rowSum / total;
-  const rects = [];
-  let off = isHoriz ? y : x;
-  row.forEach(item => {
-    const f = item.val / rowSum;
-    if (isHoriz) { rects.push({ ...item, x, y: off, w: w * frac, h: h * f }); off += h * f; }
-    else         { rects.push({ ...item, x: off, y, w: w * f, h: h * frac }); off += w * f; }
-  });
-  if (rest.length) {
-    rects.push(...(isHoriz
-      ? _layoutTreemap(rest, x + w * frac, y, w * (1 - frac), h)
-      : _layoutTreemap(rest, x, y + h * frac, w, h * (1 - frac))));
-  }
-  return rects;
-}
-
-function renderHeatmap() {
-  const wrap   = document.getElementById("hm-wrap");
-  const legend = document.getElementById("hm-legend");
-  if (!wrap) return;
-
-  const positions = S.positions.filter(p => { const e = computePos(p); return e.qty > 0; });
-  if (!positions.length) {
-    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--txt3);font-size:12px">Aucune position active</div>';
-    if (legend) legend.innerHTML = "";
-    return;
-  }
-
-  const items0 = positions.map(p => {
-    const e    = computePos(p);
-    const val  = e.val !== null ? e.val : e.inv;
-    const inv  = e.inv;
-    const pvEur = val - inv;
-    const pct = (e.pru && e.pru > 0 && p.cours)
-      ? (p.cours - e.pru) / e.pru * 100 : null;
-    const ticker  = p.ticker.includes(":") ? p.ticker.split(":")[1] : p.ticker;
-    return { ticker, name: p.name || ticker, val, inv, pvEur, pct, qty: e.qty, pru: e.pru };
-  }).filter(i => i.val > 0).sort((a, b) => b.val - a.val);
-
-  const totalVal = items0.reduce((s, i) => s + i.val, 0);
-  const items = items0.map(i => ({ ...i, portPct: totalVal > 0 ? i.val / totalVal * 100 : 0 }));
-
-  const W = wrap.clientWidth || 700;
-  const H = 280;
-  const GAP = 3;
-  const rects = _layoutTreemap(items, 0, 0, W, H);
-
-  wrap.style.height = H + "px";
-  wrap.innerHTML = rects.map(r => {
-    const { bg, fg } = _hmColor(r.pct);
-    const lx = r.x + GAP / 2, ly = r.y + GAP / 2;
-    const lw = Math.max(0, r.w - GAP), lh = Math.max(0, r.h - GAP);
-
-    const pctStr = r.pct !== null
-      ? (r.pct >= 0 ? "+" : "") + r.pct.toFixed(2) + " %"
-      : "—";
-    const valStr = r.val.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €";
-    const pvSign = r.pvEur >= 0 ? "+" : "−";
-    const pvStr  = pvSign + Math.abs(r.pvEur).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €";
-
-    const tkSize  = Math.min(15, Math.max(9,  lw / 5));
-    const pctSize = Math.min(13, Math.max(8,  lw / 6));
-    const valSize = Math.min(10, Math.max(7,  lw / 8));
-    const showPct = lh > 30;
-    const showVal = lh > 50 && lw > 65;
-
-    const tip = `${r.name} (${r.ticker}) · ${valStr} · ${r.portPct.toFixed(1)} % du portefeuille · PV: ${pvStr}`;
-    return `<div class="hm-cell" style="left:${lx}px;top:${ly}px;width:${lw}px;height:${lh}px;background:${bg}" title="${tip}">
-      <div class="hm-inner">
-        <span class="hm-tk"  style="font-size:${tkSize}px;color:${fg}">${r.ticker}</span>
-        ${showPct ? `<span class="hm-pct" style="font-size:${pctSize}px;color:${fg}">${pctStr}</span>` : ""}
-        ${showVal ? `<span class="hm-val" style="font-size:${valSize}px;color:${fg};opacity:.8">${valStr}</span>` : ""}
-      </div>
-    </div>`;
-  }).join("");
-
-  if (legend) {
-    const steps = [-10, -5, -2, 0, 2, 5, 10];
-    const arrow = '<span style="color:var(--txt3);font-size:10px">→</span>';
-    legend.innerHTML = steps.map(v => {
-      const { bg } = _hmColor(v);
-      const lbl = (v > 0 ? "+" : "") + v + " %";
-      return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-family:var(--mono);color:var(--txt2)">
-        <span style="display:inline-block;width:22px;height:11px;border-radius:2px;background:${bg}"></span>${lbl}
-      </span>`;
-    }).join(arrow);
-  }
-}
-
-function makePie(cid, data, labels) {
-  const c = document.getElementById(cid);
-  if (_ch[cid]) _ch[cid].destroy();
-  const total = data.reduce((a,b)=>a+b,0);
-
-  const calloutPlugin = {
-    id:"callout_"+cid,
-    afterDraw(chart) {
-      const {ctx,chartArea} = chart;
-      const meta = chart.getDatasetMeta(0);
-      const cx = (chartArea.left+chartArea.right)/2;
-      const cy = (chartArea.top+chartArea.bottom)/2;
-      ctx.save();
-      meta.data.forEach((arc,i) => {
-        const share = total>0 ? data[i]/total*100 : 0;
-        if (share < 4) return;
-        const mid   = (arc.startAngle+arc.endAngle)/2;
-        const r1    = arc.outerRadius + 8;
-        const r2    = arc.outerRadius + 22;
-        const x1=cx+Math.cos(mid)*r1, y1=cy+Math.sin(mid)*r1;
-        const x2=cx+Math.cos(mid)*r2, y2=cy+Math.sin(mid)*r2;
-        const right = Math.cos(mid)>0;
-        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
-        ctx.strokeStyle = CLRS[i%CLRS.length]; ctx.lineWidth=1.5; ctx.stroke();
-        ctx.fillStyle = carnetChartColors().txt;   // lisible en sombre aussi
-        ctx.font="600 9px 'Onest',sans-serif";
-        ctx.textAlign = right?"left":"right"; ctx.textBaseline="middle";
-        let lbl = labels[i]; if(lbl.length>15) lbl=lbl.slice(0,14)+"…";
-        ctx.fillText(lbl+" "+share.toFixed(0)+"%", x2+(right?4:-4), y2);
-      });
-      ctx.restore();
-    }
-  };
-
-  _ch[cid] = new Chart(c,{
-    type:"doughnut",
-    data:{labels,datasets:[{data,backgroundColor:CLRS.slice(0,data.length),borderWidth:2,borderColor:carnetChartColors().bg2}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,cutout:"58%",
-      layout:{padding:{top:32,bottom:32,left:60,right:60}},
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>" "+ctx.label+" : "+eur(ctx.raw)+" ("+Math.round(ctx.raw/total*100)+"%)"}}
-      }
-    },
-    plugins:[calloutPlugin]
-  });
 }
 
 /* ─── Dividendes ─── */
@@ -6657,7 +6347,7 @@ function renderDividends() {
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
         <td style="font-weight:700;color:var(--g)">${eur(d.montant)}</td>
         <td style="white-space:nowrap">
-          <button onclick="confirmDivFuture(${d.id})" style="background:none;border:1px solid var(--g);color:var(--g);cursor:pointer;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700" title="Confirmer comme reçu">✓</button>
+          <button onclick="confirmDivFuture(${d.id})" style="background:none;border:1px solid var(--g);color:var(--g);cursor:pointer;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700" title="Confirmer comme reçu"><i class="ph ph-check"></i></button>
           ${ebtn("editDivFuture",d.id)}${dbtn("delDivFuture",d.id)}
         </td>
       </tr>`;
@@ -7679,12 +7369,6 @@ async function applyCoursData() {
     renderWishlist();
     updateStatus();
 
-    // Rafraîchit la heat map si le pane "perf" est actif
-    // (applyCoursData met à jour _wsVar mais renderHeatmap n'était jamais appelée ici)
-    if (document.getElementById("pane-perf")?.classList.contains("active")) {
-      renderHeatmap();
-    }
-
   } catch(e) {
     console.warn("cours_server:", e.message);
     showToast("\u274C Cours indisponibles \u2014 v\u00E9rifiez la connexion Internet", "err");
@@ -8395,12 +8079,15 @@ function _initSimulateurs() {
 
 /* ─── Tabs ─── */
 function goTab(n) {
+  // L'onglet Performance a été fusionné dans la vue d'ensemble (4.2.6) : une
+  // tuile, un raccourci ou une préférence qui le vise encore y arrive.
+  if (n === "perf") n = "dash";
   document.querySelectorAll(".tab,.pane").forEach(el=>el.classList.remove("active"));
   const tabBtn = document.querySelector(`.tab[onclick="goTab('${n}')"]`);
   if (tabBtn) tabBtn.classList.add("active");
   const pane = document.getElementById("pane-"+n);
   if (pane) pane.classList.add("active");
-  if (n==="perf") renderPerf();
+  if (n==="dash") renderPerf();
   if (n==="sector") renderSectors();
   if (n==="div") renderDividends();
   if (n==="reco") { renderReco(); fetchAnalysts(); fetchKeystats(); }
@@ -8654,7 +8341,7 @@ function savePos() {
   closeOv("ov-pos");
   renderPositions();
   renderTx();
-  if (document.getElementById("pane-perf").classList.contains("active")) renderPerf();
+  if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
   if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
   // Actualiser les cours immédiatement pour la nouvelle position
   applyCoursData();
@@ -8705,7 +8392,7 @@ function delPos(id) {
   pushUndo();
   S.positions = S.positions.filter(p=>p.id!==id);
   persist(); renderPositions();
-  if (document.getElementById("pane-perf").classList.contains("active")) renderPerf();
+  if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
 
 /* Modal Transaction */
@@ -8732,7 +8419,7 @@ function saveTx() {
     frais: parseFloat(document.getElementById("t-frais").value)||0
   });
   persist(); closeOv("ov-tx"); renderPositions(); renderTx();
-  if (document.getElementById("pane-perf").classList.contains("active")) renderPerf();
+  if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
 function editTx(id) {
   const t = S.transactions.find(x=>x.id===id); if(!t) return;
@@ -8765,7 +8452,7 @@ function saveEditTx(id) {
     frais: parseFloat(document.getElementById("t-frais").value)||0
   };
   persist(); closeOv("ov-tx"); renderPositions(); renderTx();
-  if (document.getElementById("pane-perf").classList.contains("active")) renderPerf();
+  if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
 function delTx(id) {
   if (!confirm("Supprimer cette transaction ?")) return;
@@ -8873,7 +8560,7 @@ function applyCours() {
   });
   S.lastUpdate=new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
   persist(); closeOv("ov-cours"); renderPositions();
-  if (document.getElementById("pane-perf").classList.contains("active")) renderPerf();
+  if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
   updateStatus();
 }
 
@@ -8957,7 +8644,7 @@ async function renderHomeUsers() {
     </button>`;
   }).join("") +
   `<button class="home-user home-user-add" onclick="openUserModal(null)"
-           title="Cr\u00e9er un utilisateur">+ Nouvel utilisateur</button>`;
+           title="Cr\u00e9er un utilisateur"><i class="ph ph-plus"></i> Nouvel utilisateur</button>`;
 }
 
 async function switchUser(slug) {
@@ -9065,7 +8752,7 @@ async function renderUsersList() {
       ${active ? "" : `<button type="button" class="btn btn-ghost btn-sm" onclick="switchUser('${u.slug}')"
                         style="font-size:10px;padding:3px 8px">Basculer</button>`}
       <button type="button" class="btn btn-ghost btn-sm" onclick="openUserModal('${u.slug}')"
-              style="font-size:10px;padding:3px 8px">\u270e</button>
+              style="font-size:10px;padding:3px 8px" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
     </div>`;
   }).join("");
 }
@@ -9175,7 +8862,7 @@ ${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>$
 
 <div class="ftr">Pilote — Rapport généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div>
 <div class="noprint" style="text-align:center;margin-top:20px">
-  <button onclick="window.print()" style="padding:10px 20px;font-size:14px;cursor:pointer;background:#d97706;color:#fff;border:0;border-radius:6px">🖨 Imprimer / Sauvegarder en PDF</button>
+  <button onclick="window.print()" style="padding:10px 20px;font-size:14px;cursor:pointer;background:#d97706;color:#fff;border:0;border-radius:6px"><i class="ph ph-printer"></i> Imprimer / Sauvegarder en PDF</button>
 </div>
 </body></html>`;
   // Affichage dans un overlay interne avec iframe (pywebview ne supporte pas window.open)
@@ -9188,7 +8875,7 @@ ${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>$
     <div style="width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#fff">
       <div style="font-weight:700;font-size:14px">📄 Rapport annuel ${year}</div>
       <div style="display:flex;gap:8px">
-        <button id="rep-print" class="btn btn-primary btn-sm">🖨 Imprimer / Sauvegarder en PDF</button>
+        <button id="rep-print" class="btn btn-primary btn-sm"><i class="ph ph-printer"></i> Imprimer / Sauvegarder en PDF</button>
         <button id="rep-close" class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.2)">Fermer</button>
       </div>
     </div>
@@ -9564,8 +9251,8 @@ async function _showWelcomeIfFirstRun() {
       </div>
 
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" id="welcome-config">\u2699 Ouvrir les param\u00e8tres</button>
-        <button class="btn btn-ghost"   id="welcome-import">\u2912 Importer un fichier</button>
+        <button class="btn btn-primary" id="welcome-config"><i class="ph ph-gear-six"></i> Ouvrir les param\u00e8tres</button>
+        <button class="btn btn-ghost"   id="welcome-import"><i class="ph ph-upload-simple"></i> Importer un fichier</button>
         <button class="btn btn-ghost"   id="welcome-skip">Commencer</button>
       </div>
     </div>`;
@@ -9821,7 +9508,7 @@ async function svRefresh() {
     } else {
       dl.innerHTML = drives.map(d => `
         <button type="button" class="sv-drive" onclick="svUseDrive('${escHtml(d.root).replace(/\\/g, "\\\\")}')">
-          <span class="sv-drive-ico">🔑</span>
+          <span class="sv-drive-ico"><i class="ph ph-usb"></i></span>
           <span><b>${escHtml(d.letter)}</b> ${escHtml(d.label)}</span>
           <span class="sv-drive-sub">${svBytes(d.free)} libres / ${svBytes(d.total)}</span>
         </button>`).join("");
@@ -9863,7 +9550,7 @@ async function svLoadList() {
       <span class="sv-row-name">${escHtml(svWhen(b.date))}</span>
       <span class="sv-row-size">${svBytes(b.size)}</span>
       <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
-              onclick="svRestore('${escHtml(b.path).replace(/\\/g, "\\\\")}', '${escHtml(svWhen(b.date))}')">↺ Restaurer</button>
+              onclick="svRestore('${escHtml(b.path).replace(/\\/g, "\\\\")}', '${escHtml(svWhen(b.date))}')"><i class="ph ph-arrow-counter-clockwise"></i> Restaurer</button>
     </div>`).join("");
 }
 
@@ -9902,7 +9589,7 @@ async function svUseDrive(root) {
 async function svRunNow() {
   if (!window.pywebview || !pywebview.api) return;
   const btn = document.getElementById("sv-run");
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Sauvegarde…"; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph ph-hourglass-medium"></i> Sauvegarde…'; }
   try {
     const res = await pywebview.api.sauvegarde_run();
     if (res && res.ok) {
@@ -9911,7 +9598,7 @@ async function svRunNow() {
       showToastModern((res && res.error) || "Sauvegarde impossible", "err");
     }
   } catch (e) { showToastModern("Erreur : " + e, "err"); }
-  if (btn) btn.textContent = "💾 Sauvegarder maintenant";
+  if (btn) btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Sauvegarder maintenant';
   svRefresh();
 }
 
@@ -9983,7 +9670,7 @@ async function openConfig() {
       : hidden.map(id => {
           const it = SIDEBAR_ITEMS.find(x => x.id === id);
           const label = it ? it.label : id;
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showSidebarItem('${id}');openConfig()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer">↩</button></span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showSidebarItem('${id}');openConfig()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
         }).join("");
   }
   // Blocs masqués
@@ -9995,7 +9682,7 @@ async function openConfig() {
       : hidden.map(id => {
           const it = CARD_ITEMS.find(x => x.id === id);
           const label = it ? it.label : id;
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showCard('${id}');openConfig()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer">↩</button></span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showCard('${id}');openConfig()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
         }).join("");
   }
   // Affiche la version de l'app
@@ -10616,8 +10303,8 @@ function renderStrat() {
   if (!el) return;
   if (!S.strategies.length) {
     el.innerHTML = `<div style="text-align:center;color:var(--txt2);padding:1.5rem;font-size:12px">
-      Aucune règle. <button class="btn btn-sm btn-primary" onclick="openTemplatePicker()" style="margin-left:8px">📚 Choisir un modèle</button>
-      <button class="btn btn-sm btn-ghost" onclick="openAddRule()" style="margin-left:6px">+ Personnalisée</button>
+      Aucune règle. <button class="btn btn-sm btn-primary" onclick="openTemplatePicker()" style="margin-left:8px"><i class="ph ph-books"></i> Choisir un modèle</button>
+      <button class="btn btn-sm btn-ghost" onclick="openAddRule()" style="margin-left:6px"><i class="ph ph-plus"></i> Personnalisée</button>
     </div>`;
     return;
   }
@@ -10649,8 +10336,8 @@ function renderStrat() {
 
   // Barre d'actions
   const header = `${scoreHtml}<div style="display:flex;gap:8px;justify-content:flex-end;padding:0 0 .8rem;border-bottom:1px dashed var(--brd);margin-bottom:.6rem">
-    <button class="btn btn-sm btn-ghost" onclick="openTemplatePicker()" title="Choisir parmi des modèles pré-définis">📚 Modèles</button>
-    <button class="btn btn-sm btn-ghost" onclick="openAddRule()">+ Règle personnalisée</button>
+    <button class="btn btn-sm btn-ghost" onclick="openTemplatePicker()" title="Choisir parmi des modèles pré-définis"><i class="ph ph-books"></i> Modèles</button>
+    <button class="btn btn-sm btn-ghost" onclick="openAddRule()"><i class="ph ph-plus"></i> Règle personnalisée</button>
   </div>`;
 
   // Cartes règles
@@ -10685,7 +10372,9 @@ function renderStrat() {
       : `<button class="strat-validate-btn ${r.validated===true?'ok':r.validated===false?'err':'neu'}"
            onclick="toggleRuleValidated(${r.id})"
            title="${r.validated===true?'Cliquer pour marquer non respectée':r.validated===false?'Cliquer pour réinitialiser':'Cliquer pour valider'}">
-           ${r.validated===true?'✓ Respectée':r.validated===false?'✗ Non respectée':'○ À évaluer'}
+           ${r.validated===true?'<i class="ph ph-check"></i> Respectée'
+             :r.validated===false?'<i class="ph ph-x"></i> Non respectée'
+             :'<i class="ph ph-circle"></i> À évaluer'}
          </button>`;
 
     return `<div class="rule-item" id="rule-${r.id}" draggable="true"
@@ -10706,8 +10395,8 @@ function renderStrat() {
         ${ageStr ? `<div style="font-size:10px;color:var(--txt3);margin-top:3px;font-family:var(--mono)">Ajoutée ${ageStr}</div>` : ""}
       </div>
       <div style="display:flex;gap:2px;flex-shrink:0;margin-top:1px">
-        <button class="btn btn-sm btn-ghost" onclick="editRule(${r.id})">✎</button>
-        <button class="btn btn-sm btn-ghost" style="color:var(--r)" onclick="delRule(${r.id})">✕</button>
+        <button class="btn btn-sm btn-ghost" onclick="editRule(${r.id})" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
+        <button class="btn btn-sm btn-ghost" style="color:var(--r)" onclick="delRule(${r.id})" aria-label="Retirer"><i class="ph ph-x"></i></button>
       </div>
     </div>`;
   }).join("");
@@ -10960,7 +10649,6 @@ const NAV_SECTIONS = [
   { id: "sec-pea", label: "PEA", children: [
     { id: "dash",   label: "Vue d'ensemble" },
     { id: "pos",    label: "Positions"      },
-    { id: "perf",   label: "Performance"    },
     { id: "sector", label: "Expositions"    },
     { id: "div",    label: "Dividendes"     },
     { id: "tx",     label: "Transactions"   },
@@ -11020,11 +10708,8 @@ function _navSectionOf(tabId) {
 
 const CARD_ITEMS = [
   { id: "card-pos",              label: "Positions · Tableau" },
-  { id: "card-twr",              label: "Performance · Évolution du capital" },
-  { id: "card-realized",         label: "Performance · Plus/moins-values réalisées" },
-  { id: "card-pie-val",          label: "Performance · Camembert valeur" },
-  { id: "card-pie-inv",          label: "Performance · Camembert investi" },
-  { id: "card-heatmap",          label: "Performance · Carte thermique" },
+  { id: "card-twr",              label: "Vue d'ensemble · Évolution du capital" },
+  { id: "card-realized",         label: "Vue d'ensemble · Plus/moins-values réalisées" },
   { id: "card-sector-overview",  label: "Expositions · Analyse sectorielle" },
   { id: "card-geo-overview",     label: "Expositions · Analyse géographique" },
   { id: "card-sector-positions", label: "Expositions · Positions par secteur" },
@@ -11149,7 +10834,7 @@ function _injectSidebar() {
     kids.forEach(it => {
       html += `<button class="sb-item" data-tab="${it.id}">
                  <span>${it.label}</span>
-                 <span class="sb-eye-btn" data-hide="${it.id}" title="Masquer cet onglet">⊘</span>
+                 <span class="sb-eye-btn" data-hide="${it.id}" title="Masquer cet onglet"><i class="ph ph-eye-slash"></i></span>
                </button>`;
     });
     html += `</div></div>`;
@@ -11241,7 +10926,7 @@ function _injectCardEyeBtns() {
     const btn = document.createElement("button");
     btn.className = "card-eye-btn";
     btn.title = "Masquer ce bloc";
-    btn.textContent = "⊘";
+    btn.innerHTML = '<i class="ph ph-eye-slash"></i>';
     btn.onclick = () => _hideCard(it.id);
     cardH.appendChild(btn);
   });
@@ -11463,8 +11148,12 @@ function _injectDashboardPane() {
   }
   pane.appendChild(pea);
   pane.appendChild(mets);
-  const duo = document.getElementById("dash-duo");   // courbe + répartition
-  if (duo) pane.appendChild(duo);
+  // Ex-onglet Performance (fusionné en 4.2.6) : la courbe, puis les
+  // plus/moins-values réalisées à côté de la répartition
+  ["card-twr", "dash-duo"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) pane.appendChild(el);
+  });
 }
 
 /* — Installation finale du shell — */
@@ -12202,8 +11891,8 @@ function finRenderPending() {
         <div class="fin-tx-meta">${_finEsc(catName)} · variable · estimé ${finFmtAbs(p.defaultAmount || 0)}</div>
       </div>
       <input type="number" step="0.01" value="${p.defaultAmount || ''}" class="fin-pending-amount-input" id="fin-pa-${idx}" placeholder="Montant réel">
-      <button class="btn btn-primary btn-sm" onclick="finValidatePending(${idx})">✓ Valider</button>
-      <button class="btn btn-ghost btn-sm" onclick="finSkipPending(${idx})" title="Reporter (passer au prochain)">↪ Reporter</button>
+      <button class="btn btn-primary btn-sm" onclick="finValidatePending(${idx})"><i class="ph ph-check"></i> Valider</button>
+      <button class="btn btn-ghost btn-sm" onclick="finSkipPending(${idx})" title="Reporter (passer au prochain)"><i class="ph ph-arrow-bend-up-right"></i> Reporter</button>
     </div>`;
   }).join("");
 }
@@ -12304,8 +11993,8 @@ function finRenderTxList() {
       <span class="fin-tx-source">${_finEsc(src ? src.name : "—")}</span>
       <span class="fin-tx-amount ${tx.type}">${amountStr}</span>
       <div class="fin-tx-actions">
-        <button class="fin-tx-act-btn"     onclick="finEditTx(${tx.id})"   title="Modifier">✎</button>
-        <button class="fin-tx-act-btn del" onclick="finDeleteTx(${tx.id})" title="Supprimer">✕</button>
+        <button class="fin-tx-act-btn"     onclick="finEditTx(${tx.id})"   title="Modifier"><i class="ph ph-pencil-simple"></i></button>
+        <button class="fin-tx-act-btn del" onclick="finDeleteTx(${tx.id})" title="Supprimer"><i class="ph ph-x"></i></button>
       </div>
     </div>`;
   }).join("");
@@ -12467,6 +12156,7 @@ function finSaveTx() {
   closeOv("ov-fin-tx");
   finPersist();
   finRenderAll();
+  if (typeof dashRender === "function") dashRender();   // tuile « Ajouter une dépense »
   showToastModern(_finEditingTxId ? "Transaction modifiée" : "Transaction enregistrée", "ok");
   _finEditingTxId = null;
 }
@@ -12502,9 +12192,9 @@ function finRenderCatsList() {
       const subUsed = finIsSubUsed(c.id, s.id);
       return `<div class="fin-sub-row">
         <span class="fin-sub-name">↳ <span class="fin-ico">${_finEsc(finSubIcon(s))}</span> ${_finEsc(s.name)}</span>
-        <button class="fin-tx-act-btn" onclick="finChangeSubIcon(${c.id},${s.id})" title="Changer l'emoji">☺</button>
-        <button class="fin-tx-act-btn" onclick="finRenameSub(${c.id},${s.id})" title="Renommer">✎</button>
-        <button class="fin-tx-act-btn del" onclick="finDeleteSub(${c.id},${s.id})" title="${subUsed ? 'Bloqué : sous-catégorie utilisée par des transactions' : 'Supprimer'}" ${subUsed ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}>✕</button>
+        <button class="fin-tx-act-btn" onclick="finChangeSubIcon(${c.id},${s.id})" title="Changer l'emoji"><i class="ph ph-smiley"></i></button>
+        <button class="fin-tx-act-btn" onclick="finRenameSub(${c.id},${s.id})" title="Renommer"><i class="ph ph-pencil-simple"></i></button>
+        <button class="fin-tx-act-btn del" onclick="finDeleteSub(${c.id},${s.id})" title="${subUsed ? 'Bloqué : sous-catégorie utilisée par des transactions' : 'Supprimer'}" ${subUsed ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}><i class="ph ph-x"></i></button>
       </div>`;
     }).join("");
     return `<div class="fin-cat-block">
@@ -12513,17 +12203,17 @@ function finRenderCatsList() {
         <span class="fin-ico fin-ico-lg">${_finEsc(finCatIcon(c))}</span>
         <span class="fin-cat-name">${_finEsc(c.name)}</span>
         <span class="fin-cat-type-pill ${c.type}">${c.type === "income" ? "Revenu" : "Dépense"}</span>
-        <button class="fin-tx-act-btn" onclick="finChangeCatIcon(${c.id})" title="Changer l'emoji">☺</button>
-        <button class="fin-tx-act-btn" onclick="finRenameCat(${c.id})"  title="Renommer">✎</button>
-        <button class="fin-tx-act-btn" onclick="finChangeColor(${c.id})" title="Changer la couleur">◐</button>
-        <button class="fin-tx-act-btn del" onclick="finDeleteCat(${c.id})" title="${used ? 'Bloqué : transactions ou récurrents liés' : 'Supprimer'}" ${used ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}>✕</button>
+        <button class="fin-tx-act-btn" onclick="finChangeCatIcon(${c.id})" title="Changer l'emoji"><i class="ph ph-smiley"></i></button>
+        <button class="fin-tx-act-btn" onclick="finRenameCat(${c.id})"  title="Renommer"><i class="ph ph-pencil-simple"></i></button>
+        <button class="fin-tx-act-btn" onclick="finChangeColor(${c.id})" title="Changer la couleur"><i class="ph ph-palette"></i></button>
+        <button class="fin-tx-act-btn del" onclick="finDeleteCat(${c.id})" title="${used ? 'Bloqué : transactions ou récurrents liés' : 'Supprimer'}" ${used ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}><i class="ph ph-x"></i></button>
       </div>
       ${subsHtml}
       <div class="fin-add-line">
         <input id="fin-newsubico-${c.id}" class="fin-ico-in" type="text" maxlength="4" placeholder="☺"
                style="text-align:center" title="Emoji de la sous-catégorie">
         <input id="fin-newsub-${c.id}" type="text" placeholder="Nouvelle sous-catégorie…">
-        <button class="btn btn-ghost btn-sm" onclick="finAddSub(${c.id})">+ Ajouter</button>
+        <button class="btn btn-ghost btn-sm" onclick="finAddSub(${c.id})"><i class="ph ph-plus"></i> Ajouter</button>
       </div>
     </div>`;
   }).join("");
@@ -12626,8 +12316,8 @@ function finRenderSrcsList() {
     return `<div class="fin-src-row">
       <span>${_finEsc(s.name)}</span>
       <div style="display:flex;gap:4px">
-        <button class="fin-tx-act-btn" onclick="finRenameSrc(${s.id})" title="Renommer">✎</button>
-        <button class="fin-tx-act-btn del" onclick="finDeleteSrc(${s.id})" title="${used ? 'Bloqué : source utilisée' : 'Supprimer'}" ${used ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}>✕</button>
+        <button class="fin-tx-act-btn" onclick="finRenameSrc(${s.id})" title="Renommer"><i class="ph ph-pencil-simple"></i></button>
+        <button class="fin-tx-act-btn del" onclick="finDeleteSrc(${s.id})" title="${used ? 'Bloqué : source utilisée' : 'Supprimer'}" ${used ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}><i class="ph ph-x"></i></button>
       </div>
     </div>`;
   }).join("");
@@ -12681,8 +12371,8 @@ function finRenderRecsList() {
       <span class="fin-tx-source">Prochain : ${_finDateToFR(r.nextDue)}</span>
       <span class="fin-tx-amount ${r.type}">${(r.type === "income" ? "+" : "−") + finFmtAbs(Number(r.amount) || 0)}</span>
       <div style="display:flex;gap:4px">
-        <button class="fin-tx-act-btn" onclick="finToggleRec(${r.id})" title="${r.status === 'paused' ? 'Réactiver' : 'Mettre en pause'}">${r.status === "paused" ? "▶" : "⏸"}</button>
-        <button class="fin-tx-act-btn" onclick="finOpenRecEdit(${r.id})" title="Modifier">✎</button>
+        <button class="fin-tx-act-btn" onclick="finToggleRec(${r.id})" title="${r.status === 'paused' ? 'Réactiver' : 'Mettre en pause'}"><i class="ph ph-${r.status === "paused" ? "play" : "pause"}"></i></button>
+        <button class="fin-tx-act-btn" onclick="finOpenRecEdit(${r.id})" title="Modifier"><i class="ph ph-pencil-simple"></i></button>
       </div>
     </div>`;
   }).join("");
@@ -13159,8 +12849,8 @@ function spOpenDay(iso) {
         ${s.note ? `<div class="sp-snote">${escHtml(s.note)}</div>` : ""}
       </div>
       <div class="m-acts">
-        <button class="m-iconbtn" title="Modifier" onclick="spOpenSession(${s.id}, null)">✎</button>
-        <button class="m-iconbtn danger" title="Supprimer" onclick="spQuickDelete(${s.id}, '${iso}')">✕</button>
+        <button class="m-iconbtn" title="Modifier" onclick="spOpenSession(${s.id}, null)"><i class="ph ph-pencil-simple"></i></button>
+        <button class="m-iconbtn danger" title="Supprimer" onclick="spQuickDelete(${s.id}, '${iso}')"><i class="ph ph-x"></i></button>
       </div>
     </div>`;
   }).join("") : `<div class="m-empty">Aucune séance ce jour-là.</div>`;
@@ -13187,7 +12877,7 @@ function spRenderPicker() {
     </button>`).join("") + `
     <button type="button" class="sp-pick sp-pick-add" onclick="spOpenCustomSport(null)"
             title="Cr\u00e9er un sport et choisir les infos \u00e0 saisir">
-      <span class="sp-pick-ico">+</span><span>Ajouter un sport</span>
+      <span class="sp-pick-ico"><i class="ph ph-plus"></i></span><span>Ajouter un sport</span>
     </button>`;
 }
 
@@ -13226,8 +12916,8 @@ function spRenderCustomSports() {
         <div class="sp-smeta">${escHtml(names || "aucun champ")}</div>
       </div>
       <div class="m-acts">
-        <button class="m-iconbtn" title="Modifier" onclick="spOpenCustomSport('${sp.id}')">\u270e</button>
-        <button class="m-iconbtn danger" title="Supprimer" onclick="spDeleteCustomSport('${sp.id}')">\u2715</button>
+        <button class="m-iconbtn" title="Modifier" onclick="spOpenCustomSport('${sp.id}')"><i class="ph ph-pencil-simple"></i></button>
+        <button class="m-iconbtn danger" title="Supprimer" onclick="spDeleteCustomSport('${sp.id}')"><i class="ph ph-x"></i></button>
       </div>
     </div>`;
   }).join("") : `<div class="m-empty">Aucun sport personnalis\u00e9 pour l'instant.</div>`;
@@ -13484,8 +13174,8 @@ function spRenderRoutines() {
     ? list.map(r => `<div class="sp-srow">
         <div style="flex:1;min-width:0"><div class="sp-sname">${escHtml(r.name)}</div></div>
         <div class="m-acts">
-          <button class="m-iconbtn" title="Renommer" onclick="spRenameRoutine(${r.id})">✎</button>
-          <button class="m-iconbtn danger" title="Supprimer" onclick="spDeleteRoutine(${r.id})">✕</button>
+          <button class="m-iconbtn" title="Renommer" onclick="spRenameRoutine(${r.id})"><i class="ph ph-pencil-simple"></i></button>
+          <button class="m-iconbtn danger" title="Supprimer" onclick="spDeleteRoutine(${r.id})"><i class="ph ph-x"></i></button>
         </div></div>`).join("")
     : `<div class="m-empty">Aucune routine pour l'instant.</div>`;
 }
@@ -13551,8 +13241,8 @@ function spRenderSubtypes() {
     ? list.map((t, i) => `<div class="sp-srow">
         <div style="flex:1;min-width:0"><div class="sp-sname">${escHtml(t)}</div></div>
         <div class="m-acts">
-          <button class="m-iconbtn" title="Renommer" onclick="spRenameSubtype(${i})">✎</button>
-          <button class="m-iconbtn danger" title="Supprimer" onclick="spDeleteSubtype(${i})">✕</button>
+          <button class="m-iconbtn" title="Renommer" onclick="spRenameSubtype(${i})"><i class="ph ph-pencil-simple"></i></button>
+          <button class="m-iconbtn danger" title="Supprimer" onclick="spDeleteSubtype(${i})"><i class="ph ph-x"></i></button>
         </div></div>`).join("")
     : `<div class="m-empty">Aucun type pour ce sport.</div>`;
 }
@@ -13720,8 +13410,8 @@ function spGoalCard(g) {
 
   return `<div class="sp-goal${done ? " done" : ""}${urgent ? " urgent" : ""}">
     <div class="sp-goal-acts">
-      <button class="m-iconbtn" title="${done ? "Rouvrir" : "Valider"}" onclick="spToggleGoalDone(${g.id})">${done ? "↺" : "✓"}</button>
-      <button class="m-iconbtn" title="Modifier" onclick="spOpenGoal(${g.id})">✎</button>
+      <button class="m-iconbtn" title="${done ? "Rouvrir" : "Valider"}" onclick="spToggleGoalDone(${g.id})"><i class="ph ph-${done ? "arrow-counter-clockwise" : "check"}"></i></button>
+      <button class="m-iconbtn" title="Modifier" onclick="spOpenGoal(${g.id})"><i class="ph ph-pencil-simple"></i></button>
     </div>
     <div class="sp-goal-t">${escHtml(g.title)}</div>
     <div>
@@ -14413,9 +14103,9 @@ function prRenderPEA(o) {
   if (!box) return;
 
   const actions = `<div style="display:flex;gap:6px">
-    <button class="btn btn-sm btn-ghost" onclick="prRefreshQuotes(false)">↻ Cours</button>
-    <button class="btn btn-sm btn-primary" onclick="prPeaModal(null)">+ Achat</button>
-    <button class="btn btn-sm btn-ghost" onclick="prVenteModal(null)">− Vente</button>
+    <button class="btn btn-sm btn-ghost" onclick="prRefreshQuotes(false)"><i class="ph ph-arrows-clockwise"></i> Cours</button>
+    <button class="btn btn-sm btn-primary" onclick="prPeaModal(null)"><i class="ph ph-plus"></i> Achat</button>
+    <button class="btn btn-sm btn-ghost" onclick="prVenteModal(null)"><i class="ph ph-minus"></i> Vente</button>
   </div>`;
 
   const rows = o.positions.map(p => `
@@ -14468,8 +14158,8 @@ function prRenderPEA(o) {
             <td class="${achat ? "" : "pos"}">${prEur(prN(r.montant))}</td>
             <td class="${frais > 0.005 ? "neg" : ""}">${prEur(frais)}</td>
             <td><div class="m-acts">
-              <button class="m-iconbtn" title="Modifier" onclick="${achat ? `prPeaModal('${r.id}')` : `prVenteModal('${r.id}')`}">✎</button>
-              <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('${achat ? "achat" : "vente"}','${r.id}')">✕</button>
+              <button class="m-iconbtn" title="Modifier" onclick="${achat ? `prPeaModal('${r.id}')` : `prVenteModal('${r.id}')`}"><i class="ph ph-pencil-simple"></i></button>
+              <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('${achat ? "achat" : "vente"}','${r.id}')"><i class="ph ph-x"></i></button>
             </div></td></tr>`;
         }).join("")}</tbody></table></div>`
     : prEmpty("Aucun ordre."));
@@ -14492,7 +14182,7 @@ function prRenderAV(o) {
 
   html += `<div class="m-head" style="margin-bottom:.8rem">
     <div class="m-spacer"></div>
-    <button class="btn btn-primary" onclick="prAvContratModal(null)">+ Contrat</button>
+    <button class="btn btn-primary" onclick="prAvContratModal(null)"><i class="ph ph-plus"></i> Contrat</button>
   </div>`;
 
   const contrats = prAvContrats();
@@ -14506,10 +14196,10 @@ function prRenderAV(o) {
     const depots = (c.depots || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
     const head = `<div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-sm btn-ghost" onclick="prAvTauxModal('${c.id}', null)">+ Taux</button>
-      <button class="btn btn-sm btn-primary" onclick="prAvDepotModal('${c.id}', null)">+ Dépôt</button>
-      <button class="m-iconbtn" title="Renommer" onclick="prAvContratModal('${c.id}')">✎</button>
-      <button class="m-iconbtn danger" title="Supprimer le contrat" onclick="prDeleteAvContrat('${c.id}')">✕</button>
+      <button class="btn btn-sm btn-ghost" onclick="prAvTauxModal('${c.id}', null)"><i class="ph ph-plus"></i> Taux</button>
+      <button class="btn btn-sm btn-primary" onclick="prAvDepotModal('${c.id}', null)"><i class="ph ph-plus"></i> Dépôt</button>
+      <button class="m-iconbtn" title="Renommer" onclick="prAvContratModal('${c.id}')"><i class="ph ph-pencil-simple"></i></button>
+      <button class="m-iconbtn danger" title="Supprimer le contrat" onclick="prDeleteAvContrat('${c.id}')"><i class="ph ph-x"></i></button>
     </div>`;
 
     const body = `
@@ -14525,8 +14215,8 @@ function prRenderAV(o) {
           ${taux.length ? `<div class="tw"><table><thead><tr><th>Année</th><th>Taux</th><th></th></tr></thead>
             <tbody>${taux.map(x => `<tr><td>${escHtml(String(x.annee))}</td><td>${prNum(prN(x.taux))} %</td>
               <td><div class="m-acts">
-                <button class="m-iconbtn" title="Modifier" onclick="prAvTauxModal('${c.id}', ${prN(x.annee)})">✎</button>
-                <button class="m-iconbtn danger" title="Supprimer" onclick="prDeleteAvTaux('${c.id}', ${prN(x.annee)})">✕</button>
+                <button class="m-iconbtn" title="Modifier" onclick="prAvTauxModal('${c.id}', ${prN(x.annee)})"><i class="ph ph-pencil-simple"></i></button>
+                <button class="m-iconbtn danger" title="Supprimer" onclick="prDeleteAvTaux('${c.id}', ${prN(x.annee)})"><i class="ph ph-x"></i></button>
               </div></td></tr>`).join("")}</tbody></table></div>`
             : prEmpty("Aucun taux — les intérêts resteront à zéro.")}
         </div>
@@ -14537,8 +14227,8 @@ function prRenderAV(o) {
               const i = prAVDepositInterest(d, c.taux_annuels, prToday());
               return `<tr><td>${prDate(d.date)}</td><td>${prEur(prN(d.montant))}</td><td class="pos">${prEur(i)}</td>
                 <td><div class="m-acts">
-                  <button class="m-iconbtn" title="Modifier" onclick="prAvDepotModal('${c.id}', '${d.id}')">✎</button>
-                  <button class="m-iconbtn danger" title="Supprimer" onclick="prDeleteAvDepot('${c.id}', '${d.id}')">✕</button>
+                  <button class="m-iconbtn" title="Modifier" onclick="prAvDepotModal('${c.id}', '${d.id}')"><i class="ph ph-pencil-simple"></i></button>
+                  <button class="m-iconbtn danger" title="Supprimer" onclick="prDeleteAvDepot('${c.id}', '${d.id}')"><i class="ph ph-x"></i></button>
                 </div></td></tr>`;
             }).join("")}</tbody></table></div>`
             : prEmpty("Aucun dépôt.")}
@@ -14569,11 +14259,11 @@ function prRenderLiv(o) {
     ? `<div class="tw"><table><thead><tr><th>À partir du</th><th>Taux</th><th></th></tr></thead>
        <tbody>${hist.map(h => `<tr><td>${prDate(h.date)}</td><td>${prNum(prN(h.taux))} %</td>
          <td><div class="m-acts">
-           <button class="m-iconbtn" title="Modifier" onclick="prLivTauxModal('${h.id}')">✎</button>
-           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('liv_taux','${h.id}')">✕</button>
+           <button class="m-iconbtn" title="Modifier" onclick="prLivTauxModal('${h.id}')"><i class="ph ph-pencil-simple"></i></button>
+           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('liv_taux','${h.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}</tbody></table></div>`
     : prEmpty("Aucun taux renseigné."),
-    `<button class="btn btn-sm btn-primary" onclick="prLivTauxModal(null)">+ Taux</button>`);
+    `<button class="btn btn-sm btn-primary" onclick="prLivTauxModal(null)"><i class="ph ph-plus"></i> Taux</button>`);
 
   const movs = (PR.liv.mouvements || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   html += prCard("", "Mouvements (dépôts et retraits)", movs.length
@@ -14584,13 +14274,13 @@ function prRenderLiv(o) {
          <td class="${m.type === "retrait" ? "neg" : ""}">${prEur(prN(m.montant))}</td>
          <td style="font-family:var(--font);text-align:left">${escHtml(m.note || "—")}</td>
          <td><div class="m-acts">
-           <button class="m-iconbtn" title="Modifier" onclick="prLivMovModal('${m.id}')">✎</button>
-           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('liv_mov','${m.id}')">✕</button>
+           <button class="m-iconbtn" title="Modifier" onclick="prLivMovModal('${m.id}')"><i class="ph ph-pencil-simple"></i></button>
+           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('liv_mov','${m.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}</tbody></table></div>`
     : prEmpty("Aucun mouvement."),
     `<div style="display:flex;gap:6px">
-       <button class="btn btn-sm btn-primary" onclick="prLivMovModal(null,'depot')">+ Dépôt</button>
-       <button class="btn btn-sm btn-ghost" onclick="prLivMovModal(null,'retrait')">− Retrait</button>
+       <button class="btn btn-sm btn-primary" onclick="prLivMovModal(null,'depot')"><i class="ph ph-plus"></i> Dépôt</button>
+       <button class="btn btn-sm btn-ghost" onclick="prLivMovModal(null,'retrait')"><i class="ph ph-minus"></i> Retrait</button>
      </div>`);
 
   box.innerHTML = html;
@@ -14609,31 +14299,31 @@ function prRenderParams(o) {
       <tr><td>Mensualité</td><td>${prEur(prN(p.mensualite))}</td></tr>
       <tr><td>Capital restant dû</td><td><b>${prEur(o.capital_du)}</b></td></tr>
     </tbody></table></div>`,
-    `<button class="btn btn-sm btn-primary" onclick="prConfigModal()">✎ Modifier</button>`);
+    `<button class="btn btn-sm btn-primary" onclick="prConfigModal()"><i class="ph ph-pencil-simple"></i> Modifier</button>`);
 
   const vers = (PR.versements || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   html += prCard("", "Versements de la banque", vers.length
     ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th><th></th></tr></thead>
        <tbody>${vers.map(v => `<tr><td>${prDate(v.date)}</td><td>${prEur(prN(v.montant))}</td>
          <td><div class="m-acts">
-           <button class="m-iconbtn" title="Modifier" onclick="prVersModal('${v.id}')">✎</button>
-           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('versement','${v.id}')">✕</button>
+           <button class="m-iconbtn" title="Modifier" onclick="prVersModal('${v.id}')"><i class="ph ph-pencil-simple"></i></button>
+           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('versement','${v.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}
        </tbody><tfoot><tr><td><b>Total</b></td><td><b>${prEur(o.versements)}</b></td><td></td></tr></tfoot></table></div>`
     : prEmpty("Aucun versement."),
-    `<button class="btn btn-sm btn-primary" onclick="prVersModal(null)">+ Versement</button>`);
+    `<button class="btn btn-sm btn-primary" onclick="prVersModal(null)"><i class="ph ph-plus"></i> Versement</button>`);
 
   const remb = (PR.remboursements || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   html += prCard("", "Remboursements", remb.length
     ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th><th></th></tr></thead>
        <tbody>${remb.map(r => `<tr><td>${prDate(r.date)}</td><td>${prEur(prN(r.montant))}</td>
          <td><div class="m-acts">
-           <button class="m-iconbtn" title="Modifier" onclick="prRembModal('${r.id}')">✎</button>
-           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('remboursement','${r.id}')">✕</button>
+           <button class="m-iconbtn" title="Modifier" onclick="prRembModal('${r.id}')"><i class="ph ph-pencil-simple"></i></button>
+           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('remboursement','${r.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}
        </tbody><tfoot><tr><td><b>Total</b></td><td><b>${prEur(o.remb_total)}</b></td><td></td></tr></tfoot></table></div>`
     : prEmpty("Aucun remboursement."),
-    `<button class="btn btn-sm btn-primary" onclick="prRembModal(null)">+ Remboursement</button>`);
+    `<button class="btn btn-sm btn-primary" onclick="prRembModal(null)"><i class="ph ph-plus"></i> Remboursement</button>`);
 
   const recs = PR.frais_recurrents || [];
   html += prCard("", "Frais récurrents", recs.length
@@ -14650,12 +14340,12 @@ function prRenderParams(o) {
            <td>${occ}</td>
            <td class="neg">${prEur(prN(r.montant) * occ)}</td>
            <td><div class="m-acts">
-             <button class="m-iconbtn" title="Modifier" onclick="prRecModal('${r.id}')">✎</button>
-             <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('recurrent','${r.id}')">✕</button>
+             <button class="m-iconbtn" title="Modifier" onclick="prRecModal('${r.id}')"><i class="ph ph-pencil-simple"></i></button>
+             <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('recurrent','${r.id}')"><i class="ph ph-x"></i></button>
            </div></td></tr>`;
        }).join("")}</tbody></table></div>`
     : prEmpty("Aucun frais récurrent."),
-    `<button class="btn btn-sm btn-primary" onclick="prRecModal(null)">+ Frais récurrent</button>`);
+    `<button class="btn btn-sm btn-primary" onclick="prRecModal(null)"><i class="ph ph-plus"></i> Frais récurrent</button>`);
 
   const frais = (PR.frais || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   html += prCard("", "Frais bancaires ponctuels", frais.length
@@ -14664,12 +14354,12 @@ function prRenderParams(o) {
          <td style="font-family:var(--font);text-align:left">${escHtml(f.label || "—")}</td>
          <td class="neg">${prEur(prN(f.montant))}</td>
          <td><div class="m-acts">
-           <button class="m-iconbtn" title="Modifier" onclick="prFraisModal('${f.id}')">✎</button>
-           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('frais','${f.id}')">✕</button>
+           <button class="m-iconbtn" title="Modifier" onclick="prFraisModal('${f.id}')"><i class="ph ph-pencil-simple"></i></button>
+           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('frais','${f.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}
        </tbody><tfoot><tr><td colspan="2"><b>Total (ponctuels + récurrents)</b></td><td class="neg"><b>${prEur(o.frais_banque)}</b></td><td></td></tr></tfoot></table></div>`
     : prEmpty("Aucun frais ponctuel."),
-    `<button class="btn btn-sm btn-primary" onclick="prFraisModal(null)">+ Frais</button>`);
+    `<button class="btn btn-sm btn-primary" onclick="prFraisModal(null)"><i class="ph ph-plus"></i> Frais</button>`);
 
   box.innerHTML = html;
 }
@@ -15098,6 +14788,62 @@ function saSorted() {
 function saLast() { const s = saSorted(); return s.length ? s[s.length - 1] : null; }
 function saPrev() { const s = saSorted(); return s.length > 1 ? s[s.length - 2] : null; }
 
+/** Pesée à laquelle on compare la dernière dans l'onglet Suivi : celle choisie
+    dans « Comparer avec » (SA.uiCompare = id d'une pesée, mémorisé dans
+    sante.json comme SA.uiRange), sinon la précédente. Un choix qui ne vaut plus
+    rien (pesée supprimée, ou devenue la dernière) retombe sur la précédente.
+    La tuile de l'accueil, elle, compare toujours à la précédente et le dit. */
+function saRef() {
+  const choix = SA && SA.uiCompare;
+  const last  = saLast();
+  if (choix && choix !== "prev") {
+    const m = saMesures().find(x => x.id === choix);
+    if (m && last && m.id !== last.id) return m;
+  }
+  return saPrev();
+}
+
+/** « vs pesée précédente » ou « vs 12 sept. » selon le choix. */
+function saRefLabel(ref) {
+  if (!ref) return "";
+  const choix = SA && SA.uiCompare;
+  if (!choix || choix === "prev" || ref.id !== choix) return "vs pesée précédente";
+  const d = new Date(ref.date + "T00:00:00");
+  if (isNaN(d)) return "vs " + ref.date;
+  const memeAnnee = d.getFullYear() === new Date().getFullYear();
+  return "vs " + d.toLocaleDateString("fr-FR",
+    memeAnnee ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+}
+
+function saSetCompare(v) {
+  if (!SA) return;
+  SA.uiCompare = v || "prev";
+  saSave();
+  saRenderKpis();
+  saRenderGrid();
+}
+
+/** Remplit « Comparer avec » : la précédente, puis chaque pesée plus ancienne. */
+function saRenderCompare() {
+  const sel = document.getElementById("sa-cmp");
+  if (!sel) return;
+  const liste = saSorted();
+  const last  = liste[liste.length - 1];
+  const autres = liste.slice(0, -1).reverse();          // de la plus récente à la plus ancienne
+  const ref = saRef();
+  const choix = (SA && SA.uiCompare && ref && ref.id === SA.uiCompare) ? SA.uiCompare : "prev";
+  const fmt = m => {
+    const d = new Date(m.date + "T00:00:00");
+    const txt = isNaN(d) ? m.date
+      : d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    return txt + (m.time ? " à " + m.time : "");
+  };
+  sel.innerHTML = `<option value="prev">la pesée précédente</option>`
+    + autres.map(m => `<option value="${escHtml(m.id)}">${escHtml(fmt(m))}</option>`).join("");
+  sel.value = choix;
+  sel.disabled = !last || !autres.length;
+}
+
 function saFmt(mid, v) {
   if (v === null || v === undefined || v === "") return "—";
   const m = saMetric(mid);
@@ -15183,7 +14929,8 @@ function saDeltaClass(mid, cur, prev) {
 function saRenderKpis() {
   const box = document.getElementById("sa-kpis");
   if (!box) return;
-  const last = saLast(), prev = saPrev();
+  const last = saLast(), prev = saRef();
+  saRenderCompare();
   if (!last) {
     box.innerHTML = `<div class="m-empty" style="grid-column:1/-1">
       Aucune pesée. Envoie tes captures FitDays pour commencer.</div>`;
@@ -15201,7 +14948,7 @@ function saRenderKpis() {
     return `<div class="mkpi${c.accent ? " accent" : ""}">
       <span class="mkpi-lbl">${escHtml(c.lbl)}</span>
       <span class="mkpi-val">${saFmt(c.id, v)}</span>
-      <span class="mkpi-sub">${d ? escHtml(d) + " vs pesée précédente" : "première pesée"}</span>
+      <span class="mkpi-sub">${d ? escHtml(d + " " + saRefLabel(prev)) : (prev ? "pas de valeur à comparer" : "première pesée")}</span>
     </div>`;
   }).join("");
 }
@@ -15309,13 +15056,14 @@ function saRenderGrid() {
   const box = document.getElementById("sa-grid");
   const when = document.getElementById("sa-grid-when");
   if (!box) return;
-  const last = saLast(), prev = saPrev();
+  const last = saLast(), prev = saRef();
   if (!last) { box.innerHTML = `<div class="m-empty">—</div>`; if (when) when.textContent = ""; return; }
   if (when) {
     const d = new Date(last.date + "T00:00:00");
     when.textContent = (isNaN(d) ? last.date
       : d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))
-      + (last.time ? " à " + last.time : "");
+      + (last.time ? " à " + last.time : "")
+      + (prev ? " · écarts " + saRefLabel(prev) : "");
   }
   box.innerHTML = SA_METRICS.map(m => {
     const v = last[m.id];
@@ -15355,7 +15103,7 @@ function saRenderHist() {
         ${m.source === "ocr" ? ` <span class="m-tag" title="Lu depuis une capture FitDays">📷</span>` : ""}</td>
       ${SA_METRICS.map(x => `<td>${saFmt(x.id, m[x.id])}</td>`).join("")}
       <td><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
-                  onclick="saOpenMesure('${escHtml(m.id)}')">✎</button></td>
+                  onclick="saOpenMesure('${escHtml(m.id)}')" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button></td>
     </tr>`;
   }).join("");
 }
@@ -15603,7 +15351,7 @@ function saRenderGoals() {
         <span class="sa-goal-num">${p.done ? "✓ atteint" : saFmt(g.metric, p.current)}</span>
         <div style="flex:1"></div>
         <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
-                onclick="saOpenGoal('${escHtml(g.id)}')">✎</button>
+                onclick="saOpenGoal('${escHtml(g.id)}')" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
       </div>
       <div class="sa-goal-bar"><div class="sa-goal-fill" style="width:${p.pct.toFixed(1)}%"></div></div>
       <div class="sa-goal-foot">
@@ -16016,7 +15764,7 @@ function paRenderComptes() {
       </span>
       <span class="pa-cpt-val">${last ? (t.dette ? "− " : "") + paEur(Math.abs(last.montant)) : "—"}</span>
       <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
-              onclick="paOpenCompte('${escHtml(c.id)}')">✎</button>
+              onclick="paOpenCompte('${escHtml(c.id)}')" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
     </div>`;
   }).join("");
 }
@@ -16426,12 +16174,13 @@ function foItemHtml(f) {
       const manque = _foCerts && (_foCerts.manquants || []).some(m => m.fichier === c.fichier);
       cert = `<button type="button" class="fo-cert${manque ? " missing" : ""}"
         onclick="foOpenCert('${f.id}')" title="${escHtml(c.nom || c.fichier)}">
-        ${manque ? "⚠ certificat introuvable" : "📄 " + escHtml(c.nom || c.fichier)}</button>
+        ${manque ? '<i class="ph ph-warning"></i> certificat introuvable'
+                 : '<i class="ph ph-file-text"></i> ' + escHtml(c.nom || c.fichier)}</button>
         <button type="button" class="m-iconbtn danger" onclick="foRemoveCert('${f.id}')"
-                title="Retirer le certificat">✕</button>`;
+                title="Retirer le certificat"><i class="ph ph-x"></i></button>`;
     } else {
       cert = `<button type="button" class="fo-cert fo-cert-add" onclick="foAddCert('${f.id}')">
-        ＋ Déposer le certificat</button>`;
+        <i class="ph ph-file-arrow-up"></i> Déposer le certificat</button>`;
     }
   }
 
@@ -16450,8 +16199,8 @@ function foItemHtml(f) {
     </div>
     <div class="fo-acts">
       ${suivant ? `<button class="m-iconbtn" title="${suivantLbl}"
-          onclick="foSetStatut('${f.id}','${suivant}')">${f.statut === "todo" ? "▶" : "✓"}</button>` : ""}
-      <button class="m-iconbtn" title="Modifier" onclick="foOpenForm('${f.id}')">✎</button>
+          onclick="foSetStatut('${f.id}','${suivant}')"><i class="ph ph-${f.statut === "todo" ? "play" : "check"}"></i></button>` : ""}
+      <button class="m-iconbtn" title="Modifier" onclick="foOpenForm('${f.id}')"><i class="ph ph-pencil-simple"></i></button>
     </div>
   </div>`;
 }
@@ -16780,7 +16529,7 @@ function foRenderExps() {
         ${e.note ? `<div class="fo-desc">${escHtml(e.note)}</div>` : ""}
       </div>
       <div class="fo-acts">
-        <button class="m-iconbtn" title="Modifier" onclick="foOpenExp('${e.id}')">✎</button>
+        <button class="m-iconbtn" title="Modifier" onclick="foOpenExp('${e.id}')"><i class="ph ph-pencil-simple"></i></button>
       </div>
     </div>`;
   }).join("");
@@ -16811,7 +16560,7 @@ function foRenderProjs() {
             `<span class="fo-tag">${escHtml(t)}</span>`).join("")}</div>` : ""}
       </div>
       <div class="fo-acts">
-        <button class="m-iconbtn" title="Modifier" onclick="foOpenProj('${p.id}')">✎</button>
+        <button class="m-iconbtn" title="Modifier" onclick="foOpenProj('${p.id}')"><i class="ph ph-pencil-simple"></i></button>
       </div>
     </div>`;
   }).join("");
@@ -16841,7 +16590,7 @@ function foRenderComps() {
           ${escHtml(c.label)}
           <span class="fo-dots">${[1, 2, 3, 4].map(n =>
             `<span class="fo-dot${n <= (c.niveau || 1) ? " on" : ""}"></span>`).join("")}</span>
-          <button class="m-iconbtn" title="Modifier" onclick="foOpenComp('${c.id}')">✎</button>
+          <button class="m-iconbtn" title="Modifier" onclick="foOpenComp('${c.id}')"><i class="ph ph-pencil-simple"></i></button>
         </span>`).join("")}</div>
     </div>`;
   }).join("");
@@ -16998,7 +16747,7 @@ function foRenderDomaines() {
       <span class="m-tag" title="${n} formation(s)">${n}</span>
       <button class="m-iconbtn danger"${n ? " disabled" : ""}
               title="${n ? "Utilisé par " + n + " formation(s)" : "Supprimer"}"
-              onclick="foDeleteDomaine('${d.id}')">🗑</button>
+              onclick="foDeleteDomaine('${d.id}')"><i class="ph ph-trash"></i></button>
     </div>`;
   }).join("");
 }
@@ -17521,7 +17270,7 @@ function voStartHtml() {
     if (!tous.length) {
       bloc = `<div class="vo-card-due none">Aucun mot dans cette liste</div>
         <div class="vo-sens">
-          <button class="btn btn-ghost" onclick="voOpenMot(null, '${l.id}')">+ Ajouter un mot</button>
+          <button class="btn btn-ghost" onclick="voOpenMot(null, '${l.id}')"><i class="ph ph-plus"></i> Ajouter un mot</button>
         </div>`;
     } else if (!dus.length) {
       const pro = voProchaineDe(l.id);
@@ -17595,9 +17344,9 @@ function voCarteHtml() {
       ${m.exemple ? `<div class="vo-ex">« ${escHtml(m.exemple)} »</div>` : ""}
       ${m.note ? `<div class="vo-note">${escHtml(m.note)}</div>` : ""}
       <div class="vo-grade">
-        <button class="btn vo-btn-ko" onclick="voGrade(false)">✗ Raté
+        <button class="btn vo-btn-ko" onclick="voGrade(false)"><i class="ph ph-x"></i> Raté
           <small>${escHtml(voDestination(m, false))}</small></button>
-        <button class="btn vo-btn-ok" onclick="voGrade(true)">✓ Je savais
+        <button class="btn vo-btn-ok" onclick="voGrade(true)"><i class="ph ph-check"></i> Je savais
           <small>${escHtml(voDestination(m, true))}</small></button>
       </div>
       <div class="vo-hint">C'est toi qui juges, pas l'app —
@@ -17606,7 +17355,7 @@ function voCarteHtml() {
 
   return `<div class="vo-run">
     <div class="vo-runbar">
-      <button class="btn btn-ghost btn-sm" onclick="voQuit()">✕ Quitter</button>
+      <button class="btn btn-ghost btn-sm" onclick="voQuit()"><i class="ph ph-x"></i> Quitter</button>
       <div class="vo-prog"><div class="vo-prog-in" style="width:${pct}%"></div></div>
       <span class="vo-count">${s.i + 1}/${s.total} · ✓${s.ok} ✗${s.ko}</span>
     </div>
@@ -17832,7 +17581,7 @@ function voRenderBoiteVue() {
         <td class="vo-when${du ? " now" : ""}">${escHtml(voEcheanceLabel(m.prochaine))}</td>
         <td><div class="m-acts">
           <button class="m-iconbtn" title="Modifier"
-                  onclick="closeOv('ov-vo-boite');voOpenMot('${m.id}')">✎</button>
+                  onclick="closeOv('ov-vo-boite');voOpenMot('${m.id}')"><i class="ph ph-pencil-simple"></i></button>
         </div></td>
       </tr>`;
     }).join("")}</tbody></table>`;
@@ -17908,7 +17657,7 @@ function voRenderMots() {
         <td class="vo-when${du ? " now" : ""}">${escHtml(voEcheanceLabel(m.prochaine))}</td>
         <td class="vo-when">${taux}${m.nbVus ? ` <span style="opacity:.6">(${m.nbVus})</span>` : ""}</td>
         <td><div class="m-acts">
-          <button class="m-iconbtn" title="Modifier" onclick="voOpenMot('${m.id}')">✎</button>
+          <button class="m-iconbtn" title="Modifier" onclick="voOpenMot('${m.id}')"><i class="ph ph-pencil-simple"></i></button>
         </div></td>
       </tr>`;
     }).join("")}</tbody></table>`;
@@ -18082,7 +17831,7 @@ function voRenderListes() {
       <input class="vo-li-col" type="color" value="${l.color}"
              onchange="voSetListe('${l.id}','color',this.value)">
       <button class="m-iconbtn" title="${n ? n + " mot(s) dedans : suppression impossible" : "Supprimer"}"
-              ${n ? "disabled" : ""} onclick="voDeleteListe('${l.id}')">🗑</button>
+              ${n ? "disabled" : ""} onclick="voDeleteListe('${l.id}')"><i class="ph ph-trash"></i></button>
     </div>`;
   }).join("");
 }
@@ -18297,14 +18046,14 @@ function voRenderSetBoites() {
 
 const DASH_WIDGETS = [
   {
-    id: "pea", label: "Rendement du PEA", module: "PEA", tab: "perf",
+    id: "pea", label: "Rendement du PEA", module: "PEA", tab: "dash",
     render() {
       const pv = window._peaPv || {};
       if (pv.eur == null) return { lbl: "Rendement total du PEA", val: "—",
-                                   sub: "En attente des cours", go: "Voir la performance" };
+                                   sub: "En attente des cours", go: "Voir l'évolution" };
       return { lbl: "Rendement total du PEA", val: eur(pv.eur, true),
                cls: pv.eur >= 0 ? "c-g" : "c-r",
-               sub: pv.pct != null ? pct(pv.pct) : "", go: "Voir la performance",
+               sub: pv.pct != null ? pct(pv.pct) : "", go: "Voir l'évolution",
                viz: dashPeaSpark("pv") };
     },
   },
@@ -18476,6 +18225,24 @@ const DASH_WIDGETS = [
     },
   },
   {
+    // Raccourci de saisie : le bouton ouvre la fenêtre « Nouvelle dépense » de
+    // Mes comptes sans passer par l'onglet ; le reste de la tuile y mène.
+    // Le total vient de finComputeMonthTotals, le même que la carte
+    // « Dépenses du mois » : pas de second calcul.
+    id: "depense", label: "Ajouter une dépense", module: "Comptes", tab: "fin-month",
+    render() {
+      if (typeof F === "undefined" || !F) return null;
+      const now = new Date();
+      const t = finComputeMonthTotals(now.getFullYear(), now.getMonth());
+      const mois = now.toLocaleDateString("fr-FR", { month: "long" });
+      return { lbl: "Dépenses de " + mois, val: finFmtAbs(t.expense),
+               sub: t.expCount + " dépense" + (t.expCount > 1 ? "s" : "") + " saisie" + (t.expCount > 1 ? "s" : ""),
+               go: "Voir mes comptes",
+               viz: `<button type="button" class="btn btn-primary btn-sm dash-add-exp"
+                       onclick="event.stopPropagation();dashAddExpense()"><i class="ph ph-plus"></i> Ajouter une dépense</button>` };
+    },
+  },
+  {
     id: "usb", label: "Sauvegarde USB", module: "Sauvegarde", tab: null,
     render() {
       const s = window._dashUsb;
@@ -18538,6 +18305,7 @@ function dashModuleReady(mod) {
     case "Formation":  return _foBootstrapped;
     case "Vocabulaire": return _voBootstrapped;
     case "Sauvegarde": return !!window._dashUsb;
+    case "Comptes":    return _finBootstrapped;
   }
   return true;
 }
@@ -18566,8 +18334,8 @@ function dashCardHtml(w, d, muted) {
         : ` style="cursor:default"`);
   const outils = _dashEdit
     ? `<span class="dash-card-x" title="Retirer cette tuile"
-             onclick="event.stopPropagation();dashToggle('${w.id}', false)">✕</span>
-       <span class="dash-card-pen">✎</span>`
+             onclick="event.stopPropagation();dashToggle('${w.id}', false)"><i class="ph ph-x"></i></span>
+       <span class="dash-card-pen"><i class="ph ph-pencil-simple"></i></span>`
     : "";
   return `<div class="home-card${muted ? " dash-muted" : ""}"${act}>
     ${outils}
@@ -18654,11 +18422,22 @@ function dashPeaSpark(kind) {
   return dashSpark(serie.map(p => p.val));
 }
 
+/** Bouton de la tuile « Ajouter une dépense » : la fenêtre de saisie de
+    Mes comptes, ouverte depuis l'accueil. */
+async function dashAddExpense() {
+  if (!_finBootstrapped && typeof finBootstrap === "function") await finBootstrap();
+  if (typeof F === "undefined" || !F) {
+    showToastModern("Mes comptes n'est pas encore chargé", "warn");
+    return;
+  }
+  finOpenTx("expense");
+}
+
 /** Icône du module d'une tuile, la même que dans la barre latérale. */
 const DASH_ICONS = {
   "PEA": "chart-line-up", "Patrimoine": "bank", "Sports": "person-simple-run",
   "Santé": "heartbeat", "Prêt": "graduation-cap", "Formation": "certificate",
-  "Vocabulaire": "cards", "Sauvegarde": "usb",
+  "Vocabulaire": "cards", "Sauvegarde": "usb", "Comptes": "wallet",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -18697,7 +18476,7 @@ function dashRender() {
   });
   if (_dashEdit) {
     html.push(`<button type="button" class="home-card dash-add" onclick="dashOpenPick(null)">
-      <span class="dash-add-plus">+</span><span>Ajouter une tuile</span></button>`);
+      <span class="dash-add-plus"><i class="ph ph-plus"></i></span><span>Ajouter une tuile</span></button>`);
   }
   box.innerHTML = html.length ? html.join("")
     : `<div class="dash-empty" style="grid-column:1/-1">
