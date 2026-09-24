@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.4**
+**Version actuelle : 4.2.5**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -238,6 +238,26 @@ Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.
 * L'app se ferme, l'installeur tourne en silence, l'utilisateur relance manuellement
 * Logs : `%APPDATA%\Pilote\update.log` et `%TEMP%\pilote_update\update_bat.log`
 
+**Solution de secours quand l'API refuse (4.2.5).** Sans jeton, l'API accepte
+60 requêtes par heure et par adresse IP ; une adresse partagée peut épuiser ce quota
+sans que Pilote y soit pour rien, et l'API répond `403 rate limit exceeded`. Constaté
+le 23/09/2026 : huit vérifications refusées de suite, l'app se croyait à jour. Désormais
+`_fetch()` essaie l'API (`_latest_from_api`) puis, en cas d'échec, la page publique
+(`_latest_from_page`) : `/releases/latest` redirige vers `/releases/tag/vX.Y.Z` (lu sans
+suivre la redirection, `_redirect_target`), et l'installeur a une URL fixe
+`/releases/download/<tag>/Pilote_Setup.exe` (`SETUP_ASSET`, même nom que `release.yml`
+et `OutputBaseFilename`). Son existence est vérifiée (302 attendu) avant de proposer
+quoi que ce soit, et `hasUpdate` exige maintenant une `downloadUrl` : proposer une
+mise à jour sans installeur ne mènerait qu'à un échec.
+
+**Lire le vrai journal depuis une session Claude.** L'app Claude pour Windows est un
+paquet MSIX : un terminal lancé depuis elle voit une copie *virtualisée* de
+`%APPDATA%` (`...\Packages\Claude_...\LocalCache\Roaming\`). Un `python src/app.py`
+lancé depuis Claude y a écrit un `update.log` qui masque le vrai : on croit alors que
+l'app installée n'écrit plus rien. Le vrai fichier se lit par
+`\\localhost\C$\Users\Arthur\AppData\Roaming\Pilote\update.log`. `%LOCALAPPDATA%\Programs`
+(donc `Donnees/`) n'est pas virtualisé.
+
 Points critiques :
 * Dans le JS, utiliser `querySelector("#update-modal .upd-btns")` et non
   `getElementById("upd-btns")`
@@ -315,10 +335,37 @@ plutôt qu'un logiciel de bureau.
   « IDENTITÉ CARNET » **en fin de la première feuille de style**, qui surcharge les
   composants plutôt que de réécrire chaque règle. Un nouveau composant réutilise ces
   jetons, jamais une couleur en dur.
-* **Graphiques** : un `<canvas>` n'hérite pas du CSS. `Chart.defaults.font.family`
-  (Onest) et `Chart.defaults.color` (`#8b8072`, lisible sur les deux fonds) sont posés
-  en tête du premier script ; les graphiques du PEA qui forçaient JetBrains Mono et
-  `#71717a` ont été alignés.
+* **Graphiques** : un `<canvas>` n'hérite pas du CSS. En tête du premier script :
+  `Chart.defaults` (Onest, gris chaud `#8b8072` lisible sur les deux fonds, grille fine
+  sans cadre, barres arrondies, légendes en pastilles, infobulle sombre) et trois
+  aides : `carnetChartColors()` lit les variables CSS au moment de dessiner,
+  `carnetAlpha(hex, a)`, `carnetAreaFill(hex)` donne la surface en dégradé sous une
+  courbe. Les courbes du PEA prennent l'accent + cette surface ; gain ou perte se
+  lisent dans le résumé (vert/rouge), pas dans la couleur du trait ; les versements
+  sont un pointillé gris. `CLRS` (camemberts du PEA) est une palette sourde
+  accordée au papier ; les couleurs portées par les données restent celles choisies.
+  **Changement de thème ou d'accent** : un `MutationObserver` sur `<html>`
+  (`data-theme`, `style`) appelle `carnetRedrawCharts()`, qui redessine la courbe
+  Performance et celle de la vue d'ensemble.
+* **Vue d'ensemble du PEA** (`#dash-duo`, déplacé dans `pane-dash` par
+  `_injectDashboardPane`) : courbe du capital avec pastilles de période
+  (`dashSetRange`, plage non mémorisée) et répartition en barres. Rendue par
+  `dashRenderOverview()` depuis le `goTab` d'origine et à chaque `renderMetrics()`
+  quand l'onglet est ouvert. **Aucun chiffre recalculé** : même série que l'onglet
+  Performance (`perfSeriesAsync()` charge l'historique une seule fois et partage
+  `_perfHistory`/`_perfFullSeries`), même `computePnl` ; le grand chiffre est
+  `window._peaPv.total` (« lignes + espèces », comme la tuile « Valeur du PEA »), pas
+  le dernier point de la courbe, qui est une clôture ; la répartition prend la même
+  base que la colonne de l'onglet Positions (valeur des titres, hors espèces).
+* **Mini-graphiques des tuiles** : un widget peut renvoyer `viz` (HTML) dans
+  `render()`. `dashSpark(valeurs)` (courbe SVG), `dashProgress(pct, g, d)`,
+  `dashSportWeeks()` (heures des 4 dernières semaines), `dashPeaSpark("pv"|"val")`
+  (6 mois de la série Performance). Colorés par le CSS : ils suivent thème et accent
+  sans être redessinés. Seulement là où il y a de vraies données : pas de graphique
+  inventé. La progression de l'objectif sportif vient de `spGoalTimeline(g)`,
+  partagée avec la carte de l'onglet Objectifs.
+* **Pastilles de période** : classe `.rng` (vue d'ensemble et `#perf-range-btns`),
+  l'active porte `aria-pressed="true"` ou `.btn-primary`.
 * **Tableaux** : dans un `.tw`, les cellules chiffrées ne passent plus à la ligne
   (« 70,64 » / « € ») : le tableau défile dans son cadre.
 * **Cache** : `/vendor/` est servi avec `max-age` d'un jour. Le lien porte
