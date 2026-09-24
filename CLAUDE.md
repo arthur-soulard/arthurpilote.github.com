@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.5**
+**Version actuelle : 4.2.6**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -36,7 +36,7 @@ Pilote/
 │   ├── updater.py      # Auto-updater (check + download + install)
 │   ├── notifications.py
 │   └── ui/
-│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~18 560 lignes)
+│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~18 700 lignes)
 │       └── vendor/     # Chart.js, polices woff2, icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
@@ -284,7 +284,7 @@ Paramètres.
 | Entrée          | Onglets (ids des panes : `pane-<id>`)                              |
 |-----------------|--------------------------------------------------------------------|
 | Accueil         | home                                                               |
-| PEA             | dash, pos, perf, sector, div, tx, wish, dep, strat, sim            |
+| PEA             | dash, pos, sector, div, tx, wish, dep, strat, sim (plus de `perf`) |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt étudiant   | pr-overview, pr-pea, pr-av, pr-liv, pr-params                      |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
@@ -329,8 +329,11 @@ plutôt qu'un logiciel de bureau.
   libellés en casse normale (plus de petites MAJUSCULES espacées).
 * **Icônes** : Phosphor regular, servies par `/vendor/phosphor/` (woff2 seul, licence
   MIT). Les emoji des catégories, des sports, des domaines… sont des DONNÉES de
-  l'utilisateur et restent. Les boutons internes des modules gardent encore leurs
-  caractères (+, ✎, ✕…) : piste de suite, pas un oubli.
+  l'utilisateur et restent. Depuis la 4.2.6, **tous** les boutons en portent une,
+  modules compris (+, ✎, ✕, 🗑, ⚙, ←/→… convertis, menu des Paramètres aussi) ;
+  `ebtn()`/`dbtn()` (Modifier / Supprimer des tableaux) ont un `title` et un
+  `aria-label`, comme tout bouton qui n'a qu'une icône. Les messages d'état
+  (« ✓ À jour ») gardent leur caractère : ce ne sont pas des boutons.
 * **Où c'est** : les jetons dans `:root` et `html[data-theme="dark"]`, puis un bloc
   « IDENTITÉ CARNET » **en fin de la première feuille de style**, qui surcharge les
   composants plutôt que de réécrire chaque règle. Un nouveau composant réutilise ces
@@ -346,17 +349,27 @@ plutôt qu'un logiciel de bureau.
   accordée au papier ; les couleurs portées par les données restent celles choisies.
   **Changement de thème ou d'accent** : un `MutationObserver` sur `<html>`
   (`data-theme`, `style`) appelle `carnetRedrawCharts()`, qui redessine la courbe
-  Performance et celle de la vue d'ensemble.
-* **Vue d'ensemble du PEA** (`#dash-duo`, déplacé dans `pane-dash` par
-  `_injectDashboardPane`) : courbe du capital avec pastilles de période
-  (`dashSetRange`, plage non mémorisée) et répartition en barres. Rendue par
-  `dashRenderOverview()` depuis le `goTab` d'origine et à chaque `renderMetrics()`
-  quand l'onglet est ouvert. **Aucun chiffre recalculé** : même série que l'onglet
-  Performance (`perfSeriesAsync()` charge l'historique une seule fois et partage
-  `_perfHistory`/`_perfFullSeries`), même `computePnl` ; le grand chiffre est
-  `window._peaPv.total` (« lignes + espèces », comme la tuile « Valeur du PEA »), pas
-  le dernier point de la courbe, qui est une clôture ; la répartition prend la même
-  base que la colonne de l'onglet Positions (valeur des titres, hors espèces).
+  « Évolution du capital ».
+* **Vue d'ensemble du PEA = ex-onglet Performance (4.2.6).** L'onglet Performance
+  n'existe plus : `pane-dash` reçoit, dans cet ordre, le bandeau fiscal, les cinq
+  chiffres clés, la carte `#card-twr` (la courbe complète : comparaison CAC 40 /
+  S&P 500 / ETF World, pastilles de période, résumé) puis `#dash-duo` =
+  « Plus/moins-values réalisées » (2/3) + « Répartition » en barres (1/3). Tout est
+  déplacé par `_injectDashboardPane`. Le `goTab` d'origine appelle `renderPerf()` et
+  `dashRenderOverview()` sur `"dash"`, et redirige `"perf"` vers `"dash"` (tuile,
+  raccourci ou préférence qui viserait encore l'ancien onglet). Les deux camemberts
+  et la carte thermique ont été **supprimés à la demande d'Arthur** (avec
+  `makePie`, `renderHeatmap`, `_layoutTreemap`, `_hmColor`). La répartition prend la
+  même base que la colonne de l'onglet Positions (valeur des titres, hors espèces).
+  `perfSeriesAsync()` charge l'historique une seule fois pour les tuiles de l'accueil
+  et partage `_perfHistory`/`_perfFullSeries` avec la courbe.
+* **Carte « Valeur du PEA » = titres + espèces (4.2.6).** Elle affichait les titres
+  seuls (1 464,15 €) quand la courbe, la tuile de l'accueil et le module Patrimoine
+  affichaient titres + espèces (1 469,64 €) : 5,49 € d'écart, le solde espèces.
+  Calculs revérifiés à la main sur les vraies données, tous justes ; seule la
+  définition différait. La bonne est titres + espèces : c'est la valeur à laquelle
+  se mesure le rendement (valeur − versements) et celle d'un PEA pour la banque.
+  Le détail titres / espèces / investi reste sous le chiffre.
 * **Mini-graphiques des tuiles** : un widget peut renvoyer `viz` (HTML) dans
   `render()`. `dashSpark(valeurs)` (courbe SVG), `dashProgress(pct, g, d)`,
   `dashSportWeeks()` (heures des 4 dernières semaines), `dashPeaSpark("pv"|"val")`
@@ -364,6 +377,12 @@ plutôt qu'un logiciel de bureau.
   sans être redessinés. Seulement là où il y a de vraies données : pas de graphique
   inventé. La progression de l'objectif sportif vient de `spGoalTimeline(g)`,
   partagée avec la carte de l'onglet Objectifs.
+* **Tuile raccourci « Ajouter une dépense »** (`depense`, module `Comptes`, 4.2.6) :
+  les dépenses du mois (`finComputeMonthTotals`, la même que la carte « Dépenses du
+  mois ») et un bouton qui ouvre `finOpenTx("expense")` depuis l'accueil
+  (`dashAddExpense()`, qui charge Mes comptes si besoin). Éteinte par défaut comme
+  toute nouvelle tuile ; `finSaveTx` rappelle `dashRender()` pour que le total suive.
+  En mode édition le bouton est inerte : le clic sert à changer la tuile.
 * **Pastilles de période** : classe `.rng` (vue d'ensemble et `#perf-range-btns`),
   l'active porte `aria-pressed="true"` ou `.btn-primary`.
 * **Tableaux** : dans un `.tw`, les cellules chiffrées ne passent plus à la ligne
@@ -794,6 +813,15 @@ UI : `sa*` dans index.html. Les métriques où **baisser est bon** (poids, IMC,
 graisses, âge corporel) sont listées dans `saDeltaClass` — c'est ce qui décide
 de la couleur verte ou rouge.
 
+**Comparer avec une pesée choisie (4.2.6).** L'onglet Suivi a un sélecteur
+« Comparer avec » : la pesée précédente (défaut) ou n'importe quelle pesée plus
+ancienne. Le choix vit dans `SA.uiCompare` (id de la pesée, mémorisé dans
+`sante.json` comme `SA.uiRange`) ; `saRef()` renvoie la pesée de référence et
+retombe sur `saPrev()` si le choix ne vaut plus rien (pesée supprimée ou devenue la
+dernière). Les chiffres clés et la grille « Dernière pesée » l'utilisent et disent
+contre quoi ils comparent (`saRefLabel` : « vs 15 sept. »). La tuile « Poids » de
+l'accueil compare toujours à la pesée précédente, et l'écrit.
+
 ## Module Mes comptes (finances.json)
 
 Catégories et sous-catégories **portent chacune un emoji** (`icon`), affiché partout :
@@ -823,7 +851,10 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
 
 Les cours passent par le serveur local (`/cours`), pas de second proxy Yahoo.
 
-## Graphique « Évolution du capital » (onglet Performance, `#card-twr`)
+## Graphique « Évolution du capital » (vue d'ensemble du PEA, `#card-twr`)
+
+Était dans l'onglet Performance jusqu'en 4.2.5 ; même code, même carte, rendue par
+`renderPerf()` à chaque `goTab("dash")`.
 
 5 plages dans `#perf-range-btns` : 1S (prb-1w), 1M (prb-1m), 6M (prb-6m),
 YTD (prb-ytd), Max (prb-max, défaut).
@@ -851,7 +882,7 @@ Points critiques :
 
 ## Conventions de code
 
-* Tout l'UI vit dans `index.html` (~18 560 lignes). Les modules annexes sont des blocs
+* Tout l'UI vit dans `index.html` (~18 700 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`,
   `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
   Prêt → Santé → Patrimoine → Formation → Vocabulaire → Tableau de bord → `boot()`.** Les patches de `goTab`
