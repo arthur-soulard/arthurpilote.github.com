@@ -2249,6 +2249,35 @@ label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 1
   background: var(--bg2); color: var(--txt); box-shadow: 0 0 0 1px var(--brd2);
 }
 .rng button:focus-visible, .rng .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Sur la tuile « Performance du PEA » : plus serrées, pour tenir dans 240 px */
+.dash-rng { margin-bottom: 8px; }
+.dash-rng button { padding: 2px 8px; font-size: 11.5px; }
+.home-cards.dash-editing .dash-rng { pointer-events: none; opacity: .6; }
+
+/* — Mes comptes : dépenses fréquentes et suggestions du libellé — */
+.fin-freq { display: flex; flex-wrap: wrap; gap: 6px; }
+.fin-freq-chip {
+  all: unset; box-sizing: border-box; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  padding: 5px 11px; border-radius: 999px; font-size: 12.5px; color: var(--txt);
+  background: var(--bg3); border: 1px solid var(--brd2);
+}
+.fin-freq-chip:hover { border-color: var(--accent); }
+.fin-freq-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fin-freq-chip b { font-weight: 500; color: var(--txt2); white-space: nowrap; }
+.fin-ac-wrap { position: relative; }
+.fin-ac {
+  position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; z-index: 5; padding: 4px;
+  background: var(--bg2); border: 1px solid var(--brd2); border-radius: var(--rad); box-shadow: var(--sh-md);
+}
+.fin-ac-item {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 7px 9px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.fin-ac-item:hover, .fin-ac-item.on { background: var(--hover); }
+.fin-ac-item.on { box-shadow: inset 2px 0 0 var(--accent); }
+.fin-ac-lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-ac-meta { font-size: 11.5px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
 </style>
 </head>
@@ -3499,6 +3528,12 @@ label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 1
       </div>
     </div>
 
+    <!-- Un clic pré-remplit le formulaire depuis l'historique (finRenderFreq) -->
+    <div class="fg" id="fin-tx-freq-wrap" style="display:none">
+      <label id="fin-tx-freq-lbl">Dépenses fréquentes</label>
+      <div class="fin-freq" id="fin-tx-freq"></div>
+    </div>
+
     <div class="fg-row">
       <div class="fg">
         <label>Date</label>
@@ -3510,9 +3545,12 @@ label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 1
       </div>
     </div>
 
-    <div class="fg">
+    <div class="fg fin-ac-wrap">
       <label>Libellé</label>
-      <input id="fin-tx-label" type="text" placeholder="Ex. Courses Carrefour, Salaire mai…">
+      <input id="fin-tx-label" type="text" autocomplete="off" placeholder="Ex. Courses Carrefour, Salaire mai…"
+             role="combobox" aria-autocomplete="list" aria-controls="fin-tx-ac" aria-expanded="false"
+             oninput="finAcUpdate()" onkeydown="finAcKey(event)" onblur="setTimeout(finAcClose, 150)">
+      <div class="fin-ac" id="fin-tx-ac" role="listbox" hidden></div>
     </div>
 
     <div class="fg-row">
@@ -7320,7 +7358,7 @@ async function fetchLocalCours() {
       else if (tk.startsWith("LON:")) dotKey = tk.replace("LON:", "") + ".L";
       prices[dotKey] = prix;
     }
-    const varEntry = { name: tk, cours: info.prix, d1: info.d1, w1: info.w1, m1: info.m1, y1: info.y1 };
+    const varEntry = { name: tk, cours: info.prix, d1: info.d1, w1: info.w1, m1: info.m1, y1: info.y1, t: info.t };
     variations[tk] = varEntry;
     // also store with dotKey so getVar finds it regardless of format saved in wishlist
     let dotKey2 = tk;
@@ -7375,9 +7413,11 @@ async function applyCoursData() {
   }
 }
 
+/* Renvoie la promesse du premier chargement des cours : boot() l'attend
+   (5 s au plus) avant d'ouvrir la fenêtre. */
 function startCoursRefresh() {
   stopCoursRefresh();
-  applyCoursData();
+  const premier = applyCoursData();
   fetchSparklines();
   fetchKeystats();
   fetchAnalysts();
@@ -7387,6 +7427,7 @@ function startCoursRefresh() {
     fetchKeystats();
     fetchAnalysts();
   }, 3 * 60 * 1000);
+  return premier;
 }
 
 /* ─── Helper SVG sparkline ─── */
@@ -9025,6 +9066,9 @@ async function _checkPinLock() {
   const canSwitch = !!(window.pywebview && window.pywebview.api && window.pywebview.api.set_active_user);
 
   return new Promise(resolve => {
+    // Le code se tape dans la fenêtre : elle ne peut plus attendre la fin du
+    // chargement derrière l'écran de chargement
+    _appReady();
     const ov = document.createElement("div");
     ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem";
     ov.innerHTML = `
@@ -11571,6 +11615,16 @@ function finTxIsInMonth(tx, y, m) {
 }
 function finCatById(id) { return F.categories.find(c => c.id === id); }
 
+/* « Autres dépenses » et « Autres revenus » ferment toujours la liste : ce
+   sont des fourre-tout, et une catégorie créée ensuite (ajoutée en fin de
+   tableau) les laissait au milieu. Le tri se fait à l'affichage : le fichier
+   garde son ordre, et une catégorie future se range aussi avant « Autres ». */
+function finIsCatchAll(c) { return /^autres?\b/i.test(String((c && c.name) || "").trim()); }
+function finCatsOrdered(type) {
+  const l = F.categories.filter(c => c.type === type);
+  return l.filter(c => !finIsCatchAll(c)).concat(l.filter(finIsCatchAll));
+}
+
 /* ── Emoji des categories / sous-categories ──
    Chaque entree porte son emoji ; on retombe sur un pictogramme neutre
    pour les categories creees avant la v4.1.2 et jamais personnalisees. */
@@ -11588,6 +11642,107 @@ function finCatIcon(c) {
   return c.icon || FIN_FALLBACK_ICON[c.type] || "\u{1F3F7}\u{FE0F}";
 }
 function finSubIcon(sb) { return (sb && sb.icon) || "\u2022"; }
+
+/* Emoji deviné d'après le libellé, pour les catégories et sous-catégories
+   créées sans emoji. Mots comparés sans accents ni majuscules ; la première
+   règle qui correspond gagne, d'où les plus précises en tête. */
+const FIN_ICON_GUESS = [
+  [/\b(lessive|laverie|washin|pressing)/, "\u{1F9FA}"],
+  [/\b(crous|cantine|resto u)/, "\u{1F393}"],
+  [/\b(assurance)/, "\u{1F6E1}\u{FE0F}"],
+  [/\b(courses|supermarche|carrefour|leclerc|lidl|auchan|intermarche|epicerie)/, "\u{1F6D2}"],
+  [/\b(boulangerie|pain)\b/, "\u{1F956}"],
+  [/\b(cafe|coffee)/, "\u{2615}"],
+  [/\b(restaurant|resto|repas)/, "\u{1F37D}\u{FE0F}"],
+  [/\b(livraison|uber ?eats|deliveroo)/, "\u{1F6F5}"],
+  [/\b(alcool|biere|vin|apero)\b/, "\u{1F37A}"],
+  [/\b(bar|soiree|sortie|fete)s?\b/, "\u{1F37B}"],
+  [/\b(plaisir|loisir)/, "\u{1F389}"],
+  [/\b(loyer)/, "\u{1F511}"],
+  [/\b(electricite|edf|energie|gaz)\b/, "\u{26A1}"],
+  [/\b(internet|box|wifi)\b/, "\u{1F4F6}"],
+  [/\b(eau)\b/, "\u{1F6B0}"],
+  [/\b(telephone|forfait|mobile)/, "\u{1F4F1}"],
+  [/\b(carburant|essence|gasoil)/, "\u{26FD}"],
+  [/\b(covoit|blablacar|voiture|auto)/, "\u{1F697}"],
+  [/\b(train|sncf|tgv|ter)\b/, "\u{1F686}"],
+  [/\b(bus|tram|metro|transports?|mistral|navigo)\b/, "\u{1F687}"],
+  [/\b(taxi|vtc|uber)\b/, "\u{1F695}"],
+  [/\b(parking|peage)/, "\u{1F17F}\u{FE0F}"],
+  [/\b(velo)/, "\u{1F6B2}"],
+  [/\b(avion|vol)\b/, "\u{2708}\u{FE0F}"],
+  [/\b(vacances|voyage|hotel|airbnb)/, "\u{1F9F3}"],
+  [/\b(medecin|docteur|consultation)/, "\u{1FA7A}"],
+  [/\b(pharmacie|medicament)/, "\u{1F48A}"],
+  [/\b(dentiste)/, "\u{1F9B7}"],
+  [/\b(mutuelle|secu|securite sociale|ameli)/, "\u{1F4CB}"],
+  [/\b(salle de sport|muscu|fitness|gym)/, "\u{1F3CB}\u{FE0F}"],
+  [/\b(sport|bds)/, "\u{1F3C3}"],
+  [/\b(cinema|film)/, "\u{1F3AC}"],
+  [/\b(jeux?|gaming)\b/, "\u{1F3AE}"],
+  [/\b(musique|concert|spotify)/, "\u{1F3B5}"],
+  [/\b(livres?|librairie)\b/, "\u{1F4DA}"],
+  [/\b(streaming|netflix|disney)/, "\u{1F4FA}"],
+  [/\b(abonnement)/, "\u{1F501}"],
+  [/\b(cloud|logiciel)/, "\u{2601}\u{FE0F}"],
+  [/\b(vetement|habit)/, "\u{1F455}"],
+  [/\b(chaussure)/, "\u{1F45F}"],
+  [/\b(coiffeur)/, "\u{1F487}"],
+  [/\b(hygiene|beaute|cosmetique)/, "\u{1F9F4}"],
+  [/\b(electronique|informatique|ordinateur)/, "\u{1F4BB}"],
+  [/\b(maison|deco|meuble)/, "\u{1F6CB}\u{FE0F}"],
+  [/\b(bricolage|outil)/, "\u{1F527}"],
+  [/\b(jardin|plante)/, "\u{1F331}"],
+  [/\b(animaux|animal|chat|chien|veto)\b/, "\u{1F43E}"],
+  [/\b(cadeau)/, "\u{1F381}"],
+  [/\b(dons?|associations?|asso)\b/, "\u{2764}\u{FE0F}"],
+  [/\b(ecole|etudes?|fac|universite|scolarite|fournitures|bde)\b/, "\u{1F393}"],
+  [/\b(impots?|taxes?)\b/, "\u{1F9FE}"],
+  [/\b(rembourse)/, "\u{21A9}\u{FE0F}"],
+  [/\b(carte)/, "\u{1F4B3}"],
+  [/\b(banque|bancaires?|agios)\b/, "\u{1F3E6}"],
+  [/\b(potes?|amis?|copains?)\b/, "\u{1F465}"],
+  [/\b(famille|parents?)\b/, "\u{1F46A}"],
+  [/\b(epargne|livret)/, "\u{1F416}"],
+  [/\b(pea)\b/, "\u{1F4C8}"],
+  [/\b(cto|compte-titres|actions?)\b/, "\u{1F4CA}"],
+  [/\b(crypto|bitcoin)/, "\u{1FA99}"],
+  [/\b(invest)/, "\u{1F4B9}"],
+  [/\b(interets?)\b/, "\u{1FA99}"],
+  [/\b(salaire|paie)\b/, "\u{1F4B6}"],
+  [/\b(primes?|bonus)\b/, "\u{1F31F}"],
+  [/\b(aides?|caf|apl)\b/, "\u{1F91D}"],
+];
+
+function finNorm(s) {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function finGuessIcon(name) {
+  const n = finNorm(name);
+  const r = n && FIN_ICON_GUESS.find(([re]) => re.test(n));
+  return r ? r[1] : "";
+}
+
+/** Complète l'emoji des catégories et sous-catégories qui n'en ont pas (ou
+    qui ont gardé le pictogramme générique 🏷️ / • posé par défaut). Une
+    sous-catégorie au libellé inconnu prend l'emoji de sa catégorie.
+    Renvoie true si quelque chose a changé (à enregistrer). */
+function finBackfillIcons() {
+  let n = 0;
+  F.categories.forEach(c => {
+    if (!c.icon || c.icon === FIN_FALLBACK_ICON.expense) {
+      const g = finGuessIcon(c.name);
+      if (g) { c.icon = g; n++; }
+    }
+    const parent = (c.icon && c.icon !== FIN_FALLBACK_ICON.expense) ? c.icon : "";
+    (c.subs || []).forEach(s => {
+      if (s.icon && s.icon !== "\u2022") return;
+      const g = finGuessIcon(s.name) || parent;
+      if (g) { s.icon = g; n++; }
+    });
+  });
+  return n > 0;
+}
 
 /* Selecteur d'emoji : palette cliquable + saisie libre.
    finPickIcon() ouvre la modale et rappelle le callback avec l'emoji choisi. */
@@ -11928,7 +12083,7 @@ function finRefreshFilters() {
   if (catSel) {
     const cur = catSel.value;
     catSel.innerHTML = `<option value="">Toutes catégories</option>` +
-      F.categories.map(c =>
+      finCatsOrdered("expense").concat(finCatsOrdered("income")).map(c =>
         `<option value="${c.id}">${_finEsc(finCatIcon(c) + "  " + c.name)} (${c.type === "income" ? "Rev" : "Dép"})</option>`
       ).join("");
     catSel.value = cur;
@@ -12015,7 +12170,7 @@ function finRenderCharts() {
     if (!cat) continue;
     expByCat[cat.id] = (expByCat[cat.id] || 0) + (Number(tx.amount) || 0);
   }
-  const ids = Object.keys(expByCat);
+  const ids = finCatsOrdered("expense").map(c => String(c.id)).filter(id => expByCat[id] != null);
   const pieCanvas = document.getElementById("fin-chart-pie");
   const pieEmpty  = document.getElementById("fin-chart-pie-empty");
   if (!ids.length) {
@@ -12114,11 +12269,13 @@ function finSetTxType(type) {
   document.getElementById("fin-tx-type-expense").classList.toggle("active", type === "expense");
   document.getElementById("fin-tx-type-income").classList.toggle("active",  type === "income");
   const catSel = document.getElementById("fin-tx-cat");
-  const cats = F.categories.filter(c => c.type === type);
+  const cats = finCatsOrdered(type);
   catSel.innerHTML = cats.map(c => `<option value="${c.id}">${_finEsc(finCatIcon(c) + "  " + c.name)}</option>`).join("");
   finRefreshSubs("fin-tx-cat","fin-tx-sub");
   const srcSel = document.getElementById("fin-tx-src");
   srcSel.innerHTML = F.sources.map(s => `<option value="${s.id}">${_finEsc(s.name)}</option>`).join("");
+  finAcClose();
+  finRenderFreq();
 }
 
 function finRefreshSubs(catSelId, subSelId) {
@@ -12128,6 +12285,141 @@ function finRefreshSubs(catSelId, subSelId) {
   if (!cat || !cat.subs || !cat.subs.length) { sel.innerHTML = `<option value="">—</option>`; return; }
   sel.innerHTML = `<option value="">—</option>` +
     cat.subs.map(s => `<option value="${s.id}">${_finEsc(finSubIcon(s) + "  " + s.name)}</option>`).join("");
+}
+
+/* ── Aide à la saisie : dépenses fréquentes et suggestions ──
+   Les deux lisent l'historique : un libellé déjà saisi (du même type) revient
+   avec le montant, la catégorie, la sous-catégorie et la source de sa
+   dernière saisie. Ça ne fait que pré-remplir : rien n'est enregistré sans
+   « Enregistrer », et tout reste modifiable, saisie libre comprise. */
+let _finAc = { items: [], i: -1 };
+let _finFreq = [];
+
+/** Un modèle par libellé (sans accents ni majuscules) : {n, tx}, tx = la
+    saisie la plus récente. `depuis` (ISO) limite l'historique lu. */
+function finTxModels(type, depuis) {
+  const m = new Map();
+  F.transactions.forEach(tx => {
+    if (tx.type !== type || !tx.label || !tx.date) return;
+    if (depuis && tx.date < depuis) return;
+    const k = finNorm(tx.label);
+    const cur = m.get(k);
+    const recent = !cur || (tx.date + (tx.createdAt || "")) > (cur.tx.date + (cur.tx.createdAt || ""));
+    m.set(k, { key: k, n: (cur ? cur.n : 0) + 1, tx: recent ? tx : cur.tx });
+  });
+  return [...m.values()];
+}
+
+function finModelIcon(tx) {
+  const sub = finSubById(tx.categoryId, tx.subcategoryId);
+  return sub ? finSubIcon(sub) : finCatIcon(finCatById(tx.categoryId));
+}
+
+/** Remplit le formulaire avec une saisie passée ; la date reste celle du jour. */
+function finApplyModel(tx) {
+  document.getElementById("fin-tx-label").value = tx.label;
+  document.getElementById("fin-tx-amount").value = tx.amount || "";
+  const cat = finCatById(tx.categoryId);
+  if (cat && cat.type === _finTxModalType) {
+    document.getElementById("fin-tx-cat").value = cat.id;
+    finRefreshSubs("fin-tx-cat", "fin-tx-sub");
+    document.getElementById("fin-tx-sub").value = finSubById(cat.id, tx.subcategoryId) ? tx.subcategoryId : "";
+  }
+  if (finSrcById(tx.sourceId)) document.getElementById("fin-tx-src").value = tx.sourceId;
+  finAcClose();
+}
+
+/** Les libellés les plus saisis des douze derniers mois (nouvelle saisie seulement). */
+function finRenderFreq() {
+  const wrap = document.getElementById("fin-tx-freq-wrap");
+  if (!wrap) return;
+  const depuis = _finDateToISO(new Date(Date.now() - 365 * 86400000));
+  _finFreq = _finEditingTxId ? [] : finTxModels(_finTxModalType, depuis)
+    .sort((a, b) => b.n - a.n || b.tx.date.localeCompare(a.tx.date))
+    .slice(0, 8);
+  wrap.style.display = _finFreq.length ? "" : "none";
+  document.getElementById("fin-tx-freq-lbl").textContent =
+    _finTxModalType === "income" ? "Revenus fréquents" : "Dépenses fréquentes";
+  document.getElementById("fin-tx-freq").innerHTML = _finFreq.map((m, i) =>
+    `<button type="button" class="fin-freq-chip" onclick="finPickFreq(${i})"
+       title="Pré-remplir : ${_finEsc(m.tx.label)}, ${finFmtAbs(Number(m.tx.amount) || 0)}">
+       <span class="fin-ico">${_finEsc(finModelIcon(m.tx))}</span>${_finEsc(m.tx.label)}
+       <b>${finFmtAbs(Number(m.tx.amount) || 0)}</b></button>`).join("");
+}
+
+function finPickFreq(i) {
+  const m = _finFreq[i]; if (!m) return;
+  finApplyModel(m.tx);
+  // Le montant change souvent (courses) : sélectionné, il se remplace d'une frappe
+  const amt = document.getElementById("fin-tx-amount");
+  amt.focus(); amt.select();
+}
+
+/** Suggestions sous le libellé : ceux qui commencent par la saisie d'abord,
+    puis ceux dont un mot commence par elle. */
+function finAcUpdate() {
+  const inp = document.getElementById("fin-tx-label");
+  const q = finNorm(inp.value);
+  if (!q) { finAcClose(); return; }
+  const found = [];
+  finTxModels(_finTxModalType).forEach(m => {
+    const rang = m.key.startsWith(q) ? 0 : m.key.split(/[\s'’()\/-]+/).some(w => w.startsWith(q)) ? 1 : -1;
+    if (rang >= 0) found.push({ ...m, rang });
+  });
+  found.sort((a, b) => a.rang - b.rang || b.n - a.n || b.tx.date.localeCompare(a.tx.date));
+  _finAc = { items: found.slice(0, 5), i: -1 };
+  const box = document.getElementById("fin-tx-ac");
+  if (!_finAc.items.length) { finAcClose(); return; }
+  box.innerHTML = _finAc.items.map((m, i) => {
+    const cat = finCatById(m.tx.categoryId);
+    const sub = finSubById(m.tx.categoryId, m.tx.subcategoryId);
+    const ou  = (cat ? cat.name : "") + (sub ? " › " + sub.name : "");
+    return `<div class="fin-ac-item" role="option" id="fin-ac-${i}" aria-selected="false"
+              onmousedown="event.preventDefault();finAcPick(${i})">
+      <span class="fin-ico">${_finEsc(finModelIcon(m.tx))}</span>
+      <span class="fin-ac-lbl">${_finEsc(m.tx.label)}</span>
+      <span class="fin-ac-meta">${_finEsc(ou)} · ${finFmtAbs(Number(m.tx.amount) || 0)}</span>
+    </div>`;
+  }).join("");
+  box.hidden = false;
+  inp.setAttribute("aria-expanded", "true");
+}
+
+function finAcPick(i) {
+  const m = _finAc.items[i]; if (!m) return;
+  finApplyModel(m.tx);
+  const amt = document.getElementById("fin-tx-amount");
+  amt.focus(); amt.select();
+}
+
+function finAcClose() {
+  const box = document.getElementById("fin-tx-ac");
+  if (box) box.hidden = true;
+  const inp = document.getElementById("fin-tx-label");
+  if (inp) { inp.setAttribute("aria-expanded", "false"); inp.removeAttribute("aria-activedescendant"); }
+  _finAc = { items: [], i: -1 };
+}
+
+/** ↑ ↓ pour choisir, Entrée pour remplir, Échap ferme la liste (pas la fenêtre). */
+function finAcKey(e) {
+  const box = document.getElementById("fin-tx-ac");
+  if (!box || box.hidden || !_finAc.items.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    const n = _finAc.items.length;
+    _finAc.i = (_finAc.i + (e.key === "ArrowDown" ? 1 : n - 1 + (_finAc.i < 0 ? 1 : 0))) % n;
+    box.querySelectorAll(".fin-ac-item").forEach((el, i) => {
+      el.classList.toggle("on", i === _finAc.i);
+      el.setAttribute("aria-selected", i === _finAc.i ? "true" : "false");
+    });
+    e.target.setAttribute("aria-activedescendant", "fin-ac-" + _finAc.i);
+  } else if (e.key === "Enter" && _finAc.i >= 0) {
+    e.preventDefault();
+    finAcPick(_finAc.i);
+  } else if (e.key === "Escape") {
+    e.stopPropagation();
+    finAcClose();
+  }
 }
 
 function finSaveTx() {
@@ -12184,7 +12476,7 @@ function finCatsFilter(type) {
 }
 function finRenderCatsList() {
   const list = document.getElementById("fin-cats-list");
-  const cats = F.categories.filter(c => c.type === _finCatFilter);
+  const cats = finCatsOrdered(_finCatFilter);
   if (!cats.length) { list.innerHTML = `<div class="fin-empty">Aucune catégorie.</div>`; return; }
   list.innerHTML = cats.map(c => {
     const used = finIsCatUsed(c.id);
@@ -12230,7 +12522,7 @@ function finAddCategory() {
   const name  = document.getElementById("fin-newcat-name").value.trim();
   const color = document.getElementById("fin-newcat-color").value || "#7c3aed";
   const icoEl = document.getElementById("fin-newcat-icon");
-  const icon  = (icoEl && icoEl.value.trim()) || FIN_FALLBACK_ICON[_finCatFilter];
+  const icon  = (icoEl && icoEl.value.trim()) || finGuessIcon(name) || FIN_FALLBACK_ICON[_finCatFilter];
   if (!name) return;
   F.categories.push({ id: finUid("cat"), name, icon, type: _finCatFilter, color, subs: [] });
   document.getElementById("fin-newcat-name").value = "";
@@ -12265,7 +12557,8 @@ function finAddSub(catId) {
   const name = (inp.value || "").trim(); if (!name) return;
   c.subs = c.subs || [];
   const subId = (c.subs.reduce((m, s) => Math.max(m, s.id || 0), 0)) + 1;
-  c.subs.push({ id: subId, name, icon: (ico && ico.value.trim()) || "\u2022" });
+  const parent = (c.icon && c.icon !== FIN_FALLBACK_ICON.expense) ? c.icon : "\u2022";
+  c.subs.push({ id: subId, name, icon: (ico && ico.value.trim()) || finGuessIcon(name) || parent });
   inp.value = "";
   if (ico) ico.value = "";
   finPersist(); finRenderCatsList(); finRenderAll();
@@ -12418,7 +12711,7 @@ function finSetRecType(type) {
   document.getElementById("fin-rec-type-expense").classList.toggle("active", type === "expense");
   document.getElementById("fin-rec-type-income").classList.toggle("active",  type === "income");
   const catSel = document.getElementById("fin-rec-cat");
-  const cats = F.categories.filter(c => c.type === type);
+  const cats = finCatsOrdered(type);
   catSel.innerHTML = cats.map(c => `<option value="${c.id}">${_finEsc(finCatIcon(c) + "  " + c.name)}</option>`).join("");
   finRefreshSubs("fin-rec-cat","fin-rec-sub");
   const srcSel = document.getElementById("fin-rec-src");
@@ -12505,6 +12798,7 @@ async function finBootstrap() {
   const ok = await finLoad();
   if (!ok || !F) return;
   _finBootstrapped = true;
+  if (finBackfillIcons()) finPersist();
   finProcessRecurrences();
   finGoToday();   // sets _finMonth and renders
 }
@@ -12628,6 +12922,17 @@ function spDistKm(s) {
   return spHasField(s.sport, "distance_m") ? spNum(s.distance) / 1000 : spNum(s.distance);
 }
 function spSessions() { return (SP && Array.isArray(SP.sessions)) ? SP.sessions : []; }
+/** Début du suivi : la première séance saisie ("YYYY-MM-DD"), null s'il n'y
+    en a aucune. Avant elle, une période vide n'est pas « zéro sport » mais
+    un temps où Pilote n'était pas encore utilisé : on ne compare pas avec. */
+function spTrackStart() {
+  let d0 = null;
+  spSessions().forEach(s => { const d = String(s.date || ""); if (d && (!d0 || d < d0)) d0 = d; });
+  return d0;
+}
+function spFmtDayMonth(iso) {
+  return spParseISO(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
 function spSessionsOn(iso) {
   return spSessions().filter(s => s.date === iso)
     .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
@@ -12765,22 +13070,32 @@ function spRenderMonthKpis() {
   const ref = SP_MONTHS[pm].slice(0, 4) + ".";
   const yearMin = spTotals(spYearSessions(_spMonth.year)).min;
 
+  // Mois précédent entièrement avant la première séance : rien à comparer
+  const debut = spTrackStart();
+  const finMois = spDateISO(new Date(_spMonth.year, _spMonth.month + 1, 0));
+  const sansRef = !debut ? "—"
+    : finMois < debut ? "avant le début du suivi"
+    : spDateISO(new Date(py, pm + 1, 0)) < debut ? "premier mois suivi" : null;
+  const delta = (cur, prev, kind) => sansRef || spDelta(cur, prev, kind, ref);
+  const depuis = (debut && debut.startsWith(String(_spMonth.year)) && debut > _spMonth.year + "-01-01")
+    ? "depuis le " + spFmtDayMonth(debut) : "depuis le 1ᵉʳ janvier";
+
   box.innerHTML = `
     <div class="mkpi accent"><span class="mkpi-lbl">Temps de sport</span>
       <span class="mkpi-val">${spFmtDur(t.min)}</span>
-      <span class="mkpi-sub">${spDelta(t.min, p.min, "dur", ref)}</span></div>
+      <span class="mkpi-sub">${delta(t.min, p.min, "dur")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Cumul ${_spMonth.year}</span>
       <span class="mkpi-val">${spFmtDur(yearMin)}</span>
-      <span class="mkpi-sub">depuis le 1ᵉʳ janvier</span></div>
+      <span class="mkpi-sub">${depuis}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Séances</span>
       <span class="mkpi-val">${t.n}</span>
-      <span class="mkpi-sub">${spDelta(t.n, p.n, "n", ref)}</span></div>
+      <span class="mkpi-sub">${delta(t.n, p.n, "n")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Distance</span>
       <span class="mkpi-val">${spFmtNum(t.km, 1)} km</span>
-      <span class="mkpi-sub">${spDelta(t.km, p.km, "km", ref)}</span></div>
+      <span class="mkpi-sub">${delta(t.km, p.km, "km")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Dénivelé +</span>
       <span class="mkpi-val">${spFmtNum(t.elev)} m</span>
-      <span class="mkpi-sub">${spDelta(t.elev, p.elev, "elev", ref)}</span></div>`;
+      <span class="mkpi-sub">${delta(t.elev, p.elev, "elev")}</span></div>`;
 }
 
 function spRenderCalendar() {
@@ -13473,28 +13788,39 @@ function spRenderStatsKpis() {
   const p = spTotals(spYearSessions(_spStatsYear - 1));
   const ref = String(_spStatsYear - 1);
 
-  // Moyenne hebdomadaire sur les semaines ecoulees de l'annee
+  // Année précédente entièrement avant la première séance : rien à comparer
+  const debut = spTrackStart();
+  const sansRef = !debut ? "—"
+    : String(_spStatsYear) + "-12-31" < debut ? "avant le début du suivi"
+    : String(_spStatsYear - 1) + "-12-31" < debut ? "première année suivie" : null;
+  const delta = (cur, prev, kind) => sansRef || spDelta(cur, prev, kind, ref);
+
+  // Moyenne hebdomadaire sur les semaines ecoulees de l'annee, comptees a
+  // partir de la premiere seance si le suivi a commence en cours d'annee
   const now = new Date();
   const endOfYear = new Date(_spStatsYear, 11, 31);
   const end = (now < endOfYear) ? now : endOfYear;
-  const weeks = Math.max(1, Math.round((end - new Date(_spStatsYear, 0, 1)) / 604800000));
+  const jan1 = new Date(_spStatsYear, 0, 1);
+  const from = (debut && spParseISO(debut) > jan1) ? spParseISO(debut) : jan1;
+  const weeks = Math.max(1, Math.round((end - from) / 604800000));
 
   box.innerHTML = `
     <div class="mkpi accent"><span class="mkpi-lbl">Heures de sport en ${_spStatsYear}</span>
       <span class="mkpi-val">${spFmtDur(t.min)}</span>
-      <span class="mkpi-sub">${spDelta(t.min, p.min, "dur", ref)}</span></div>
+      <span class="mkpi-sub">${delta(t.min, p.min, "dur")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Moyenne hebdo</span>
       <span class="mkpi-val">${spFmtDur(t.min / weeks)}</span>
-      <span class="mkpi-sub">sur ${weeks} semaine${weeks > 1 ? "s" : ""}</span></div>
+      <span class="mkpi-sub">${from > end ? "avant le début du suivi"
+        : "sur " + weeks + " semaine" + (weeks > 1 ? "s" : "") + (from > jan1 ? " (depuis le " + spFmtDayMonth(debut) + ")" : "")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Séances</span>
       <span class="mkpi-val">${t.n}</span>
-      <span class="mkpi-sub">${spDelta(t.n, p.n, "n", ref)}</span></div>
+      <span class="mkpi-sub">${delta(t.n, p.n, "n")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Distance</span>
       <span class="mkpi-val">${spFmtNum(t.km, 1)} km</span>
-      <span class="mkpi-sub">${spDelta(t.km, p.km, "km", ref)}</span></div>
+      <span class="mkpi-sub">${delta(t.km, p.km, "km")}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Dénivelé +</span>
       <span class="mkpi-val">${spFmtNum(t.elev)} m</span>
-      <span class="mkpi-sub">${spDelta(t.elev, p.elev, "elev", ref)}</span></div>`;
+      <span class="mkpi-sub">${delta(t.elev, p.elev, "elev")}</span></div>`;
 }
 
 function spRenderStatsCharts() {
@@ -18046,16 +18372,9 @@ function voRenderSetBoites() {
 
 const DASH_WIDGETS = [
   {
-    id: "pea", label: "Rendement du PEA", module: "PEA", tab: "dash",
-    render() {
-      const pv = window._peaPv || {};
-      if (pv.eur == null) return { lbl: "Rendement total du PEA", val: "—",
-                                   sub: "En attente des cours", go: "Voir l'évolution" };
-      return { lbl: "Rendement total du PEA", val: eur(pv.eur, true),
-               cls: pv.eur >= 0 ? "c-g" : "c-r",
-               sub: pv.pct != null ? pct(pv.pct) : "", go: "Voir l'évolution",
-               viz: dashPeaSpark("pv") };
-    },
+    // La période se choisit sur la tuile (Jour, 1S, 1M, Année, Total) ; voir dashPeaPerf
+    id: "pea", label: "Performance du PEA", module: "PEA", tab: "dash",
+    render() { return dashPeaPerf(); },
   },
   {
     id: "pea-valeur", label: "Valeur du PEA", module: "PEA", tab: "dash",
@@ -18398,22 +18717,119 @@ function dashSportWeeks() {
     + `<div class="dash-bars-l">${sem.map(x => `<span>${x.lbl}</span>`).join("")}</div>`;
 }
 
-/** Courbe du PEA sur six mois, tirée de la série de l'onglet Performance.
-    "pv" : plus-value (valeur − versements) ; "val" : valeur du portefeuille.
-    Au premier affichage l'historique n'est pas encore chargé : on le demande
-    une seule fois, et l'accueil se redessine quand il arrive. */
-let _dashPerfAsked = false;
-function dashPeaSpark(kind) {
-  let full = _perfFullSeries;
-  if (!full && _perfHistory) full = _perfFullSeries = buildTwrSeries(_perfHistory);
-  if (!full) {
-    if (!_dashPerfAsked) {
-      _dashPerfAsked = true;
-      perfSeriesAsync().then(f => { if (f) dashRender(); });
-    }
-    return "";
+/** Série de la courbe « Évolution du capital ». Au premier affichage
+    l'historique n'est pas encore chargé : on le demande une seule fois, et
+    l'accueil se redessine quand il arrive.
+    undefined : en cours de chargement ; null : pas d'historique. */
+let _dashPerfAsked = false, _dashPerfDone = false;
+function dashPeaSeries() {
+  if (!_perfFullSeries && _perfHistory) _perfFullSeries = buildTwrSeries(_perfHistory);
+  if (_perfFullSeries) return _perfFullSeries;
+  if (!_dashPerfAsked) {
+    _dashPerfAsked = true;
+    perfSeriesAsync().then(() => { _dashPerfDone = true; dashRender(); });
   }
-  let serie = filterByRange(full, "6M");
+  return _dashPerfDone ? null : undefined;
+}
+
+/* ── Tuile « Performance du PEA » ────────────────────────────────────────────
+   La période se choisit sur la tuile et se retient dans S.uiPrefs.dashPeaRange
+   (par défaut Max : le rendement total, l'accueil d'avant). Mêmes libellés que
+   les pastilles de la courbe. Aucun chiffre n'est recalculé à part :
+   - Jour : les cours en direct, variation depuis la clôture précédente ;
+   - 1S, 1M, YTD : computePnl sur la série de la courbe, le même résumé que
+     ses pastilles ;
+   - Max : window._peaPv, la carte « Plus-value » de la vue d'ensemble. */
+const DASH_PEA_RANGES = [["J", "Jour"], ["1W", "1S"], ["1M", "1M"], ["YTD", "YTD"], ["MAX", "Max"]];
+
+function dashPeaRange() {
+  const r = (typeof S !== "undefined" && S && S.uiPrefs) ? S.uiPrefs.dashPeaRange : null;
+  return DASH_PEA_RANGES.some(x => x[0] === r) ? r : "MAX";
+}
+
+function dashSetPeaRange(r) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.dashPeaRange = r;
+  dashRender();
+  if (window.pywebview && pywebview.api && pywebview.api.save_ui_prefs)
+    pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
+}
+
+/** Variation du PEA depuis la clôture précédente, d'après les cours en direct
+    (variation de la séance d1 et heure de la séance t, par ligne).
+    Titres détenus la veille : quantité × (cours − clôture de la veille) ;
+    achetés ou vendus aujourd'hui : comptés depuis leur prix d'exécution.
+    Le % se rapporte à la valeur du PEA (titres + espèces) à la clôture
+    précédente. null tant que les cours de la séance ne sont pas arrivés. */
+function dashPeaDay() {
+  const pv = window._peaPv || {};
+  if (pv.total == null) return null;
+  const today = todayISO();
+  let gain = 0, t = 0, lignes = 0;
+  for (const p of S.positions) {
+    const e = computePos(p);
+    const ops = S.transactions.filter(x => x.asset === p.ticker && normDate(x.date) === today
+                                           && (x.type === "Achat" || x.type === "Vente"));
+    const veille = e.qty - ops.reduce((s, x) => s + (x.type === "Achat" ? x.qty : -x.qty), 0);
+    if (veille <= 0 && !ops.length) continue;
+    const v = getVar(p.ticker);
+    // Sans t, la variation vient d'un ancien cache : on attend les cours du jour
+    if (!v || v.d1 == null || !v.t || p.cours == null) return null;
+    const cloture = p.cours / (1 + v.d1 / 100);
+    gain += veille * (p.cours - cloture);
+    ops.forEach(x => {
+      gain += (x.type === "Achat" ? x.qty * (p.cours - x.cours) : x.qty * (x.cours - p.cours))
+              - (x.frais || 0);
+    });
+    t = Math.max(t, v.t);
+    lignes++;
+  }
+  if (!lignes) return null;
+  // Un versement du jour gonfle les espèces sans rien rapporter : hors base
+  const versements = (S.depots || []).filter(d => normDate(d.date) === today)
+                                     .reduce((s, d) => s + (d.amount || 0), 0);
+  const avant = pv.total - gain - versements;
+  // Le week-end ou avant l'ouverture, la dernière séance n'est pas aujourd'hui
+  const seance = new Date(t * 1000);
+  const quand = seance.toDateString() === new Date().toDateString() ? "aujourd'hui"
+    : "séance du " + seance.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  return { eur: Math.round(gain * 100) / 100, pct: avant > 0 ? gain / avant * 100 : null, quand };
+}
+
+function dashPeaPerf() {
+  const r = dashPeaRange();
+  const pills = `<div class="rng dash-rng" role="group" aria-label="Période">${DASH_PEA_RANGES.map(([k, l]) =>
+    `<button type="button" aria-pressed="${k === r}" onclick="event.stopPropagation();dashSetPeaRange('${k}')">${l}</button>`
+  ).join("")}</div>`;
+  const base  = { lbl: "Performance du PEA", go: "Voir l'évolution" };
+  const vide  = sub => ({ ...base, val: "—", sub, viz: pills });
+  const plein = (e, p, quand, spark) => ({ ...base, val: eur(e, true), cls: e >= 0 ? "c-g" : "c-r",
+    sub: (p != null ? pct(p) + " · " : "") + quand, viz: pills + (spark || "") });
+
+  if (r === "J") {
+    const d = dashPeaDay();
+    return d ? plein(d.eur, d.pct, d.quand) : vide("En attente des cours du jour");
+  }
+  if (r === "MAX") {
+    const pv = window._peaPv || {};
+    return pv.eur == null ? vide("En attente des cours")
+                          : plein(pv.eur, pv.pct, "depuis l'ouverture", dashPeaSpark("pv"));
+  }
+  const full = dashPeaSeries();
+  if (full === undefined) return vide("Chargement de l'historique…");
+  const serie = full ? filterByRange(full, r) : null;
+  const res = (serie && serie.length >= 2) ? computePnl(serie, r) : null;
+  if (!res || res.pnlEur == null) return vide("Pas encore assez d'historique");
+  const quand = r === "1W" ? "sur 7 jours" : r === "1M" ? "sur 1 mois" : "depuis le 1ᵉʳ janvier";
+  return plein(res.pnlEur, res.pnlPct, quand, dashPeaSpark("pv", r));
+}
+
+/** Courbe du PEA sur six mois (ou sur `range`), tirée de la même série.
+    "pv" : plus-value (valeur − versements) ; "val" : valeur du portefeuille. */
+function dashPeaSpark(kind, range) {
+  const full = dashPeaSeries();
+  if (!full) return "";
+  let serie = filterByRange(full, range || "6M");
   if (!serie || serie.length < 2) serie = full;
   if (kind === "pv") {
     const dep = buildDepositSeries(serie.map(p => p.date));
@@ -18648,6 +19064,18 @@ function dashWireDnd(box) {
   });
 }
 
+/* Pilote démarre derrière un petit écran de chargement (splash.py) : la
+   fenêtre principale reste cachée jusqu'à ce signal, envoyé une seule fois
+   quand l'accueil est prêt, ou plus tôt si l'écran du code PIN attend une
+   saisie. Python l'ouvre de toute façon au bout de 20 s. */
+function _appReady() {
+  if (window._appShown) return;
+  window._appShown = true;
+  try {
+    if (window.pywebview && pywebview.api && pywebview.api.app_ready) pywebview.api.app_ready();
+  } catch (e) {}
+}
+
 (async function boot() {
   try {
     // 1. Hydratation HTTP en parallele (rapide, pas besoin d'attendre pywebview)
@@ -18681,7 +19109,7 @@ function dashWireDnd(box) {
     if (typeof installShellEnhancements === "function") installShellEnhancements();
     // Premier lancement : welcome screen si aucune data
     try { if (typeof _showWelcomeIfFirstRun === "function") _showWelcomeIfFirstRun(); } catch(e) {}
-    startCoursRefresh();
+    const coursPrets = startCoursRefresh();
     // Verifie les mises a jour apres stabilisation de l'UI (15s = temps suffisant pour l'API GitHub)
     if (window.pywebview) setTimeout(_checkForUpdates, 5000);
     // Initialise le module Mes Comptes (en silence, sans bloquer le rendu PEA)
@@ -18704,11 +19132,15 @@ function dashWireDnd(box) {
         Promise.resolve(pr).catch(e => console.warn("[" + nom + "] bootstrap KO:", e))));
       if (typeof homeRender === "function") homeRender();
     }
+    // Les cours du jour ont 5 s pour arriver : sans réseau, on ouvre avec les
+    // derniers connus plutôt que de laisser l'écran de chargement tourner
+    await Promise.race([coursPrets, new Promise(r => setTimeout(r, 5000))]);
   } catch(e) {
     const box=document.getElementById("errbox");
     if (box) { box.style.display="block"; box.textContent="Erreur JS : "+e.message+" — Cliquez sur Reset."; }
     console.error(e);
   }
+  _appReady();
 })();
 </script>
 </body>
