@@ -180,18 +180,23 @@ def fetch_yahoo(yahoo_ticker: str):
 
             n  = len(closes)
             # d1 : on utilise regularMarketChangePercent (calcul natif Yahoo, gère
-            # les jours fériés et ajustements). Fallback sur chartPreviousClose si absent.
+            # les jours fériés et ajustements). Fallback sur previousClose si absent.
+            # Pas sur chartPreviousClose : avec range=1y c'est la cloture d'il y a
+            # un an, et d1 deviendrait la variation sur un an.
             d1_raw = meta.get("regularMarketChangePercent")
             if d1_raw is not None:
                 d1 = round(d1_raw, 2)
             else:
-                prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+                prev = meta.get("previousClose")
                 d1 = pct(prev, prix) if prev else None
             w1 = pct(closes[-6],  prix) if n >= 6   else None
             m1 = pct(closes[-22], prix) if n >= 22  else None
             y1 = pct(closes[0],   prix) if n >= 200 else None
 
-            return {"prix": round(prix, 4), "d1": d1, "w1": w1, "m1": m1, "y1": y1}
+            # t : heure de la seance dont parle d1 (secondes Unix). Le week-end,
+            # d1 est la variation de vendredi : l'accueil l'ecrit avec sa date.
+            return {"prix": round(prix, 4), "d1": d1, "w1": w1, "m1": m1, "y1": y1,
+                    "t": meta.get("regularMarketTime")}
         except Exception as e:
             print(f"[server] Yahoo/{host} KO {yahoo_ticker}: {e}", flush=True)
             continue

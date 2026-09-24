@@ -34,10 +34,11 @@ import formation
 import vocabulaire
 import sauvegarde
 import notifications
+import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.2.6"
+APP_VERSION = "4.2.7"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -83,6 +84,10 @@ def _listen_for_focus_pings(server_sock: socket.socket) -> None:
             except Exception:
                 pass
             conn.close()
+            # Encore en chargement : l'ecran de chargement est deja la, et la
+            # fenetre s'ouvrira d'elle-meme une fois prete
+            if not _revealed:
+                continue
             # Ramene la fenetre principale au premier plan
             try:
                 w = webview.windows[0] if webview.windows else None
@@ -532,6 +537,12 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def app_ready(self) -> dict:
+        """Appele par boot() (index.html) quand l'accueil est pret : ouvre
+        la fenetre principale et ferme l'ecran de chargement."""
+        reveal_main_window()
+        return {"ok": True}
+
     def minimize(self):
         try:
             webview.windows[0].minimize()
@@ -851,6 +862,50 @@ def install_crash_handler() -> None:
         pass
 
 
+# ─── Ouverture differee de la fenetre ─────────────────────────────────────────
+# La fenetre principale nait cachee, derriere l'ecran de chargement
+# (splash.py), et ne s'ouvre qu'une fois l'accueil pret, sur signal de boot()
+# (Api.app_ready). Filet de securite : elle s'ouvre de toute facon au bout de
+# REVEAL_TIMEOUT secondes, pour qu'un JS en panne ne laisse jamais l'app
+# invisible.
+
+REVEAL_TIMEOUT = 20
+
+_main_window = None
+_splash_window = None
+_revealed = False
+_reveal_lock = threading.Lock()
+
+
+def _paint_accent_icon() -> None:
+    """Icone recoloree selon l'accent choisi, sur la fenetre visible."""
+    try:
+        import appicon
+        accent = (storage.load_data().get("uiPrefs") or {}).get("accent")
+        appicon.apply_to_window(accent or appicon.DEFAULT_COLOR)
+    except Exception as e:
+        print(f"[app] icone accent KO : {e}", flush=True)
+
+
+def reveal_main_window() -> None:
+    global _revealed
+    with _reveal_lock:
+        if _revealed or _main_window is None:
+            return
+        _revealed = True
+    try:
+        _main_window.show()
+    except Exception as e:
+        print(f"[app] ouverture fenetre KO : {e}", flush=True)
+    if _splash_window is not None:
+        try:
+            _splash_window.destroy()
+        except Exception:
+            pass
+    # L'ecran de chargement ferme, la vraie fenetre est la seule visible
+    _paint_accent_icon()
+
+
 # ─── Cycle de vie ─────────────────────────────────────────────────────────────
 
 
@@ -981,6 +1036,16 @@ def main() -> int:
     # le port se lit naturellement via location.port.
     url = f"http://127.0.0.1:{port}/"
 
+    # Cachee, une fenetre WebView2 voit ses minuteurs JS freines a un par
+    # seconde (mesure : 20 setTimeout de 10 ms en 2,8 s au lieu de 0,3 s). Or
+    # c'est cachee qu'elle charge, derriere l'ecran de chargement : ces options
+    # levent le frein. ElasticOverscroll reprend l'option que pywebview passe
+    # lui-meme, au cas ou la variable la remplacerait.
+    os.environ.setdefault(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        "--disable-features=ElasticOverscroll --disable-background-timer-throttling"
+        " --disable-renderer-backgrounding --disable-backgrounding-occluded-windows")
+
     window_kwargs = dict(
         title=APP_NAME,
         url=url,
@@ -993,12 +1058,35 @@ def main() -> int:
         confirm_close=False,
         frameless=True,         # titlebar custom dans l'UI
         easy_drag=False,        # le drag est gere via -webkit-app-region: drag
+        hidden=True,            # ouverte par reveal_main_window() une fois prete
     )
     if pos and isinstance(pos, (list, tuple)) and len(pos) == 2:
         window_kwargs["x"] = int(pos[0])
         window_kwargs["y"] = int(pos[1])
 
+    # Creee la premiere : webview.windows[0] reste la fenetre principale
     window = webview.create_window(**window_kwargs)
+
+    global _main_window, _splash_window
+    _main_window = window
+    try:
+        prefs = data.get("uiPrefs") or {}
+        theme = "dark" if prefs.get("theme") == "dark" else "light"
+        _splash_window = webview.create_window(
+            APP_NAME,
+            html=splash.build_html(os.path.dirname(html_path), prefs.get("accent"), theme),
+            width=splash.SIZE[0], height=splash.SIZE[1],
+            resizable=False, frameless=True,
+            background_color=splash.background(theme),
+        )
+        _splash_window.events.shown += _paint_accent_icon
+    except Exception as e:
+        print(f"[app] ecran de chargement KO : {e}", flush=True)
+        _splash_window = None
+
+    _reveal_timer = threading.Timer(REVEAL_TIMEOUT, reveal_main_window)
+    _reveal_timer.daemon = True
+    _reveal_timer.start()
 
     # Sauvegarde de la taille/position avant fermeture
     def _on_closing():
@@ -1068,20 +1156,8 @@ def main() -> int:
         except Exception as e:
             print(f"[app] Echec sauvegarde UI prefs : {e}", flush=True)
 
-    # Icone recoloree selon l'accent choisi : des que la fenetre existe
-    def _paint_icon():
-        try:
-            import appicon
-            accent = (storage.load_data().get("uiPrefs") or {}).get("accent")
-            appicon.apply_to_window(accent or appicon.DEFAULT_COLOR)
-        except Exception as e:
-            print(f"[app] icone accent KO : {e}", flush=True)
-
-    try:
-        window.events.shown += _paint_icon
-    except Exception:
-        pass
-
+    # L'icone a la couleur d'accent est posee par reveal_main_window(), quand
+    # la fenetre apparait vraiment (et sur l'ecran de chargement avant elle)
     window.events.closing += _on_closing
 
     try:

@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.6**
+**Version actuelle : 4.2.7**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -33,6 +33,7 @@ Pilote/
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
+│   ├── splash.py       # Petite fenêtre de chargement affichée au lancement
 │   ├── updater.py      # Auto-updater (check + download + install)
 │   ├── notifications.py
 │   └── ui/
@@ -200,13 +201,47 @@ dossier Donnees vidé par accident ne doit pas détruire la sauvegarde.
   d'ouvrir un autre compte (chacun reste protégé par son propre code).
 * Ça sépare les espaces, ça ne chiffre rien : les JSON restent lisibles sur le disque.
 
+## Démarrage : écran de chargement (`splash.py`, 4.2.7)
+
+La fenêtre principale est créée **cachée** (`hidden=True`) et ne s'ouvre qu'une fois
+l'accueil prêt. En attendant, une petite fenêtre sans bordure (300 × 230) montre le
+logo « P » à la couleur d'accent, « Pilote » et trois points qui s'allument, dans le
+thème de l'utilisateur actif.
+
+* `boot()` appelle `_appReady()` → `Api.app_ready()` → `reveal_main_window()` (app.py) :
+  montre la fenêtre, ferme l'écran de chargement, pose l'icône à l'accent. Une seule
+  fois (`_revealed`). Le signal part **après** les modules et le premier chargement
+  des cours (5 s au plus : sans réseau on ouvre avec les derniers connus), dans le
+  `catch` de `boot()` aussi, et **dès l'écran du code PIN** (`_checkPinLock`) : le
+  code se tape dans la fenêtre, elle ne peut pas rester cachée.
+* **Filet de sécurité** : `REVEAL_TIMEOUT` (20 s), un `threading.Timer` qui ouvre la
+  fenêtre quoi qu'il arrive. Un JS en panne ne doit jamais laisser l'app invisible.
+* **`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`** (posée dans `main()`) : cachée,
+  une fenêtre WebView2 freine ses minuteurs JS à un par seconde (mesuré : 20
+  `setTimeout` de 10 ms en 2,8 s au lieu de 0,3 s), et c'est cachée qu'elle charge.
+  Les options `--disable-background-timer-throttling`, `--disable-renderer-backgrounding`
+  et `--disable-backgrounding-occluded-windows` lèvent le frein. Ne pas les retirer.
+  `--disable-features=ElasticOverscroll` y est recopiée : c'est l'option que pywebview
+  passe lui-même.
+* La fenêtre principale est créée **en premier** : `webview.windows[0]` reste elle
+  (minimize, close, dialogues, updater).
+* Le HTML de l'écran est construit en Python (pas de `splash.html`, qui devrait
+  entrer dans les `datas` de la spec : le piège d'`ocr_win.ps1`). Les polices viennent
+  de `ui/vendor/fonts`, inlinées en `data:` : la page n'a pas d'origine et ne peut
+  rien demander au serveur local.
+* Mesuré sur la machine d'Arthur : écran de chargement vers 4 s après le lancement
+  (import Python + WebView2), fenêtre complète entre 6,5 et 12,5 s selon la charge.
+* Un second lancement pendant le chargement ne force pas l'ouverture
+  (`_listen_for_focus_pings` attend `_revealed`).
+
 ## Icône à la couleur du thème (`appicon.py`)
 
 * Regénère un `.ico` multi-résolution (PNG embarqués, supersampling 4× + LANCZOS,
   même rendu que `assets/make_icon.py`) à la couleur d'accent, mis en cache dans
   `Donnees/icones/pilote_<hex>.ico`.
 * Appliqué à la fenêtre + vignette barre des tâches via `WM_SETICON`, sur
-  `window.events.shown` et à chaque enregistrement des paramètres
+  l'écran de chargement puis à l'ouverture de la fenêtre (`_paint_accent_icon`,
+  appelée par `reveal_main_window`) et à chaque enregistrement des paramètres
   (`Api.set_app_icon_color`).
 * Les raccourcis Windows (.lnk du Bureau, menu Démarrer, barre des tâches épinglée)
   ne se recolorent que sur demande explicite : bouton « 🎨 Recolorer les raccourcis »
@@ -537,6 +572,14 @@ Ce qui compte le plus pour Arthur : le NOMBRE D'HEURES. C'est le KPI principal
 partout (accent, première position). L'agenda affiche une bulle emoji de 30 px par
 séance (4 par ligne max) + le total d'heures du jour, détail au clic.
 
+**On ne compare pas avec une période d'avant le suivi (4.2.7).** `spTrackStart()` =
+date de la première séance. Avant elle, un mois vide n'est pas « zéro sport » : Pilote
+n'était pas encore utilisé. Si le mois (ou l'année) de référence finit avant ce début,
+les chiffres clés disent « premier mois suivi » / « première année suivie » (ou « avant
+le début du suivi ») au lieu de « −8 h 55 vs août ». Le cumul de l'année dit « depuis
+le 11 sept. » et la moyenne hebdo se calcule sur les semaines écoulées **depuis la
+première séance** si le suivi a commencé en cours d'année.
+
 ## Module Patrimoine (patrimoine.json)
 
 Vue consolidée de ce qu'on possède. **Saisie manuelle une fois par mois** :
@@ -579,6 +622,32 @@ supprimé : il serait recréé au chargement suivant.
   une installation existante ne change pas d'aspect après mise à jour.
 * Un widget ajouté par une version ultérieure apparaît **éteint** en fin de
   liste, jamais activé d'office.
+
+### Tuile « Performance du PEA » : la période se choisit sur la tuile (4.2.7)
+
+L'ancienne tuile « Rendement du PEA » (id `pea`, inchangé) porte des pastilles
+**Jour · 1S · 1M · YTD · Max** (mêmes libellés que la courbe), choix retenu dans
+`S.uiPrefs.dashPeaRange`, **Max par défaut** (l'accueil d'avant). `dashPeaPerf()`.
+Aucun chiffre recalculé à part :
+
+* **Jour** (`dashPeaDay`) : cours en direct. Titres détenus la veille : quantité ×
+  (cours − clôture précédente, déduite de `d1`) ; achetés ou vendus aujourd'hui :
+  depuis leur prix d'exécution, frais déduits. Le % se rapporte à la valeur du PEA
+  (titres + espèces) à la clôture précédente, versements du jour exclus. Vérifié à
+  la main sur les vraies données (−3,68 €, −0,25 %).
+* `/cours` renvoie maintenant `t` (= `regularMarketTime`, heure de la séance) :
+  le week-end ou avant l'ouverture, `d1` est la variation de la dernière séance, et
+  la tuile écrit « séance du ven. 19 sept. » au lieu d'« aujourd'hui ». Une variation
+  **sans `t`** vient d'un ancien cache (localStorage) : la tuile attend les cours du jour.
+* Le repli de `d1` quand Yahoo ne donne pas `regularMarketChangePercent` prend
+  `previousClose`, **plus `chartPreviousClose`** : avec `range=1y` c'est la clôture
+  d'il y a un an, et `d1` devenait la variation sur un an.
+* **1S, 1M, YTD** : `computePnl(filterByRange(série, r), r)`, exactement le résumé
+  de la courbe pour la même plage (vérifié sur les quatre plages). La série est
+  partagée via `dashPeaSeries()` (undefined = en cours, null = pas d'historique).
+* **Max** : `window._peaPv`, la carte « Plus-value ».
+* Les pastilles font `event.stopPropagation()` (un clic ne mène pas à l'onglet) et
+  sont inertes en mode édition, comme le bouton de la tuile « Ajouter une dépense ».
 
 ### Le crayon : on change les tuiles depuis l'accueil
 
@@ -831,6 +900,28 @@ liste des transactions, sélecteurs, camembert, top de l'année, récurrents.
 * `finPickIcon(current, titre, callback)` ouvre la modale `ov-fin-icon` (palette + saisie libre)
 * `finances.backfill_icons()` côté Python donne un emoji aux fichiers créés avant la 4.1.2,
   en reconnaissant les libellés du jeu par défaut
+* **Emoji deviné d'après le libellé (4.2.7)** : `FIN_ICON_GUESS` (mots sans accents ni
+  majuscules, première règle qui correspond) via `finGuessIcon(nom)`. Appliqué à la
+  création d'une catégorie ou sous-catégorie sans emoji, et au chargement par
+  `finBackfillIcons()` sur tout ce qui n'a pas d'emoji ou a gardé le générique 🏷️ / •
+  (enregistré ensuite). Une sous-catégorie au libellé inconnu prend l'emoji de sa
+  catégorie. 💰 n'est pas considéré comme générique : il peut avoir été choisi.
+* **« Autres dépenses » / « Autres revenus » toujours en dernier** : `finCatsOrdered(type)`
+  (sélecteurs de la saisie et des récurrents, filtre, liste des catégories, légende du
+  camembert). Tri à l'affichage : le fichier garde son ordre, et une catégorie créée
+  plus tard se range aussi avant « Autres ». Le top de l'année reste trié par montant.
+* **Aide à la saisie (4.2.7)**, dans la fenêtre « Nouvelle dépense / Nouveau revenu » ;
+  les deux lisent l'historique du même type (`finTxModels`, un modèle par libellé sans
+  accents ni casse, sa saisie la plus récente) et ne font que **pré-remplir** montant,
+  catégorie, sous-catégorie et source : la date reste celle du jour, rien n'est
+  enregistré sans « Enregistrer », la saisie libre reste entière.
+  - « Dépenses fréquentes » (`finRenderFreq`) : les 8 libellés les plus saisis sur
+    douze mois, les plus récents d'abord à égalité. Automatique, rien à configurer
+    (choix d'Arthur). Masquée en modification.
+  - Suggestions sous le libellé (`finAcUpdate`) : ceux qui commencent par la saisie,
+    puis ceux dont un mot commence par elle. ↑ ↓ Entrée, Échap ferme la liste sans
+    fermer la fenêtre.
+  - Après un choix, le montant est sélectionné : il se remplace d'une frappe (courses).
 
 ## Module Prêt étudiant (pret.json)
 
@@ -945,7 +1036,6 @@ Autres pistes :
 - Échéancier prévisionnel du prêt, mois par mois jusqu'à la dernière mensualité
 - Simulateur de sortie : « si je vends tout et solde le prêt, il me reste X € »
 - Recherche globale (Ctrl+K) sur transactions, séances, pesées, comptes
-- Emoji par défaut pour les catégories créées par l'utilisateur (aujourd'hui 🏷️)
 - Import CSV du relevé bancaire pour « Mes comptes »
 
 **Écartées, ne pas y revenir sans raison nouvelle :**
@@ -967,6 +1057,7 @@ Autres pistes :
   courant). Si la question revient, le prérequis serait un second dépôt public dédié
   aux releases — surtout pas un jeton embarqué dans l'exe, il serait extractible.
 
-**Traité depuis** : l'export de tout l'espace utilisateur, longtemps en attente, est
+**Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
+deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,
 lui, ne couvre toujours que `pea_data.json`.
