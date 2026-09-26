@@ -21,6 +21,14 @@ import traceback
 from pathlib import Path
 from typing import Optional
 
+# Charge le codec idna AVANT que main() ne lance ses fils. Sinon, dans l'exe
+# compile, le serveur local (getfqdn) et la verification de mise a jour
+# (HTTPS) le chargent en meme temps au demarrage, et l'un des deux recoit
+# « LookupError: unknown encoding: idna » : l'app plante avant de s'ouvrir.
+# Mesure sur des builds de test : 5 lancements sur 20 sans cette ligne,
+# 0 sur 10 avec. Ne pas retirer.
+import encodings.idna  # noqa: F401
+
 import webview                        # pywebview
 
 import server
@@ -38,7 +46,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.2.7"
+APP_VERSION = "4.2.8"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)

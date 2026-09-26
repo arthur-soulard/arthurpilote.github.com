@@ -1,6 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec : Pilote -> un seul Pilote.exe (onefile, sans console).
+PyInstaller spec : Pilote -> dossier dist/Pilote/ (onedir, sans console) :
+Pilote.exe + _internal/ (Python, bibliotheques, UI). Le Setup installe le tout.
+
+Pourquoi pas un seul .exe (onefile, jusqu'a la 4.2.7) : il se decompressait a
+CHAQUE lancement (217 fichiers, 36 Mo dans %TEMP%\\_MEI*), et Defender
+inspectait chaque DLL au passage. Mesure sur la machine d'Arthur : 4 a 6,5 s
+avant le moindre affichage, 39 s un matin a froid. En onedir les fichiers sont
+installes une fois, il n'y a plus rien a decompresser. Ne pas revenir en onefile.
 
 Usage :
     pyinstaller build/pilote.spec --clean --noconfirm
@@ -62,17 +69,14 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
+    exclude_binaries=True,   # onedir : les DLL et les datas vont dans COLLECT
     name="Pilote",
     icon=str(ICON),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    runtime_tmpdir=None,
     console=False,           # pas de cmd noir
     disable_windowed_traceback=False,
     target_arch=None,
@@ -80,4 +84,16 @@ exe = EXE(
     entitlements_file=None,
     version=None,
     uac_admin=False,
+)
+
+# dist/Pilote/Pilote.exe + dist/Pilote/_internal/ : sys._MEIPASS pointe sur
+# _internal, resource_path() et sante._ocr_script_path() n'ont rien a changer
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    name="Pilote",
 )

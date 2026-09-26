@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.7**
+**Version actuelle : 4.2.8**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -41,7 +41,7 @@ Pilote/
 │       └── vendor/     # Chart.js, polices woff2, icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
-│   ├── pilote.spec     # Spec PyInstaller → dist/Pilote.exe
+│   ├── pilote.spec     # Spec PyInstaller → dist/Pilote/ (Pilote.exe + _internal/)
 │   └── build.bat       # build local
 ├── assets/             # icon.ico + make_icon.py (générateur d'icône)
 ├── .github/workflows/release.yml
@@ -117,14 +117,14 @@ jour : 10 Ko au lieu de 418 Ko. Ne pas « simplifier » en resérialisant `data`
    du module Santé fonctionne parfaitement en dev et **échoue silencieusement dans
    l'exe compilé** : le script est introuvable, `ocr_available()` répond « Script OCR
    introuvable » et l'import de captures ne marche plus. Une panne invisible tant
-   qu'on ne teste pas le binaire. Vérification : `ocr_win.ps1` doit apparaître comme
-   chaîne dans `Pilote.exe`.
+   qu'on ne teste pas le binaire. Vérification : `dist/Pilote/_internal/ocr_win.ps1`
+   doit exister après le build.
 
 5. **`src/ui/vendor/` dans les `datas` de `build/pilote.spec`** → même piège que
    `ocr_win.ps1` : sans cette ligne, Chart.js, les polices et les icônes sont
    introuvables dans l'exe compilé. Les graphiques disparaissent, la typo retombe sur
    celle du système et les boutons perdent leurs icônes, alors que tout marche
-   parfaitement en dev.
+   parfaitement en dev. Vérification : `dist/Pilote/_internal/ui/vendor/` existe.
 ## Sauvegarde externe sur clé USB (`sauvegarde.py`)
 
 Contrairement à tout le reste, ce module est au niveau de **l'installation**, pas de
@@ -231,6 +231,26 @@ thème de l'utilisateur actif.
   rien demander au serveur local.
 * Mesuré sur la machine d'Arthur : écran de chargement vers 4 s après le lancement
   (import Python + WebView2), fenêtre complète entre 6,5 et 12,5 s selon la charge.
+  Ces chiffres sont ceux du **dev** (`python src/app.py`) : l'exe ajoutait sa
+  décompression par-dessus (voir le point suivant).
+* **Exe en format dossier (onedir), depuis la 4.2.8.** Jusque-là `Pilote.exe` était un
+  exe unique (onefile) qui se décompressait à **chaque** lancement : 217 fichiers,
+  36 Mo dans `%TEMP%\_MEI*`, que Defender inspecte un par un. Mesuré sur l'exe
+  installé : 4 à 6,5 s avant le moindre affichage, et 39 s le 26/09/2026 au premier
+  lancement de la journée. `build/pilote.spec` produit désormais `dist/Pilote/`
+  (lanceur `Pilote.exe` + `_internal/`), installé une fois par le Setup. Sur deux
+  builds de test identiques, médianes de 6 à 9 lancements : écran de chargement
+  7,3 s → 3,0 s, fenêtre complète 15,9 s → 10,3 s. **Ne pas revenir en onefile.**
+  Le premier lancement après une mise à jour reste plus lent (16 s mesuré) :
+  Defender inspecte les nouveaux fichiers, une seule fois. Le Setup est aussi plus
+  léger (21,8 Mo contre 32 Mo sur les mêmes builds de test).
+* **`import encodings.idna` en tête d'`app.py` (4.2.8), ne pas retirer.** Au
+  démarrage, le serveur local (`getfqdn`) et la vérification de mise à jour (HTTPS)
+  chargent le codec idna en même temps dans deux fils ; dans l'exe compilé, l'un des
+  deux reçoit `LookupError: unknown encoding: idna` et l'app plante avant de
+  s'ouvrir (fenêtre « Unhandled exception in script »). Vu sur des builds de test en
+  Python 3.8 : 5 lancements sur 20 ; 0 sur 10 avec l'import anticipé. Jamais observé
+  sur la 4.2.7 officielle (Python 3.11), gardé par précaution.
 * Un second lancement pendant le chargement ne force pas l'ouverture
   (`_listen_for_focus_pings` attend `_revealed`).
 
@@ -255,7 +275,9 @@ thème de l'utilisateur actif.
 2. Bumper `APP_VERSION` dans `src/app.py`
 3. Bumper `AppVersion` dans `build/installer.iss`
 4. `git add … && git commit && git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`
-5. GitHub Actions build `Pilote.exe` + `Pilote_Setup.exe` et crée la release
+5. GitHub Actions build `dist/Pilote/` puis `Pilote_Setup.exe`, et crée la release
+   avec le Setup pour seul fichier (un `Pilote.exe` seul ne tourne pas sans son
+   `_internal/`)
 
 Règle importante : le numéro de version ne peut qu'augmenter (comparaison sémantique).
 Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.
@@ -268,8 +290,9 @@ Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.
 * Si nouvelle version → modal dans l'UI avec barre de progression
 * Téléchargement chunké avec progression réelle (fallback 25 Mo si Content-Length absent)
 * Un batch Windows attend la fin du process (nom déduit de `sys.executable`, donc
-  résistant à un renommage), puis 5 secondes de plus pour libérer le verrou fichier
-  PyInstaller `_MEI*`, puis lance `Setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES`
+  résistant à un renommage), puis 5 secondes de plus pour que Windows libère les
+  fichiers (le dossier `_MEI*` jusqu'à la 4.2.7, les DLL de `_internal/` depuis),
+  puis lance `Setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES`
 * L'app se ferme, l'installeur tourne en silence, l'utilisateur relance manuellement
 * Logs : `%APPDATA%\Pilote\update.log` et `%TEMP%\pilote_update\update_bat.log`
 
