@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
 REM  Pilote — script de build (PyInstaller)
-REM  Produit : dist\Pilote.exe
+REM  Produit : dist\Pilote\ (Pilote.exe + son dossier _internal\)
 REM ============================================================
 
 setlocal
@@ -56,7 +56,7 @@ if errorlevel 1 (
 
 echo.
 echo  ============================================================
-echo   OK : dist\Pilote.exe est pret.
+echo   OK : dist\Pilote\Pilote.exe est pret (avec son dossier _internal).
 echo  ============================================================
 echo.
 echo  Pour creer l'installateur Setup.exe :

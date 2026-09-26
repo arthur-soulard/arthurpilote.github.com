@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define AppName       "Pilote"
-#define AppVersion    "4.2.7"
+#define AppVersion    "4.2.8"
 #define AppPublisher  "Arthur"
 #define AppExeName    "Pilote.exe"
 
@@ -40,8 +40,11 @@ Name: "desktopicon";  Description: "{cm:CreateDesktopIcon}"; GroupDescription: "
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\dist\Pilote.exe";      DestDir: "{app}"; Flags: ignoreversion
-Source: "..\assets\icon.ico";      DestDir: "{app}"; Flags: ignoreversion
+; Build onedir (build/pilote.spec) : Pilote.exe n'est qu'un lanceur, Python,
+; les bibliotheques et l'UI vivent dans _internal\ a cote de lui
+Source: "..\dist\Pilote\Pilote.exe";    DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\Pilote\_internal\*";   DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\assets\icon.ico";           DestDir: "{app}"; Flags: ignoreversion
 
 ; L'AppId est un GUID fixe : une installation "Suivi PEA" existante est
 ; reconnue et mise a jour dans son dossier actuel (Donnees/ est conserve).
@@ -51,6 +54,10 @@ Type: files; Name: "{app}\Suivi_PEA.exe"
 Type: files; Name: "{autoprograms}\Suivi PEA.lnk"
 Type: files; Name: "{autodesktop}\Suivi PEA.lnk"
 Type: files; Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\Suivi PEA.lnk"
+; _internal\ est entierement regenere a chaque version : on le vide avant de
+; le reinstaller, pour qu'une bibliotheque retiree du build ne traine pas.
+; Donnees\ n'est jamais touche.
+Type: filesandordirs; Name: "{app}\_internal"
 
 [Icons]
 Name: "{autoprograms}\{#AppName}";          Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\icon.ico"

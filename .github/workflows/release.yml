@@ -47,6 +47,7 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          # Build onedir : Pilote.exe seul ne tourne pas sans son _internal/,
+          # seul le Setup est publie (c'est aussi lui que prend updater.py)
           files: |
-            dist/Pilote.exe
             dist/Pilote_Setup.exe

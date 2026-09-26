@@ -93,6 +93,7 @@ Les données utilisateur sont stockées localement dans le dossier `Donnees/` à
 ```
 Pilote/
 ├── Pilote.exe
+├── _internal/                # Python, bibliothèques et interface (installés par le Setup)
 └── Donnees/
     ├── users.json            # liste des utilisateurs + utilisateur actif
     ├── users/
