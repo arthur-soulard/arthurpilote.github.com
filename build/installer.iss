@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define AppName       "Pilote"
-#define AppVersion    "4.2.9"
+#define AppVersion    "4.3.0"
 #define AppPublisher  "Arthur"
 #define AppExeName    "Pilote.exe"
 
@@ -67,6 +67,11 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filen
 [Run]
 ; Lancement normal apres installation manuelle (case a cocher)
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; Mise a jour automatique (updater.py lance ce Setup en /VERYSILENT apres avoir
+; ferme l'app) : on rouvre l'app une fois l'installation terminee. C'est le
+; Setup de la NOUVELLE version qui s'execute : la regle vaut des la mise a jour
+; qui l'apporte, sans attendre que l'ancienne app sache relancer.
+Filename: "{app}\{#AppExeName}"; Flags: nowait; Check: WizardSilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
