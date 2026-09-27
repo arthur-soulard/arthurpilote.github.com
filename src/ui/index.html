@@ -2253,6 +2253,13 @@ label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 1
 .dash-rng { margin-bottom: 8px; }
 .dash-rng button { padding: 2px 8px; font-size: 11.5px; }
 .home-cards.dash-editing .dash-rng { pointer-events: none; opacity: .6; }
+/* Sur la tuile « Poids » : « Comparer avec », même taille que les pastilles */
+label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap: 4px; white-space: nowrap; }
+.dash-cmp select { font-size: 11.5px; padding: 2px 8px; max-width: 130px; }
+.home-cards.dash-editing .dash-cmp { pointer-events: none; opacity: .6; }
+.home-card-sub b { font-weight: 500; }
+/* Mini-courbe : la partie d'avant la pesée de référence, estompée */
+.dash-spark path.dash-spark-ctx { stroke: color-mix(in srgb, var(--accent) 30%, transparent); }
 
 /* — Mes comptes : dépenses fréquentes et suggestions du libellé — */
 .fin-freq { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -15114,31 +15121,49 @@ function saSorted() {
 function saLast() { const s = saSorted(); return s.length ? s[s.length - 1] : null; }
 function saPrev() { const s = saSorted(); return s.length > 1 ? s[s.length - 2] : null; }
 
-/** Pesée à laquelle on compare la dernière dans l'onglet Suivi : celle choisie
-    dans « Comparer avec » (SA.uiCompare = id d'une pesée, mémorisé dans
-    sante.json comme SA.uiRange), sinon la précédente. Un choix qui ne vaut plus
-    rien (pesée supprimée, ou devenue la dernière) retombe sur la précédente.
-    La tuile de l'accueil, elle, compare toujours à la précédente et le dit. */
-function saRef() {
-  const choix = SA && SA.uiCompare;
-  const last  = saLast();
-  if (choix && choix !== "prev") {
-    const m = saMesures().find(x => x.id === choix);
-    if (m && last && m.id !== last.id) return m;
+/** Choix glissants de « Comparer avec » : la pesée la plus proche de N jours
+    avant la dernière (la plus ancienne à égalité). Ils suivent les nouvelles
+    pesées, là où une date précise reste fixe tant qu'on ne la change pas. */
+const SA_CMP_GLISSANT = { w1: 7, m1: 30 };
+
+/** Pesée désignée par un choix de « Comparer avec » (par défaut SA.uiCompare,
+    mémorisé dans sante.json comme SA.uiRange) : "first" (la première pesée),
+    une clé de SA_CMP_GLISSANT ou l'id d'une pesée. null pour "prev" et pour un
+    choix qui ne désigne plus rien (pesée supprimée, ou devenue la dernière). */
+function saRefChoisie(choix = SA && SA.uiCompare) {
+  const avant = saSorted().slice(0, -1);                // toutes sauf la dernière
+  if (!choix || choix === "prev" || !avant.length) return null;
+  if (choix === "first") return avant[0];
+  if (SA_CMP_GLISSANT[choix]) {
+    const jour  = iso => Date.parse(iso + "T00:00:00Z") / 86400000;
+    const cible = jour(saLast().date) - SA_CMP_GLISSANT[choix];
+    let best = null, ecart = Infinity;
+    avant.forEach(m => {
+      const e = Math.abs(jour(m.date) - cible);
+      if (e < ecart) { best = m; ecart = e; }
+    });
+    return best;
   }
-  return saPrev();
+  return avant.find(m => m.id === choix) || null;
 }
 
-/** « vs pesée précédente » ou « vs 12 sept. » selon le choix. */
+/** Pesée à laquelle on compare la dernière : celle du choix, sinon la
+    précédente. L'onglet Suivi (chiffres clés, grille) et la tuile « Poids » de
+    l'accueil partagent ce choix, et les deux peuvent le changer. */
+function saRef() { return saRefChoisie() || saPrev(); }
+
+/** « 15 sept. », avec l'année si ce n'est pas l'année en cours. */
+function saDateCourte(iso) {
+  const d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString("fr-FR", d.getFullYear() === new Date().getFullYear()
+    ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** « vs pesée précédente », ou la date de la pesée choisie : « vs 15 sept. ». */
 function saRefLabel(ref) {
   if (!ref) return "";
-  const choix = SA && SA.uiCompare;
-  if (!choix || choix === "prev" || ref.id !== choix) return "vs pesée précédente";
-  const d = new Date(ref.date + "T00:00:00");
-  if (isNaN(d)) return "vs " + ref.date;
-  const memeAnnee = d.getFullYear() === new Date().getFullYear();
-  return "vs " + d.toLocaleDateString("fr-FR",
-    memeAnnee ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+  return ref === saRefChoisie() ? "vs " + saDateCourte(ref.date) : "vs pesée précédente";
 }
 
 function saSetCompare(v) {
@@ -15147,35 +15172,62 @@ function saSetCompare(v) {
   saSave();
   saRenderKpis();
   saRenderGrid();
+  if (typeof dashRender === "function") dashRender();
 }
 
-/** Remplit « Comparer avec » : la précédente, puis chaque pesée plus ancienne. */
-function saRenderCompare() {
-  const sel = document.getElementById("sa-cmp");
-  if (!sel) return;
-  const liste = saSorted();
-  const last  = liste[liste.length - 1];
-  const autres = liste.slice(0, -1).reverse();          // de la plus récente à la plus ancienne
-  const ref = saRef();
-  const choix = (SA && SA.uiCompare && ref && ref.id === SA.uiCompare) ? SA.uiCompare : "prev";
+/** Options de « Comparer avec » : la précédente, les choix glissants, puis
+    chaque pesée plus ancienne, de la plus récente à la plus ancienne.
+    `court` : libellés de la tuile de l'accueil (« 15 sept. », l'heure
+    seulement si deux pesées tombent le même jour). Dans l'onglet Suivi, un
+    choix glissant dit quelle pesée il désigne aujourd'hui ; sur la tuile, la
+    date s'écrit déjà sous le poids. */
+function saCompareOptions(court) {
+  const autres = saSorted().slice(0, -1).reverse();
+  const value = saRefChoisie() ? SA.uiCompare : "prev";
   const fmt = m => {
+    if (court) {
+      const memeJour = autres.filter(x => x.date === m.date).length > 1;
+      return saDateCourte(m.date) + (m.time && memeJour ? " à " + m.time : "");
+    }
     const d = new Date(m.date + "T00:00:00");
     const txt = isNaN(d) ? m.date
       : d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
     return txt + (m.time ? " à " + m.time : "");
   };
-  sel.innerHTML = `<option value="prev">la pesée précédente</option>`
-    + autres.map(m => `<option value="${escHtml(m.id)}">${escHtml(fmt(m))}</option>`).join("");
-  sel.value = choix;
-  sel.disabled = !last || !autres.length;
+  const opt = (v, txt) => `<option value="${escHtml(v)}"${v === value ? " selected" : ""}>${escHtml(txt)}</option>`;
+  const glissant = (v, long, bref) => {
+    const m = saRefChoisie(v);
+    return opt(v, court ? bref : long + (m ? " (" + saDateCourte(m.date) + ")" : ""));
+  };
+  return { value, disabled: !autres.length,
+           html: opt("prev", court ? "la précédente" : "la pesée précédente")
+                 + glissant("w1", "il y a une semaine", "il y a 1 semaine")
+                 + glissant("m1", "il y a un mois", "il y a 1 mois")
+                 + glissant("first", "la première pesée", "la première")
+                 + `<optgroup label="Une pesée précise">${autres.map(m => opt(m.id, fmt(m))).join("")}</optgroup>` };
+}
+
+/** Remplit « Comparer avec » de l'onglet Suivi. */
+function saRenderCompare() {
+  const sel = document.getElementById("sa-cmp");
+  if (!sel) return;
+  const o = saCompareOptions(false);
+  sel.innerHTML = o.html;
+  sel.value = o.value;
+  sel.disabled = o.disabled;
 }
 
 function saFmt(mid, v) {
   if (v === null || v === undefined || v === "") return "—";
   const m = saMetric(mid);
   const d = (m.decimals === undefined) ? 1 : m.decimals;
-  const n = Number(v).toFixed(d);
-  return m.unit ? `${n} ${m.unit}` : n;
+  const n = saNombre(v, d);
+  return m.unit ? `${n} ${m.unit}` : n;
+}
+
+/** Nombre à la française : « 77,5 », « 1 797 ». */
+function saNombre(v, dec) {
+  return Number(v).toLocaleString("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
 function saNextId(kind) {
@@ -15238,7 +15290,7 @@ function saDelta(mid, cur, prev) {
   if (Math.abs(d) < 1e-9) return "stable";
   const m = saMetric(mid);
   const dec = (m.decimals === undefined) ? 1 : m.decimals;
-  return (d > 0 ? "+" : "−") + Math.abs(d).toFixed(dec) + (m.unit ? " " + m.unit : "");
+  return (d > 0 ? "+" : "−") + saNombre(Math.abs(d), dec) + (m.unit ? " " + m.unit : "");
 }
 
 /** Pour le poids et la graisse, baisser est bon : la couleur suit le sens voulu. */
@@ -18444,13 +18496,18 @@ const DASH_WIDGETS = [
     render() {
       if (typeof SA === "undefined" || !SA) return null;
       const last = saLast(); if (!last || last.poids == null) return null;
-      const prev = saPrev();
+      // Même pesée de référence que l'onglet Suivi (saRef), réglable ici aussi
+      const prev = saRef();
       const d = saDelta("poids", last.poids, prev ? prev.poids : null);
+      const o = saCompareOptions(true);
+      const cmp = o.disabled ? "" :
+        `<label class="sa-cmp dash-cmp" onclick="event.stopPropagation()">Comparer avec
+           <select onchange="saSetCompare(this.value)">${o.html}</select></label>`;
       return { lbl: "Poids", val: saFmt("poids", last.poids),
                cls: saDeltaClass("poids", last.poids, prev ? prev.poids : null) === "down" ? "c-g" : "",
-               sub: d ? d + " vs pesée précédente" : "première pesée", go: "Voir le suivi",
-               viz: dashSpark(saSorted().filter(m => m.poids != null && m.poids !== "")
-                                        .slice(-12).map(m => Number(m.poids))) };
+               sub: d ? d + " " + saRefLabel(prev) : (prev ? "pas de poids à comparer" : "première pesée"),
+               subHtml: dashSanteCompo(last, prev),
+               go: "Voir le suivi", viz: cmp + dashSanteSpark(prev) };
     },
   },
   {
@@ -18661,6 +18718,7 @@ function dashCardHtml(w, d, muted) {
     <span class="home-card-lbl">${dashIcon(w)}${escHtml(d.lbl)}</span>
     <span class="home-card-val ${d.cls || ""}">${d.val}</span>
     <span class="home-card-sub">${escHtml(d.sub || "")}</span>
+    ${d.subHtml ? `<span class="home-card-sub">${d.subHtml}</span>` : ""}
     ${d.viz ? `<div class="home-card-viz">${d.viz}</div>` : ""}
     ${(!_dashEdit && d.go && w.tab) ? `<span class="home-card-go">${escHtml(d.go)} →</span>` : ""}
   </div>`;
@@ -18672,13 +18730,43 @@ function dashCardHtml(w, d, muted) {
    CSS (--accent) : ils suivent le thème et l'accent sans être redessinés. */
 
 /** Courbe miniature d'une suite de nombres (au moins deux). */
-function dashSpark(vals) {
+function dashSpark(vals, depuis) {
   const v = (vals || []).map(Number).filter(x => isFinite(x));
   if (v.length < 2) return "";
   const mn = Math.min(...v), mx = Math.max(...v), d = (mx - mn) || 1;
-  const path = v.map((x, i) => (i ? "L" : "M") + (i / (v.length - 1) * 100).toFixed(2)
-                              + "," + (28 - (x - mn) / d * 26).toFixed(2)).join("");
-  return `<svg class="dash-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="${path}"/></svg>`;
+  const pts = v.map((x, i) => (i / (v.length - 1) * 100).toFixed(2) + "," + (28 - (x - mn) / d * 26).toFixed(2));
+  const trace = p => p.map((xy, i) => (i ? "L" : "M") + xy).join("");
+  // `depuis` : indice à partir duquel le trait prend l'accent, estompé avant
+  const avant = depuis > 0 ? `<path class="dash-spark-ctx" d="${trace(pts.slice(0, depuis + 1))}"/>` : "";
+  return `<svg class="dash-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">${avant}<path d="${trace(pts.slice(depuis > 0 ? depuis : 0))}"/></svg>`;
+}
+
+/** Graisse et muscle depuis la même pesée que le poids : le poids seul ne dit
+    pas si c'est du gras ou du muscle qui a bougé. Vert ou rouge selon le sens
+    voulu (saDeltaClass, comme la grille de l'onglet Suivi) ; une mesure
+    absente de l'une des deux pesées est simplement omise. */
+function dashSanteCompo(last, ref) {
+  if (!ref) return "";
+  const num = x => (x === "" || x == null) ? null : Number(x);
+  const parts = [["graisse", "Graisse"], ["masse_musculaire", "Muscle"]].map(([id, lbl]) => {
+    const a = num(last[id]), b = num(ref[id]);
+    const d = saDelta(id, a, b);
+    if (!d) return "";
+    const cls = saDeltaClass(id, a, b);
+    return `${lbl} <b class="${cls === "down" ? "c-g" : cls === "up" ? "c-r" : ""}">${escHtml(d)}</b>`;
+  }).filter(Boolean);
+  return parts.join(" · ");
+}
+
+/** Mini-courbe du poids : au moins les 12 dernières pesées, et toujours depuis
+    la pesée de référence. Le trait prend l'accent à partir d'elle : il montre
+    le même écart que le chiffre de la tuile. */
+function dashSanteSpark(ref) {
+  const l = saSorted().filter(m => m.poids != null && m.poids !== "");
+  const cle = m => m.date + (m.time || "");
+  const i = ref ? Math.max(0, l.findIndex(m => cle(m) >= cle(ref))) : 0;
+  const debut = Math.max(0, Math.min(i, l.length - 12));
+  return dashSpark(l.slice(debut).map(m => Number(m.poids)), i - debut);
 }
 
 /** Barre de progression, avec deux libellés facultatifs dessous. */

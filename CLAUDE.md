@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.8**
+**Version actuelle : 4.2.9**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -429,7 +429,8 @@ plutôt qu'un logiciel de bureau.
   se mesure le rendement (valeur − versements) et celle d'un PEA pour la banque.
   Le détail titres / espèces / investi reste sous le chiffre.
 * **Mini-graphiques des tuiles** : un widget peut renvoyer `viz` (HTML) dans
-  `render()`. `dashSpark(valeurs)` (courbe SVG), `dashProgress(pct, g, d)`,
+  `render()`. `dashSpark(valeurs, depuis)` (courbe SVG ; `depuis`, facultatif,
+  estompe le trait avant cet indice), `dashProgress(pct, g, d)`,
   `dashSportWeeks()` (heures des 4 dernières semaines), `dashPeaSpark("pv"|"val")`
   (6 mois de la série Performance). Colorés par le CSS : ils suivent thème et accent
   sans être redessinés. Seulement là où il y a de vraies données : pas de graphique
@@ -912,7 +913,35 @@ ancienne. Le choix vit dans `SA.uiCompare` (id de la pesée, mémorisé dans
 retombe sur `saPrev()` si le choix ne vaut plus rien (pesée supprimée ou devenue la
 dernière). Les chiffres clés et la grille « Dernière pesée » l'utilisent et disent
 contre quoi ils comparent (`saRefLabel` : « vs 15 sept. »). La tuile « Poids » de
-l'accueil compare toujours à la pesée précédente, et l'écrit.
+l'accueil **partage ce choix** et porte son propre sélecteur « Comparer avec »
+(4.2.9) : changer d'un côté change l'autre, un seul réglage enregistré. Les options
+viennent de `saCompareOptions(court)` pour les deux sélecteurs (libellés courts
+sur la tuile). Le sélecteur est inerte en mode édition et absent s'il n'y a
+qu'une pesée.
+
+**Choix glissants (4.2.9).** En plus d'une date précise, `SA.uiCompare` accepte
+`"w1"` (il y a une semaine), `"m1"` (il y a un mois) et `"first"` (la première
+pesée). `saRefChoisie(choix)` résout le choix : pour `w1`/`m1`
+(`SA_CMP_GLISSANT`, 7 et 30 jours), la pesée **la plus proche** de N jours avant
+la **dernière pesée** (pas avant aujourd'hui : une pesée vieille de trois semaines
+ferait tout retomber sur la précédente), la plus ancienne à égalité. Un historique
+plus court que la période retombe donc sur la première pesée, et c'est la date
+affichée (« vs 15 sept. ») qui le dit. Dans l'onglet Suivi, chaque choix glissant
+affiche entre parenthèses la pesée qu'il désigne aujourd'hui.
+
+**Tuile « Poids » (4.2.9).** Sous l'écart de poids, la graisse et la masse
+musculaire depuis la même pesée (`dashSanteCompo`, vert ou rouge selon
+`saDeltaClass`, une mesure absente est omise) : le poids seul ne dit pas si
+c'est du gras ou du muscle qui a bougé. Cette ligne passe par le champ `subHtml`
+de `dashCardHtml` (HTML déjà échappé par le widget, sous `sub`). La mini-courbe
+(`dashSanteSpark`) couvre au moins les 12 dernières pesées et remonte toujours
+jusqu'à la pesée de référence ; le trait prend l'accent à partir d'elle et reste
+estompé avant (`dashSpark(vals, depuis)`, classe `.dash-spark-ctx`).
+
+**Nombres à la française (4.2.9).** `saFmt` et `saDelta` passent par
+`saNombre()` (`toLocaleString("fr-FR")`) : « 77,5 kg », « −0,4 kg », avec une
+espace insécable avant l'unité. Tout le module était en « 77.5 kg ». Ces fonctions
+ne servent qu'à l'affichage : les champs de saisie gardent leurs valeurs brutes.
 
 ## Module Mes comptes (finances.json)
 
