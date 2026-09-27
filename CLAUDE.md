@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.0**
+**Version actuelle : 4.3.1**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -1003,6 +1003,58 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
 
 Les cours passent par le serveur local (`/cours`), pas de second proxy Yahoo.
+
+## Wishlist : frais des ETF
+
+Colonne « Frais/an » (TER, frais de gestion annuels) dans le tableau des ETF,
+triable ; le premier clic trie du moins cher au plus cher, les frais inconnus
+restent en bas.
+
+* **La saisie l'emporte, Yahoo sert de repli.** `w.ter` (en %, 0.25 = 0,25 %) est
+  saisi dans la fenêtre de l'ETF ; vide, la colonne affiche
+  `_wsKey[ticker].expenseRatio` (fraction, lue par `/keystats` dans
+  `fundProfile.feesExpensesInvestment.annualReportExpenseRatio`), en gris avec la
+  mention « Yahoo ». Constaté le 27/09/2026 : Yahoo ne connaît que 3 des 7 ETF de
+  la wishlist d'Arthur (rien pour ESE, PANX, PEMS, GPEA). D'où la saisie.
+* `_wishTer(w)` décide de la valeur, pour l'affichage comme pour le tri.
+* Saisie refusée hors de 0 à 5 % : protège de « 25 » tapé pour 0,25 %.
+* `fetchKeystats()` interroge désormais aussi les ETF de la wishlist.
+
+## Prochain achat (onglet Stratégie, `#card-pac`)
+
+Chaque mois, les ordres à passer pour atteindre puis garder l'allocation cible
+(défaut 70 % WPEA / 20 % PEMS / 10 % PNAS), **sans jamais vendre**, au moindre
+courtage (Fortuneo : 1er ordre du mois ≤ 500 € gratuit, sinon 0,35 % sans
+minimum, plafonné à 0,5 %, le maximum légal en ligne pour un PEA). Algorithme
+en 8 étapes écrit par Arthur, appliqué à la lettre dans `pacCalcul()` (pur : ni
+écran ni `S`). **`testsProchainAchat()`** (console) vérifie ses six cas chiffrés :
+ne jamais modifier le calcul sans les relancer.
+
+* **Arrondis, piège mesuré** : `pacR2()` arrondit le demi-centime vers le haut
+  (13 × 7,675 = 99,775 → 99,78 €) ; `toFixed`/`toLocaleString` partent du binaire
+  (99,77499…) et donnent 99,77. Le **reliquat** s'arrondit, le **total** affiché
+  = budget − reliquat : les deux font toujours le budget (règle des six cas, T3).
+  Les comparaisons au budget se font sur les montants non arrondis.
+* **Quantités** : `computePos(p).qty` (rien n'est stocké). Une ligne cible non
+  détenue vaut 0 ; les positions hors allocation sont listées à part.
+* **Budget** = `computeCash()` (versement à saisir dans Dépôts avant). Une saisie
+  à la main (`_pacBudget`) n'est pas enregistrée.
+* **Ordre gratuit** : détecté (`pacGratuitDetecte`) = achat ou vente du mois,
+  ≤ seuil, sans frais. Vérifié sur les données d'Arthur le 27/09/2026 : ses ordres
+  sans frais font tous < 500 €. La case l'emporte pour le mois **tant que la
+  détection ne change pas** (`gratuitForce.vu`) : un ordre gratuit saisi après
+  coup compte même si la case avait été décochée.
+* **Heure du cours** : Yahoo diffuse Euronext avec 15 min de retard ; pendant
+  la séance on affiche donc l'heure du cours, « clôture du JJ/MM » seulement
+  hors séance ou si le cours date d'un autre jour (`pacCoursInfo`).
+* **Prix limite** arrondi au millième, comme les cours Yahoo de ces ETF.
+* Réglages dans `S.uiPrefs.prochainAchat` (comme les simulateurs) : aucune
+  clé nouvelle à ajouter aux chemins de sauvegarde et de chargement.
+* `fetchLocalCours()` demande aussi le cours des lignes cibles.
+* « Saisir » ouvre `ov-pos` pré-rempli (crée la position si besoin) ; rien
+  n'est écrit sans « Enregistrer ». Après saisie, le plan se recalcule.
+* Tuile d'accueil `prochain-achat` : le premier ordre, disparaît s'il n'y a
+  rien à acheter.
 
 ## Graphique « Évolution du capital » (vue d'ensemble du PEA, `#card-twr`)
 

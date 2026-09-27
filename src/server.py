@@ -489,7 +489,8 @@ _keystats_cache = {}
 
 
 def fetch_yahoo_keystats(yahoo_ticker: str):
-    """summaryDetail + defaultKeyStatistics : PER, yield, market cap, range 52W."""
+    """summaryDetail + defaultKeyStatistics : PER, yield, market cap, range 52W.
+    fundProfile : frais annuels (TER) des ETF, absents pour une action."""
     opener, crumb = _ensure_yahoo_session()
     if not opener or not crumb:
         return None
@@ -498,7 +499,7 @@ def fetch_yahoo_keystats(yahoo_ticker: str):
             url = (
                 f"https://{host}.finance.yahoo.com/v10/finance/quoteSummary/"
                 + urllib.parse.quote(yahoo_ticker)
-                + "?modules=summaryDetail,defaultKeyStatistics,price"
+                + "?modules=summaryDetail,defaultKeyStatistics,price,fundProfile"
                 + "&crumb=" + urllib.parse.quote(crumb)
             )
             with opener.open(url, timeout=10) as resp:
@@ -509,6 +510,7 @@ def fetch_yahoo_keystats(yahoo_ticker: str):
             sd  = result[0].get("summaryDetail",        {}) or {}
             ks  = result[0].get("defaultKeyStatistics", {}) or {}
             pr  = result[0].get("price",                {}) or {}
+            fe  = (result[0].get("fundProfile", {}) or {}).get("feesExpensesInvestment", {}) or {}
             def _v(d, k):
                 obj = d.get(k)
                 if isinstance(obj, dict): return obj.get("raw")
@@ -521,6 +523,9 @@ def fetch_yahoo_keystats(yahoo_ticker: str):
                 "fiftyTwoWeekHigh": _v(sd, "fiftyTwoWeekHigh"),
                 "fiftyTwoWeekLow":  _v(sd, "fiftyTwoWeekLow"),
                 "currency":     pr.get("currency") or sd.get("currency"),
+                # Fraction (0.0025 = 0,25 %/an). Un 0 est traite comme inconnu :
+                # afficher « 0,00 % » ferait passer l'ETF pour gratuit.
+                "expenseRatio": _v(fe, "annualReportExpenseRatio") or None,
             }
             # Si tout est None c'est probablement un ETF ou un ticker invalide
             if all(v is None for k,v in out.items() if k != "currency"):
