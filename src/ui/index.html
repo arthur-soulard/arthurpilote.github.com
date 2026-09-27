@@ -469,6 +469,25 @@ td:first-child { text-align: left; padding-left: 2px; font-family: var(--font); 
 .strat-validate-btn.err { background: var(--r2); border-color: var(--r); color: var(--r); }
 .strat-validate-btn.neu { color: var(--txt2); }
 
+/* ── Prochain achat (onglet Stratégie) ── */
+.pac-ctrl { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-bottom: 12px; font-size: 12.5px; }
+.pac-ctrl input[type="number"] { width: 110px; padding: 6px 10px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-family: var(--mono); font-size: 13px; }
+.pac-ctrl .pac-dim, .pac-dim { color: var(--txt2); font-size: 11.5px; }
+.pac-check { display: inline-flex; gap: 7px; align-items: center; cursor: pointer; }
+.pac-alerts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.pac-alert { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: var(--rad); font-size: 12px; line-height: 1.5; background: var(--bg3); color: var(--txt2); }
+.pac-alert i { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+.pac-alert.warn { background: var(--a2); color: var(--txt); }
+.pac-alert.warn i { color: var(--a); }
+.pac-alert.err { background: var(--r2); color: var(--txt); }
+.pac-alert.err i { color: var(--r); }
+.pac-muted td { color: var(--txt3); }
+.pac-tot { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 12px; font-size: 12px; color: var(--txt2); }
+.pac-tot b { font-family: var(--mono); color: var(--txt); font-size: 14px; margin-left: 4px; }
+.pac-cfg { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--brd); }
+.pac-cfg table input { width: 100%; min-width: 70px; padding: 5px 8px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 12.5px; }
+.pac-cfg .fg-row3, .pac-cfg .fg-row { margin-top: 12px; }
+
 /* ══════════════════════════════════════════════════
    PILOTE — surcharges desktop app (sidebar, titlebar, dark theme)
 ══════════════════════════════════════════════════ */
@@ -2639,6 +2658,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
         <th style="text-align:center;cursor:pointer" data-sort="stars" onclick="setWlSort('etf','stars')">Envie d'achat</th>
         <th>Cours</th>
         <th title="Évolution 30 derniers jours">30j</th>
+        <th style="cursor:pointer" data-sort="ter" onclick="setWlSort('etf','ter')" title="Frais de gestion annuels (TER)">Frais/an</th>
         <th style="cursor:pointer" data-sort="w1" onclick="setWlSort('etf','w1')">1 semaine</th>
         <th style="cursor:pointer" data-sort="m1" onclick="setWlSort('etf','m1')">1 mois</th>
         <th style="cursor:pointer" data-sort="y1" onclick="setWlSort('etf','y1')">1 an</th>
@@ -2668,6 +2688,28 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 
 <!-- ═══════════════════ STRATÉGIE ═══════════════════ -->
 <div class="pane" id="pane-strat">
+  <div class="card" id="card-pac">
+    <div class="card-h">
+      <span class="card-t">Prochain achat</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="pac-cours" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
+        <button class="btn btn-sm btn-ghost" onclick="pacCopier()"><i class="ph ph-copy"></i> Copier le plan</button>
+        <button class="btn btn-sm btn-ghost" onclick="pacToggleCfg()"><i class="ph ph-sliders-horizontal"></i> Réglages</button>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="pac-ctrl">
+        <label class="pac-check">Budget du mois
+          <input id="pac-budget" type="number" step="0.01" min="0" oninput="pacSetBudget(this.value)"> €</label>
+        <span class="pac-dim" id="pac-especes"></span>
+        <label class="pac-check"><input type="checkbox" id="pac-gratuit" onchange="pacSetGratuit(this.checked)">
+          Ordre gratuit déjà utilisé ce mois-ci</label>
+        <span class="pac-dim" id="pac-gratuit-info"></span>
+      </div>
+      <div id="pac-res"></div>
+      <div class="pac-cfg" id="pac-cfg" style="display:none"></div>
+    </div>
+  </div>
   <div class="card" id="card-strat">
     <div class="card-h">
       <span class="card-t">Règles de stratégie</span>
@@ -4687,6 +4729,11 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
           <option value="autre">○ Autre</option>
         </select>
       </div>
+    </div>
+    <div class="fg" id="w-ter-fg">
+      <label>Frais annuels (TER, %)</label>
+      <input id="w-ter" type="number" step="0.01" min="0" max="5" placeholder="ex&nbsp;: 0,25">
+      <div id="w-ter-hint" style="font-size:11px;color:var(--txt2);margin-top:4px"></div>
     </div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-wish')">Annuler</button>
@@ -7226,8 +7273,27 @@ let _wlSort = { action: {key: "stars", dir: "desc"}, etf: {key: "stars", dir: "d
 function setWlSort(wtype, key) {
   const cur = _wlSort[wtype];
   if (cur.key === key) cur.dir = (cur.dir === "desc") ? "asc" : "desc";
-  else { cur.key = key; cur.dir = "desc"; }
+  // Les frais se lisent du moins cher au plus cher, le reste du plus haut au plus bas
+  else { cur.key = key; cur.dir = (key === "ter") ? "asc" : "desc"; }
   renderWishlist();
+}
+
+/* Frais annuels (TER) d'un ETF de la wishlist, en % : la saisie l'emporte,
+   sinon la valeur Yahoo quand elle existe (null si aucune). */
+function _wishTer(w) {
+  if (w.ter != null) return { pct: w.ter, src: "saisie" };
+  const k = _wsKey[w.ticker];
+  if (k && k.expenseRatio != null) return { pct: k.expenseRatio * 100, src: "yahoo" };
+  return null;
+}
+function _fmtTer(pct) {
+  return pct.toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 3}) + " %";
+}
+function _renderTer(w) {
+  const t = _wishTer(w);
+  if (!t) return '<span style="color:var(--txt3);font-size:11px" title="Frais inconnus&nbsp;: saisis-les avec le crayon">—</span>';
+  if (t.src === "yahoo") return `<span title="Valeur Yahoo Finance, à vérifier. Saisis les frais avec le crayon pour la remplacer." style="font-size:11px;font-family:var(--mono);color:var(--txt2)">${_fmtTer(t.pct)} <span style="font-size:9.5px;color:var(--txt3)">Yahoo</span></span>`;
+  return `<span style="font-size:11px;font-family:var(--mono);font-weight:600">${_fmtTer(t.pct)}</span>`;
 }
 
 function renderWishlist() {
@@ -7239,6 +7305,7 @@ function renderWishlist() {
       .sort((a,b) => {
         let va, vb;
         if (sort.key === "stars") { va = a.stars; vb = b.stars; }
+        else if (sort.key === "ter") { va = _wishTer(a)?.pct; vb = _wishTer(b)?.pct; }
         else {
           // perf : w1 / m1 / y1
           const ka = getVar(a.ticker), kb = getVar(b.ticker);
@@ -7264,7 +7331,7 @@ function renderWishlist() {
     el.innerHTML = items.map(w=>{
       const v = getVar(w.ticker);
       const cours = v?.cours!=null ? `<span style="font-family:var(--mono)">${v.cours.toFixed(2).replace(".",",")} €</span>` : `<span class="vz">—</span>`;
-      const extraCells = (wtype === "action") ? `<td>${_renderPER(w.ticker)}</td><td>${_renderYield(w.ticker)}</td>` : "";
+      const extraCells = (wtype === "action") ? `<td>${_renderPER(w.ticker)}</td><td>${_renderYield(w.ticker)}</td>` : `<td>${_renderTer(w)}</td>`;
       return `<tr>
         <td><div style="font-weight:600;font-size:13px">${w.name}</div></td>
         <td style="text-align:left"><span style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${w.ticker}</span></td>
@@ -7278,7 +7345,7 @@ function renderWishlist() {
         <td>${vfmt(v?.y1)}</td>
         <td style="white-space:nowrap">${ebtn("editWish",w.id)}${dbtn("delWish",w.id)}</td>
       </tr>`;
-    }).join("")||`<tr><td colspan="${wtype==="action" ? 12 : 10}" style="text-align:center;color:var(--txt2);padding:14px">Aucun élément</td></tr>`;
+    }).join("")||`<tr><td colspan="${wtype==="action" ? 12 : 11}" style="text-align:center;color:var(--txt2);padding:14px">Aucun élément</td></tr>`;
   });
   const t = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   const wu = document.getElementById("wish-update");
@@ -7341,6 +7408,8 @@ async function fetchLocalCours() {
   const tickers = [];
   S.positions.forEach(p => { if (p.ticker) tickers.push(p.ticker); });
   if (S.wishlist) S.wishlist.forEach(w => { if (w.ticker) tickers.push(w.ticker); });
+  // Lignes cibles du « Prochain achat » : leur cours sert même sans position ni wishlist
+  if (typeof pacCfg === "function") pacCfg().cibles.forEach(c => { if (c.ticker) tickers.push(c.ticker); });
   if (tickers.length === 0) return { prices: {}, variations: {} };
 
   const unique = [...new Set(tickers)];
@@ -7412,6 +7481,7 @@ async function applyCoursData() {
     persist(false);
     renderPositions();
     renderWishlist();
+    if (typeof pacRender === "function") pacRender();
     updateStatus();
 
   } catch(e) {
@@ -7500,11 +7570,11 @@ async function fetchSparklines() {
   } catch(e) { console.warn("sparkline:", e.message); }
 }
 
-/* ─── Fetch keystats (PER, yield) — uniquement actions, pas ETF ─── */
+/* ─── Fetch keystats (PER, yield des actions ; frais des ETF de la wishlist) ─── */
 async function fetchKeystats() {
   const tickers = new Set();
   (S.positions || []).forEach(p => { if (p.ticker && p.type === "action") tickers.add(p.ticker); });
-  (S.wishlist  || []).forEach(w => { if (w.ticker && w.wtype === "action") tickers.add(w.ticker); });
+  (S.wishlist  || []).forEach(w => { if (w.ticker) tickers.add(w.ticker); });
   if (tickers.size === 0) return;
   try {
     const url = `http://127.0.0.1:${_PEA_PORT}/keystats?tickers=` + encodeURIComponent([...tickers].join(",")) + "&t=" + Date.now();
@@ -8140,6 +8210,7 @@ function goTab(n) {
   if (n==="div") renderDividends();
   if (n==="reco") { renderReco(); fetchAnalysts(); fetchKeystats(); }
   if (n==="sim" && typeof _initSimulateurs === "function") _initSimulateurs();
+  if (n==="strat" && typeof pacRender === "function") pacRender();
   if (n==="dash" && typeof dashRenderOverview === "function") dashRenderOverview();
   // Memorise pour le prochain lancement
   try { document.body.dataset.activeTab = n; } catch(e) {}
@@ -8514,9 +8585,15 @@ function openAddWish(list, type) {
   document.getElementById("w-modal-title").textContent = "Ajouter " + (type==="etf"?"un ETF":"une action") + " à la wishlist";
   document.getElementById("w-ticker").placeholder = type==="etf"?"EPA:WPEA":"EPA:AIR";
   document.getElementById("w-name").placeholder   = type==="etf"?"ex : ETF MSCI World":"ex : Airbus";
-  ["w-ticker","w-name"].forEach(id=>document.getElementById(id).value="");
+  ["w-ticker","w-name","w-ter"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("w-stars").value=3;
   document.getElementById("w-sector").value="";
+  document.getElementById("w-ter-fg").style.display = type==="etf" ? "" : "none";
+  _wishTerHint("");
+  // editWish() detourne le bouton vers la mise a jour : on le rend a l'ajout
+  const btn = document.querySelector("#ov-wish .btn-primary");
+  btn.textContent = "Ajouter";
+  btn.onclick = () => saveWish();
   // Auto-completion : meme systeme que pour les positions
   _wireTickerSearch({
     nameId:    "w-name",
@@ -8526,20 +8603,44 @@ function openAddWish(list, type) {
   });
   document.getElementById("ov-wish").classList.add("open");
 }
+/* Aide sous le champ des frais : dit si Yahoo prendra le relais quand il est vide */
+function _wishTerHint(ticker) {
+  const k = ticker && _wsKey[ticker];
+  document.getElementById("w-ter-hint").textContent = (k && k.expenseRatio != null)
+    ? "Laissé vide, Pilote affiche la valeur de Yahoo Finance (" + _fmtTer(k.expenseRatio * 100) + "), à vérifier."
+    : "Sur la fiche de l'ETF, sous « frais courants ». Laissé vide, Pilote affiche la valeur de Yahoo Finance quand elle existe.";
+}
+/* Frais saisis, en % : null si vide, undefined si invalide (deja signale) */
+function _wishTerInput() {
+  const el = document.getElementById("w-ter");
+  if (document.getElementById("w-type").value !== "etf") return null;
+  if (el.validity.badInput) { showToastModern("Frais annuels : un nombre, par exemple 0,25", "warn"); return undefined; }
+  if (el.value.trim() === "") return null;
+  const n = parseFloat(el.value.replace(",", "."));
+  if (!isFinite(n) || n < 0 || n > 5) {
+    showToastModern("Frais annuels : un pourcentage entre 0 et 5 (0,25 pour 0,25 %)", "warn");
+    return undefined;
+  }
+  return n;
+}
 function saveWish() {
   const tickerRaw=document.getElementById("w-ticker").value.trim().toUpperCase();
   const name  =document.getElementById("w-name").value.trim();
   if (!tickerRaw||!name) return;
+  const ter = _wishTerInput();
+  if (ter === undefined) return;
   // Normalize to EPA: format so getVar always matches _wsVar keys
   const ticker = normalizeTicker(tickerRaw);
   pushUndo();
-  S.wishlist.push({
+  const w = {
     id:NID.wish++, ticker, name,
     stars:parseInt(document.getElementById("w-stars").value)||3,
     sector:document.getElementById("w-sector").value||"",
     list:document.getElementById("w-list").value,
     wtype:document.getElementById("w-type").value||"action"
-  });
+  };
+  if (ter != null) w.ter = ter;
+  S.wishlist.push(w);
   persist(); closeOv("ov-wish"); renderWishlist();
 }
 function delWish(id) { pushUndo(); S.wishlist=S.wishlist.filter(w=>w.id!==id); persist(); renderWishlist(); }
@@ -8552,6 +8653,8 @@ function editWish(id) {
   document.getElementById("w-ticker").value = w.ticker || "";
   document.getElementById("w-stars").value  = w.stars  || 3;
   document.getElementById("w-sector").value = w.sector || "";
+  document.getElementById("w-ter").value    = w.ter ?? "";
+  _wishTerHint(w.ticker);
   const btn = document.querySelector("#ov-wish .btn-primary");
   btn.textContent = "Mettre à jour";
   btn.onclick = () => saveEditWish(id);
@@ -8560,13 +8663,17 @@ function saveEditWish(id) {
   const tickerRaw = document.getElementById("w-ticker").value.trim().toUpperCase();
   const name      = document.getElementById("w-name").value.trim();
   if (!tickerRaw || !name) return;
+  const ter = _wishTerInput();
+  if (ter === undefined) return;
   const ticker = normalizeTicker(tickerRaw);
   const idx = S.wishlist.findIndex(x=>x.id===id); if (idx<0) return;
   pushUndo();
-  S.wishlist[idx] = {...S.wishlist[idx], ticker, name,
+  const w = {...S.wishlist[idx], ticker, name,
     stars:  parseInt(document.getElementById("w-stars").value) || 3,
     sector: document.getElementById("w-sector").value || ""
   };
+  if (ter != null) w.ter = ter; else delete w.ter;
+  S.wishlist[idx] = w;
   persist(); closeOv("ov-wish"); renderWishlist();
 }
 
@@ -10670,6 +10777,530 @@ function delRule(id) {
   persist(); renderStrat();
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   PROCHAIN ACHAT (onglet Stratégie)
+   Chaque mois, les ordres à passer pour atteindre puis garder l'allocation
+   cible, sans jamais vendre, en payant le moins de courtage possible.
+   pacCalcul ne lit ni l'écran ni S : testsProchainAchat() le vérifie sur
+   six cas chiffrés (à lancer dans la console).
+   Réglages dans S.uiPrefs.prochainAchat (comme les simulateurs). Le budget
+   tapé à la main n'est pas enregistré : à la réouverture, ce sont les espèces.
+═══════════════════════════════════════════════════════════════════════ */
+
+const PAC_DEFAUT = {
+  cibles: [
+    { ticker: "EPA:WPEA", label: "WPEA", pct: 70 },
+    { ticker: "EPA:PEMS", label: "PEMS", pct: 20 },
+    { ticker: "EPA:PNAS", label: "PNAS", pct: 10 },
+  ],
+  seuilGratuit: 500,   // € : le 1er ordre du mois jusqu'à ce montant est gratuit
+  taux: 0.35,          // % de courtage, sans minimum
+  marge: 0.2,          // % : prix limite = dernier cours × (1 + marge)
+  seuilDerive: 5,      // points d'écart à la cible après achat avant alerte
+  gratuitForce: null,  // {mois: "AAAA-MM", utilise, vu} : la case touchée à la main
+};
+const PAC_TAUX_MAX = 0.5;   // % : plafond légal du courtage d'un PEA pour un ordre en ligne
+const PAC_EPS = 1e-9;
+
+let _pacBudget  = null;   // null = les espèces du PEA
+let _pacDernier = null;   // dernier plan affiché (pour « Saisir » et « Copier »)
+
+/* Arrondi au centime, demi vers le haut : 13 × 7,675 = 99,775 doit donner
+   99,78 €. toFixed et toLocaleString partent de la valeur binaire exacte
+   (99,77499…) et donneraient 99,77. */
+function pacR2(x) { return Math.round(Number((x * 100).toPrecision(12))) / 100; }
+function pacR3(x) { return Math.round(Number((x * 1000).toPrecision(12))) / 1000; }
+function pacEur(x) { return eur(pacR2(x)); }
+function pacPrix(x) {
+  return pacR3(x).toLocaleString("fr-FR", {minimumFractionDigits: 3, maximumFractionDigits: 3}) + " €";
+}
+function pacPct(x, sign) {
+  if (x == null) return "—";
+  const s = Math.abs(x).toLocaleString("fr-FR", {minimumFractionDigits: 1, maximumFractionDigits: 1});
+  return (sign ? (x >= 0.05 ? "+" : x <= -0.05 ? "−" : "") : "") + s;
+}
+
+/* Frais d'un jeu de parts (étape 5) : la moins chère de deux variantes.
+   a. sans scission : l'ordre gratuit est le plus gros ordre sous le seuil ;
+   b. le plus gros ordre, s'il dépasse le seuil, est coupé en une partie
+      gratuite (le plus de parts possible sous le seuil) et un reste payant.
+   Ordre gratuit déjà utilisé : tout paie, pas de scission.
+   Les frais s'arrondissent ordre par ordre, comme sur l'avis d'opéré. */
+function pacFrais(lignes, parts, o) {
+  const ordres = lignes.filter(l => parts[l.key] > 0).map(l => ({
+    key: l.key, label: l.label, n: parts[l.key], pl: l.pl,
+    montant: parts[l.key] * l.pl, frais: 0, gratuit: false, scinde: false,
+  }));
+  const payant = od => { od.frais = pacR2(od.montant * o.taux); return od; };
+  const somme  = l => l.reduce((s, od) => s + od.frais, 0);
+  if (!ordres.length) return { frais: 0, ordres };
+  if (o.gratuitUtilise) {
+    ordres.forEach(payant);
+    return { frais: somme(ordres), ordres };
+  }
+  // a. sans scission
+  const va = ordres.map(od => ({...od}));
+  const elig = va.filter(od => od.montant <= o.seuil + PAC_EPS);
+  const gratuit = elig.length ? elig.reduce((m, od) => od.montant > m.montant ? od : m) : null;
+  va.forEach(od => { if (od === gratuit) od.gratuit = true; else payant(od); });
+  let best = { frais: somme(va), ordres: va };
+  // b. avec scission du plus gros ordre
+  const gros = ordres.reduce((m, od) => od.montant > m.montant ? od : m);
+  if (gros.montant > o.seuil + PAC_EPS) {
+    const nf = Math.floor(o.seuil / gros.pl + PAC_EPS);
+    if (nf > 0 && nf < gros.n) {
+      const vb = [];
+      ordres.forEach(od => {
+        if (od !== gros) { vb.push(payant({...od})); return; }
+        vb.push({...od, n: nf, montant: nf * od.pl, gratuit: true, scinde: true});
+        vb.push(payant({...od, n: od.n - nf, montant: (od.n - nf) * od.pl, scinde: true}));
+      });
+      if (somme(vb) < best.frais - PAC_EPS) best = { frais: somme(vb), ordres: vb };
+    }
+  }
+  return best;
+}
+
+/* Le plan d'achat : étapes 1 à 8 du cahier des charges, à la lettre.
+   lignes : [{key, label, q (parts détenues), p (dernier cours), t (cible, fraction)}]
+   o      : {budget (€), marge, taux (fractions), seuil (€), gratuitUtilise} */
+function pacCalcul(lignes, o) {
+  const B = Math.max(0, o.budget || 0);
+  const L = lignes.map(l => ({...l, v: l.q * l.p, pl: pacR3(l.p * (1 + o.marge))}));
+  const V = L.reduce((s, l) => s + l.v, 0);
+  // 2. Montant visé
+  L.forEach(l => { l.a = l.t * (V + B) - l.v; });
+  // 3. Ligne en surpoids : rien pour elle, le budget va aux autres au prorata de leur écart
+  const surpoids = L.filter(l => l.a < -PAC_EPS).map(l => l.key);
+  if (surpoids.length) {
+    const ecarts = L.reduce((s, l) => s + (l.a > 0 ? l.a : 0), 0);
+    L.forEach(l => { l.a = (l.a > 0 && ecarts > 0) ? B * l.a / ecarts : 0; });
+  }
+  // 4. Parts entières au prix limite
+  const parts = {};
+  L.forEach(l => { parts[l.key] = l.a > 0 ? Math.floor(l.a / l.pl + PAC_EPS) : 0; });
+  const reste = l => l.a - parts[l.key] * l.pl;
+  const cout = () => {
+    const f = pacFrais(L, parts, o);
+    return {...f, total: L.reduce((s, l) => s + parts[l.key] * l.pl, 0) + f.frais};
+  };
+  // 6. Tenir dans le budget : une part de moins là où on dépasse le plus le montant visé
+  while (cout().total > B + PAC_EPS) {
+    const c = L.filter(l => parts[l.key] > 0);
+    if (!c.length) break;
+    parts[c.reduce((m, l) => reste(l) < reste(m) ? l : m).key]--;
+  }
+  // 7. Compléter : une part de plus au plus grand reste, puis au suivant, tant que ça tient
+  for (;;) {
+    const c = L.filter(l => !surpoids.includes(l.key) && reste(l) > PAC_EPS)
+               .sort((x, y) => reste(y) - reste(x));
+    let ajoute = false;
+    for (const l of c) {
+      parts[l.key]++;
+      if (cout().total <= B + PAC_EPS) { ajoute = true; break; }
+      parts[l.key]--;
+    }
+    if (!ajoute) break;
+  }
+  const res = cout();
+  // 8. L'ordre gratuit d'abord, puis les montants décroissants
+  res.ordres.sort((x, y) => (y.gratuit - x.gratuit) || (y.montant - x.montant));
+  const apres = L.reduce((s, l) => s + (l.q + parts[l.key]) * l.p, 0);
+  const lignesRes = L.map(l => {
+    const ap = apres > 0 ? (l.q + parts[l.key]) * l.p / apres * 100 : null;
+    return {
+      key: l.key, label: l.label, cible: l.t * 100, parts: parts[l.key], p: l.p, pl: l.pl,
+      avant: V > 0 ? l.v / V * 100 : null, apres: ap, ecart: ap == null ? null : ap - l.t * 100,
+      surpoids: surpoids.includes(l.key),
+    };
+  });
+  // Affichage : le reliquat s'arrondit au centime et le total se déduit du
+  // budget, pour que les deux fassent toujours le budget à l'écran. C'est la
+  // règle des six cas du cahier des charges (T3 : 499,615 € → 499,61 + 0,39).
+  const reliquat = pacR2(B - res.total);
+  return {
+    ordres: res.ordres, lignes: lignesRes, budget: B, frais: res.frais,
+    investi: res.ordres.reduce((s, od) => s + od.montant, 0),
+    reliquat, total: pacR2(B - reliquat),
+  };
+}
+
+/* Les six cas du cahier des charges : montants et frais au centime, poids à
+   0,1 point. À lancer dans la console : testsProchainAchat() */
+function testsProchainAchat() {
+  const P = { WPEA: 7.068, PEMS: 7.675, PNAS: 7.053 };
+  const T = { WPEA: 0.7, PEMS: 0.2, PNAS: 0.1 };
+  // ordres attendus : [ETF, parts, montant, frais (null = gratuit), scindé]
+  const CAS = [
+    { nom: "T1 Rattrapage", q: [127, 0, 0], B: 500, ordres: [["PEMS", 36, 276.30, null], ["PNAS", 20, 141.06, 0.49], ["WPEA", 11, 77.75, 0.27]],
+      total: 495.87, reliquat: 4.13, apres: [70.0, 19.8, 10.1] },
+    { nom: "T2 Croisière", q: [138, 36, 20], B: 500, ordres: [["WPEA", 49, 346.33, null], ["PEMS", 13, 99.78, 0.35], ["PNAS", 7, 49.37, 0.17]],
+      total: 496.00, reliquat: 4.00, apres: [70.0, 19.9, 10.1] },
+    { nom: "T3 Émergents en retard", q: [683, 144, 98], B: 500, ordres: [["PEMS", 42, 322.35, null], ["WPEA", 22, 155.50, 0.54], ["PNAS", 3, 21.16, 0.07]],
+      total: 499.61, reliquat: 0.39, apres: [70.0, 20.0, 10.0] },
+    { nom: "T4 Nasdaq en surpoids", q: [683, 144, 200], B: 500, ordres: [["WPEA", 41, 289.79, null], ["PEMS", 27, 207.23, 0.73]],
+      total: 497.74, reliquat: 2.26, apres: [65.3, 16.7, 18.0], surpoids: "PNAS" },
+    { nom: "T5 Ordre gratuit déjà utilisé", q: [138, 36, 20], B: 500, gratuitUtilise: true, ordres: [["WPEA", 49, 346.33, 1.21], ["PEMS", 13, 99.78, 0.35], ["PNAS", 7, 49.37, 0.17]],
+      total: 497.21, reliquat: 2.79, apres: [70.0, 19.9, 10.1] },
+    { nom: "T6 Budget 1 000 €", q: [138, 36, 20], B: 1000, ordres: [["WPEA", 70, 494.76, null, true], ["WPEA", 29, 204.97, 0.72, true], ["PEMS", 26, 199.55, 0.70], ["PNAS", 14, 98.74, 0.35]],
+      total: 999.79, reliquat: 0.21, apres: [70.1, 19.9, 10.0] },
+  ];
+  const noms = ["WPEA", "PEMS", "PNAS"];
+  const bilan = CAS.map(c => {
+    const r = pacCalcul(noms.map((k, i) => ({ key: k, label: k, q: c.q[i], p: P[k], t: T[k] })),
+      { budget: c.B, marge: 0, seuil: 500, taux: 0.0035, gratuitUtilise: !!c.gratuitUtilise });
+    const ecarts = [];
+    const obtenu = r.ordres.map(od => [od.label, od.n, pacR2(od.montant), od.gratuit ? null : pacR2(od.frais), od.scinde]);
+    if (obtenu.length !== c.ordres.length) ecarts.push(c.ordres.length + " ordres attendus, " + obtenu.length + " obtenus");
+    c.ordres.forEach((e, i) => {
+      const o = obtenu[i];
+      if (!o || o[0] !== e[0] || o[1] !== e[1] || o[2] !== e[2] || o[3] !== e[3] || !!o[4] !== !!e[4])
+        ecarts.push("ordre " + (i + 1) + " : attendu " + JSON.stringify(e) + ", obtenu " + JSON.stringify(o));
+    });
+    if (r.total !== c.total) ecarts.push("total attendu " + c.total + ", obtenu " + r.total);
+    if (r.reliquat !== c.reliquat) ecarts.push("reliquat attendu " + c.reliquat + ", obtenu " + r.reliquat);
+    r.lignes.forEach((l, i) => {
+      if (Math.round(l.apres * 10) / 10 !== c.apres[i]) ecarts.push("poids après " + l.key + " attendu " + c.apres[i] + ", obtenu " + l.apres.toFixed(2));
+    });
+    const sp = r.lignes.filter(l => l.surpoids).map(l => l.key).join(",");
+    if (sp !== (c.surpoids || "")) ecarts.push("surpoids attendu « " + (c.surpoids || "") + " », obtenu « " + sp + " »");
+    console.log((ecarts.length ? "✗ " : "✓ ") + c.nom + (ecarts.length ? "\n  " + ecarts.join("\n  ") : ""));
+    return { cas: c.nom, ok: !ecarts.length, ecarts };
+  });
+  const ok = bilan.every(b => b.ok);
+  console.log(ok ? "Prochain achat : 6 cas sur 6 conformes" : "Prochain achat : " + bilan.filter(b => !b.ok).length + " cas en échec");
+  return { ok, bilan };
+}
+
+/* ── Réglages ── */
+function pacCfg() {
+  const c = (typeof S !== "undefined" && S && S.uiPrefs && S.uiPrefs.prochainAchat) || {};
+  const num = (v, d) => (typeof v === "number" && isFinite(v)) ? v : d;
+  return {
+    cibles: Array.isArray(c.cibles) ? c.cibles : PAC_DEFAUT.cibles.map(x => ({...x})),
+    seuilGratuit: num(c.seuilGratuit, PAC_DEFAUT.seuilGratuit),
+    taux:         num(c.taux,         PAC_DEFAUT.taux),
+    marge:        num(c.marge,        PAC_DEFAUT.marge),
+    seuilDerive:  num(c.seuilDerive,  PAC_DEFAUT.seuilDerive),
+    gratuitForce: c.gratuitForce || null,
+  };
+}
+function pacSaveCfg(cfg) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.prochainAchat = cfg;
+  persist(false);
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
+    window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
+}
+function pacLabel(c) { return c.label || c.ticker.replace(/^[A-Z]+:/, ""); }
+function pacNum(v) { const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : null; }
+
+/* L'ordre gratuit du mois est-il déjà pris ? Un achat ou une vente du mois,
+   sous le seuil et sans frais, l'a consommé. Constaté sur les données
+   d'Arthur : ses ordres sans frais font tous moins de 500 €, et les achats
+   passés le même jour qu'une vente gratuite ont payé. */
+function pacGratuitDetecte(seuil) {
+  const cut = todayISO(), mois = cut.slice(0, 7);
+  return (S.transactions || [])
+    .filter(t => (t.type === "Achat" || t.type === "Vente") && !(t.frais > 0)
+      && normDate(t.date).slice(0, 7) === mois && normDate(t.date) <= cut
+      && t.qty * t.cours > 0 && t.qty * t.cours <= seuil + PAC_EPS)
+    .sort((a, b) => normDate(a.date).localeCompare(normDate(b.date)))[0] || null;
+}
+/* La case l'emporte sur la détection, pour le mois où on l'a touchée et tant
+   que la détection n'a pas changé (`vu`) : l'ordre gratuit saisi après coup
+   doit compter, même si on avait décoché la case avant. */
+function pacGratuit(cfg) {
+  const tx = pacGratuitDetecte(cfg.seuilGratuit);
+  const f = cfg.gratuitForce;
+  if (f && f.mois === todayISO().slice(0, 7) && (f.vu ?? null) === (tx ? tx.id : null))
+    return { utilise: !!f.utilise, force: true, tx };
+  return { utilise: !!tx, force: false, tx };
+}
+
+/* Heure du cours : pendant la séance, son heure ; sinon, ou s'il date d'un
+   autre jour, « cours de clôture du JJ/MM ». Yahoo diffuse Euronext avec
+   15 minutes de retard : un cours de 15 min n'est donc pas un cours de clôture. */
+function pacCoursInfo(ts) {
+  if (!ts) return { txt: "heure du cours inconnue", cloture: true };
+  const d = new Date(ts * 1000), now = new Date();
+  const j = now.getDay(), mn = now.getHours() * 60 + now.getMinutes();
+  const seance = j >= 1 && j <= 5 && mn >= 9 * 60 && mn < 17 * 60 + 35;
+  if (!seance || d.toDateString() !== now.toDateString())
+    return { txt: "cours de clôture du " + d.toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"}), cloture: true };
+  const age = (now - d) / 60000;
+  return { txt: "cours de " + d.toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"})
+                + (age > 15 ? " (il y a " + Math.round(age) + " min)" : ""), cloture: false };
+}
+
+/* Tout ce que la carte et la tuile d'accueil affichent, calculé une fois. */
+function pacPlanCourant() {
+  if (typeof S === "undefined" || !S || !S.positions) return null;
+  const cfg = pacCfg();
+  const especes = pacR2(computeCash());
+  const budget = _pacBudget != null ? _pacBudget : especes;
+  const g = pacGratuit(cfg);
+  const base = { cfg, especes, budget, g, alertes: [], horsAlloc: [] };
+  const qte = tk => { const p = S.positions.find(x => x.ticker === tk); return p ? computePos(p).qty : 0; };
+  const cib = cfg.cibles.map(c => c.ticker);
+  base.horsAlloc = S.positions.filter(p => !cib.includes(p.ticker))
+    .map(p => ({ name: p.name || p.ticker, qty: computePos(p).qty })).filter(p => p.qty > 0);
+
+  const somme = cfg.cibles.reduce((s, c) => s + (Number(c.pct) || 0), 0);
+  if (!cfg.cibles.length) return {...base, bloque: "Aucune ligne cible : ajoute-en dans les réglages."};
+  if (cfg.cibles.some(c => !c.ticker)) return {...base, bloque: "Une ligne cible n'a pas de ticker : complète-la ou supprime-la dans les réglages."};
+  if (Math.abs(somme - 100) > 1e-6)
+    return {...base, bloque: "Les cibles font " + pacPct(somme) + " % au lieu de 100 % : calcul impossible tant qu'elles ne tombent pas juste."};
+  const cours = cfg.cibles.map(c => {
+    const v = getVar(c.ticker);
+    if (v && v.cours > 0) return { p: v.cours, t: v.t || null };
+    const pos = S.positions.find(x => x.ticker === c.ticker);
+    return (pos && pos.cours > 0) ? { p: pos.cours, t: null } : null;
+  });
+  const manquants = cfg.cibles.filter((c, i) => !cours[i]).map(pacLabel);
+  if (manquants.length)
+    return {...base, bloque: "Cours manquant pour " + manquants.join(", ") + " : calcul impossible. Vérifie le ticker ou la connexion, puis Actualiser."};
+  const ts = cours.map(c => c.t).filter(Boolean);
+  base.coursInfo = pacCoursInfo(ts.length ? Math.min(...ts) : null);
+
+  const tauxPct = Math.min(cfg.taux, PAC_TAUX_MAX);
+  const plan = pacCalcul(cfg.cibles.map((c, i) => ({
+    key: c.ticker, label: pacLabel(c), q: qte(c.ticker), p: cours[i].p, t: c.pct / 100,
+  })), { budget, marge: cfg.marge / 100, seuil: cfg.seuilGratuit, taux: tauxPct / 100, gratuitUtilise: g.utilise });
+
+  const A = base.alertes;
+  if (cfg.taux > PAC_TAUX_MAX)
+    A.push(["warn", "Courtage ramené à 0,5 % : c'est le plafond légal pour un ordre passé en ligne sur un PEA."]);
+  if (base.coursInfo.cloture)
+    A.push(["info", "Calcul sur le " + base.coursInfo.txt + " : vérifie les prix limites à l'ouverture de la Bourse."]);
+  if (!plan.ordres.length) {
+    const achetables = plan.lignes.filter(l => !l.surpoids);
+    const moinsChere = achetables.length ? Math.min(...achetables.map(l => l.pl)) : null;
+    A.push(["warn", "Budget de " + pacEur(budget) + " : pas de quoi acheter une part"
+      + (moinsChere ? " (la moins chère coûte " + pacPrix(moinsChere) + ")" : "") + "."
+      + (_pacBudget == null ? " Saisis ton versement dans Dépôts, ou tape un budget ci-dessus." : "")]);
+  }
+  plan.lignes.filter(l => l.surpoids).forEach(l => A.push(["warn",
+    l.label + " est au-dessus de sa cible (" + pacPct(l.avant) + " % pour " + pacPct(l.cible) + " %) : pas d'achat ce mois-ci."]));
+  const derive = plan.lignes.filter(l => l.ecart != null && Math.abs(l.ecart) > cfg.seuilDerive);
+  if (derive.length)
+    A.push(["warn", "L'apport ne suffit pas à rééquilibrer : envisager un arbitrage. Après achat, "
+      + derive.map(l => l.label + " reste à " + pacPct(l.apres) + " % pour " + pacPct(l.cible) + " %").join(", ")
+      + " (plus de " + pacPct(cfg.seuilDerive) + " points d'écart). Information seulement : aucune vente n'est proposée."]);
+  const sc = plan.ordres.filter(od => od.scinde);
+  if (sc.length)
+    A.push(["info", "Ordre " + sc[0].label + " scindé en deux pour profiter de l'ordre gratuit : "
+      + sc[0].n + " parts d'abord (gratuit, sous " + pacEur(cfg.seuilGratuit) + "), puis " + sc[1].n + " parts payantes."]);
+  return {...base, plan};
+}
+
+/* ── Affichage ── */
+function pacRender() {
+  const res = document.getElementById("pac-res");
+  if (!res) return;
+  const r = pacPlanCourant();
+  if (!r) return;
+  _pacDernier = r;
+
+  // Contrôles : on ne réécrit pas le budget pendant qu'on le tape
+  const inp = document.getElementById("pac-budget");
+  if (inp && document.activeElement !== inp) inp.value = r.budget;
+  document.getElementById("pac-especes").innerHTML = "Espèces du PEA : " + pacEur(r.especes)
+    + (_pacBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="pacSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux espèces</button>` : "");
+  document.getElementById("pac-gratuit").checked = r.g.utilise;
+  const tx = r.g.tx;
+  const txLbl = tx ? (tx.type === "Vente" ? "vente " : "achat ") + (tx.asset || "").replace(/^[A-Z]+:/, "")
+    + " du " + new Date(normDate(tx.date) + "T00:00:00").toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"}) : "";
+  document.getElementById("pac-gratuit-info").textContent = r.g.force
+    ? "réglé à la main pour ce mois" + (tx ? " (détecté : " + txLbl + ")" : "")
+    : (tx ? "détecté : " + txLbl : "aucun ordre sans frais ce mois-ci");
+  document.getElementById("pac-cours").textContent = r.coursInfo ? r.coursInfo.txt : "";
+
+  const ic = { info: "info", warn: "warning", err: "warning-octagon" };
+  const alerte = (k, t) => `<div class="pac-alert ${k}"><i class="ph ph-${ic[k]}"></i><span>${escHtml(t)}</span></div>`;
+  if (r.bloque) {
+    res.innerHTML = `<div class="pac-alerts">${alerte("err", r.bloque)}</div>`;
+    return;
+  }
+  const p = r.plan;
+  // Un ETF acheté en deux ordres (scission) : ses poids sur la première ligne seulement
+  const vu = new Set();
+  const poids = l => `${pacPct(l.avant)} → <b>${pacPct(l.apres)}</b> %`;
+  const ligneDe = key => p.lignes.find(l => l.key === key);
+  const rows = p.ordres.map((od, i) => {
+    const l = ligneDe(od.key), prem = !vu.has(od.key);
+    vu.add(od.key);
+    const frais = od.gratuit ? `<span class="m-tag pos">gratuit, à passer en premier</span>` : pacEur(od.frais);
+    return `<tr>
+      <td style="text-align:left">${i + 1}</td>
+      <td style="text-align:left;font-weight:600">${escHtml(od.label)}${od.scinde ? ` <span class="m-tag">scindé</span>` : ""}</td>
+      <td>${od.n}</td><td>${pacPrix(od.pl)}</td><td>${pacEur(od.montant)}</td><td>${frais}</td>
+      <td>${prem ? poids(l) : ""}</td><td>${prem ? pacPct(l.cible) + " %" : ""}</td>
+      <td>${prem ? pacPct(l.ecart, true) : ""}</td>
+      <td><button class="btn btn-sm btn-ghost" onclick="pacSaisir(${i})" title="Enregistrer l'achat une fois exécuté"><i class="ph ph-note-pencil"></i> Saisir</button></td>
+    </tr>`;
+  });
+  p.lignes.filter(l => !vu.has(l.key)).forEach(l => rows.push(`<tr class="pac-muted">
+      <td style="text-align:left">—</td>
+      <td style="text-align:left;font-weight:600">${escHtml(l.label)}${l.surpoids ? ` <span class="m-tag neg">surpoids</span>` : ""}</td>
+      <td>0</td><td>${pacPrix(l.pl)}</td><td>—</td><td>—</td>
+      <td>${poids(l)}</td><td>${pacPct(l.cible)} %</td><td>${pacPct(l.ecart, true)}</td><td></td>
+    </tr>`));
+  const hors = r.horsAlloc.length
+    ? `<div class="pac-dim" style="margin-top:10px">Hors allocation, non comptées dans les poids : `
+      + r.horsAlloc.map(h => escHtml(h.name) + " (" + h.qty.toLocaleString("fr-FR") + ")").join(", ") + "</div>"
+    : "";
+  res.innerHTML = (r.alertes.length ? `<div class="pac-alerts">${r.alertes.map(a => alerte(a[0], a[1])).join("")}</div>` : "")
+    + `<div class="tw"><table>
+      <thead><tr><th style="text-align:left">N°</th><th style="text-align:left">ETF</th><th>Parts</th><th>Prix limite</th>
+        <th>Montant</th><th>Frais</th><th>Poids actuel → après</th><th>Cible</th><th title="Écart à la cible après achat">Écart après (pts)</th><th></th></tr></thead>
+      <tbody>${rows.join("")}</tbody></table></div>
+    <div class="pac-tot">
+      <span>Investi<b>${pacEur(p.investi)}</b></span>
+      <span>Frais<b>${pacEur(p.frais)}</b></span>
+      <span>Total débité<b>${pacEur(p.total)}</b></span>
+      <span>Reliquat, à reporter au mois prochain<b>${pacEur(p.reliquat)}</b></span>
+    </div>${hors}`;
+}
+
+function pacSetBudget(v) {
+  _pacBudget = (v === "" || v == null) ? null : Math.max(0, pacNum(v) || 0);
+  pacRender();
+}
+function pacSetGratuit(coche) {
+  const cfg = pacCfg();
+  const tx = pacGratuitDetecte(cfg.seuilGratuit);
+  cfg.gratuitForce = { mois: todayISO().slice(0, 7), utilise: !!coche, vu: tx ? tx.id : null };
+  pacSaveCfg(cfg);
+  pacRender();
+}
+
+function pacToggleCfg() {
+  const el = document.getElementById("pac-cfg");
+  const ouvrir = el.style.display === "none";
+  el.style.display = ouvrir ? "" : "none";
+  if (ouvrir) pacRenderCfg();
+}
+function pacRenderCfg() {
+  const el = document.getElementById("pac-cfg");
+  if (!el) return;
+  const cfg = pacCfg();
+  const champ = (id, lbl, val, pas) => `<div class="fg"><label>${lbl}</label>
+    <input type="number" step="${pas}" min="0" value="${val}" onchange="pacSetParam('${id}', this)"></div>`;
+  el.innerHTML = `<div class="tw"><table>
+      <thead><tr><th style="text-align:left">Ticker</th><th style="text-align:left">Libellé</th><th>Cible (%)</th><th></th></tr></thead>
+      <tbody>${cfg.cibles.map((c, i) => `<tr>
+        <td><input value="${escHtml(c.ticker)}" placeholder="EPA:WPEA" onchange="pacSetCible(${i}, 'ticker', this)"></td>
+        <td><input value="${escHtml(c.label || "")}" placeholder="WPEA" onchange="pacSetCible(${i}, 'label', this)"></td>
+        <td><input type="number" step="0.1" min="0" max="100" value="${c.pct}" onchange="pacSetCible(${i}, 'pct', this)"></td>
+        <td><button class="m-iconbtn danger" title="Supprimer cette ligne" aria-label="Supprimer cette ligne" onclick="pacDelCible(${i})"><i class="ph ph-trash"></i></button></td>
+      </tr>`).join("")}</tbody></table></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <button class="btn btn-sm btn-ghost" onclick="pacAddCible()"><i class="ph ph-plus"></i> Ajouter une ligne</button>
+      <span class="pac-dim">Total des cibles : <b id="pac-cfg-somme"></b></span>
+    </div>
+    <div class="fg-row">
+      ${champ("seuilGratuit", "Ordre gratuit jusqu'à (€)", cfg.seuilGratuit, "1")}
+      ${champ("taux", "Courtage (%, plafonné à 0,5)", cfg.taux, "0.01")}
+    </div>
+    <div class="fg-row">
+      ${champ("marge", "Marge du prix limite (%)", cfg.marge, "0.1")}
+      ${champ("seuilDerive", "Alerte de dérive (points)", cfg.seuilDerive, "0.5")}
+    </div>`;
+  pacMajSomme();
+}
+/* Le total des cibles sous le tableau, sans redessiner les champs qu'on remplit */
+function pacMajSomme() {
+  const b = document.getElementById("pac-cfg-somme");
+  if (!b) return;
+  const somme = pacCfg().cibles.reduce((s, c) => s + (Number(c.pct) || 0), 0);
+  b.textContent = pacPct(somme) + " %";
+  b.className = Math.abs(somme - 100) > 1e-6 ? "c-r" : "";
+}
+function pacSetParam(id, el) {
+  const cfg = pacCfg();
+  const n = pacNum(el.value);
+  if (n == null || n < 0) { showToastModern("Valeur invalide : un nombre positif", "warn"); el.value = cfg[id]; return; }
+  cfg[id] = n;
+  pacSaveCfg(cfg);
+  pacRender();
+}
+function pacSetCible(i, champ, el) {
+  const cfg = pacCfg();
+  const c = cfg.cibles[i];
+  if (!c) return;
+  if (champ === "ticker") {
+    const tk = normalizeTicker(el.value || "");
+    if (tk && cfg.cibles.some((x, j) => j !== i && x.ticker === tk)) {
+      showToastModern(tk + " est déjà une ligne cible", "warn"); el.value = c.ticker; return;
+    }
+    c.ticker = el.value = tk;
+  } else if (champ === "pct") {
+    const n = pacNum(el.value);
+    if (n == null || n < 0 || n > 100) { showToastModern("Cible : un pourcentage entre 0 et 100", "warn"); el.value = c.pct; return; }
+    c.pct = n;
+  } else {
+    c.label = String(el.value || "").trim();
+  }
+  pacSaveCfg(cfg);
+  pacMajSomme();
+  pacRender();
+  if (champ === "ticker" && c.ticker) applyCoursData();   // le cours d'une nouvelle ligne
+}
+function pacAddCible() {
+  const cfg = pacCfg();
+  cfg.cibles.push({ ticker: "", label: "", pct: 0 });
+  pacSaveCfg(cfg);
+  pacRenderCfg();
+  pacRender();
+}
+function pacDelCible(i) {
+  const cfg = pacCfg();
+  cfg.cibles.splice(i, 1);
+  pacSaveCfg(cfg);
+  pacRenderCfg();
+  pacRender();
+}
+
+async function pacCopier() {
+  const r = _pacDernier;
+  if (!r || r.bloque || !r.plan.ordres.length) { showToastModern("Aucun ordre à copier", "warn"); return; }
+  const txt = r.plan.ordres.map((od, i) => (i + 1) + ". " + od.label + " : " + od.n + " parts, prix limite "
+    + pacPrix(od.pl).replace(" ", " ") + (od.gratuit ? " (ordre gratuit, à passer en premier)" : "")).join("\n");
+  try {
+    await navigator.clipboard.writeText(txt);
+    showToastModern("Plan copié dans le presse-papiers", "ok");
+  } catch (e) {
+    // Le presse-papiers peut être refusé selon le moteur : repli sur la copie classique
+    const ta = document.createElement("textarea");
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    showToastModern(ok ? "Plan copié dans le presse-papiers" : "Copie refusée par le système", ok ? "ok" : "warn");
+  }
+}
+
+/* « Saisir » : la fenêtre « Ajouter une position » déjà remplie. Elle crée la
+   ligne si on ne la détient pas encore (PEMS, PNAS), sinon ajoute l'achat à
+   celle qui existe. Rien n'est enregistré sans « Enregistrer ». */
+function pacSaisir(i) {
+  const od = _pacDernier && _pacDernier.plan && _pacDernier.plan.ordres[i];
+  if (!od) return;
+  openAddPos();
+  const pos = S.positions.find(p => p.ticker === od.key);
+  const w = (S.wishlist || []).find(x => x.ticker === od.key);
+  document.getElementById("f-name").value   = pos ? pos.name : (w ? w.name : od.label);
+  document.getElementById("f-ticker").value = od.key;
+  document.getElementById("f-type").value   = pos ? (pos.type || "etf") : (w && w.wtype === "action" ? "action" : "etf");
+  document.getElementById("f-sector").value = pos ? (pos.sector || "") : ((w && w.sector) || "etf");
+  document.getElementById("f-prix").value   = pacR3(od.pl);
+  document.getElementById("f-qty").value    = od.n;
+  document.getElementById("f-frais").value  = od.gratuit ? 0 : pacR2(od.frais);
+  document.querySelector("#ov-pos h2").textContent = "Saisir l'achat de " + od.label;
+  updatePosRecap();
+  showToastModern("Corrige le cours et les frais réels de l'avis d'opéré avant d'enregistrer", "info");
+}
+
 // Wire up live PRU preview after DOM ready
 document.addEventListener("DOMContentLoaded", ()=>{
   ["f-prix","f-qty","f-frais"].forEach(id=>{
@@ -10770,6 +11401,7 @@ const CARD_ITEMS = [
   { id: "card-wish-action",      label: "Wishlist · Actions" },
   { id: "card-wish-etf",         label: "Wishlist · ETF" },
   { id: "card-dep",              label: "Dépôts · Tableau" },
+  { id: "card-pac",              label: "Stratégie · Prochain achat" },
   { id: "card-strat",            label: "Stratégie · Règles" },
   { id: "card-sim-dca",          label: "Simulateurs · Projection versements" },
   { id: "card-sim-goal",         label: "Simulateurs · Objectifs" },
@@ -18436,6 +19068,20 @@ const DASH_WIDGETS = [
       return { lbl: "Valeur du PEA", val: eur(pv.total),
                sub: "lignes + espèces", go: "Vue d'ensemble",
                viz: dashPeaSpark("val") };
+    },
+  },
+  {
+    // Le premier ordre du plan de l'onglet Stratégie (pacPlanCourant, le même
+    // calcul que la carte) ; la tuile disparaît quand il n'y a rien à acheter.
+    id: "prochain-achat", label: "Prochain achat", module: "PEA", tab: "strat",
+    render() {
+      const r = typeof pacPlanCourant === "function" ? pacPlanCourant() : null;
+      if (!r || r.bloque || !r.plan.ordres.length) return null;
+      const od = r.plan.ordres[0], n = r.plan.ordres.length;
+      return { lbl: "Prochain achat", val: od.n + " × " + od.label,
+               sub: "prix limite " + pacPrix(od.pl) + (od.gratuit ? ", ordre gratuit" : "")
+                    + (n > 1 ? " · " + n + " ordres, " + pacEur(r.plan.total).replace(" €", " €") + " au total" : ""),
+               go: "Voir le plan" };
     },
   },
   {
