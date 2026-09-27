@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.2.9**
+**Version actuelle : 4.3.0**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -293,7 +293,17 @@ Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.
   résistant à un renommage), puis 5 secondes de plus pour que Windows libère les
   fichiers (le dossier `_MEI*` jusqu'à la 4.2.7, les DLL de `_internal/` depuis),
   puis lance `Setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES`
-* L'app se ferme, l'installeur tourne en silence, l'utilisateur relance manuellement
+* L'app se ferme, l'installeur tourne en silence, puis **rouvre l'app tout seul**
+  (4.3.0) : entrée `[Run]` de `installer.iss` avec `Check: WizardSilent`, qui ne
+  s'applique qu'en `/VERYSILENT`, donc qu'aux mises à jour. L'installation manuelle
+  garde sa case « Lancer Pilote » (`postinstall skipifsilent`) : les deux entrées
+  s'excluent, jamais de double lancement. La relance est dans le **Setup** et pas
+  dans le batch d'`updater.py` : c'est le Setup de la nouvelle version qui
+  s'exécute, alors que le batch est écrit par l'ancienne. Elle vaut donc dès la
+  mise à jour qui l'apporte. L'app relancée hérite de l'environnement de l'ancienne
+  (`_PYI_ARCHIVE_FILE`, `_PYI_PARENT_PROCESS_LEVEL`) : testé sans conséquence en
+  onedir avec PyInstaller 6.11.1. En onefile, il faudrait
+  `PYINSTALLER_RESET_ENVIRONMENT=1` (encore une raison de ne pas y revenir).
 * Logs : `%APPDATA%\Pilote\update.log` et `%TEMP%\pilote_update\update_bat.log`
 
 **Solution de secours quand l'API refuse (4.2.5).** Sans jeton, l'API accepte
