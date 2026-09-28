@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.1**
+**Version actuelle : 4.3.2**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -1019,6 +1019,11 @@ restent en bas.
 * `_wishTer(w)` décide de la valeur, pour l'affichage comme pour le tri.
 * Saisie refusée hors de 0 à 5 % : protège de « 25 » tapé pour 0,25 %.
 * `fetchKeystats()` interroge désormais aussi les ETF de la wishlist.
+* **Noms des ETF** : choisir un ETF dans la recherche recopie le nom de l'index
+  `PEA_ETF_BOOST` (server.py) dans la wishlist. Il donnait de faux émetteurs
+  (PEMS noté BNP, etc.) : chaque ligne a été revérifiée sur justETF le
+  28/09/2026 (4.3.2). Toute nouvelle ligne se vérifie de la même façon :
+  fiche justETF, cotation Euronext Paris sous ce ticker, éligibilité PEA.
 
 ## Prochain achat (onglet Stratégie, `#card-pac`)
 
