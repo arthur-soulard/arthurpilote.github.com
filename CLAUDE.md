@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.2**
+**Version actuelle : 4.3.3**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -634,9 +634,24 @@ API Python : `load_patrimoine()` / `save_patrimoine()` — les deux renvoient
    prend le relevé le plus récent *à cette date ou avant*). Sans ça, oublier
    une ligne ferait s'effondrer le patrimoine ce mois-là.
 3. **Le PEA et le prêt ne se saisissent pas** : comptes marqués `auto`,
-   pré-remplis par `paValeurAuto()` depuis `window._peaPv.total` et `PR.pret`.
+   pré-remplis par `paValeurAuto()` depuis `window._peaPv.total` et l'onglet Prêt.
    Pas de double saisie. `_peaPv.total` est posé par `renderMetrics()` — ne pas
    recalculer la valorisation du PEA en parallèle.
+
+**Dette du prêt = versements reçus − remboursements** (`PR.versements` et
+`PR.remboursements` datés d'aujourd'hui ou avant), et non plus le montant emprunté
+moins un échéancier calculé au calendrier. Changé le 28/09/2026 : le prêt d'Arthur
+(30 000 €, en deux tranches de 15 000 €) comptait 30 000 € de dette dès sa
+configuration, avant tout versement, et le patrimoine baissait d'un argent qui
+n'était encore sur aucun compte. Une tranche non reçue n'est ni une dette ni un
+avoir. La tuile d'accueil « Prêt étudiant » (capital restant dû) lit la même valeur.
+
+**Pas de doublon avec le prêt.** L'argent du prêt est compté une fois en avoir, là
+où il se trouve (ligne PEA = PEA entier, parts du prêt comprises ; Livret A, AV,
+compte courant saisis au solde réel de la banque), et une fois en dette. La
+« valeur du portefeuille » de l'onglet Prêt n'est ajoutée nulle part. Corollaire :
+l'argent du prêt qui attend sur un compte non suivi (compte courant sans ligne)
+manque aux avoirs alors que la dette est là.
 
 Seul le type `dette` compte négativement. Un compte `auto` ne peut pas être
 supprimé : il serait recréé au chargement suivant.
@@ -996,6 +1011,8 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
 * pea.ventes  : `{id, date, ticker, quantite, cours_vente, montant (crédité)}`
   → PRU pondéré sur les achats, plus-value réalisée = crédité − qté × PRU,
     plus-value latente sur les parts restantes
+  → **ces deux listes ne se remplissent plus** : voir ci-dessous. Elles restent lues
+    pour un ordre qui y aurait été saisi avant.
 * av.contrats : `[{id, label, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
   → MULTI-CONTRATS, chacun avec ses propres taux
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
@@ -1003,6 +1020,29 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
 
 Les cours passent par le serveur local (`/cours`), pas de second proxy Yahoo.
+
+### PEA du prêt = ordres du PEA cochés « argent du prêt »
+
+On n'a qu'un PEA : les achats faits avec le prêt en font partie. Avant, il fallait les
+saisir deux fois (onglet PEA et onglet Prêt). Désormais un ordre n'existe **qu'une
+fois**, dans `S.transactions`, avec `pret: true` quand la case « Payé avec l'argent du
+prêt étudiant » est cochée (fenêtres `ov-pos` et `ov-tx`, champs `f-pret` / `t-pret`,
+absente pour un dividende). `prPeaOrdres()` lit ces transactions et les convertit
+(`prYahoo` : `EPA:WPEA` → `WPEA.PA` ; montant = qté × cours ± frais, comme
+`computeCash`). **Aucune copie dans `pret.json`** : pas de doublon possible, et une
+modification, un décochage, une suppression ou le bouton Retour se voient partout.
+
+* Les ordres non cochés n'entrent jamais dans les calculs du prêt.
+* « + Achat » / « Vente » de l'onglet Prêt ouvrent les fenêtres du PEA, case cochée
+  (`prAchatViaPea`, `prVenteViaPea`) ; le crayon d'un ordre ouvre `editTx`. Pas de
+  corbeille côté Prêt : supprimer un ordre du PEA depuis là surprendrait.
+* Vente cochée : refusée au-delà des parts achetées avec le prêt (`prVentePretOk`).
+* `persist()` appelle `prRefreshIfVisible()` : l'onglet Prêt ouvert suit le PEA.
+* Étiquette « Prêt » sur la ligne dans PEA › Transactions.
+* Patrimoine : rien ne change et rien ne doit changer. La ligne PEA vaut le PEA
+  **entier** (`_peaPv.total`), parts du prêt comprises ; la « valeur du portefeuille »
+  du prêt n'est ajoutée nulle part. Ne jamais créer de compte « placements du prêt » :
+  PEA, AV et Livret A sont déjà comptés par leurs propres lignes.
 
 ## Wishlist : frais des ETF
 

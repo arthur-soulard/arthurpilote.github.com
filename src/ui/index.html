@@ -1334,6 +1334,14 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 .pr-split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 980px) { .pr-split { grid-template-columns: 1fr; } }
 .pr-chart { position: relative; height: 290px; }
+/* Case « argent du prêt » des fenêtres d'ordre du PEA : texte courant, pas un
+   titre de champ (même correction que label.sv-check face à `.fg label`). */
+label.pr-check {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 500; color: var(--txt2);
+  text-transform: none; letter-spacing: normal; margin-bottom: 0; cursor: pointer;
+}
+.pr-check input { width: auto; margin: 0; }
 
 /* ══════════════════════════════════════════════════
    Page d'accueil
@@ -4647,6 +4655,10 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     <div class="fg-row">
       <div class="fg"><label>Date ex-dividende (optionnel)</label><input id="f-exdiv" placeholder="optionnel"></div>
     </div>
+    <div class="fg">
+      <label class="pr-check" title="L'achat apparaîtra aussi dans Prêt étudiant › PEA, sans y être saisi une seconde fois">
+        <input type="checkbox" id="f-pret"> Payé avec l'argent du prêt étudiant</label>
+    </div>
     <!-- Récapitulatif PRU calculé en direct -->
     <div id="pos-recap" style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.7rem .9rem;font-size:11px;font-family:var(--mono);color:var(--txt2);display:none">
       <span id="pos-recap-txt"></span>
@@ -4672,13 +4684,17 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     </div>
     <div class="fg-row">
       <div class="fg"><label>Type</label>
-        <select id="t-type"><option>Achat</option><option>Vente</option><option>Dividende</option></select>
+        <select id="t-type" onchange="_txPretSync()"><option>Achat</option><option>Vente</option><option>Dividende</option></select>
       </div>
       <div class="fg"><label>Cours (EUR)</label><input id="t-cours" type="number" step="0.0001" placeholder="93.88"></div>
     </div>
     <div class="fg-row">
       <div class="fg"><label>Quantité</label><input id="t-qty" type="number" step="0.001" placeholder="2"></div>
       <div class="fg"><label>Frais (EUR)</label><input id="t-frais" type="number" step="0.01" placeholder="0.70"></div>
+    </div>
+    <div class="fg" id="t-pret-fg">
+      <label class="pr-check" title="L'ordre apparaîtra aussi dans Prêt étudiant › PEA, sans y être saisi une seconde fois">
+        <input type="checkbox" id="t-pret"> <span id="t-pret-lbl">Payé avec l'argent du prêt étudiant</span></label>
     </div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-tx')">Annuler</button>
@@ -5092,6 +5108,9 @@ function persist(badge) {
   // Sync vers le backend Python (debounce 400 ms)
   _syncToPython();
   if (badge !== false) flash();
+  // Les ordres payés avec le prêt vivent ici : l'onglet Prêt ouvert suit
+  // (saisie depuis ses boutons, bouton Retour)
+  if (typeof prRefreshIfVisible === "function") prRefreshIfVisible();
 }
 
 let _pySyncTimer = null;
@@ -6954,12 +6973,15 @@ function renderTx() {
     const typeBadge = isSell
       ? `<span class="badge" style="background:var(--r2);color:var(--r)">${t.type}</span>`
       : `<span class="badge be">${t.type}</span>`;
+    const pretBadge = t.pret
+      ? `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Payé avec l'argent du prêt étudiant">Prêt</span>`
+      : "";
     const txSectorId   = sectorOf(t.asset);
     const txSectorHtml = txSectorId ? sectorBadgeHtml(txSectorId) : "";
     return `<div class="txr" style="${isFuture ? "opacity:.6;border-left:3px solid var(--a);padding-left:9px" : ""}">
       <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;min-width:86px">${t.date}</span>
       ${futureBadge}<span style="font-weight:600;font-size:12px;min-width:80px">${label}</span>
-      ${typeBadge}${txSectorHtml}
+      ${typeBadge}${pretBadge}${txSectorHtml}
       <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?t.qty+"\u00A0\u00D7\u00A0"+eur(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
       <span style="font-family:var(--mono);font-weight:700;font-size:12px;min-width:80px;text-align:right">${tot?eur(tot):""}${pvHtml}</span>
       ${ebtn("editTx",t.id)}${dbtn("delTx",t.id)}
@@ -8232,7 +8254,7 @@ function closeOv(id) {
   document.getElementById(id).classList.remove("open");
   if (id==="ov-pos") {
     /* Restaurer l'état du modal position pour la prochaine ouverture */
-    ["f-prix","f-qty","f-frais","f-date"].forEach(fid=>{
+    ["f-prix","f-qty","f-frais","f-date","f-pret"].forEach(fid=>{
       const el=document.getElementById(fid); if(el){ el.closest(".fg").style.display=""; }
     });
     const tkEl=document.getElementById("f-ticker");
@@ -8379,6 +8401,7 @@ function openAddPos() {
   });
   document.getElementById("f-type").value="action";
   document.getElementById("f-date").value=new Date().toISOString().slice(0,10);
+  document.getElementById("f-pret").checked=false;
   document.getElementById("pos-recap").style.display="none";
   document.querySelector("#ov-pos h2").textContent = "Ajouter une position";
   const btn = document.querySelector("#ov-pos .btn-primary");
@@ -8446,7 +8469,7 @@ function savePos() {
   }
 
   // Créer la transaction associée
-  S.transactions.push({
+  const tx = {
     id:    NID.tx++,
     date,
     asset: ticker,
@@ -8454,7 +8477,10 @@ function savePos() {
     cours: prix,
     qty,
     frais
-  });
+  };
+  // Payé avec le prêt : le module Prêt étudiant lit ce drapeau (prPeaOrdres)
+  if (document.getElementById("f-pret").checked) tx.pret = true;
+  S.transactions.push(tx);
 
   persist();
   closeOv("ov-pos");
@@ -8480,8 +8506,8 @@ function editPos(id) {
   tkEl.value    = p.ticker;
   tkEl.readOnly = true;
   tkEl.style.opacity = "0.5";
-  /* Masquer les champs transactionnels (prix, qty, frais, date) */
-  ["f-prix","f-qty","f-frais","f-date"].forEach(id=>{
+  /* Masquer les champs transactionnels (prix, qty, frais, date, prêt) */
+  ["f-prix","f-qty","f-frais","f-date","f-pret"].forEach(id=>{
     const el=document.getElementById(id); if(el){ el.closest(".fg").style.display="none"; }
   });
   document.getElementById("pos-recap").style.display="none";
@@ -8514,11 +8540,32 @@ function delPos(id) {
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
 
+/* Case « argent du prêt » : un dividende n'en a pas, et pour une vente ce sont
+   les parts achetées avec le prêt qu'on vend. */
+function _txPretSync() {
+  const type = document.getElementById("t-type").value;
+  document.getElementById("t-pret-fg").style.display = type === "Dividende" ? "none" : "";
+  document.getElementById("t-pret-lbl").textContent = type === "Vente"
+    ? "Vente de parts achetées avec le prêt étudiant"
+    : "Payé avec l'argent du prêt étudiant";
+}
+/* Drapeau `pret` de la transaction saisie, ou null si la saisie est refusée
+   (vente de plus de parts que le prêt n'en détient). */
+function _txPretInput(asset, excludeId) {
+  const type = document.getElementById("t-type").value;
+  if (type === "Dividende" || !document.getElementById("t-pret").checked) return false;
+  const qty = parseFloat(document.getElementById("t-qty").value)||0;
+  if (type === "Vente" && !prVentePretOk(asset, qty, excludeId)) return null;
+  return true;
+}
+
 /* Modal Transaction */
 function openAddTx() {
   document.getElementById("t-date").value=new Date().toISOString().slice(0,10);
   ["t-cours","t-qty","t-frais"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("t-type").value="Achat";
+  document.getElementById("t-pret").checked=false;
+  _txPretSync();
   // Populate ticker select
   const sel = document.getElementById("t-asset");
   sel.innerHTML = '<option value="">— Choisir —</option>' +
@@ -8529,14 +8576,18 @@ function saveTx() {
   const date  = document.getElementById("t-date").value;
   const asset = document.getElementById("t-asset").value;
   if (!date||!asset) return;
+  const pret = _txPretInput(asset, null);
+  if (pret === null) return;
   pushUndo();
-  S.transactions.push({
+  const tx = {
     id: NID.tx++, date, asset,
     type:  document.getElementById("t-type").value,
     cours: parseFloat(document.getElementById("t-cours").value)||0,
     qty:   parseFloat(document.getElementById("t-qty").value)||0,
     frais: parseFloat(document.getElementById("t-frais").value)||0
-  });
+  };
+  if (pret) tx.pret = true;
+  S.transactions.push(tx);
   persist(); closeOv("ov-tx"); renderPositions(); renderTx();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
@@ -8553,6 +8604,8 @@ function editTx(id) {
   document.getElementById("t-cours").value = t.cours!=null?t.cours:"";
   document.getElementById("t-qty").value   = t.qty!=null?t.qty:"";
   document.getElementById("t-frais").value = t.frais!=null?t.frais:"";
+  document.getElementById("t-pret").checked = !!t.pret;
+  _txPretSync();
   document.querySelector("#ov-tx h2").textContent = "Modifier la transaction";
   const btn = document.querySelector("#ov-tx .btn-primary");
   btn.textContent="Mettre à jour"; btn.onclick=()=>saveEditTx(id);
@@ -8562,6 +8615,8 @@ function saveEditTx(id) {
   const asset = document.getElementById("t-asset").value;
   if (!date||!asset) return;
   const idx = S.transactions.findIndex(x=>x.id===id); if(idx<0) return;
+  const pret = _txPretInput(asset, id);
+  if (pret === null) return;
   pushUndo();
   S.transactions[idx] = {
     ...S.transactions[idx], date, asset,
@@ -8570,6 +8625,7 @@ function saveEditTx(id) {
     qty:   parseFloat(document.getElementById("t-qty").value)||0,
     frais: parseFloat(document.getElementById("t-frais").value)||0
   };
+  if (pret) S.transactions[idx].pret = true; else delete S.transactions[idx].pret;
   persist(); closeOv("ov-tx"); renderPositions(); renderTx();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
@@ -14806,6 +14862,54 @@ function prAllFrais() {
   return all.sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 
+/* ── Ordres du PEA payés avec le prêt ────────────────────────────────────── */
+
+/** « EPA:WPEA » (notation du PEA) → « WPEA.PA » (notation Yahoo de ce module),
+    comme to_yahoo() dans server.py. */
+function prYahoo(asset) {
+  const t = String(asset || "").trim().toUpperCase();
+  const m = { "EPA:": ".PA", "AMS:": ".AS", "ETR:": ".DE", "LON:": ".L" };
+  for (const p in m) if (t.startsWith(p)) return t.slice(p.length) + m[p];
+  return t;
+}
+
+/**
+ * Achats et ventes du PEA faits avec l'argent du prêt.
+ * Un tel ordre n'existe qu'UNE fois : dans les transactions du PEA, case
+ * « argent du prêt » cochée (`pret: true`). Ce module le lit sans le recopier,
+ * donc sans doublon possible, et une modification ou une suppression dans le
+ * PEA se voit ici tout de suite. Les ordres non cochés n'entrent jamais dans
+ * les calculs du prêt. S'y ajoutent les ordres saisis directement dans ce
+ * module avant qu'il lise le PEA (PR.pea.achats / ventes), s'il y en a.
+ */
+function prPeaOrdres() {
+  const achats = ((PR && PR.pea.achats) || []).slice();
+  const ventes = ((PR && PR.pea.ventes) || []).slice();
+  const txs = (typeof S !== "undefined" && S && S.transactions) || [];
+  for (const t of txs) {
+    if (!t.pret || (t.type !== "Achat" && t.type !== "Vente")) continue;
+    const brut = prN(t.qty) * prN(t.cours), frais = prN(t.frais);
+    const o = { id: "pea-" + t.id, peaTxId: t.id, date: normDate(t.date),
+                ticker: prYahoo(t.asset), quantite: prN(t.qty) };
+    // Mêmes montants que la trésorerie du PEA (computeCash) : frais compris
+    if (t.type === "Achat") achats.push(Object.assign(o, { cours_achat: prN(t.cours), montant: brut + frais }));
+    else                    ventes.push(Object.assign(o, { cours_vente: prN(t.cours), montant: brut - frais }));
+  }
+  return { achats, ventes };
+}
+
+/** Vente cochée « prêt » dans le PEA : pas plus de parts que le prêt n'en a
+    achetées sur ce titre (hors la transaction en cours de modification). */
+function prVentePretOk(asset, qty, excludeTxId) {
+  const t = prYahoo(asset), skip = "pea-" + excludeTxId;
+  const o = prPeaOrdres();
+  const parts = o.achats.filter(a => a.ticker === t && a.id !== skip).reduce((s, a) => s + prN(a.quantite), 0)
+              - o.ventes.filter(v => v.ticker === t && v.id !== skip).reduce((s, v) => s + prN(v.quantite), 0);
+  if (qty <= parts + 0.00001) return true;
+  showToastModern(`Le prêt ne détient que ${prNum(Math.max(0, parts), 4)} parts de ${asset}`, "err");
+  return false;
+}
+
 /* ── Calcul global ───────────────────────────────────────────────────────── */
 
 function prOverview() {
@@ -14813,17 +14917,18 @@ function prOverview() {
   const remb_total   = prSumBy(PR.remboursements, "montant");
   const allFrais     = prAllFrais();
   const frais_banque = prSumBy(allFrais, "montant");
+  const ordres       = prPeaOrdres();
 
   // Regroupement achats + ventes par ticker
   const byTicker = {};
   const slot = t => (byTicker[t] = byTicker[t] || { ticker: t, debite: 0, qteA: 0, investA: 0, qteV: 0, credite: 0 });
-  for (const a of (PR.pea.achats || [])) {
+  for (const a of ordres.achats) {
     const e = slot((a.ticker || "").toUpperCase() || "—");
     e.debite  += prN(a.montant);
     e.qteA    += prN(a.quantite);
     e.investA += prN(a.quantite) * prN(a.cours_achat);
   }
-  for (const v of (PR.pea.ventes || [])) {
+  for (const v of ordres.ventes) {
     const e = slot((v.ticker || "").toUpperCase() || "—");
     e.qteV    += prN(v.quantite);
     e.credite += prN(v.montant);
@@ -14905,7 +15010,7 @@ function prOverview() {
 
 function prTickers() {
   const set = new Set();
-  for (const a of (PR.pea.achats || [])) {
+  for (const a of prPeaOrdres().achats) {
     const t = (a.ticker || "").trim().toUpperCase();
     if (t) set.add(t);
   }
@@ -15069,8 +15174,8 @@ function prRenderPEA(o) {
 
   const actions = `<div style="display:flex;gap:6px">
     <button class="btn btn-sm btn-ghost" onclick="prRefreshQuotes(false)"><i class="ph ph-arrows-clockwise"></i> Cours</button>
-    <button class="btn btn-sm btn-primary" onclick="prPeaModal(null)"><i class="ph ph-plus"></i> Achat</button>
-    <button class="btn btn-sm btn-ghost" onclick="prVenteModal(null)"><i class="ph ph-minus"></i> Vente</button>
+    <button class="btn btn-sm btn-primary" onclick="prAchatViaPea()"><i class="ph ph-plus"></i> Achat</button>
+    <button class="btn btn-sm btn-ghost" onclick="prVenteViaPea()"><i class="ph ph-minus"></i> Vente</button>
   </div>`;
 
   const rows = o.positions.map(p => `
@@ -15086,7 +15191,11 @@ function prRenderPEA(o) {
       <td class="${prCls(p.realise)}">${p.qteV ? prEur(p.realise) : "—"}</td>
     </tr>`).join("");
 
-  let html = prCard("", "Positions", rows
+  let html = `<div class="m-note">Seuls les ordres du PEA faits avec l'argent du prêt comptent ici : ceux où la case
+    « Payé avec l'argent du prêt étudiant » est cochée. Ils ne sont saisis qu'une fois, dans le PEA :
+    « + Achat » et « Vente » ouvrent sa fenêtre, case déjà cochée.</div>`;
+
+  html += prCard("", "Positions", rows
     ? `<div class="tw"><table>
         <thead><tr><th>Position</th><th>Investi</th><th>PRU</th><th>Cours</th><th>Valeur</th><th>+/- value</th><th>Perf.</th><th>Réalisé</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -15099,12 +15208,13 @@ function prRenderPEA(o) {
         </tr></tfoot>
       </table></div>
       <div class="mkpi-sub" style="margin-top:10px">Frais d'ordre cumulés : ${prEur(o.pea_frais)} · Débité au total : ${prEur(o.pea_debite)} · Encaissé : ${prEur(o.pea_credite)}</div>`
-    : prEmpty("Aucun achat enregistré. Clique sur « + Achat » pour commencer."), actions);
+    : prEmpty("Aucun ordre payé avec l'argent du prêt. Clique sur « + Achat », ou coche la case en saisissant un ordre dans le PEA."), actions);
 
   // Historique : achats et ventes fusionnes
+  const po = prPeaOrdres();
   const ordres = []
-    .concat((PR.pea.achats || []).map(a => ({ kind: "achat", o: a })))
-    .concat((PR.pea.ventes || []).map(v => ({ kind: "vente", o: v })))
+    .concat(po.achats.map(a => ({ kind: "achat", o: a })))
+    .concat(po.ventes.map(v => ({ kind: "vente", o: v })))
     .sort((x, y) => String(y.o.date).localeCompare(String(x.o.date)));
 
   html += prCard("", "Historique des ordres", ordres.length
@@ -15122,9 +15232,11 @@ function prRenderPEA(o) {
             <td>${prEur(prN(achat ? r.cours_achat : r.cours_vente))}</td>
             <td class="${achat ? "" : "pos"}">${prEur(prN(r.montant))}</td>
             <td class="${frais > 0.005 ? "neg" : ""}">${prEur(frais)}</td>
-            <td><div class="m-acts">
-              <button class="m-iconbtn" title="Modifier" onclick="${achat ? `prPeaModal('${r.id}')` : `prVenteModal('${r.id}')`}"><i class="ph ph-pencil-simple"></i></button>
-              <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('${achat ? "achat" : "vente"}','${r.id}')"><i class="ph ph-x"></i></button>
+            <td><div class="m-acts">${r.peaTxId != null
+              // Ordre du PEA : il se modifie (ou se décoche) là-bas, pas ici
+              ? `<button class="m-iconbtn" title="Modifier dans le PEA" aria-label="Modifier dans le PEA" onclick="editTx(${r.peaTxId})"><i class="ph ph-pencil-simple"></i></button>`
+              : `<button class="m-iconbtn" title="Modifier" onclick="${achat ? `prPeaModal('${r.id}')` : `prVenteModal('${r.id}')`}"><i class="ph ph-pencil-simple"></i></button>
+              <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('${achat ? "achat" : "vente"}','${r.id}')"><i class="ph ph-x"></i></button>`}
             </div></td></tr>`;
         }).join("")}</tbody></table></div>`
     : prEmpty("Aucun ordre."));
@@ -15355,6 +15467,23 @@ function prConfigModal() {
     }, "Enregistrer");
 }
 
+/* « + Achat » et « Vente » ouvrent les fenêtres d'ordre du PEA, case « argent
+   du prêt » déjà cochée : l'ordre est saisi une fois, et compte à la fois pour
+   le PEA entier et pour la part du prêt (voir prPeaOrdres). */
+function prAchatViaPea() {
+  openAddPos();
+  document.getElementById("f-pret").checked = true;
+  document.querySelector("#ov-pos h2").textContent = "Achat avec l'argent du prêt";
+}
+function prVenteViaPea() {
+  openAddTx();
+  document.getElementById("t-type").value = "Vente";
+  document.getElementById("t-pret").checked = true;
+  _txPretSync();
+  document.querySelector("#ov-tx h2").textContent = "Vente de parts du prêt";
+}
+
+/* Ne sert plus qu'à modifier un achat saisi ici avant la lecture du PEA. */
 function prPeaModal(id) {
   const a = id ? (PR.pea.achats || []).find(x => x.id === id) : null;
   let defTicker = "";
@@ -15641,6 +15770,15 @@ async function prBootstrap() {
   prRefreshQuotes(true);
 }
 
+/* Redessine l'onglet Prêt s'il est ouvert, et va chercher le cours d'un titre
+   que le prêt vient d'acheter. Appelée par persist() à chaque changement du
+   PEA : un ordre coché « prêt » change les chiffres de ce module. */
+function prRefreshIfVisible() {
+  if (!_prBootstrapped || !document.querySelector('[id^="pane-pr-"].active')) return;
+  prRenderAll();
+  if (prTickers().some(t => !_prQuotes[t])) prRefreshQuotes(true);
+}
+
 (function patchGoTabPret() {
   const _prev = window.goTab;
   if (typeof _prev !== "function") return;
@@ -15649,7 +15787,7 @@ async function prBootstrap() {
     _prev.call(this, n);
     if (!PR_TABS.includes(n)) return;
     if (!_prBootstrapped) { prBootstrap(); return; }
-    prRenderAll();
+    prRefreshIfVisible();
   };
 })();
 
@@ -16870,18 +17008,16 @@ function paValeurAuto(compte) {
     return null;
   }
   if (compte.auto === "pret") {
-    // Capital restant dû : montant emprunté moins ce qui a été remboursé
+    // Capital dû aujourd'hui : ce que la banque a VERSÉ moins ce qui a été
+    // remboursé, tels que saisis dans l'onglet Prêt (datés d'aujourd'hui ou
+    // avant). Une tranche pas encore reçue n'est pas une dette : la compter
+    // ferait baisser le patrimoine d'un argent qui n'est encore sur aucun
+    // compte. Mêmes données que l'onglet Prêt, pas de second calcul.
     if (typeof PR !== "undefined" && PR && PR.pret) {
-      const p = PR.pret;
-      const m = Number(p.montant) || 0;
-      const mens = Number(p.mensualite) || 0;
-      if (!m) return null;
-      const debut = p.date_premier_remboursement;
-      if (!debut || !mens) return m;
-      const d0 = new Date(debut + "T00:00:00"), now = new Date();
-      if (isNaN(d0) || now < d0) return m;
-      const nb = (now.getFullYear() - d0.getFullYear()) * 12 + (now.getMonth() - d0.getMonth());
-      return Math.max(0, m - nb * mens);
+      if (!Number(PR.pret.montant)) return null;
+      const auj = prToday();
+      const cumul = l => (l || []).filter(x => x.date && x.date <= auj).reduce((s, x) => s + prN(x.montant), 0);
+      return Math.max(0, Math.round((cumul(PR.versements) - cumul(PR.remboursements)) * 100) / 100);
     }
     return null;
   }
