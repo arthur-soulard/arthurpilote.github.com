@@ -558,34 +558,39 @@ def get_keystats(tickers):
 # Mini-index local des ETF PEA populaires souvent mal classes par Yahoo.
 # Format : {tag de recherche en minuscule: [(symbol, shortname), ...]}
 # Plus le tag est specifique, plus le boost est fort.
+# Le nom choisi est recopie tel quel dans la wishlist : chaque ligne a ete
+# verifiee sur justETF le 28/09/2026 (fiche du fonds, cotation Euronext Paris
+# sous ce ticker, eligibilite PEA). Plusieurs noms etaient faux (WPEA est un
+# iShares, ESE et ETZ des BNP Paribas Easy, PEMS/PE500/PUST des Amundi), PANX
+# n'est pas un Nasdaq-100, MFEC n'est pas un STOXX 600 et PCEH n'existe plus.
+_WORLD = [("WPEA.PA",  "iShares MSCI World Swap PEA UCITS ETF EUR (Acc)"),
+          ("CW8.PA",   "Amundi MSCI World Swap UCITS ETF EUR Acc"),
+          ("EWLD.PA",  "Amundi MSCI World Swap UCITS ETF EUR Dist")]
+_SP500 = [("ESE.PA",   "BNP Paribas Easy S&P 500 UCITS ETF EUR"),
+          ("PE500.PA", "Amundi PEA S&P 500 Screened UCITS ETF Acc"),
+          ("PSP5.PA",  "Amundi PEA S&P 500 UCITS ETF Acc")]
+_CAC   = [("CAC.PA",   "Amundi CAC 40 UCITS ETF Dist")]
+_STOXX = [("ETZ.PA",   "BNP Paribas Easy STOXX Europe 600 UCITS ETF")]
+_EMERG = [("PAEEM.PA", "Amundi PEA Emergent (MSCI Emerging) ESG Transition UCITS ETF Acc"),
+          ("PEMS.PA",  "Amundi PEA Emergent (MSCI Emerging) ESG Transition UCITS ETF S - Acc")]
 PEA_ETF_BOOST = {
-    "msci world":  [("WPEA.PA",  "Amundi PEA MSCI World UCITS ETF"),
-                    ("CW8.PA",   "Amundi MSCI World UCITS ETF"),
-                    ("EWLD.PA",  "Lyxor MSCI World UCITS ETF")],
-    "world":       [("WPEA.PA",  "Amundi PEA MSCI World UCITS ETF"),
-                    ("CW8.PA",   "Amundi MSCI World UCITS ETF"),
-                    ("EWLD.PA",  "Lyxor MSCI World UCITS ETF")],
-    "s&p 500":     [("ESE.PA",   "Amundi S&P 500 UCITS ETF"),
-                    ("PE500.PA", "BNP Paribas Easy S&P 500 UCITS ETF"),
-                    ("PSP5.PA",  "Amundi PEA S&P 500 UCITS ETF")],
-    "s&p":         [("ESE.PA",   "Amundi S&P 500 UCITS ETF"),
-                    ("PE500.PA", "BNP Paribas Easy S&P 500 UCITS ETF"),
-                    ("PSP5.PA",  "Amundi PEA S&P 500 UCITS ETF")],
-    "sp500":       [("ESE.PA",   "Amundi S&P 500 UCITS ETF"),
-                    ("PSP5.PA",  "Amundi PEA S&P 500 UCITS ETF")],
-    "nasdaq":      [("PANX.PA",  "Amundi NASDAQ 100 UCITS ETF"),
-                    ("PUST.PA",  "BNP Paribas Easy NASDAQ 100 UCITS ETF")],
-    "cac 40":      [("CAC.PA",   "Lyxor CAC 40 UCITS ETF"),
-                    ("PCEH.PA",  "Amundi CAC 40 UCITS ETF")],
-    "cac":         [("CAC.PA",   "Lyxor CAC 40 UCITS ETF"),
-                    ("PCEH.PA",  "Amundi CAC 40 UCITS ETF")],
-    "stoxx":       [("ETZ.PA",   "Amundi STOXX Europe 600 UCITS ETF"),
-                    ("MFEC.PA",  "Lyxor STOXX Europe 600 UCITS ETF")],
-    "stoxx 600":   [("ETZ.PA",   "Amundi STOXX Europe 600 UCITS ETF")],
-    "europe 600":  [("ETZ.PA",   "Amundi STOXX Europe 600 UCITS ETF")],
-    "emerging":    [("PAEEM.PA", "Amundi MSCI Emerging Markets UCITS ETF"),
-                    ("PEMS.PA",  "BNP Paribas Easy MSCI Emerging UCITS ETF")],
-    "emergents":   [("PAEEM.PA", "Amundi MSCI Emerging Markets UCITS ETF")],
+    "msci world":  _WORLD,
+    "world":       _WORLD,
+    "s&p 500":     _SP500,
+    "s&p":         _SP500,
+    "sp500":       [_SP500[0], _SP500[2]],
+    "nasdaq":      [("PNAS.PA",  "Amundi PEA Nasdaq-100 UCITS ETF S Acc"),
+                    ("PUST.PA",  "Amundi PEA Nasdaq-100 UCITS ETF Acc")],
+    "us tech":     [("PANX.PA",  "Amundi PEA US Tech Screened UCITS ETF Acc")],
+    "cac 40":      _CAC,
+    "cac":         _CAC,
+    "stoxx":       _STOXX,
+    "stoxx 600":   _STOXX,
+    "europe 600":  _STOXX,
+    "msci emu":    [("MFEC.PA",  "Amundi Core MSCI EMU UCITS ETF Acc")],
+    "emerging":    _EMERG,
+    "emergents":   _EMERG,
+    "acwi":        [("GPEA.PA",  "Amundi PEA Global (MSCI ACWI) UCITS ETF Acc")],
 }
 
 # Index des principales actions CAC 40 / SBF 120 (Yahoo ne renvoie pas toujours
