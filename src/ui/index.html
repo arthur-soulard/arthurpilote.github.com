@@ -474,7 +474,7 @@ td:first-child { text-align: left; padding-left: 2px; font-family: var(--font); 
 .pac-ctrl input[type="number"] { width: 110px; padding: 6px 10px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-family: var(--mono); font-size: 13px; }
 .pac-ctrl .pac-dim, .pac-dim { color: var(--txt2); font-size: 11.5px; }
 .pac-check { display: inline-flex; gap: 7px; align-items: center; cursor: pointer; }
-.pac-alerts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.pac-alerts, .pr-alerts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .pac-alert { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: var(--rad); font-size: 12px; line-height: 1.5; background: var(--bg3); color: var(--txt2); }
 .pac-alert i { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
 .pac-alert.warn { background: var(--a2); color: var(--txt); }
@@ -5026,6 +5026,15 @@ function pushUndo() {
 function undoLast() {
   if (!_undoStack.length) return;
   const snap = JSON.parse(_undoStack.pop());
+  if (snap.PR) {   // action du module Prêt (prPushUndo) : on ne touche pas au PEA
+    PR = snap.PR;
+    prPersist();
+    prRenderAll();
+    const b = document.getElementById("btn-undo");
+    if (b) b.disabled = _undoStack.length === 0;
+    showToast("↩ Action annulée", "warn");
+    return;
+  }
   S   = snap.S;
   NID = snap.NID;
   persist(false);
@@ -14729,6 +14738,16 @@ async function prPersist() {
   } catch (e) { showToastModern("Sauvegarde prêt échouée", "err"); }
 }
 
+/** Instantané du prêt dans la même pile que le PEA : le bouton Retour annule la
+    dernière action, qu'elle vienne de l'un ou de l'autre. */
+function prPushUndo() {
+  if (!PR) return;
+  _undoStack.push(JSON.stringify({ PR }));
+  if (_undoStack.length > UNDO_MAX) _undoStack.shift();
+  const btn = document.getElementById("btn-undo");
+  if (btn) btn.disabled = false;
+}
+
 async function prSave(msg) {
   await prPersist();
   prRenderAll();
@@ -14773,6 +14792,7 @@ function prAvContratTotals(c) {
   const asOf = prToday();
   let depose = 0, interets = 0;
   for (const d of (c.depots || [])) {
+    if (!prPasse(d, asOf)) continue;   // un dépôt daté plus tard n'est pas encore versé
     depose   += prN(d.montant);
     interets += prAVDepositInterest(d, c.taux_annuels, asOf);
   }
@@ -14793,72 +14813,89 @@ function prRateOnDate(iso, history) {
   return taux;
 }
 
+/* Quinzaines du Livret A : du 1er au 15 et du 16 à la fin du mois. */
+function prQuinzaine(iso) { return iso.slice(0, 8) + (Number(iso.slice(8, 10)) >= 16 ? "16" : "01"); }
+function prQuinzaineSuivante(q) {
+  if (q.slice(8, 10) === "01") return q.slice(0, 8) + "16";
+  const y = Number(q.slice(0, 4)), m = Number(q.slice(5, 7));
+  return (m === 12 ? y + 1 : y) + "-" + String(m === 12 ? 1 : m + 1).padStart(2, "0") + "-01";
+}
+
+/**
+ * Livret A, règle officielle des quinzaines : un dépôt rapporte à partir de la
+ * quinzaine qui SUIT (déposé le 10 → à partir du 16 ; le 16 → à partir du 1er
+ * du mois suivant), un retrait cesse de rapporter dès le début de SA quinzaine
+ * (retiré le 20 → plus rien depuis le 16). Chaque quinzaine terminée rapporte
+ * solde × taux / 24 ; les intérêts s'ajoutent au capital le 1er janvier.
+ * La quinzaine en cours ne rapporte rien tant qu'elle n'est pas finie.
+ */
 function prLivretState(mouvements, history, asOf) {
   const ZERO = { capital: 0, interets_courus: 0, interets_total: 0, valeur: 0, depose: 0, retire: 0 };
-  const movs = (mouvements || []).filter(m => m.date && m.date <= asOf);
+  const movs = (mouvements || []).filter(m => m.date && m.date <= asOf)
+    .sort((a, b) => a.date.localeCompare(b.date));
   if (!movs.length) return ZERO;
-  const sorted = movs.slice().sort((a, b) => a.date.localeCompare(b.date));
-  const startDate = sorted[0].date;
-  if (startDate > asOf) return ZERO;
 
-  const dates = new Set(sorted.map(m => m.date));
-  for (const h of (history || [])) {
-    if (h.date && h.date >= startDate && h.date <= asOf) dates.add(h.date);
+  let depose = 0, retire = 0;
+  const flux = movs.map(m => {
+    const amt = prN(m.montant), sortie = m.type === "retrait";
+    if (sortie) retire += amt; else depose += amt;
+    // Date à partir de laquelle la somme compte (ou cesse de compter) dans le solde qui rapporte
+    return { valeur: sortie ? prQuinzaine(m.date) : prQuinzaineSuivante(prQuinzaine(m.date)),
+             delta: sortie ? -amt : amt };
+  });
+
+  let capitalise = 0, pending = 0;
+  for (let q = prQuinzaine(movs[0].date); q <= asOf; q = prQuinzaineSuivante(q)) {
+    if (q.endsWith("-01-01")) { capitalise += pending; pending = 0; }
+    if (prQuinzaineSuivante(q) > asOf) break;            // quinzaine en cours
+    const solde = Math.max(0, capitalise + flux.filter(f => f.valeur <= q).reduce((s, f) => s + f.delta, 0));
+    const rate = prRateOnDate(q, history);
+    if (rate > 0 && solde > 0) pending += solde * (rate / 100) / 24;
   }
-  const y0 = parseInt(startDate.slice(0, 4), 10), y1 = parseInt(asOf.slice(0, 4), 10);
-  for (let y = y0; y < y1; y++) dates.add((y + 1) + "-01-01");
-  dates.add(asOf);
-  const events = Array.from(dates).filter(d => d >= startDate && d <= asOf).sort();
-
-  let capital = 0, pending = 0, depose = 0, retire = 0;
-  const apply = date => {
-    for (const m of sorted) {
-      if (m.date !== date) continue;
-      const amt = prN(m.montant);
-      if (m.type === "retrait") { capital -= Math.min(amt, capital); retire += amt; }
-      else { capital += amt; depose += amt; }
-    }
-  };
-
-  let cursor = events[0];
-  apply(cursor);
-  for (let i = 1; i < events.length; i++) {
-    const next = events[i];
-    const days = prDaysBetween(cursor, next);
-    if (days > 0 && capital > 0) {
-      const rate = prRateOnDate(cursor, history);
-      if (rate > 0) pending += capital * (rate / 100) * days / 365;
-    }
-    if (next.endsWith("-01-01")) { capital += pending; pending = 0; }
-    apply(next);
-    cursor = next;
-  }
+  const capital = Math.max(0, depose - retire) + capitalise;
   return {
     capital, interets_courus: pending,
-    interets_total: (capital + pending) - (depose - retire),
+    interets_total: capitalise + pending,
     valeur: capital + pending, depose, retire
   };
 }
 
 /* ── Calculs : frais recurrents ──────────────────────────────────────────── */
 
-function prExpandRecurrent(tpl) {
+/** Montant d'un frais récurrent à une date : le dernier palier (nouveau tarif
+    « à partir du ») daté de ce jour ou avant, sinon le montant de départ.
+    Changer de tarif ne réécrit donc pas les prélèvements passés. */
+function prTarif(tpl, date) {
+  let m = prN(tpl.montant), depuis = "";
+  for (const p of (tpl.paliers || [])) {
+    if (p.date && p.date <= date && p.date >= depuis) { m = prN(p.montant); depuis = p.date; }
+  }
+  return m;
+}
+
+/** Prélèvements d'un frais récurrent, chacun au tarif de sa date. Sans nombre
+    d'occurrences (0 ou vide), le frais court sans fin : on s'arrête à `jusqua`. */
+function prExpandRecurrent(tpl, jusqua) {
   const out = [];
-  const n = parseInt(tpl && tpl.nb_occurrences, 10) || 0;
-  if (!tpl || !tpl.date_debut || n <= 0) return out;
+  if (!tpl || !tpl.date_debut) return out;
+  const n = parseInt(tpl.nb_occurrences, 10) || 0;
+  if (!n && !jusqua) return out;
   const step = tpl.frequence === "annuelle" ? 12 : 1;
-  for (let i = 0; i < n; i++) {
-    out.push({ id: tpl.id + "::" + i, recurrent_id: tpl.id,
-               date: prAddMonths(tpl.date_debut, i * step),
-               montant: prN(tpl.montant), label: tpl.label || "",
-               virtual: true, idx: i + 1, total: n });
+  for (let i = 0; !n || i < n; i++) {
+    const date = prAddMonths(tpl.date_debut, i * step);
+    if (jusqua && date > jusqua) break;
+    out.push({ id: tpl.id + "::" + i, recurrent_id: tpl.id, date,
+               montant: prTarif(tpl, date), label: tpl.label || "",
+               virtual: true, idx: i + 1, total: n || null });
   }
   return out;
 }
 
-function prAllFrais() {
-  let all = (PR.frais || []).slice();
-  for (const tpl of (PR.frais_recurrents || [])) all = all.concat(prExpandRecurrent(tpl));
+/** Frais prélevés jusqu'à `jusqua` inclus (ponctuels + récurrents). Les frais
+    se comptent au fil des mois : un prélèvement à venir n'est pas encore payé. */
+function prAllFrais(jusqua) {
+  let all = (PR.frais || []).filter(f => !jusqua || (f.date && f.date <= jusqua));
+  for (const tpl of (PR.frais_recurrents || [])) all = all.concat(prExpandRecurrent(tpl, jusqua));
   return all.sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 
@@ -14912,12 +14949,34 @@ function prVentePretOk(asset, qty, excludeTxId) {
 
 /* ── Calcul global ───────────────────────────────────────────────────────── */
 
+/** Une ligne datée compte à partir de sa date : un versement annoncé pour le
+    5 octobre n'est pas encore sur le compte le 28 septembre. */
+function prPasse(x, auj) { return !!(x && x.date && x.date <= (auj || prToday())); }
+function prAVenir(x, auj) { return !!(x && x.date && x.date > (auj || prToday())); }
+
+/** Capital dû à une date : ce que la banque a VERSÉ moins ce qui a été
+    remboursé, datés de ce jour ou avant. Une tranche pas encore reçue n'est pas
+    une dette. Seul calcul du capital dû : le module, Patrimoine et la tuile
+    d'accueil passent tous par ici. */
+function prCapitalDu(auj) {
+  const cumul = l => prSumBy((l || []).filter(x => prPasse(x, auj)), "montant");
+  return Math.max(0, cumul(PR.versements) - cumul(PR.remboursements));
+}
+
 function prOverview() {
-  const versements   = prSumBy(PR.versements, "montant");
-  const remb_total   = prSumBy(PR.remboursements, "montant");
-  const allFrais     = prAllFrais();
-  const frais_banque = prSumBy(allFrais, "montant");
-  const ordres       = prPeaOrdres();
+  const auj          = prToday();
+  const versements   = prSumBy((PR.versements || []).filter(x => prPasse(x, auj)), "montant");
+  const versements_a_venir = (PR.versements || []).filter(x => prAVenir(x, auj))
+                             .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const remb_total   = prSumBy((PR.remboursements || []).filter(x => prPasse(x, auj)), "montant");
+  // Frais au fil des mois : prélevés à ce jour, moins ce que la banque a rendu
+  const allFrais     = prAllFrais(auj);
+  const frais_payes  = prSumBy(allFrais, "montant");
+  const frais_rembourses = prSumBy((PR.frais_rembourses || []).filter(x => prPasse(x, auj)), "montant");
+  const frais_banque = frais_payes - frais_rembourses;
+  // Ordres du PEA : comme le PEA lui-même (computePos), un ordre daté plus tard ne compte pas encore
+  const po           = prPeaOrdres();
+  const ordres       = { achats: po.achats.filter(a => prPasse(a, auj)), ventes: po.ventes.filter(v => prPasse(v, auj)) };
 
   // Regroupement achats + ventes par ticker
   const byTicker = {};
@@ -14944,7 +15003,7 @@ function prOverview() {
     const qte = e.qteA - e.qteV;                       // parts encore detenues
     const investRestant = (pru != null) ? qte * pru : 0;
     const realise = (pru != null) ? e.credite - e.qteV * pru : 0;
-    const q = _prQuotes[t];
+    const q = prCours(t);
     const cours  = q ? q.prix : null;
     const valeur = (cours != null && qte > 0) ? qte * cours : null;
     const pv     = (valeur != null) ? valeur - investRestant : null;
@@ -14985,7 +15044,7 @@ function prOverview() {
   const liv_net = liv.depose - liv.retire;
   const liv_perf_pct = liv_net > 0 ? (liv.interets_total / liv_net) * 100 : null;
 
-  const capital_du      = Math.max(0, prN(PR.pret.montant) - remb_total);
+  const capital_du      = prCapitalDu(auj);
   const capital_attente = versements + pea_credite - pea_debite - av_depose - liv_net - remb_total - frais_banque;
   const frais_total     = frais_banque + pea_frais;
   const valeur_portefeuille = (pea_valeur != null ? pea_valeur : 0) + av_valeur + liv.valeur;
@@ -14993,7 +15052,7 @@ function prOverview() {
   const mensualite      = prN(PR.pret.mensualite);
 
   return {
-    versements, remb_total, frais_banque, allFrais,
+    versements, remb_total, frais_banque, frais_payes, frais_rembourses, allFrais,
     positions, pea_debite, pea_invest, pea_frais, pea_valeur, pea_pv, pea_pv_pct,
     pea_credite, pea_realise,
     av_details, av_depose, av_interets, av_valeur, av_perf_pct,
@@ -15001,12 +15060,24 @@ function prOverview() {
     liv_capital: liv.capital, liv_interets_courus: liv.interets_courus,
     liv_interets: liv.interets_total, liv_valeur: liv.valeur, liv_perf_pct,
     capital_du, capital_attente, frais_total, valeur_portefeuille, benefice_net,
-    mensualites_restantes: mensualite > 0 ? Math.ceil(capital_du / mensualite) : 0,
-    mensualites_payees: (PR.remboursements || []).length,
+    // Sur le montant emprunté, pas sur le capital dû : avant la 2e tranche, celui-ci
+    // n'en compte que la moitié et diviserait les mensualités restantes par deux
+    mensualites_restantes: mensualite > 0 ? Math.ceil(Math.max(0, prN(PR.pret.montant) - remb_total) / mensualite) : 0,
+    mensualites_payees: (PR.remboursements || []).filter(x => prPasse(x, auj)).length,
+    versements_a_venir,
   };
 }
 
 /* ── Cours (proxy Yahoo du serveur local) ────────────────────────────────── */
+
+/** Cours d'un titre du prêt : celui du PEA d'abord (getVar, rafraîchi toutes
+    les 3 minutes pour tout le PEA), sinon celui chargé par ce module pour un
+    titre que le PEA ne suit pas. Un seul cours pour un même titre partout. */
+function prCours(t) {
+  const v = typeof getVar === "function" ? getVar(t) : null;
+  if (v && v.cours > 0) return { prix: v.cours, d1: v.d1 };
+  return _prQuotes[t] || null;
+}
 
 function prTickers() {
   const set = new Set();
@@ -15018,8 +15089,16 @@ function prTickers() {
 }
 
 async function prRefreshQuotes(silent) {
-  const list = prTickers();
-  if (!list.length) { if (!silent) showToastModern("Aucun ticker à actualiser", "warn"); return; }
+  const tous = prTickers();
+  if (!tous.length) { if (!silent) showToastModern("Aucun ticker à actualiser", "warn"); return; }
+  // Le bouton « Cours » rafraîchit les cours du PEA, ceux que ce module affiche
+  if (!silent && typeof applyCoursData === "function") await applyCoursData();
+  const list = tous.filter(t => !(typeof getVar === "function" && getVar(t) && getVar(t).cours > 0));
+  if (!list.length) {
+    prRenderAll();
+    if (!silent) showToastModern("Cours actualisés (" + tous.length + ")", "ok");
+    return;
+  }
   try {
     const r = await fetch("/cours?tickers=" + encodeURIComponent(list.join(",")) + "&t=" + Date.now(), { cache: "no-store" });
     const j = await r.json();
@@ -15053,8 +15132,10 @@ function prSubmit(ev) {
   ev.preventDefault();
   const data = {};
   document.querySelectorAll("#pr-form-body [name]").forEach(el => { data[el.name] = el.value; });
+  prPushUndo();
   const res = _prSubmitFn ? _prSubmitFn(data) : true;
-  if (res !== false) closeOv("ov-pr-form");
+  if (res === false) _undoStack.pop();   // saisie refusée : rien n'a changé
+  else closeOv("ov-pr-form");
   return false;
 }
 
@@ -15083,6 +15164,34 @@ function prRenderAll() {
   prRenderParams(o);
 }
 
+/** « 15 000 € versés sur 30 000 € empruntés, 15 000 € attendus le 05/10/2026 ».
+    `court` : pour la carte de la vue d'ensemble, seulement le prochain versement. */
+function prTranchesTxt(o, court) {
+  const montant = prN(PR.pret.montant);
+  const aVenir = prSumBy(o.versements_a_venir, "montant");
+  const reste = montant - o.versements - aVenir;
+  let t = `${prEur(o.versements)} versés sur ${prEur(montant)} empruntés`;
+  if (court) return t + (o.versements_a_venir.length ? `, prochain versement le ${prDate(o.versements_a_venir[0].date)}` : "");
+  if (o.versements_a_venir.length)
+    t += ", " + o.versements_a_venir.map(v => `${prEur(prN(v.montant))} attendus le ${prDate(v.date)}`).join(", ");
+  if (montant > 0 && reste > 0.005) t += `, ${prEur(reste)} encore à débloquer`;
+  return t;
+}
+
+/** Incohérences de saisie qui fausseraient les chiffres du prêt. */
+function prAlertesHtml(o) {
+  const a = [], montant = prN(PR.pret.montant);
+  const versTous = prSumBy(PR.versements, "montant");
+  if (montant > 0 && versTous > montant + 0.005)
+    a.push(`Les versements saisis (${prEur(versTous)}) dépassent le montant emprunté (${prEur(montant)}) : un versement en double ?`);
+  // Les frais bancaires n'entrent pas ici : ils peuvent tomber avant le premier
+  // versement (la carte est prélevée dès septembre, le prêt arrive en octobre).
+  const place = o.pea_debite - o.pea_credite + o.av_depose + o.liv_net + o.remb_total;
+  if (place > o.versements + 0.005)
+    a.push(`Tu as placé ou remboursé ${prEur(place)} alors que la banque n'a versé que ${prEur(o.versements)} à ce jour : un versement manque, ou un placement est daté trop tôt.`);
+  return a.length ? `<div class="pr-alerts">${a.map(t => `<div class="pac-alert warn"><i class="ph ph-warning"></i><span>${escHtml(t)}</span></div>`).join("")}</div>` : "";
+}
+
 function prRenderOverview(o) {
   const box = document.getElementById("pr-overview-body");
   if (!box) return;
@@ -15091,11 +15200,12 @@ function prRenderOverview(o) {
   if (prN(PR.pret.montant) <= 0) {
     html += `<div class="m-note">Le prêt n'est pas encore configuré. Va dans <b>Paramètres</b> pour saisir le montant, la date de déblocage et la mensualité.</div>`;
   }
+  html += prAlertesHtml(o);
 
   html += `<div class="mkpis">
     <div class="mkpi accent"><span class="mkpi-lbl">Montant à rembourser</span>
       <span class="mkpi-val">${prEur(o.capital_du)}</span>
-      <span class="mkpi-sub">sur ${prEur(prN(PR.pret.montant))} empruntés</span></div>
+      <span class="mkpi-sub">${prTranchesTxt(o, true)}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Montant remboursé</span>
       <span class="mkpi-val">${prEur(o.remb_total)}</span>
       <span class="mkpi-sub">${o.mensualites_payees} mensualité${o.mensualites_payees > 1 ? "s" : ""} · ${o.mensualites_restantes} restante${o.mensualites_restantes > 1 ? "s" : ""}</span></div>
@@ -15110,11 +15220,12 @@ function prRenderOverview(o) {
       <span class="mkpi-sub">PEA + AV + Livret A</span></div>
   </div>`;
 
+  const cc = carnetChartColors();
   const parts = [
-    { lbl: "PEA",        val: o.pea_valeur != null ? o.pea_valeur : o.pea_invest, color: "#2563eb" },
-    { lbl: "Assurance vie", val: o.av_valeur,  color: "#7c3aed" },
-    { lbl: PR.liv.label || "Livret A", val: o.liv_valeur, color: "#0891b2" },
-    { lbl: "En attente", val: Math.max(0, o.capital_attente), color: "#a1a1aa" },
+    { lbl: "PEA",        val: o.pea_valeur != null ? o.pea_valeur : o.pea_invest, color: cc.accent },
+    { lbl: "Assurance vie", val: o.av_valeur,  color: CLRS[1] },
+    { lbl: PR.liv.label || "Livret A", val: o.liv_valeur, color: CLRS[4] },
+    { lbl: "En attente", val: Math.max(0, o.capital_attente), color: carnetAlpha(cc.txt2, 0.35) },
   ].filter(p => p.val > 0.005);
 
   html += `<div class="pr-split">
@@ -15123,11 +15234,12 @@ function prRenderOverview(o) {
       : prEmpty("Aucun capital placé pour l'instant."))}
     ${prCard("", "Synthèse", `<div class="tw"><table><tbody>
         <tr><td>Versements reçus de la banque</td><td>${prEur(o.versements)}</td></tr>
+        ${o.versements_a_venir.length ? `<tr><td>Versements à venir</td><td>${o.versements_a_venir.map(v => prEur(prN(v.montant)) + " le " + prDate(v.date)).join(", ")}</td></tr>` : ""}
         <tr><td>Placé en PEA (débité)</td><td>${prEur(o.pea_debite)}</td></tr>
         <tr><td>Récupéré par les ventes</td><td class="${o.pea_credite ? "pos" : ""}">${prEur(o.pea_credite)}</td></tr>
         <tr><td>Placé en assurance vie</td><td>${prEur(o.av_depose)}</td></tr>
         <tr><td>Placé en livret A (net)</td><td>${prEur(o.liv_net)}</td></tr>
-        <tr><td>Frais totaux</td><td class="neg">${prEur(o.frais_total)}</td></tr>
+        <tr><td>Frais payés à ce jour</td><td class="neg">${prEur(o.frais_total)}</td></tr>
         <tr><td><b>Liquidités en attente</b></td><td class="${prCls(o.capital_attente)}"><b>${prEur(o.capital_attente)}</b></td></tr>
       </tbody></table></div>`)}
   </div>`;
@@ -15150,8 +15262,7 @@ function prRenderOverview(o) {
   box.innerHTML = html;
 
   if (parts.length) {
-    const txtColor = getComputedStyle(document.body).getPropertyValue("color") || "#18181b";
-    const bg2 = getComputedStyle(document.documentElement).getPropertyValue("--bg2") || "#fff";
+    const txtColor = cc.txt, bg2 = cc.bg2;
     if (_prChart) _prChart.destroy();
     _prChart = new Chart(document.getElementById("pr-chart-alloc"), {
       type: "doughnut",
@@ -15302,7 +15413,7 @@ function prRenderAV(o) {
           ${depots.length ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th><th>Intérêts</th><th></th></tr></thead>
             <tbody>${depots.map(d => {
               const i = prAVDepositInterest(d, c.taux_annuels, prToday());
-              return `<tr><td>${prDate(d.date)}</td><td>${prEur(prN(d.montant))}</td><td class="pos">${prEur(i)}</td>
+              return `<tr><td>${prDate(d.date)}${prAVenir(d) ? ' <span class="m-tag">à venir</span>' : ""}</td><td>${prEur(prN(d.montant))}</td><td class="pos">${prEur(i)}</td>
                 <td><div class="m-acts">
                   <button class="m-iconbtn" title="Modifier" onclick="prAvDepotModal('${c.id}', '${d.id}')"><i class="ph ph-pencil-simple"></i></button>
                   <button class="m-iconbtn danger" title="Supprimer" onclick="prDeleteAvDepot('${c.id}', '${d.id}')"><i class="ph ph-x"></i></button>
@@ -15346,7 +15457,7 @@ function prRenderLiv(o) {
   html += prCard("", "Mouvements (dépôts et retraits)", movs.length
     ? `<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Note</th><th></th></tr></thead>
        <tbody>${movs.map(m => `<tr>
-         <td>${prDate(m.date)}</td>
+         <td>${prDate(m.date)}${prAVenir(m) ? ' <span class="m-tag">à venir</span>' : ""}</td>
          <td><span class="m-tag ${m.type === "retrait" ? "neg" : "pos"}">${m.type === "retrait" ? "Retrait" : "Dépôt"}</span></td>
          <td class="${m.type === "retrait" ? "neg" : ""}">${prEur(prN(m.montant))}</td>
          <td style="font-family:var(--font);text-align:left">${escHtml(m.note || "—")}</td>
@@ -15370,7 +15481,8 @@ function prRenderParams(o) {
 
   let html = prCard("", "Configuration du prêt", `<div class="tw"><table><tbody>
       <tr><td>Montant emprunté</td><td>${prEur(prN(p.montant))}</td></tr>
-      <tr><td>Date de déblocage</td><td>${prDate(p.date_deblocage)}</td></tr>
+      <tr><td>1er déblocage</td><td>${prDate(p.date_deblocage)}</td></tr>
+      <tr><td>Versé par la banque</td><td style="white-space:normal;text-align:right">${prTranchesTxt(o)}</td></tr>
       <tr><td>Premier remboursement</td><td>${prDate(p.date_premier_remboursement)}</td></tr>
       <tr><td>Durée de remboursement</td><td>${prN(p.duree_remboursement) || "—"} mois</td></tr>
       <tr><td>Mensualité</td><td>${prEur(prN(p.mensualite))}</td></tr>
@@ -15381,46 +15493,64 @@ function prRenderParams(o) {
   const vers = (PR.versements || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   html += prCard("", "Versements de la banque", vers.length
     ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th><th></th></tr></thead>
-       <tbody>${vers.map(v => `<tr><td>${prDate(v.date)}</td><td>${prEur(prN(v.montant))}</td>
+       <tbody>${vers.map(v => `<tr><td>${prDate(v.date)}${prAVenir(v) ? ' <span class="m-tag">à venir</span>' : ""}</td><td>${prEur(prN(v.montant))}</td>
          <td><div class="m-acts">
            <button class="m-iconbtn" title="Modifier" onclick="prVersModal('${v.id}')"><i class="ph ph-pencil-simple"></i></button>
            <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('versement','${v.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}
-       </tbody><tfoot><tr><td><b>Total</b></td><td><b>${prEur(o.versements)}</b></td><td></td></tr></tfoot></table></div>`
+       </tbody><tfoot><tr><td><b>Reçu à ce jour</b></td><td><b>${prEur(o.versements)}</b></td><td></td></tr></tfoot></table></div>`
     : prEmpty("Aucun versement."),
     `<button class="btn btn-sm btn-primary" onclick="prVersModal(null)"><i class="ph ph-plus"></i> Versement</button>`);
 
   const remb = (PR.remboursements || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   html += prCard("", "Remboursements", remb.length
     ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th><th></th></tr></thead>
-       <tbody>${remb.map(r => `<tr><td>${prDate(r.date)}</td><td>${prEur(prN(r.montant))}</td>
+       <tbody>${remb.map(r => `<tr><td>${prDate(r.date)}${prAVenir(r) ? ' <span class="m-tag">à venir</span>' : ""}</td><td>${prEur(prN(r.montant))}</td>
          <td><div class="m-acts">
            <button class="m-iconbtn" title="Modifier" onclick="prRembModal('${r.id}')"><i class="ph ph-pencil-simple"></i></button>
            <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('remboursement','${r.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}
-       </tbody><tfoot><tr><td><b>Total</b></td><td><b>${prEur(o.remb_total)}</b></td><td></td></tr></tfoot></table></div>`
+       </tbody><tfoot><tr><td><b>Remboursé à ce jour</b></td><td><b>${prEur(o.remb_total)}</b></td><td></td></tr></tfoot></table></div>`
     : prEmpty("Aucun remboursement."),
     `<button class="btn btn-sm btn-primary" onclick="prRembModal(null)"><i class="ph ph-plus"></i> Remboursement</button>`);
 
   const recs = PR.frais_recurrents || [];
+  const auj = prToday();
+  let recPaye = 0, recAVenir = 0, recSansFin = false;
   html += prCard("", "Frais récurrents", recs.length
-    ? `<div class="tw"><table><thead><tr><th>Libellé</th><th>Montant</th><th>Fréquence</th><th>Prélevé le</th><th>Occurrences</th><th>Total</th><th></th></tr></thead>
+    ? `<div class="tw"><table><thead><tr><th>Libellé</th><th>Montant actuel</th><th>Fréquence</th><th>Prélevé le</th><th>Prélèvements</th><th>Payé à ce jour</th><th>À venir</th><th></th></tr></thead>
        <tbody>${recs.map(r => {
          const jour = parseInt(String(r.date_debut).slice(8, 10), 10) || 1;
          const occ = parseInt(r.nb_occurrences, 10) || 0;
-         const last = occ ? prExpandRecurrent(r).slice(-1)[0].date : null;
+         const passes = prExpandRecurrent(r, auj);
+         const tous = occ ? prExpandRecurrent(r) : null;
+         const paye = prSumBy(passes, "montant");
+         const aVenir = tous ? prSumBy(tous, "montant") - paye : null;
+         recPaye += paye;
+         if (aVenir != null) recAVenir += aVenir; else recSansFin = true;
+         const last = tous && tous.length ? tous[tous.length - 1].date : null;
+         const paliers = (r.paliers || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+         const hist = paliers.length
+           ? `<div class="tk2">${prEur(prN(r.montant))} au départ${paliers.map(p =>
+               `, ${prEur(prN(p.montant))} dès le ${prDate(p.date)}<button class="m-iconbtn danger" style="width:20px;height:20px;font-size:11px" title="Supprimer ce changement de montant" aria-label="Supprimer ce changement de montant" onclick="prDelPalier('${r.id}','${p.id}')"><i class="ph ph-x"></i></button>`).join("")}</div>`
+           : "";
          return `<tr>
            <td class="tk">${escHtml(r.label || "—")}</td>
-           <td>${prEur(prN(r.montant))}</td>
+           <td>${prEur(prTarif(r, auj))}${hist}</td>
            <td>${r.frequence === "annuelle" ? "Annuelle" : "Mensuelle"}</td>
-           <td>${jour} du mois<div class="tk2">${prDate(r.date_debut)}${last ? " → " + prDate(last) : ""}</div></td>
-           <td>${occ}</td>
-           <td class="neg">${prEur(prN(r.montant) * occ)}</td>
+           <td>${jour === 1 ? "le 1er" : "le " + jour} du mois<div class="tk2">${prDate(r.date_debut)}${last ? " → " + prDate(last) : " → sans fin"}</div></td>
+           <td>${passes.length}${occ ? " / " + occ : ""}</td>
+           <td class="neg">${prEur(paye)}</td>
+           <td>${aVenir != null ? prEur(aVenir) : "sans fin"}</td>
            <td><div class="m-acts">
+             <button class="m-iconbtn" title="Nouveau montant à partir d'une date" aria-label="Nouveau montant à partir d'une date" onclick="prPalierModal('${r.id}')"><i class="ph ph-currency-eur"></i></button>
+             <button class="m-iconbtn" title="La banque rembourse un prélèvement" aria-label="La banque rembourse un prélèvement" onclick="prFraisRembModal(null,'${r.id}')"><i class="ph ph-arrow-u-up-left"></i></button>
              <button class="m-iconbtn" title="Modifier" onclick="prRecModal('${r.id}')"><i class="ph ph-pencil-simple"></i></button>
              <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('recurrent','${r.id}')"><i class="ph ph-x"></i></button>
            </div></td></tr>`;
-       }).join("")}</tbody></table></div>`
+       }).join("")}</tbody></table></div>
+       <div class="mkpi-sub" style="margin-top:10px">Prélevé à ce jour : ${prEur(recPaye)} · À venir : ${recSansFin ? (recAVenir ? prEur(recAVenir) + " + frais sans fin" : "frais sans fin") : prEur(recAVenir)}.
+         Les frais se comptent au fil des prélèvements, pas d'avance.</div>`
     : prEmpty("Aucun frais récurrent."),
     `<button class="btn btn-sm btn-primary" onclick="prRecModal(null)"><i class="ph ph-plus"></i> Frais récurrent</button>`);
 
@@ -15434,9 +15564,25 @@ function prRenderParams(o) {
            <button class="m-iconbtn" title="Modifier" onclick="prFraisModal('${f.id}')"><i class="ph ph-pencil-simple"></i></button>
            <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('frais','${f.id}')"><i class="ph ph-x"></i></button>
          </div></td></tr>`).join("")}
-       </tbody><tfoot><tr><td colspan="2"><b>Total (ponctuels + récurrents)</b></td><td class="neg"><b>${prEur(o.frais_banque)}</b></td><td></td></tr></tfoot></table></div>`
+       </tbody><tfoot><tr><td colspan="2"><b>Frais à ce jour (ponctuels + récurrents − remboursés)</b></td><td class="neg"><b>${prEur(o.frais_banque)}</b></td><td></td></tr></tfoot></table></div>`
     : prEmpty("Aucun frais ponctuel."),
     `<button class="btn btn-sm btn-primary" onclick="prFraisModal(null)"><i class="ph ph-plus"></i> Frais</button>`);
+
+  // Frais que la banque a rendus (ex. un mois de carte offert) : ils viennent en
+  // déduction des frais, donc augmentent les liquidités du prêt.
+  const rembs = (PR.frais_rembourses || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  html += prCard("", "Frais remboursés par la banque", rembs.length
+    ? `<div class="tw"><table><thead><tr><th>Date</th><th>Libellé</th><th>Montant</th><th></th></tr></thead>
+       <tbody>${rembs.map(f => `<tr><td>${prDate(f.date)}${f.date > auj ? ' <span class="m-tag">à venir</span>' : ""}</td>
+         <td style="font-family:var(--font);text-align:left">${escHtml(f.label || "—")}</td>
+         <td class="pos">${prEur(prN(f.montant))}</td>
+         <td><div class="m-acts">
+           <button class="m-iconbtn" title="Modifier" onclick="prFraisRembModal('${f.id}')"><i class="ph ph-pencil-simple"></i></button>
+           <button class="m-iconbtn danger" title="Supprimer" onclick="prDelete('frais_remb','${f.id}')"><i class="ph ph-x"></i></button>
+         </div></td></tr>`).join("")}
+       </tbody><tfoot><tr><td colspan="2"><b>Remboursé à ce jour</b></td><td class="pos"><b>${prEur(o.frais_rembourses)}</b></td><td></td></tr></tfoot></table></div>`
+    : prEmpty("Aucun frais remboursé. Sur un frais récurrent, le bouton <i class=\"ph ph-arrow-u-up-left\"></i> prépare le remboursement d'un prélèvement."),
+    `<button class="btn btn-sm btn-primary" onclick="prFraisRembModal(null)"><i class="ph ph-plus"></i> Remboursement de frais</button>`);
 
   box.innerHTML = html;
 }
@@ -15448,7 +15594,7 @@ function prConfigModal() {
   prOpenForm("Configuration du prêt", `
     ${prFg("Montant emprunté (€)", "montant", "number", p.montant || "", 'step="0.01" min="0" required')}
     <div class="fg-row">
-      ${prFg("Date de déblocage", "date_deblocage", "date", p.date_deblocage, "")}
+      ${prFg("Date du 1er déblocage", "date_deblocage", "date", p.date_deblocage, "")}
       ${prFg("1er remboursement", "date_premier_remboursement", "date", p.date_premier_remboursement, "")}
     </div>
     <div class="fg-row">
@@ -15570,6 +15716,7 @@ async function prDeleteAvContrat(id) {
   if (!c) return;
   const n = (c.depots || []).length;
   if (!confirm(`Supprimer « ${c.label} »${n ? ` et ses ${n} dépôt${n > 1 ? "s" : ""}` : ""} ?`)) return;
+  prPushUndo();
   PR.av.contrats = prAvContrats().filter(x => String(x.id) !== String(id));
   await prSave("Contrat supprimé");
 }
@@ -15594,6 +15741,7 @@ function prAvTauxModal(cid, annee) {
 async function prDeleteAvTaux(cid, annee) {
   const c = prAvContrat(cid);
   if (!c || !confirm("Supprimer ce taux ?")) return;
+  prPushUndo();
   c.taux_annuels = (c.taux_annuels || []).filter(x => prN(x.annee) !== prN(annee));
   await prSave("Taux supprimé");
 }
@@ -15620,6 +15768,7 @@ function prAvDepotModal(cid, id) {
 async function prDeleteAvDepot(cid, id) {
   const c = prAvContrat(cid);
   if (!c || !confirm("Supprimer ce dépôt ?")) return;
+  prPushUndo();
   c.depots = (c.depots || []).filter(x => String(x.id) !== String(id));
   await prSave("Dépôt supprimé");
 }
@@ -15726,12 +15875,13 @@ function prRecModal(id) {
     </div>
     <div class="fg-row">
       ${prFg("1er prélèvement", "date_debut", "date", r ? r.date_debut : prToday(), "required")}
-      ${prFg("Nombre d'occurrences", "nb_occurrences", "number", r ? r.nb_occurrences : "", 'step="1" min="1" required')}
+      ${prFg("Nombre de prélèvements (vide = sans fin)", "nb_occurrences", "number", r && prN(r.nb_occurrences) ? r.nb_occurrences : "", 'step="1" min="1"')}
     </div>
-    <div class="m-note" style="margin-bottom:0">Le prélèvement tombe le <b>même jour de chaque mois</b> que le premier (ramené au dernier jour du mois quand il n'existe pas, ex. le 31 en février).</div>`,
+    <div class="m-note" style="margin-bottom:0">Le prélèvement tombe le <b>même jour de chaque mois</b> que le premier (ramené au dernier jour du mois quand il n'existe pas, ex. le 31 en février).
+      Il ne compte qu'une fois passé. ${r ? "Le montant ci-dessus est celui de départ : pour un changement de tarif, utilise le bouton <i class=\"ph ph-currency-eur\"></i> de la ligne, les prélèvements passés gardent leur montant." : ""}</div>`,
     data => {
       const m = prN(data.montant), nb = parseInt(data.nb_occurrences, 10) || 0;
-      if (!data.date_debut || !m || nb <= 0) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date_debut || !m || nb < 0) { showToastModern("Champs invalides", "err"); return false; }
       const payload = { date_debut: data.date_debut, montant: m, label: data.label || "",
                         frequence: data.frequence || "mensuelle", nb_occurrences: nb };
       if (r) Object.assign(r, payload);
@@ -15740,10 +15890,61 @@ function prRecModal(id) {
     }, "Enregistrer");
 }
 
+/* Changement de tarif d'un frais récurrent : nouveau montant à partir d'une
+   date. Les prélèvements d'avant gardent leur montant (voir prTarif). */
+function prPalierModal(recId) {
+  const r = (PR.frais_recurrents || []).find(x => x.id === recId);
+  if (!r) return;
+  prOpenForm("Nouveau montant — " + (r.label || "frais récurrent").trim(), `
+    <div class="fg-row">
+      ${prFg("À partir du", "date", "date", prToday(), "required")}
+      ${prFg("Nouveau montant (€)", "montant", "number", prTarif(r, prToday()), 'step="0.01" min="0" required')}
+    </div>
+    <div class="m-note" style="margin-bottom:0">Montant actuel : ${prEur(prTarif(r, prToday()))}. Les prélèvements datés d'avant gardent leur montant.</div>`,
+    data => {
+      if (!data.date || data.montant === "") { showToastModern("Champs invalides", "err"); return false; }
+      r.paliers = (r.paliers || []).filter(p => p.date !== data.date)
+        .concat([{ id: prNewId(), date: data.date, montant: prN(data.montant) }]);
+      prSave("Nouveau montant enregistré");
+    }, "Enregistrer");
+}
+
+async function prDelPalier(recId, palierId) {
+  const r = (PR.frais_recurrents || []).find(x => x.id === recId);
+  if (!r || !confirm("Supprimer ce changement de montant ?")) return;
+  prPushUndo();
+  r.paliers = (r.paliers || []).filter(p => p.id !== palierId);
+  await prSave("Changement de montant supprimé");
+}
+
+/* Frais rendus par la banque. Depuis un frais récurrent (`recId`), la fenêtre
+   arrive remplie avec son montant du jour et son libellé. */
+function prFraisRembModal(id, recId) {
+  const f = id ? (PR.frais_rembourses || []).find(x => x.id === id) : null;
+  const rec = recId ? (PR.frais_recurrents || []).find(x => x.id === recId) : null;
+  const montant = f ? f.montant : (rec ? prTarif(rec, prToday()) : "");
+  const label = f ? f.label : (rec ? (rec.label || "").trim() + " remboursé" : "");
+  prOpenForm(f ? "Modifier le remboursement de frais" : "Frais remboursés par la banque", `
+    <div class="fg-row">
+      ${prFg("Date", "date", "date", f ? f.date : prToday(), "required")}
+      ${prFg("Montant rendu (€)", "montant", "number", montant, 'step="0.01" min="0" required')}
+    </div>
+    ${prFg("Libellé", "label", "text", label, 'placeholder="Ex. frais de carte de septembre remboursés"')}`,
+    data => {
+      const m = prN(data.montant);
+      if (!data.date || !m) { showToastModern("Champs invalides", "err"); return false; }
+      const payload = { date: data.date, montant: m, label: data.label || "" };
+      if (f) Object.assign(f, payload);
+      else (PR.frais_rembourses = PR.frais_rembourses || []).push(Object.assign({ id: prNewId() }, payload));
+      prSave("Remboursement de frais enregistré");
+    }, "Enregistrer");
+}
+
 /* ── Suppression ─────────────────────────────────────────────────────────── */
 
 async function prDelete(kind, id) {
   if (!confirm("Supprimer cette ligne ?")) return;
+  prPushUndo();
   const rm = arr => (arr || []).filter(x => String(x.id) !== String(id));
   switch (kind) {
     case "achat":         PR.pea.achats       = rm(PR.pea.achats); break;
@@ -15754,6 +15955,7 @@ async function prDelete(kind, id) {
     case "remboursement": PR.remboursements   = rm(PR.remboursements); break;
     case "frais":         PR.frais            = rm(PR.frais); break;
     case "recurrent":     PR.frais_recurrents = rm(PR.frais_recurrents); break;
+    case "frais_remb":    PR.frais_rembourses = rm(PR.frais_rembourses); break;
     default: return;
   }
   await prSave("Ligne supprimée");
@@ -15776,7 +15978,7 @@ async function prBootstrap() {
 function prRefreshIfVisible() {
   if (!_prBootstrapped || !document.querySelector('[id^="pane-pr-"].active')) return;
   prRenderAll();
-  if (prTickers().some(t => !_prQuotes[t])) prRefreshQuotes(true);
+  if (prTickers().some(t => !prCours(t))) prRefreshQuotes(true);
 }
 
 (function patchGoTabPret() {
@@ -17015,9 +17217,7 @@ function paValeurAuto(compte) {
     // compte. Mêmes données que l'onglet Prêt, pas de second calcul.
     if (typeof PR !== "undefined" && PR && PR.pret) {
       if (!Number(PR.pret.montant)) return null;
-      const auj = prToday();
-      const cumul = l => (l || []).filter(x => x.date && x.date <= auj).reduce((s, x) => s + prN(x.montant), 0);
-      return Math.max(0, Math.round((cumul(PR.versements) - cumul(PR.remboursements)) * 100) / 100);
+      return Math.round(prCapitalDu() * 100) / 100;
     }
     return null;
   }

@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.3**
+**Version actuelle : 4.3.4**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -645,6 +645,8 @@ moins un échéancier calculé au calendrier. Changé le 28/09/2026 : le prêt d
 configuration, avant tout versement, et le patrimoine baissait d'un argent qui
 n'était encore sur aucun compte. Une tranche non reçue n'est ni une dette ni un
 avoir. La tuile d'accueil « Prêt étudiant » (capital restant dû) lit la même valeur.
+Depuis la 4.3.4, ce calcul n'existe qu'à un endroit, `prCapitalDu()` (onglet Prêt),
+que `paValeurAuto` appelle : le « Montant à rembourser » du module donne le même chiffre.
 
 **Pas de doublon avec le prêt.** L'argent du prêt est compté une fois en avoir, là
 où il se trouve (ligne PEA = PEA entier, parts du prêt comprises ; Livret A, AV,
@@ -1018,6 +1020,45 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
 * frais_recurrents : prélevés le MÊME JOUR chaque mois (jour pris sur `date_debut`,
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
+* frais_rembourses : `{id, date, montant, label}`, frais que la banque a rendus
+  (ex. un mois de carte offert), déduits des frais (4.3.4)
+
+**Les frais se comptent au fil des mois (4.3.4).** Jusque-là, les 120 prélèvements de
+la carte (6,05 €) comptaient dès le premier jour : 726 € de frais, et autant en moins
+dans les liquidités et les gains. Désormais `prAllFrais(jusqua)` ne prend que ce qui
+est daté d'aujourd'hui ou avant ; le reste s'affiche « à venir » dans Paramètres.
+* **Changement de tarif** : `paliers: [{id, date, montant}]` sur le frais récurrent,
+  nouveau montant à partir de cette date (`prTarif`). Ne jamais modifier `montant`
+  pour un changement de tarif : ce serait réécrire les prélèvements passés.
+* `nb_occurrences` 0 ou vide = frais sans fin (`prExpandRecurrent` s'arrête alors à
+  la date demandée ; sans date, il ne renvoie rien, jamais une boucle infinie).
+* Frais remboursés : même règle, ceux datés d'aujourd'hui ou avant. Le bouton
+  « flèche retour » d'un frais récurrent pré-remplit un remboursement (montant du jour).
+
+**Tout au réel, à sa date (4.3.4, audit du module).** Versements, remboursements, dépôts
+d'assurance vie, mouvements du Livret A et ordres du PEA ne comptent qu'à partir de
+leur date (`prPasse` / `prAVenir`) ; ce qui est daté plus tard s'affiche « à venir ».
+Le versement de 15 000 € annoncé pour le 05/10 comptait déjà comme reçu le 28/09.
+* `capital_du = prCapitalDu()` (versé − remboursé). `mensualites_restantes` reste
+  calculé sur le **montant emprunté** : sur le capital dû, il tomberait à 30 au lieu
+  de 60 avant la 2e tranche.
+* `prTranchesTxt(o, court)` : « 15 000 € versés sur 30 000 € empruntés, 15 000 €
+  attendus le … ». Le champ « Date du 1er déblocage » n'est qu'indicatif : ce sont
+  les versements qui comptent (un par tranche).
+* **Cours** : `prCours(t)` prend le cours du PEA (`getVar`, rafraîchi toutes les
+  3 min), `_prQuotes` ne sert plus qu'aux titres que le PEA ne suit pas. Avant, le
+  prêt chargeait ses cours une fois par session : sa valeur vieillissait.
+* **Livret A par quinzaines** (`prLivretState`) : un dépôt rapporte à partir de la
+  quinzaine qui suit, un retrait cesse dès le début de la sienne, taux / 24 par
+  quinzaine terminée, intérêts au capital le 1er janvier. Vérifié : 1 000 € le
+  10/01 à 3 % → 23 quinzaines, 28,75 €. Remplace le calcul au jour près.
+* **Retour** : `prPushUndo()` met un instantané `{PR}` dans la même pile que le PEA
+  (`undoLast` le reconnaît) ; posé par `prSubmit` (retiré si la saisie est refusée)
+  et par chaque suppression.
+* **Alertes** (`prAlertesHtml`) : versements saisis > montant emprunté ; placé +
+  remboursé > versé à ce jour. Les frais bancaires n'y entrent pas : la carte peut
+  être prélevée avant l'arrivée du prêt.
+* Graphique de répartition aux couleurs du thème (`carnetChartColors`, `CLRS`).
 
 Les cours passent par le serveur local (`/cours`), pas de second proxy Yahoo.
 

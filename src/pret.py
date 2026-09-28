@@ -15,8 +15,15 @@ pea.ventes  : {id, date, ticker, quantite, cours_vente, montant} (montant = cred
 av.contrats : [{id, label, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]
               -> plusieurs contrats possibles, chacun avec ses propres taux
 liv         : {label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}
-frais_recurrents : {id, label, montant, date_debut, frequence, nb_occurrences}
+frais_recurrents : {id, label, montant, date_debut, frequence, nb_occurrences, paliers}
               -> preleve le meme jour de chaque mois (jour pris sur date_debut)
+              -> nb_occurrences 0 = sans fin ; paliers [{id, date, montant}] =
+                 nouveau montant a partir de cette date (les prelevements
+                 passes gardent le leur). Seuls les prelevements dates
+                 d'aujourd'hui ou avant comptent dans les frais.
+frais_rembourses : {id, date, montant, label}
+              -> frais que la banque a rendus (ex. un mois de carte offert),
+                 deduits du total des frais
 """
 from __future__ import annotations
 
@@ -52,6 +59,7 @@ def default_data() -> dict:
         "remboursements":  [],
         "frais":           [],
         "frais_recurrents": [],
+        "frais_rembourses": [],
     }
 
 
@@ -71,7 +79,7 @@ def load_data() -> dict:
         base = dict(defaults[key])
         base.update(data.get(key) or {})
         data[key] = base
-    for key in ("versements", "remboursements", "frais", "frais_recurrents"):
+    for key in ("versements", "remboursements", "frais", "frais_recurrents", "frais_rembourses"):
         if not isinstance(data.get(key), list):
             data[key] = []
     for key in ("achats", "ventes"):
