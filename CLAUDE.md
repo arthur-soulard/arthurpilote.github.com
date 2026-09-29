@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.5**
+**Version actuelle : 4.3.6**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -1177,9 +1177,10 @@ ne jamais modifier le calcul sans les relancer.
 * Tuile d'accueil `prochain-achat` : le premier ordre, disparaît s'il n'y a
   rien à acheter.
 
-## Simulateur d'ordres (onglet Wishlist, `#card-sim-ordres`)
+## Simulateur d'ordres (onglet Stratégie, `#card-sim-ordres`)
 
-Le pendant manuel de Prochain achat, demandé par Arthur : il compose ses ordres
+Le pendant manuel de Prochain achat, juste sous sa carte (ajouté dans la Wishlist
+en 4.3.5, regroupé dans Stratégie à la demande d'Arthur le 29/09/2026). Arthur compose ses ordres
 lui-même (titre parmi cibles, positions et wishlist ; quantité en parts **ou** en
 euros, arrondie à la part inférieure ; prix limite modifiable), Pilote calcule
 frais, investi, débité, reste et répartition après achat. **Il ne propose rien.**
@@ -1210,7 +1211,8 @@ Fonctions `so*`, bloc juste après Prochain achat.
 * « Comparer » ouvre un tableau des cartes cochées (ordres, frais, débité, reste,
   poids par ligne, écart max à la cible). Badges « frais les plus bas » et « plus
   proche de la cible » seulement s'il y a au moins deux cartes à comparer.
-* **Les cours arrivent toutes les 3 min** (`renderWishlist` → `soRender()`) : si le
+* **`pacRender()` appelle `soRender()`** en tête : arrivée des cours (toutes les
+  3 min), ouverture de l'onglet et réglages de Prochain achat passent tous par là. Si le
   focus est dans l'éditeur, on recalcule sans redessiner les champs (sinon le
   curseur sortait en pleine saisie). Les actions qui changent la structure (titre,
   parts/€, flèches, ajout, retrait, chargement) appellent `soRender(true)`.
