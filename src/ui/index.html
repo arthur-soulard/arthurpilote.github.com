@@ -488,7 +488,7 @@ td:first-child { text-align: left; padding-left: 2px; font-family: var(--font); 
 .pac-cfg table input { width: 100%; min-width: 70px; padding: 5px 8px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 12.5px; }
 .pac-cfg .fg-row3, .pac-cfg .fg-row { margin-top: 12px; }
 
-/* Simulateur d'ordres (Wishlist) : mêmes contrôles que Prochain achat */
+/* Simulateur d'ordres (Stratégie) : mêmes contrôles que Prochain achat */
 .so-nom { width: 170px; padding: 6px 10px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 13px; }
 .so-table select, .so-table input { padding: 5px 8px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 12.5px; }
 .so-table select { max-width: 260px; }
@@ -2726,30 +2726,6 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <tbody id="wl-pea-etf"></tbody>
     </table></div>
   </div>
-  <div class="card" id="card-sim-ordres">
-    <div class="card-h">
-      <span class="card-t">Simulateur d'ordres</span>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-sm btn-ghost" onclick="soDepuisPlan()"><i class="ph ph-magic-wand"></i> Partir du plan proposé</button>
-        <button class="btn btn-sm btn-ghost" onclick="soNouveau()"><i class="ph ph-file-plus"></i> Nouveau</button>
-        <button class="btn btn-sm btn-primary" onclick="soEnregistrer()"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
-      </div>
-    </div>
-    <div class="card-b">
-      <div class="pac-ctrl">
-        <label class="pac-check">Scénario
-          <input id="so-nom" class="so-nom" placeholder="Nom, ex. 70/20/10" maxlength="40" oninput="soSetNom(this.value)"></label>
-        <label class="pac-check">Budget
-          <input id="so-budget" type="number" step="0.01" min="0" oninput="soSetBudget(this.value)"> €</label>
-        <span class="pac-dim" id="so-especes"></span>
-        <label class="pac-check"><input type="checkbox" id="so-gratuit" onchange="soSetGratuit(this.checked)">
-          Ordre gratuit du mois disponible</label>
-      </div>
-      <div id="so-ed"></div>
-      <div id="so-res"></div>
-      <div id="so-scen" class="so-scen"></div>
-    </div>
-  </div>
 </div>
 
 <!-- ═══════════════════ DÉPÔTS ═══════════════════ -->
@@ -2791,6 +2767,30 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       </div>
       <div id="pac-res"></div>
       <div class="pac-cfg" id="pac-cfg" style="display:none"></div>
+    </div>
+  </div>
+  <div class="card" id="card-sim-ordres">
+    <div class="card-h">
+      <span class="card-t">Simulateur d'ordres</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm btn-ghost" onclick="soDepuisPlan()"><i class="ph ph-magic-wand"></i> Partir du plan proposé</button>
+        <button class="btn btn-sm btn-ghost" onclick="soNouveau()"><i class="ph ph-file-plus"></i> Nouveau</button>
+        <button class="btn btn-sm btn-primary" onclick="soEnregistrer()"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="pac-ctrl">
+        <label class="pac-check">Scénario
+          <input id="so-nom" class="so-nom" placeholder="Nom, ex. 70/20/10" maxlength="40" oninput="soSetNom(this.value)"></label>
+        <label class="pac-check">Budget
+          <input id="so-budget" type="number" step="0.01" min="0" oninput="soSetBudget(this.value)"> €</label>
+        <span class="pac-dim" id="so-especes"></span>
+        <label class="pac-check"><input type="checkbox" id="so-gratuit" onchange="soSetGratuit(this.checked)">
+          Ordre gratuit du mois disponible</label>
+      </div>
+      <div id="so-ed"></div>
+      <div id="so-res"></div>
+      <div id="so-scen" class="so-scen"></div>
     </div>
   </div>
   <div class="card" id="card-strat">
@@ -7462,8 +7462,6 @@ function renderWishlist() {
   const t = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   const wu = document.getElementById("wish-update");
   if (wu) wu.textContent = Object.keys(_wsVar).length > 0 ? "Yahoo Finance · " + t : "En attente…";
-  // Le simulateur d'ordres suit les cours et la wishlist
-  if (typeof soRender === "function") soRender();
 }
 
 /* ─── Dépôts ─── */
@@ -8325,7 +8323,6 @@ function goTab(n) {
   if (n==="reco") { renderReco(); fetchAnalysts(); fetchKeystats(); }
   if (n==="sim" && typeof _initSimulateurs === "function") _initSimulateurs();
   if (n==="strat" && typeof pacRender === "function") pacRender();
-  if (n==="wish" && typeof soRender === "function") soRender();
   if (n==="dash" && typeof dashRenderOverview === "function") dashRenderOverview();
   // Memorise pour le prochain lancement
   try { document.body.dataset.activeTab = n; } catch(e) {}
@@ -11251,6 +11248,9 @@ function pacPlanCourant(opts) {
 function pacRender() {
   const res = document.getElementById("pac-res");
   if (!res) return;
+  // Le simulateur d'ordres, juste dessous, lit les mêmes cours et réglages :
+  // arrivée des cours, ouverture de l'onglet et réglages passent tous par ici.
+  if (typeof soRender === "function") soRender();
   const r = pacPlanCourant();
   if (!r) return;
   _pacDernier = r;
@@ -11455,7 +11455,7 @@ function pacSaisir(i) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   SIMULATEUR D'ORDRES (onglet Wishlist)
+   SIMULATEUR D'ORDRES (onglet Stratégie, sous Prochain achat)
    On compose ses ordres à la main (en parts ou en euros) : Pilote en calcule
    les frais et la répartition après achat, sans rien proposer. Les scénarios
    s'enregistrent et se comparent entre eux et au plan de Prochain achat.
@@ -11737,7 +11737,7 @@ function soRender(force) {
   document.getElementById("so-especes").innerHTML = "Espèces du PEA : " + pacEur(pacR2(computeCash()))
     + (_soBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="soSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux espèces</button>` : "");
   document.getElementById("so-gratuit").checked = soGratuitDispo();
-  // Les cours arrivent toutes les 3 minutes (renderWishlist) : pendant qu'on
+  // Les cours arrivent toutes les 3 minutes (pacRender) : pendant qu'on
   // tape dans un ordre, on recalcule sans redessiner les champs.
   const ed = document.getElementById("so-ed");
   if (force || !(ed && ed.contains(document.activeElement))) soRenderEd();
