@@ -488,6 +488,51 @@ td:first-child { text-align: left; padding-left: 2px; font-family: var(--font); 
 .pac-cfg table input { width: 100%; min-width: 70px; padding: 5px 8px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 12.5px; }
 .pac-cfg .fg-row3, .pac-cfg .fg-row { margin-top: 12px; }
 
+/* Simulateur d'ordres (Wishlist) : mêmes contrôles que Prochain achat */
+.so-nom { width: 170px; padding: 6px 10px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 13px; }
+.so-table select, .so-table input { padding: 5px 8px; border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg2); color: var(--txt); font-size: 12.5px; }
+.so-table select { max-width: 260px; }
+.so-table input[type="number"] { width: 100px; text-align: right; font-family: var(--mono); }
+.so-tog { display: inline-flex; border: 1px solid var(--brd2); border-radius: 999px; overflow: hidden; }
+.so-tog button { border: 0; background: transparent; color: var(--txt2); padding: 4px 10px; font-size: 11.5px; font-family: var(--font); cursor: pointer; }
+.so-tog button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+.so-acts { white-space: nowrap; }
+.so-sous { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 8px 0 14px; }
+.so-vide { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 0 16px; color: var(--txt2); font-size: 12.5px; }
+.so-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.so-kpi { background: var(--bg3); border-radius: var(--rad); padding: 10px 12px; }
+.so-kpi span { display: block; font-size: 11.5px; color: var(--txt2); }
+.so-kpi b { display: block; margin-top: 2px; font-family: var(--mono); font-size: 17px; color: var(--txt); }
+.so-kpi small { font-size: 11px; color: var(--txt3); }
+.so-kpi.neg b { color: var(--r); }
+.so-rep-t { font-size: 12px; color: var(--txt2); margin-bottom: 8px; }
+.so-rep { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; font-size: 12.5px; }
+.so-bar { position: relative; height: 7px; border-radius: 4px; background: var(--bg3); }
+.so-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); }
+.so-bar b { position: absolute; top: -4px; width: 2px; height: 15px; margin-left: -1px; border-radius: 1px; background: var(--txt); }
+.so-num { font-family: var(--mono); font-size: 12px; color: var(--txt2); white-space: nowrap; }
+.so-scen { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--brd); }
+.so-scen-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 12px; }
+.so-scen-t { font-family: var(--serif); font-size: 18px; }
+.so-note { margin: 10px 0 0; }
+.so-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+.so-carte { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: var(--radl); background: var(--bg3); border: 1px solid transparent; }
+.so-carte.plan { background: transparent; border: 1px dashed var(--brd3); }
+.so-carte.edit { border-color: var(--accent); }
+.so-carte-h { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-bottom: 6px; }
+.so-carte-h b { font-size: 13.5px; margin-right: auto; }
+.so-badge { padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-size: 10.5px; font-weight: 600; }
+.so-l { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+.so-l span:first-child { color: var(--txt2); }
+.so-l span:last-child { font-family: var(--mono); }
+.so-carte-b { display: flex; align-items: center; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--brd); }
+.so-cmp { display: inline-flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--txt2); cursor: pointer; }
+.so-cmp-t { margin-top: 14px; }
+.so-cmp-t td, .so-cmp-t th { vertical-align: baseline; }
+.so-cmp-t tbody th { padding: 11px 10px 11px 2px; font-weight: 500; color: var(--txt2); font-size: 12px; }
+.so-cmp-t .so-best { color: var(--accent-text); font-weight: 700; }
+.so-ord { text-align: left; font-size: 11.5px; line-height: 1.7; white-space: nowrap; }
+
 /* ══════════════════════════════════════════════════
    PILOTE — surcharges desktop app (sidebar, titlebar, dark theme)
 ══════════════════════════════════════════════════ */
@@ -1949,6 +1994,12 @@ label.fo-check {
   border-radius: var(--rad); padding: 12px; color: var(--txt); resize: vertical;
 }
 .vo-bulk:focus { outline: none; border-color: var(--accent); }
+.vo-bulk[aria-busy="true"] { opacity: .55; }
+#vo-bulk-prev:empty { display: none; }
+.vo-bulk-img { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 2px 0 10px; }
+.vo-bulk-hint { font-size: 11.5px; color: var(--txt3); line-height: 1.4; }
+.vo-bulk-hint b { color: var(--txt2); }
+.vo-bulk-img .ph-circle-notch { animation: sa-spin .8s linear infinite; }
 
 /* Réglage des listes (Paramètres → Vocabulaire) */
 .vo-li-row {
@@ -2674,6 +2725,30 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       </tr></thead>
       <tbody id="wl-pea-etf"></tbody>
     </table></div>
+  </div>
+  <div class="card" id="card-sim-ordres">
+    <div class="card-h">
+      <span class="card-t">Simulateur d'ordres</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm btn-ghost" onclick="soDepuisPlan()"><i class="ph ph-magic-wand"></i> Partir du plan proposé</button>
+        <button class="btn btn-sm btn-ghost" onclick="soNouveau()"><i class="ph ph-file-plus"></i> Nouveau</button>
+        <button class="btn btn-sm btn-primary" onclick="soEnregistrer()"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="pac-ctrl">
+        <label class="pac-check">Scénario
+          <input id="so-nom" class="so-nom" placeholder="Nom, ex. 70/20/10" maxlength="40" oninput="soSetNom(this.value)"></label>
+        <label class="pac-check">Budget
+          <input id="so-budget" type="number" step="0.01" min="0" oninput="soSetBudget(this.value)"> €</label>
+        <span class="pac-dim" id="so-especes"></span>
+        <label class="pac-check"><input type="checkbox" id="so-gratuit" onchange="soSetGratuit(this.checked)">
+          Ordre gratuit du mois disponible</label>
+      </div>
+      <div id="so-ed"></div>
+      <div id="so-res"></div>
+      <div id="so-scen" class="so-scen"></div>
+    </div>
   </div>
 </div>
 
@@ -4470,9 +4545,15 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       Les lignes vides sont ignorées, un mot déjà présent dans la liste aussi.
     </p>
     <div class="fg"><label>Liste</label><select id="vo-bulk-liste"></select></div>
-    <textarea class="vo-bulk" id="vo-bulk-text" spellcheck="false"
+    <div class="vo-bulk-img">
+      <button class="btn btn-ghost btn-sm" id="vo-bulk-imgbtn" onclick="voBulkPickImages()">
+        <i class="ph ph-image"></i> Lire une image</button>
+      <span class="vo-bulk-hint">ou colle une capture d'écran (<b>Ctrl+V</b>). Lue hors ligne,
+        à relire avant d'ajouter.</span>
+    </div>
+    <textarea class="vo-bulk" id="vo-bulk-text" spellcheck="false" oninput="voBulkPreview()"
       placeholder="resilient = résilient&#10;to thrive = prospérer, s'épanouir&#10;véhément = qui s'exprime avec force et passion"></textarea>
-    <div id="vo-bulk-prev" class="m-note" style="margin-top:10px"></div>
+    <div id="vo-bulk-prev" class="m-note" style="margin-top:10px" aria-live="polite"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-vo-bulk')">Annuler</button>
       <div style="flex:1"></div>
@@ -7381,6 +7462,8 @@ function renderWishlist() {
   const t = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   const wu = document.getElementById("wish-update");
   if (wu) wu.textContent = Object.keys(_wsVar).length > 0 ? "Yahoo Finance · " + t : "En attente…";
+  // Le simulateur d'ordres suit les cours et la wishlist
+  if (typeof soRender === "function") soRender();
 }
 
 /* ─── Dépôts ─── */
@@ -8242,6 +8325,7 @@ function goTab(n) {
   if (n==="reco") { renderReco(); fetchAnalysts(); fetchKeystats(); }
   if (n==="sim" && typeof _initSimulateurs === "function") _initSimulateurs();
   if (n==="strat" && typeof pacRender === "function") pacRender();
+  if (n==="wish" && typeof soRender === "function") soRender();
   if (n==="dash" && typeof dashRenderOverview === "function") dashRenderOverview();
   // Memorise pour le prochain lancement
   try { document.body.dataset.activeTab = n; } catch(e) {}
@@ -11098,12 +11182,15 @@ function pacCoursInfo(ts) {
                 + (age > 15 ? " (il y a " + Math.round(age) + " min)" : ""), cloture: false };
 }
 
-/* Tout ce que la carte et la tuile d'accueil affichent, calculé une fois. */
-function pacPlanCourant() {
+/* Tout ce que la carte et la tuile d'accueil affichent, calculé une fois.
+   opts (facultatif, simulateur d'ordres) : {budget, gratuitUtilise} remplacent
+   le budget et l'ordre gratuit de la carte, pour comparer à armes égales. */
+function pacPlanCourant(opts) {
   if (typeof S === "undefined" || !S || !S.positions) return null;
+  opts = opts || {};
   const cfg = pacCfg();
   const especes = pacR2(computeCash());
-  const budget = _pacBudget != null ? _pacBudget : especes;
+  const budget = opts.budget != null ? opts.budget : (_pacBudget != null ? _pacBudget : especes);
   const g = pacGratuit(cfg);
   const base = { cfg, especes, budget, g, alertes: [], horsAlloc: [] };
   const qte = tk => { const p = S.positions.find(x => x.ticker === tk); return p ? computePos(p).qty : 0; };
@@ -11131,7 +11218,8 @@ function pacPlanCourant() {
   const tauxPct = Math.min(cfg.taux, PAC_TAUX_MAX);
   const plan = pacCalcul(cfg.cibles.map((c, i) => ({
     key: c.ticker, label: pacLabel(c), q: qte(c.ticker), p: cours[i].p, t: c.pct / 100,
-  })), { budget, marge: cfg.marge / 100, seuil: cfg.seuilGratuit, taux: tauxPct / 100, gratuitUtilise: g.utilise });
+  })), { budget, marge: cfg.marge / 100, seuil: cfg.seuilGratuit, taux: tauxPct / 100,
+         gratuitUtilise: opts.gratuitUtilise != null ? opts.gratuitUtilise : g.utilise });
 
   const A = base.alertes;
   if (cfg.taux > PAC_TAUX_MAX)
@@ -11364,6 +11452,452 @@ function pacSaisir(i) {
   document.querySelector("#ov-pos h2").textContent = "Saisir l'achat de " + od.label;
   updatePosRecap();
   showToastModern("Corrige le cours et les frais réels de l'avis d'opéré avant d'enregistrer", "info");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SIMULATEUR D'ORDRES (onglet Wishlist)
+   On compose ses ordres à la main (en parts ou en euros) : Pilote en calcule
+   les frais et la répartition après achat, sans rien proposer. Les scénarios
+   s'enregistrent et se comparent entre eux et au plan de Prochain achat.
+   Un bac à sable : rien n'est jamais saisi dans le PEA.
+   Tarif, seuil de l'ordre gratuit, marge du prix limite et cibles sont ceux
+   de Prochain achat (pacCfg), lus au même endroit : un même ordre a partout
+   les mêmes frais. soCalcul ne lit ni l'écran ni S : testsSimulateurOrdres()
+   le vérifie, et vérifie qu'il redonne au centime les six cas de Prochain achat.
+   Scénarios dans S.uiPrefs.simOrdres ; le brouillon ne vit qu'en mémoire.
+═══════════════════════════════════════════════════════════════════════ */
+
+let _soEd = { id: null, nom: "", lignes: [] };   // ligne : {ticker, mode "parts"|"eur", val, prix (null = auto)}
+let _soBudget  = null;    // null = les espèces du PEA, comme Prochain achat
+let _soGratuit = null;    // null = ce que Prochain achat détecte pour le mois
+let _soComparer = false;
+const _soHorsComparaison = new Set();   // cartes décochées (« plan » = le plan proposé)
+
+/* Frais d'une liste d'ordres, DANS L'ORDRE où on les passe. Fortuneo écrit
+   « 0 € le 1er ordre inférieur ou égal à 500 € chaque mois, sinon 0,35 % » :
+   le premier ordre de la liste qui tient sous le seuil est gratuit, même
+   après un ordre plus gros (c'est aussi ce que cherche pacGratuitDetecte).
+   Arrondis de pacCalcul : frais au centime ordre par ordre, reste arrondi,
+   débité = budget − reste.
+   ordres : [{key, label, n, pl}] ; o : {budget, taux (fraction), seuil, gratuitUtilise} */
+function soCalcul(ordres, o) {
+  let pris = !!o.gratuitUtilise;
+  const res = ordres.map(od => {
+    const r = {...od, montant: od.n > 0 ? od.n * od.pl : 0, frais: 0, gratuit: false};
+    if (!(od.n > 0)) return r;
+    if (!pris && r.montant <= o.seuil + PAC_EPS) { r.gratuit = true; pris = true; }
+    else r.frais = pacR2(r.montant * o.taux);
+    return r;
+  });
+  const B = Math.max(0, o.budget || 0);
+  const investi = res.reduce((s, r) => s + r.montant, 0);
+  const frais = pacR2(res.reduce((s, r) => s + r.frais, 0));
+  const reste = pacR2(B - (investi + frais));
+  return { ordres: res, budget: B, investi, frais, reste, debite: pacR2(B - reste),
+           nb: res.filter(r => r.n > 0).length };
+}
+
+/* Parts entières d'une ligne : un montant en euros s'arrondit à la part inférieure. */
+function soParts(l, pl) {
+  const v = Number(l.val) || 0;
+  if (!(pl > 0) || v <= 0) return 0;
+  return Math.floor((l.mode === "eur" ? v / pl : v) + PAC_EPS);
+}
+
+/* À lancer dans la console : testsSimulateurOrdres() */
+function testsSimulateurOrdres() {
+  const P = { WPEA: 7.068, PEMS: 7.675, PNAS: 7.053 };
+  const opt = x => ({ budget: 500, taux: 0.0035, seuil: 500, gratuitUtilise: false, ...x });
+  const od = (k, n) => ({ key: k, label: k, n, pl: P[k] });
+  const ecarts = [];
+  const verif = (nom, obtenu, attendu) => {
+    const ok = JSON.stringify(obtenu) === JSON.stringify(attendu);
+    console.log((ok ? "✓ " : "✗ ") + nom + (ok ? "" : "\n  attendu " + JSON.stringify(attendu) + ", obtenu " + JSON.stringify(obtenu)));
+    if (!ok) ecarts.push(nom);
+  };
+  let r = soCalcul([od("WPEA", 49), od("PEMS", 13), od("PNAS", 7)], opt());
+  verif("S1 Trois ordres, le premier est le gratuit", [r.ordres.map(x => x.gratuit ? null : x.frais), r.frais, r.debite, r.reste], [[null, 0.35, 0.17], 0.52, 496, 4]);
+  r = soCalcul([od("WPEA", 85), od("PEMS", 13)], opt({ budget: 1000 }));
+  verif("S2 Premier ordre au-dessus de 500 € : le suivant est le gratuit", r.ordres.map(x => x.gratuit ? null : x.frais), [2.1, null]);
+  r = soCalcul([od("WPEA", 49), od("PEMS", 13), od("PNAS", 7)], opt({ gratuitUtilise: true }));
+  verif("S3 Ordre gratuit déjà utilisé", [r.frais, r.debite, r.reste], [1.73, 497.21, 2.79]);
+  verif("S4 350 € de WPEA à 7,068 €", soParts({ mode: "eur", val: 350 }, 7.068), 49);
+  // Les six cas de Prochain achat (mêmes entrées que testsProchainAchat) :
+  // leurs ordres, repris tels quels, doivent donner les mêmes frais au centime.
+  const T = { WPEA: 0.7, PEMS: 0.2, PNAS: 0.1 }, noms = ["WPEA", "PEMS", "PNAS"];
+  [[[127, 0, 0], 500], [[138, 36, 20], 500], [[683, 144, 98], 500], [[683, 144, 200], 500],
+   [[138, 36, 20], 500, true], [[138, 36, 20], 1000]].forEach(([q, B, gu], i) => {
+    const p = pacCalcul(noms.map((k, j) => ({ key: k, label: k, q: q[j], p: P[k], t: T[k] })),
+      { budget: B, marge: 0, seuil: 500, taux: 0.0035, gratuitUtilise: !!gu });
+    const s = soCalcul(p.ordres.map(x => ({ key: x.key, label: x.label, n: x.n, pl: x.pl })), opt({ budget: B, gratuitUtilise: !!gu }));
+    verif("T" + (i + 1) + " Plan de Prochain achat repris à la main",
+      [s.frais, s.debite, s.reste, s.ordres.map(x => x.gratuit)],
+      [pacR2(p.frais), p.total, p.reliquat, p.ordres.map(x => x.gratuit)]);
+  });
+  console.log(ecarts.length ? "Simulateur d'ordres : " + ecarts.length + " cas en échec" : "Simulateur d'ordres : 10 cas sur 10 conformes");
+  return { ok: !ecarts.length, ecarts };
+}
+
+/* ── Données ── */
+function soTarif() {
+  const cfg = pacCfg();
+  return { cfg, taux: Math.min(cfg.taux, PAC_TAUX_MAX) / 100, seuil: cfg.seuilGratuit, marge: cfg.marge / 100 };
+}
+function soBudget() { return _soBudget != null ? _soBudget : pacR2(computeCash()); }
+function soGratuitDispo() { return _soGratuit != null ? _soGratuit : !pacGratuit(pacCfg()).utilise; }
+function soLabel(tk) {
+  const c = pacCfg().cibles.find(x => x.ticker === tk);
+  return c ? pacLabel(c) : String(tk || "").replace(/^[A-Z]+:/, "");
+}
+function soCours(tk) {
+  const v = getVar(tk);
+  if (v && v.cours > 0) return v.cours;
+  const p = S.positions.find(x => x.ticker === tk);
+  return (p && p.cours > 0) ? p.cours : null;
+}
+/* Prix limite par défaut : celui de Prochain achat (dernier cours + marge). */
+function soPrixAuto(tk, marge) { const c = soCours(tk); return c ? pacR3(c * (1 + marge)) : null; }
+
+/* Ce qu'on peut acheter : lignes cibles, positions détenues, wishlist du PEA. */
+function soTitres() {
+  const m = new Map();
+  const add = (tk, nom) => { if (tk && !m.has(tk)) m.set(tk, { ticker: tk, label: soLabel(tk), nom: nom || "" }); };
+  pacCfg().cibles.forEach(c => add(c.ticker, ""));
+  S.positions.forEach(p => { if (computePos(p).qty > 0) add(p.ticker, p.name); });
+  (S.wishlist || []).filter(w => w.list === "pea").forEach(w => add(w.ticker, w.name));
+  return [...m.values()];
+}
+
+/* Poids après achat, au cours du jour comme Prochain achat, sur les lignes
+   cibles et les titres du scénario (les autres positions n'y entrent pas). */
+function soRepartition(ordres, cfg) {
+  const achat = {};
+  ordres.forEach(o => { if (o.n > 0) achat[o.key] = (achat[o.key] || 0) + o.n; });
+  const keys = [...new Set([...cfg.cibles.map(c => c.ticker).filter(Boolean), ...Object.keys(achat)])];
+  const qte = tk => { const p = S.positions.find(x => x.ticker === tk); return p ? computePos(p).qty : 0; };
+  const L = keys.map(k => {
+    const c = cfg.cibles.find(x => x.ticker === k), p = soCours(k);
+    return { key: k, label: soLabel(k), cible: c ? Number(c.pct) || 0 : 0,
+             v: p ? (qte(k) + (achat[k] || 0)) * p : null };
+  });
+  if (!L.length || L.some(l => l.v == null)) return null;
+  const tot = L.reduce((s, l) => s + l.v, 0);
+  if (!(tot > 0)) return null;
+  L.forEach(l => { l.apres = l.v / tot * 100; l.ecart = l.apres - l.cible; });
+  const somme = cfg.cibles.reduce((s, c) => s + (Number(c.pct) || 0), 0);
+  return { lignes: L, ecartMax: Math.abs(somme - 100) > 1e-6 ? null : Math.max(...L.map(l => Math.abs(l.ecart))) };
+}
+
+function soEvaluer(lignes) {
+  const t = soTarif();
+  const ordres = lignes.map(l => {
+    const pl = l.prix > 0 ? pacR3(l.prix) : soPrixAuto(l.ticker, t.marge);
+    return { key: l.ticker || "", label: soLabel(l.ticker), n: soParts(l, pl), pl: pl || 0, sansPrix: !!l.ticker && !pl };
+  });
+  const r = soCalcul(ordres, { budget: soBudget(), taux: t.taux, seuil: t.seuil, gratuitUtilise: !soGratuitDispo() });
+  r.repart = soRepartition(r.ordres, t.cfg);
+  return r;
+}
+
+function soScenarios() {
+  const c = S.uiPrefs && S.uiPrefs.simOrdres;
+  return (c && Array.isArray(c.scenarios)) ? c.scenarios : [];
+}
+function soSaveScenarios(liste) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.simOrdres = { scenarios: liste };
+  persist(false);
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
+    window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
+}
+
+/* Le plan de Prochain achat, calculé avec le budget et l'ordre gratuit d'ici. */
+function soPlanLignes() {
+  const r = pacPlanCourant({ budget: soBudget(), gratuitUtilise: !soGratuitDispo() });
+  if (!r) return { erreur: "PEA en cours de chargement" };
+  if (r.bloque) return { erreur: r.bloque };
+  return { lignes: r.plan.ordres.map(od => ({ ticker: od.key, mode: "parts", val: od.n, prix: null })) };
+}
+
+/* Le brouillon diffère-t-il de ce qui est enregistré ? (pour ne demander
+   confirmation que s'il y a vraiment quelque chose à perdre) */
+function soNet(lignes) {
+  return JSON.stringify(lignes.filter(l => l.ticker && Number(l.val) > 0)
+    .map(l => [l.ticker, l.mode === "eur" ? "eur" : "parts", Number(l.val), l.prix > 0 ? l.prix : null]));
+}
+function soModifie() {
+  if (!_soEd.lignes.some(l => Number(l.val) > 0)) return false;
+  const s = soScenarios().find(x => x.id === _soEd.id);
+  return !s || soNet(s.lignes) !== soNet(_soEd.lignes) || s.nom !== (_soEd.nom || "").trim();
+}
+function soCharger(ed) {
+  _soEd = ed;
+  soRender(true);
+}
+
+/* ── Actions ── */
+function soAjouter() {
+  const titres = soTitres();
+  if (!titres.length) { showToastModern("Aucun titre : ajoute une position ou un ETF à la wishlist", "warn"); return; }
+  const pris = new Set(_soEd.lignes.map(l => l.ticker));
+  const t = titres.find(x => !pris.has(x.ticker)) || titres[0];
+  _soEd.lignes.push({ ticker: t.ticker, mode: "parts", val: "", prix: null });
+  soRender(true);
+  const inp = document.getElementById("so-val-" + (_soEd.lignes.length - 1));
+  if (inp) inp.focus();
+}
+function soSuppr(i) { _soEd.lignes.splice(i, 1); soRender(true); }
+function soDeplacer(i, d) {
+  const L = _soEd.lignes, j = i + d;
+  if (j < 0 || j >= L.length) return;
+  [L[i], L[j]] = [L[j], L[i]];
+  soRender(true);
+}
+function soSetTicker(i, v) { _soEd.lignes[i].ticker = v; _soEd.lignes[i].prix = null; soRender(true); }
+/* Changer d'unité garde la même quantité : 13 parts → 99,78 € → 13 parts */
+function soSetMode(i, m) {
+  const l = _soEd.lignes[i];
+  if (!l || l.mode === m) return;
+  const pl = l.prix > 0 ? pacR3(l.prix) : soPrixAuto(l.ticker, soTarif().marge);
+  const n = soParts(l, pl);
+  l.mode = m;
+  l.val = n > 0 ? (m === "eur" ? pacR2(n * pl) : n) : "";
+  soRender(true);
+}
+function soSetVal(i, v)  { _soEd.lignes[i].val = v; soMaj(); }
+function soSetPrix(i, v) { const n = pacNum(v); _soEd.lignes[i].prix = n > 0 ? n : null; soMaj(); }
+function soSetNom(v)     { _soEd.nom = v; }
+function soSetBudget(v)  { _soBudget = (v === "" || v == null) ? null : Math.max(0, pacNum(v) || 0); soRender(); }
+function soSetGratuit(c) { _soGratuit = !!c; soRender(); }
+
+function soNouveau() {
+  if (soModifie() && !confirm("Effacer les ordres en cours ? Ils ne sont pas enregistrés.")) return;
+  soCharger({ id: null, nom: "", lignes: [] });
+}
+function soDepuisPlan() {
+  const p = soPlanLignes();
+  if (p.erreur) { showToastModern(p.erreur, "warn"); return; }
+  if (!p.lignes.length) { showToastModern("Le plan proposé ne contient aucun ordre avec ce budget", "warn"); return; }
+  if (soModifie() && !confirm("Remplacer les ordres en cours par le plan proposé ?")) return;
+  soCharger({ id: null, nom: "", lignes: p.lignes });
+  showToastModern("Plan proposé chargé : modifie-le, puis donne-lui un nom pour l'enregistrer", "info");
+}
+function soOuvrir(id) {
+  if (id === "plan") { soDepuisPlan(); return; }
+  const s = soScenarios().find(x => x.id === id);
+  if (!s) return;
+  if (_soEd.id !== id && soModifie() && !confirm("Remplacer les ordres en cours par « " + s.nom + " » ?")) return;
+  soCharger({ id: s.id, nom: s.nom, lignes: s.lignes.map(l => ({...l})) });
+}
+function soEnregistrer() {
+  const nom = (_soEd.nom || "").trim();
+  if (!nom) {
+    showToastModern("Donne un nom au scénario", "warn");
+    const inp = document.getElementById("so-nom");
+    if (inp) inp.focus();
+    return;
+  }
+  const lignes = _soEd.lignes.filter(l => l.ticker && Number(l.val) > 0).map(l => ({
+    ticker: l.ticker, mode: l.mode === "eur" ? "eur" : "parts", val: Number(l.val), prix: l.prix > 0 ? l.prix : null,
+  }));
+  if (!lignes.length) { showToastModern("Aucun ordre à enregistrer : saisis au moins une quantité", "warn"); return; }
+  const liste = soScenarios().slice();
+  const homonyme = liste.find(s => s.nom.toLowerCase() === nom.toLowerCase() && s.id !== _soEd.id);
+  if (homonyme && !confirm("Un scénario « " + homonyme.nom + " » existe déjà. Le remplacer ?")) return;
+  const id = homonyme ? homonyme.id : (liste.some(s => s.id === _soEd.id) ? _soEd.id : "so" + Date.now());
+  const i = liste.findIndex(s => s.id === id);
+  if (i >= 0) liste[i] = { id, nom, lignes }; else liste.push({ id, nom, lignes });
+  _soEd.id = id;
+  _soEd.nom = nom;
+  soSaveScenarios(liste);
+  showToastModern("Scénario « " + nom + " » enregistré", "ok");
+  soRender();
+}
+function soSupprScen(id) {
+  const s = soScenarios().find(x => x.id === id);
+  if (!s || !confirm("Supprimer le scénario « " + s.nom + " » ?")) return;
+  soSaveScenarios(soScenarios().filter(x => x.id !== id));
+  if (_soEd.id === id) _soEd.id = null;
+  _soHorsComparaison.delete(id);
+  soRender();
+}
+function soSetCompare(id, coche) {
+  if (coche) _soHorsComparaison.delete(id); else _soHorsComparaison.add(id);
+  soRenderScen();
+}
+function soToggleComparer() { _soComparer = !_soComparer; soRenderScen(); }
+
+/* ── Affichage ── */
+function soRender(force) {
+  if (!document.getElementById("card-sim-ordres") || typeof S === "undefined" || !S || !S.positions) return;
+  const b = document.getElementById("so-budget");
+  if (b && document.activeElement !== b) b.value = soBudget();
+  const nom = document.getElementById("so-nom");
+  if (nom && document.activeElement !== nom) nom.value = _soEd.nom || "";
+  document.getElementById("so-especes").innerHTML = "Espèces du PEA : " + pacEur(pacR2(computeCash()))
+    + (_soBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="soSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux espèces</button>` : "");
+  document.getElementById("so-gratuit").checked = soGratuitDispo();
+  // Les cours arrivent toutes les 3 minutes (renderWishlist) : pendant qu'on
+  // tape dans un ordre, on recalcule sans redessiner les champs.
+  const ed = document.getElementById("so-ed");
+  if (force || !(ed && ed.contains(document.activeElement))) soRenderEd();
+  soMaj();
+}
+
+function soRenderEd() {
+  const el = document.getElementById("so-ed");
+  if (!el) return;
+  const t = soTarif();
+  if (!_soEd.lignes.length) {
+    el.innerHTML = `<div class="so-vide">Aucun ordre pour l'instant.
+      <button class="btn btn-sm btn-ghost" onclick="soAjouter()"><i class="ph ph-plus"></i> Ajouter un ordre</button>
+      <button class="btn btn-sm btn-ghost" onclick="soDepuisPlan()"><i class="ph ph-magic-wand"></i> Partir du plan proposé</button></div>`;
+    return;
+  }
+  const titres = soTitres();
+  const options = tk => {
+    const liste = titres.some(x => x.ticker === tk) ? titres : [{ ticker: tk, label: soLabel(tk), nom: "" }, ...titres];
+    return liste.map(x => `<option value="${escHtml(x.ticker)}"${x.ticker === tk ? " selected" : ""}>`
+      + escHtml(x.label + (x.nom && x.nom !== x.label ? " · " + x.nom : "")) + `</option>`).join("");
+  };
+  const n = _soEd.lignes.length;
+  const fleche = (i, d, ico, lbl) => `<button class="m-iconbtn" title="${lbl}" aria-label="${lbl}" onclick="soDeplacer(${i}, ${d})"${(i + d < 0 || i + d >= n) ? " disabled" : ""}><i class="ph ph-${ico}"></i></button>`;
+  el.innerHTML = `<div class="tw"><table class="so-table">
+    <thead><tr><th style="text-align:left">N°</th><th style="text-align:left">Titre</th><th style="text-align:left">Saisie</th>
+      <th>Quantité</th><th title="Vide : dernier cours + marge de Prochain achat">Prix limite</th>
+      <th>Parts</th><th>Montant</th><th>Frais</th><th></th></tr></thead>
+    <tbody>${_soEd.lignes.map((l, i) => {
+      const auto = soPrixAuto(l.ticker, t.marge);
+      const eur = l.mode === "eur";
+      return `<tr>
+        <td style="text-align:left">${i + 1}</td>
+        <td style="text-align:left"><select aria-label="Titre de l'ordre ${i + 1}" onchange="soSetTicker(${i}, this.value)">${options(l.ticker)}</select></td>
+        <td style="text-align:left"><span class="so-tog" role="group" aria-label="Saisie en parts ou en euros">`
+        + `<button type="button" aria-pressed="${!eur}" onclick="soSetMode(${i}, 'parts')">parts</button>`
+        + `<button type="button" aria-pressed="${eur}" onclick="soSetMode(${i}, 'eur')">€</button></span></td>
+        <td><input id="so-val-${i}" type="number" min="0" step="${eur ? "0.01" : "1"}" value="${escHtml(String(l.val ?? ""))}"
+          placeholder="${eur ? "montant" : "parts"}" aria-label="${eur ? "Montant en euros" : "Nombre de parts"}, ordre ${i + 1}" oninput="soSetVal(${i}, this.value)"></td>
+        <td><input type="number" min="0" step="0.001" value="${l.prix > 0 ? l.prix : ""}" aria-label="Prix limite, ordre ${i + 1}"
+          placeholder="${auto ? auto.toLocaleString("fr-FR", {minimumFractionDigits: 3, maximumFractionDigits: 3}) : "à saisir"}" oninput="soSetPrix(${i}, this.value)"></td>
+        <td id="so-n-${i}"></td><td id="so-m-${i}"></td><td id="so-f-${i}"></td>
+        <td class="so-acts">${fleche(i, -1, "arrow-up", "Passer cet ordre plus tôt")}${fleche(i, 1, "arrow-down", "Passer cet ordre plus tard")}`
+        + `<button class="m-iconbtn danger" title="Retirer cet ordre" aria-label="Retirer cet ordre" onclick="soSuppr(${i})"><i class="ph ph-x"></i></button></td>
+      </tr>`;
+    }).join("")}</tbody></table></div>
+    <div class="so-sous">
+      <button class="btn btn-sm btn-ghost" onclick="soAjouter()"><i class="ph ph-plus"></i> Ajouter un ordre</button>
+      <span class="pac-dim">Les ordres se passent dans cet ordre : le premier de ${pacEur(t.seuil)} ou moins est le gratuit du mois.
+        Prix limite vide : dernier cours + ${pacPct(t.cfg.marge)} %, comme Prochain achat.</span>
+    </div>`;
+}
+
+/* Recalcule sans redessiner les champs : on peut taper sans perdre le curseur. */
+function soMaj() {
+  const r = soEvaluer(_soEd.lignes);
+  const set = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+  r.ordres.forEach((o, i) => {
+    set("so-n-" + i, !o.pl ? "—" : o.n > 0 ? o.n.toLocaleString("fr-FR") : `<span class="pac-dim">0</span>`);
+    set("so-m-" + i, o.n > 0 ? pacEur(o.montant) : "—");
+    set("so-f-" + i, o.n > 0 ? (o.gratuit ? `<span class="m-tag pos">gratuit</span>` : pacEur(o.frais)) : "—");
+  });
+  const res = document.getElementById("so-res");
+  if (res) {
+    const ic = { info: "info", warn: "warning", err: "warning-octagon" };
+    const A = [];
+    const sansPrix = [...new Set(r.ordres.filter(o => o.sansPrix).map(o => o.label))];
+    if (sansPrix.length) A.push(["err", "Cours inconnu pour " + sansPrix.join(", ") + " : tape un prix limite."]);
+    r.ordres.forEach((o, i) => {
+      if (o.pl && !o.n && Number(_soEd.lignes[i].val) > 0)
+        A.push(["warn", "Ordre " + (i + 1) + " : ce montant ne paie pas une part de " + o.label + " (" + pacPrix(o.pl) + ")."]);
+    });
+    if (r.nb && r.reste < 0) A.push(["warn", "Ces ordres dépassent le budget de " + pacEur(-r.reste) + "."]);
+    if (r.nb && r.repart && r.repart.ecartMax == null)
+      A.push(["info", "Les cibles de Prochain achat ne font pas 100 % : écart à la cible non calculé."]);
+    const alertes = A.length ? `<div class="pac-alerts">${A.map(a => `<div class="pac-alert ${a[0]}"><i class="ph ph-${ic[a[0]]}"></i><span>${escHtml(a[1])}</span></div>`).join("")}</div>` : "";
+    const pctFrais = r.investi > 0 ? (r.frais / r.investi * 100).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " % de l'investi" : "";
+    const kpis = !r.nb ? "" : `<div class="so-kpis">
+      <div class="so-kpi"><span>Investi</span><b>${pacEur(r.investi)}</b></div>
+      <div class="so-kpi"><span>Frais</span><b>${pacEur(r.frais)}</b><small>${pctFrais}</small></div>
+      <div class="so-kpi"><span>Débité</span><b>${pacEur(r.debite)}</b><small>${r.nb} ordre${r.nb > 1 ? "s" : ""}</small></div>
+      <div class="so-kpi${r.reste < 0 ? " neg" : ""}"><span>Reste</span><b>${pacEur(r.reste)}</b><small>sur ${pacEur(r.budget)}</small></div>
+    </div>`;
+    const rep = (!r.nb || !r.repart) ? "" : `<div class="so-rep-t">Répartition après achat <span class="pac-dim">(trait : cible)</span></div>
+      <div class="so-rep">${r.repart.lignes.map(l => `<span>${escHtml(l.label)}</span>
+        <div class="so-bar"><i style="width:${Math.min(100, l.apres).toFixed(2)}%"></i>${l.cible > 0 ? `<b style="left:${Math.min(100, l.cible)}%"></b>` : ""}</div>
+        <span class="so-num">${pacPct(l.apres)} %${l.cible > 0 ? " · cible " + pacPct(l.cible) + " %" : " · hors cible"}</span>`).join("")}</div>`;
+    res.innerHTML = alertes + kpis + rep;
+  }
+  soRenderScen();
+}
+
+function soRenderScen() {
+  const el = document.getElementById("so-scen");
+  if (!el) return;
+  const plan = soPlanLignes();
+  const cartes = [];
+  if (plan.lignes && plan.lignes.length) cartes.push({ id: "plan", nom: "Plan proposé", plan: true, r: soEvaluer(plan.lignes) });
+  soScenarios().forEach(s => cartes.push({ id: s.id, nom: s.nom, r: soEvaluer(s.lignes) }));
+  // Les meilleurs, seulement s'il y a de quoi comparer
+  const pleins = cartes.filter(c => c.r.nb > 0);
+  const minFrais = pleins.length > 1 ? Math.min(...pleins.map(c => c.r.frais)) : null;
+  const ecarts = pleins.map(c => c.r.repart && c.r.repart.ecartMax).filter(e => e != null);
+  const minEcart = ecarts.length > 1 ? Math.min(...ecarts) : null;
+  const meilleurFrais = c => minFrais != null && c.r.nb > 0 && c.r.frais <= minFrais + PAC_EPS;
+  const meilleurEcart = c => minEcart != null && c.r.repart && c.r.repart.ecartMax != null && c.r.repart.ecartMax <= minEcart + 0.05;
+  const ecartTxt = c => (c.r.repart && c.r.repart.ecartMax != null) ? pacPct(c.r.repart.ecartMax) + " pt" + (c.r.repart.ecartMax >= 1.95 ? "s" : "") : "—";
+  const choisies = cartes.filter(c => !_soHorsComparaison.has(c.id));
+
+  const carte = c => `<div class="so-carte${c.plan ? " plan" : ""}${c.id === _soEd.id ? " edit" : ""}">
+      <div class="so-carte-h"><b>${escHtml(c.nom)}</b>${c.plan ? `<span class="pac-dim">Prochain achat</span>` : ""}
+        ${meilleurFrais(c) ? `<span class="so-badge">frais les plus bas</span>` : ""}
+        ${meilleurEcart(c) ? `<span class="so-badge">plus proche de la cible</span>` : ""}</div>
+      <div class="so-l"><span>Ordres</span><span>${c.r.nb}</span></div>
+      <div class="so-l"><span>Frais</span><span>${pacEur(c.r.frais)}</span></div>
+      <div class="so-l"><span>Débité</span><span>${pacEur(c.r.debite)}</span></div>
+      <div class="so-l"><span>Reste</span><span${c.r.reste < 0 ? ` class="c-r"` : ""}>${pacEur(c.r.reste)}</span></div>
+      <div class="so-l"><span>Écart max à la cible</span><span>${ecartTxt(c)}</span></div>
+      <div class="so-carte-b">
+        <label class="so-cmp"><input type="checkbox"${_soHorsComparaison.has(c.id) ? "" : " checked"} onchange="soSetCompare('${c.id}', this.checked)"> Comparer</label>
+        <span style="flex:1"></span>
+        <button class="m-iconbtn" title="Ouvrir dans l'éditeur" aria-label="Ouvrir ${escHtml(c.nom)} dans l'éditeur" onclick="soOuvrir('${c.id}')"><i class="ph ph-folder-open"></i></button>
+        ${c.plan ? "" : `<button class="m-iconbtn danger" title="Supprimer" aria-label="Supprimer ${escHtml(c.nom)}" onclick="soSupprScen('${c.id}')"><i class="ph ph-trash"></i></button>`}
+      </div>
+    </div>`;
+
+  const vide = soScenarios().length ? "" : `<div class="pac-dim so-note">Aucun scénario enregistré : compose des ordres, donne-leur un nom, puis Enregistrer.
+    Le brouillon s'efface à la fermeture de Pilote.</div>`;
+  el.innerHTML = `<div class="so-scen-h">
+      <span class="so-scen-t">Scénarios</span>
+      <span class="pac-dim">recalculés aux cours du jour, avec le budget et l'ordre gratuit ci-dessus</span>
+      <span style="flex:1"></span>
+      <button class="btn btn-sm btn-ghost" onclick="soToggleComparer()" aria-pressed="${_soComparer}"><i class="ph ph-columns"></i> ${_soComparer ? "Masquer la comparaison" : "Comparer (" + choisies.length + ")"}</button>
+    </div>
+    ${plan.erreur ? `<div class="pac-dim so-note">Plan proposé indisponible : ${escHtml(plan.erreur)}</div>` : ""}
+    <div class="so-cards">${cartes.map(carte).join("")}</div>${vide}
+    ${_soComparer ? soComparaisonHtml(choisies, meilleurFrais, meilleurEcart) : ""}`;
+}
+
+function soComparaisonHtml(cols, meilleurFrais, meilleurEcart) {
+  if (cols.length < 2) return `<div class="pac-dim so-note">Coche au moins deux cartes pour les comparer.</div>`;
+  const cellule = (c, html, best) => `<td${best ? ` class="so-best"` : ""}>${html}</td>`;
+  const ligne = (lbl, f, best) => `<tr><th style="text-align:left">${lbl}</th>${cols.map(c => cellule(c, f(c), best && best(c))).join("")}</tr>`;
+  const ordres = c => `<div class="so-ord">${c.r.ordres.filter(o => o.n > 0).map((o, i) =>
+    `${i + 1}. ${escHtml(o.label)} × ${o.n}${o.gratuit ? ` <span class="m-tag pos">gratuit</span>` : ""}`).join("<br>") || "—"}</div>`;
+  const cibles = [];
+  cols.forEach(c => (c.r.repart ? c.r.repart.lignes : []).forEach(l => { if (!cibles.some(x => x.key === l.key)) cibles.push(l); }));
+  const poids = (c, key) => { const l = c.r.repart && c.r.repart.lignes.find(x => x.key === key); return l ? pacPct(l.apres) + " %" : "—"; };
+  return `<div class="tw so-cmp-t"><table>
+    <thead><tr><th></th>${cols.map(c => `<th>${escHtml(c.nom)}</th>`).join("")}</tr></thead>
+    <tbody>
+      ${ligne("Ordres, dans l'ordre", ordres)}
+      ${ligne("Investi", c => pacEur(c.r.investi))}
+      ${ligne("Frais", c => pacEur(c.r.frais), meilleurFrais)}
+      ${ligne("Frais / investi", c => c.r.investi > 0 ? (c.r.frais / c.r.investi * 100).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " %" : "—")}
+      ${ligne("Débité", c => pacEur(c.r.debite))}
+      ${ligne("Reste", c => pacEur(c.r.reste))}
+      ${cibles.map(l => ligne("Poids " + escHtml(l.label) + (l.cible > 0 ? " (cible " + pacPct(l.cible) + " %)" : ""), c => poids(c, l.key))).join("")}
+      ${ligne("Écart max à la cible", c => (c.r.repart && c.r.repart.ecartMax != null) ? pacPct(c.r.repart.ecartMax) + " pt" + (c.r.repart.ecartMax >= 1.95 ? "s" : "") : "—", meilleurEcart)}
+    </tbody></table></div>`;
 }
 
 // Wire up live PRU preview after DOM ready
@@ -19098,6 +19632,7 @@ function voOpenBulk() {
     .map(l => `<option value="${l.id}">${escHtml((l.icon || "") + " " + l.label)}</option>`).join("");
   document.getElementById("vo-bulk-text").value = "";
   document.getElementById("vo-bulk-prev").textContent = "";
+  _voBulkNote = "";
   document.getElementById("ov-vo-bulk").classList.add("open");
 }
 
@@ -19151,6 +19686,94 @@ async function voBulkAdd() {
     voRenderAll();
   }
 }
+
+/** Compte, sous la zone, ce qui sera ajouté et ce qui sera ignoré. */
+function voBulkPreview() {
+  const prev = document.getElementById("vo-bulk-prev");
+  if (!prev) return;
+  const { lignes, rejets } = voBulkParse(document.getElementById("vo-bulk-text").value);
+  let html = _voBulkNote;
+  if (lignes.length || rejets.length) {
+    const n = lignes.length, r = rejets.length;
+    let c = `<b>${n} mot${n > 1 ? "s" : ""}</b> prêt${n > 1 ? "s" : ""} à ajouter`;
+    if (r) c += ` · <span style="color:var(--a)">${r} ligne${r > 1 ? "s" : ""} sans « = », ignorée${r > 1 ? "s" : ""}</span>`;
+    html = html ? html + "<br>" + c : c;
+  }
+  prev.innerHTML = html;
+}
+
+/* ── Lecture d'une image (capture d'écran, photo de page) ─────────────────
+   Même moteur que les pesées de Santé : l'OCR de Windows, hors ligne. La
+   lecture ne fait que REMPLIR la zone, à la suite de ce qui s'y trouve déjà :
+   on relit, on corrige, puis « Ajouter ». Rien n'est enregistré avant. */
+
+let _voBulkNote = "";     // bilan de la dernière lecture, sous la zone
+let _voBulkBusy = false;
+
+async function voBulkPickImages() {
+  if (_voBulkBusy || !window.pywebview || !pywebview.api) return;
+  let r;
+  try { r = await pywebview.api.vocabulaire_pick_images(); }
+  catch (e) { showToastModern("Erreur : " + e, "err"); return; }
+  if (!r || r.cancelled) return;
+  if (!r.ok) { showToastModern(r.error || "Sélection impossible", "err"); return; }
+  const paths = r.paths || [];
+  if (paths.length) voBulkLire(() => pywebview.api.vocabulaire_read_images(paths), paths.length);
+}
+
+async function voBulkLire(appel, nbImages) {
+  const btn  = document.getElementById("vo-bulk-imgbtn");
+  const zone = document.getElementById("vo-bulk-text");
+  const libelle = btn.innerHTML;   // innerHTML : l'icône doit revenir aussi
+  _voBulkBusy = true;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="ph ph-circle-notch"></i> Lecture…`;
+  zone.setAttribute("aria-busy", "true");
+  let res;
+  try { res = await appel(); }
+  catch (e) { res = { ok: false, error: String(e) }; }
+  _voBulkBusy = false;
+  btn.disabled = false;
+  btn.innerHTML = libelle;
+  zone.removeAttribute("aria-busy");
+
+  if (!res || !res.ok) {
+    showToastModern((res && res.error) || "Image illisible", "err");
+    return;
+  }
+  const lignes = res.lignes || [];
+  if (!lignes.length) { showToastModern("Aucun texte trouvé sur l'image", "warn"); return; }
+
+  const avant = zone.value.replace(/\s+$/, "");
+  zone.value = (avant ? avant + "\n" : "") + lignes.join("\n");
+  zone.scrollTop = zone.scrollHeight;
+  const n = lignes.length, s = n > 1 ? "s" : "";
+  _voBulkNote = `${n} ligne${s} lue${s} sur ${nbImages > 1 ? nbImages + " images" : "l'image"}.`
+              + ` Relis-les : la lecture peut confondre des lettres.`;
+  const ratees = (res.details || []).filter(d => !d.ok);
+  if (ratees.length) {
+    _voBulkNote += ` <span style="color:var(--r)">Illisible : `
+                 + ratees.map(d => escHtml(d.file)).join(", ") + `.</span>`;
+  }
+  voBulkPreview();
+}
+
+/* Ctrl+V d'une capture (Win+Maj+S) pendant que la fenêtre est ouverte. Du
+   texte collé garde son comportement normal : il l'emporte sur une image. */
+document.addEventListener("paste", e => {
+  const ov = document.getElementById("ov-vo-bulk");
+  if (!ov || !ov.classList.contains("open") || _voBulkBusy) return;
+  const cd = e.clipboardData;
+  if (!cd || cd.getData("text/plain")) return;
+  const item = [...cd.items].find(i => i.kind === "file" && i.type.startsWith("image/"));
+  const fichier = item && item.getAsFile();
+  if (!fichier) return;
+  e.preventDefault();
+  const fr = new FileReader();
+  fr.onload  = () => voBulkLire(() => pywebview.api.vocabulaire_read_pasted(fr.result), 1);
+  fr.onerror = () => showToastModern("Image illisible", "err");
+  fr.readAsDataURL(fichier);
+});
 
 /* ── Mes listes ────────────────────────────────────────────────────────── */
 

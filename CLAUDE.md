@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.4**
+**Version actuelle : 4.3.5**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -26,10 +26,10 @@ Pilote/
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
 │   ├── pret.py         # Module « Prêt étudiant » (pret.json)
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
-│   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
+│   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── formation.py    # Module « Formation »     (formation.json) + certificats
-│   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes
+│   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
@@ -114,9 +114,9 @@ jour : 10 Ko au lieu de 418 Ko. Ne pas « simplifier » en resérialisant `data`
    pouvoir enregistrer. Côté Python, un `pea_data.json` absent n'est **pas** une erreur
    de lecture (`storage.load_data()` laisse `error` à `None`).
 4. **`ocr_win.ps1` dans les `datas` de `build/pilote.spec`** → sans cette ligne, l'OCR
-   du module Santé fonctionne parfaitement en dev et **échoue silencieusement dans
-   l'exe compilé** : le script est introuvable, `ocr_available()` répond « Script OCR
-   introuvable » et l'import de captures ne marche plus. Une panne invisible tant
+   des modules Santé et Vocabulaire fonctionne parfaitement en dev et **échoue
+   silencieusement dans l'exe compilé** : le script est introuvable, `ocr_available()`
+   répond « Script OCR introuvable » et l'import de captures ne marche plus. Une panne invisible tant
    qu'on ne teste pas le binaire. Vérification : `dist/Pilote/_internal/ocr_win.ps1`
    doit exister après le build.
 
@@ -867,6 +867,41 @@ Détails qui ont une raison :
 Tuiles d'accueil : `voc-jour` (« Liste du jour à faire », qui **disparaît** dès
 qu'il n'y a plus rien de dû — c'est tout son intérêt) et `voc-acquis`.
 
+### Lire une capture ou une photo de liste (ajout en masse)
+
+Bouton « Lire une image » dans `ov-vo-bulk`, ou Ctrl+V d'une capture (Win+Maj+S)
+pendant que la fenêtre est ouverte. Même moteur que Santé (`ocr_win.ps1`, hors
+ligne) ; `vocabulaire.lire_images()` / `lire_image_collee()`, API
+`vocabulaire_pick_images`, `vocabulaire_read_images`, `vocabulaire_read_pasted`.
+JS : `voBulkPickImages`, `voBulkLire`, le gestionnaire `paste`, `voBulkPreview`
+(compte sous la zone les mots prêts et les lignes sans « = », qui seront ignorées).
+
+* **Ça ne fait que remplir la zone**, à la suite de son contenu, une ligne
+  `mot = réponse` par mot. Rien n'est enregistré avant « Ajouter » : même règle que
+  l'import Santé. Ne pas transformer ça en ajout direct.
+* Deux mises en page reconnues : **deux colonnes** (mot | traduction) et
+  **« mot : définition »** sur une ligne (`:`, `=`, tiret entouré d'espaces, flèche).
+  Le reste arrive tel quel, sans « = » : l'aperçu le signale.
+* **Le moteur rend chaque colonne en lignes séparées** : l'appariement se fait par
+  position (`_gouttiere` trouve le blanc entre colonnes, `_apparier` réassocie).
+  Sur une photo penchée que le moteur n'a pas redressée, toute la colonne de droite
+  est décalée d'une même hauteur : `_apparier` cherche ce décalage avant d'apparier.
+  C'est pour ça que `ocr_win.ps1` renvoie `l` (numéro de ligne du moteur) et `angle`
+  depuis ce changement ; Santé ignore ces deux champs.
+* Une traduction trop longue pour une ligne est rattachée à son mot si elle est plus
+  proche de lui que l'écart habituel entre deux entrées ; sinon elle sort seule :
+  mieux vaut une ligne à trier qu'un mot collé à la mauvaise traduction.
+* **Image en gris seulement, à la résolution d'origine** (mesuré le 29/09/2026 sur
+  des images de test) : contrastée, une photo penchée n'est plus redressée et « I'd »
+  devient « Ild ». Relecture ×2 seulement si les mots font moins de 12 px de haut
+  (`PETIT_TEXTE`) : là, l'agrandissement corrige tout ; au-dessus, il dégrade.
+* Seul le français est installé comme langue d'OCR chez Arthur ; il lit bien
+  l'anglais, sauf le pronom « I » lu « l » : `_L_POUR_I` le corrige (un « l » seul
+  ou « l'd », « l'm »… n'existent pas en français).
+* Un mot isolé très court (« si ») est parfois ignoré par le moteur : la ligne du mot
+  reste alors seule, sans « = », donc visible.
+* Du texte collé garde son comportement normal : il l'emporte sur une image.
+
 ## Module Santé (sante.json)
 
 Pesées de la balance connectée, saisies depuis les captures d'écran de l'app
@@ -1141,6 +1176,48 @@ ne jamais modifier le calcul sans les relancer.
   n'est écrit sans « Enregistrer ». Après saisie, le plan se recalcule.
 * Tuile d'accueil `prochain-achat` : le premier ordre, disparaît s'il n'y a
   rien à acheter.
+
+## Simulateur d'ordres (onglet Wishlist, `#card-sim-ordres`)
+
+Le pendant manuel de Prochain achat, demandé par Arthur : il compose ses ordres
+lui-même (titre parmi cibles, positions et wishlist ; quantité en parts **ou** en
+euros, arrondie à la part inférieure ; prix limite modifiable), Pilote calcule
+frais, investi, débité, reste et répartition après achat. **Il ne propose rien.**
+Fonctions `so*`, bloc juste après Prochain achat.
+
+* **Un seul calcul des frais** : tarif, seuil de l'ordre gratuit, marge du prix
+  limite, plafond de 0,5 % et cibles viennent de `pacCfg()`, arrondis de `pacR2`.
+  `soCalcul()` (pur) et `testsSimulateurOrdres()` (console, 10 cas) : les six cas de
+  Prochain achat, repris comme ordres manuels, doivent redonner les mêmes frais,
+  le même débit et le même reste au centime. Relancer les deux séries de tests
+  après toute modification.
+* **L'ordre des lignes est l'ordre de passage.** Fortuneo écrit « 0 € le 1er ordre
+  inférieur ou égal à 500 € chaque mois » (lu sur fortuneo.fr le 29/09/2026) : le
+  premier ordre de la liste qui tient sous le seuil est gratuit, même après un
+  ordre plus gros. C'est la lecture de `pacGratuitDetecte`. Flèches ↑↓ pour
+  réordonner.
+* Budget (espèces par défaut) et case « Ordre gratuit du mois disponible »
+  (détection de Prochain achat par défaut) : propres au simulateur, en mémoire,
+  jamais enregistrés. Ils valent pour l'éditeur **et** toutes les cartes.
+* **Scénarios** dans `S.uiPrefs.simOrdres = {scenarios: [{id, nom, lignes:
+  [{ticker, mode "parts"|"eur", val, prix|null}]}]}` : recalculés aux cours du jour
+  à chaque affichage, sauf un prix saisi à la main. Le brouillon ne vit qu'en
+  mémoire (effacé à la fermeture). Aucun ordre n'est jamais saisi dans le PEA.
+* **Plan proposé** : carte de référence en pointillés (non supprimable) et bouton
+  « Partir du plan proposé ». `pacPlanCourant(opts)` accepte `{budget,
+  gratuitUtilise}` pour calculer le plan avec le budget et l'ordre gratuit du
+  simulateur : les deux se comparent à armes égales.
+* « Comparer » ouvre un tableau des cartes cochées (ordres, frais, débité, reste,
+  poids par ligne, écart max à la cible). Badges « frais les plus bas » et « plus
+  proche de la cible » seulement s'il y a au moins deux cartes à comparer.
+* **Les cours arrivent toutes les 3 min** (`renderWishlist` → `soRender()`) : si le
+  focus est dans l'éditeur, on recalcule sans redessiner les champs (sinon le
+  curseur sortait en pleine saisie). Les actions qui changent la structure (titre,
+  parts/€, flèches, ajout, retrait, chargement) appellent `soRender(true)`.
+* Écartés par Arthur le 29/09/2026 : les frais de gestion annuels (TER) dans la
+  comparaison, et l'offre Fortuneo × Amundi (achats de 500 € à 100 000 € sans
+  courtage sur ~120 ETF Amundi jusqu'au 31/12/2026 ; ni WPEA, ni PEMS
+  FR001400ZGO4, ni PNAS FR001400ZGR7 n'y figurent, seulement PAEEM et PUST).
 
 ## Graphique « Évolution du capital » (vue d'ensemble du PEA, `#card-twr`)
 
