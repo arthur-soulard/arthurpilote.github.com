@@ -3,11 +3,12 @@
 # Aucune dependance externe, aucun binaire a embarquer, aucun acces reseau :
 # le moteur fait partie de Windows 10/11 et tourne hors ligne.
 #
-# Appele par sante.py :
+# Appele par sante.py (captures FitDays) et vocabulaire.py (listes de mots) :
 #   powershell -NoProfile -ExecutionPolicy Bypass -File ocr_win.ps1
 #              -ImagePath <png> -JsonPath <json>
 #
-# Ecrit un JSON UTF-8 (sans BOM) : {ok, lang, width, height, words:[{t,x,y,w,h}]}
+# Ecrit un JSON UTF-8 (sans BOM) :
+#   {ok, lang, width, height, angle, words:[{t,l,x,y,w,h}]}
 # Les positions sont indispensables : c'est elles qui permettent d'apparier
 # un libelle a sa valeur sur la meme ligne, l'ordre de lecture du moteur
 # n'etant pas fiable sur une mise en page en colonnes.
@@ -65,10 +66,15 @@ try {
 
     $result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
 
+    # `l` : numero de la ligne du moteur. Il separe deja deux colonnes de texte
+    # et suit l'inclinaison d'une photo : vocabulaire.py regroupe par ligne.
+    $li = 0
     $words = foreach ($line in $result.Lines) {
+        $li++
         foreach ($word in $line.Words) {
             [pscustomobject]@{
                 t = $word.Text
+                l = $li
                 x = [int]$word.BoundingRect.X
                 y = [int]$word.BoundingRect.Y
                 w = [int]$word.BoundingRect.Width
@@ -82,6 +88,7 @@ try {
         lang   = $engine.RecognizerLanguage.LanguageTag
         width  = $bitmap.PixelWidth
         height = $bitmap.PixelHeight
+        angle  = $result.TextAngle
         words  = @($words)
     })
 }

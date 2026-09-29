@@ -46,7 +46,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.4"
+APP_VERSION = "4.3.5"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -499,6 +499,26 @@ class Api:
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
+
+    def vocabulaire_pick_images(self) -> dict:
+        """Meme selecteur d'images que Sante (plusieurs a la fois)."""
+        return self.sante_pick_screenshots()
+
+    def vocabulaire_read_images(self, paths: list) -> dict:
+        """OCR de captures ou de photos : pre-remplit l'ajout en masse."""
+        try:
+            return vocabulaire.lire_images(list(paths or []))
+        except Exception as e:
+            return {"ok": False, "error": str(e), "lignes": [],
+                    "trace": traceback.format_exc()}
+
+    def vocabulaire_read_pasted(self, data_url: str) -> dict:
+        """Image collee (Ctrl+V), recue en data URL depuis le JS."""
+        try:
+            return vocabulaire.lire_image_collee(data_url or "")
+        except Exception as e:
+            return {"ok": False, "error": str(e), "lignes": [],
+                    "trace": traceback.format_exc()}
 
     def server_port(self) -> int:
         return server.get_port()
