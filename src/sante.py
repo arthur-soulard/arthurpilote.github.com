@@ -178,7 +178,17 @@ def _parse_number(s: str) -> Optional[float]:
 # meilleurs resultats (les petits nombres isoles comme la graisse viscerale
 # disparaissent des qu'on agrandit), et elle est deux fois plus rapide. Les
 # variantes agrandies ne servent que de rattrapage.
+#
+# Les deux premieres (30/09/2026) gardent le canal le plus SOMBRE de chaque
+# pixel ("min") au lieu de la luminance. FitDays colore ses valeurs selon leur
+# niveau (vert pale, orange, bleu) : en gris, un "7.0" vert pale devient un
+# gris presque blanc que le moteur ne voit a aucune echelle. Mesure sur trois
+# vraies captures : 12 valeurs sur 14 en gris, 14 sur 14 avec "min" (graisse
+# viscerale lue a toutes les echelles, age corporel orange des x1.5), aucune
+# valeur fausse de plus. Les anciennes passes restent en rattrapage.
 VARIANTS = [
+    {"scale": 1.0, "mode": "min"},    # texte colore compris
+    {"scale": 1.5, "mode": "min"},    # age corporel orange
     {"scale": 1.0, "mode": "gray"},   # meilleur rendement sur l'ecran Details
     {"scale": 1.5, "mode": "gray"},   # attrape le gros cadran (blanc sur turquoise)
     {"scale": 2.0, "mode": "bin"},
@@ -202,9 +212,16 @@ def _preprocess(src: str, dst: str, scale: float, mode: str) -> bool:
             im = ImageOps.exif_transpose(im)
         except Exception:
             pass
-        im = im.convert("L")   # la couleur disparait : le texte vert, orange
-                               # ou rouge de FitDays redevient lisible
-        if mode == "raw":
+        if mode == "min":
+            # Canal le plus sombre : sur fond blanc, un texte vert, orange ou
+            # bleu devient aussi fonce que du noir (voir VARIANTS).
+            from PIL import ImageChops
+            r, g, b = im.convert("RGB").split()
+            im = ImageChops.darker(ImageChops.darker(r, g), b)
+        else:
+            im = im.convert("L")   # la couleur disparait : le texte vert, orange
+                                   # ou rouge de FitDays redevient lisible
+        if mode in ("raw", "min"):
             pass               # aucune retouche : c'est souvent le meilleur
         elif mode == "bin":
             im = ImageOps.autocontrast(im, cutoff=1)
@@ -434,8 +451,12 @@ def _dial_weight(words: list, cutoff: Optional[int]) -> Optional[float]:
     return _validate("poids", val) if val is not None else None
 
 
-def _extract_values(words: list, width: int) -> dict:
-    """Apparie chaque nombre de la colonne droite au libelle qui lui fait face."""
+def _extract_values(words: list, width: int, vus: Optional[set] = None) -> dict:
+    """
+    Apparie chaque nombre de la colonne droite au libelle qui lui fait face.
+    `vus` (facultatif) recoit les metriques dont le LIBELLE est sur la capture,
+    valeur lue ou non.
+    """
     if not words:
         return {}
     cutoff = _contraste_cutoff(words)
@@ -452,6 +473,8 @@ def _extract_values(words: list, width: int) -> dict:
         mid = _match_metric(b["text"])
         if mid:
             labelled.append((mid, b))
+            if vus is not None:
+                vus.add(mid)
 
     found = {}
     if not labelled:
@@ -548,6 +571,7 @@ def read_screenshot(path: str, deja_lues=None) -> dict:
 
     values, date_info, passes, lang = {}, {"date": "", "time": ""}, 0, ""
     known = set(deja_lues or ())
+    vus = set()   # metriques dont le libelle figure sur la capture
     tmpdir = tempfile.mkdtemp(prefix="pilote_ocr_")
     try:
         for i, var in enumerate(VARIANTS):
@@ -564,7 +588,7 @@ def read_screenshot(path: str, deja_lues=None) -> dict:
             lang = lang or res.get("lang", "")
             avant = len(values)
             for mid, val in _extract_values(res.get("words") or [],
-                                            res.get("width") or 1).items():
+                                            res.get("width") or 1, vus).items():
                 values.setdefault(mid, val)   # la 1re passe qui lit gagne
             if not date_info["date"]:
                 date_info = _extract_datetime(_rows_from_words(res.get("words") or []))
@@ -572,8 +596,11 @@ def read_screenshot(path: str, deja_lues=None) -> dict:
             # pratique. On s'arrete la plutot que de couter 3 secondes de plus.
             # Mais tant qu'on n'a RIEN lu, on tente toutes les variantes : une
             # capture difficile (texte blanc sur fond colore) ne cede parfois
-            # qu'a la derniere.
-            if passes >= 2 and len(values) == avant and values:
+            # qu'a la derniere. Et tant qu'un libelle de la capture attend sa
+            # valeur non plus : l'age corporel orange n'apparaissait qu'a la
+            # 3e passe, apres l'arret (30/09/2026).
+            if (passes >= 2 and len(values) == avant and values
+                    and not (vus - set(values) - known)):
                 break
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
@@ -597,8 +624,11 @@ ZIP_IMAGES_MAX = 20
 ZIP_IMAGE_OCTETS_MAX = 25 * 1024 * 1024
 
 
-def _images_du_zip(chemin: str, dossier: str):
-    """Extrait les images d'une archive dans `dossier` -> (chemins, erreur)."""
+def _images_du_zip(chemin: str, dossier: str, exts: tuple = ZIP_EXTS):
+    """
+    Extrait les images d'une archive dans `dossier` -> (chemins, erreur).
+    `exts` : extensions retenues (le Vocabulaire y ajoute ".pdf").
+    """
     out = []
     try:
         with zipfile.ZipFile(chemin) as zf:
@@ -606,7 +636,7 @@ def _images_du_zip(chemin: str, dossier: str):
                               if not i.is_dir()
                               and not i.filename.startswith("__MACOSX/")
                               and not os.path.basename(i.filename).startswith(".")
-                              and os.path.splitext(i.filename)[1].lower() in ZIP_EXTS
+                              and os.path.splitext(i.filename)[1].lower() in exts
                               and i.file_size <= ZIP_IMAGE_OCTETS_MAX),
                              key=lambda i: i.filename.lower())
             for n, info in enumerate(membres[:ZIP_IMAGES_MAX]):
@@ -624,7 +654,8 @@ def _images_du_zip(chemin: str, dossier: str):
     except (zipfile.BadZipFile, OSError, ValueError):
         return [], "Fichier zip illisible."
     if not out:
-        return [], "Aucune image (PNG ou JPG) dans ce fichier zip."
+        quoi = "ni image ni PDF" if ".pdf" in exts else "aucune image (PNG ou JPG)"
+        return [], "Ce fichier zip ne contient %s." % quoi
     return out, ""
 
 

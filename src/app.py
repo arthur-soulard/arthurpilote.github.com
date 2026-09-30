@@ -46,7 +46,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.8"
+APP_VERSION = "4.3.9"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -502,13 +502,13 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     def vocabulaire_pick_images(self) -> dict:
-        """Images ou PDF (plusieurs a la fois) : le PDF est lu page par page."""
+        """Images, PDF ou .zip (plusieurs a la fois) : le PDF est lu page par page."""
         try:
             win = webview.windows[0]
             result = win.create_file_dialog(
                 webview.OPEN_DIALOG,
                 allow_multiple=True,
-                file_types=("Images et PDF (*.png;*.jpg;*.jpeg;*.heic;*.pdf)",
+                file_types=("Images PDF ou zip (*.png;*.jpg;*.jpeg;*.heic;*.pdf;*.zip)",
                             "All files (*.*)"),
             )
             if not result:

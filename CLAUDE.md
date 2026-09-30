@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.8**
+**Version actuelle : 4.3.9**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -883,6 +883,11 @@ JS : `voBulkPickImages`, `voBulkLire`, le gestionnaire `paste`, `voBulkPreview`
 * **Ça ne fait que remplir la zone**, à la suite de son contenu, une ligne
   `mot = réponse` par mot. Rien n'est enregistré avant « Ajouter » : même règle que
   l'import Santé. Ne pas transformer ça en ajout direct.
+* **.zip (4.3.9)** : `lire_images` remplace un zip par les images et les PDF qu'il
+  contient, avec l'extraction de Santé (`sante._images_du_zip(..., exts)` :
+  fichiers cachés de macOS/iPhone ignorés, rien ne sort du dossier temporaire).
+  Vérifié : le `Gmail.zip` d'Arthur (ses deux photos) donne 84 paires, comme les
+  photos seules ; la fiche PDF dans un zip, exactement le même résultat que seule.
 * **PDF (30/09/2026)** : `_lire_pdf` fait rendre chaque page en PNG par le moteur
   PDF de Windows (`Windows.Data.Pdf`, hors ligne, rien à installer), via le mode
   `-PdfDir` d'`ocr_win.ps1`, puis lit chaque page comme une photo. Même chemin
@@ -992,6 +997,21 @@ Quatre pièges, tous traités — ne pas « simplifier » :
    mesuré : 10 valeurs lues à l'échelle 1 contre 8-9 à l'échelle 3, et deux
    fois plus vite. Les petits nombres isolés (graisse viscérale) disparaissent
    dès qu'on agrandit. L'ordre de `VARIANTS` encode ce résultat.
+   **Et le canal le plus sombre bat le gris (4.3.9).** FitDays colore chaque
+   valeur selon son niveau (vert pâle, orange, bleu) ; converti en gris, un
+   « 7.0 » vert pâle devient presque blanc et aucune passe ne le voit. Les deux
+   premières passes (mode `min` de `_preprocess`) gardent pour chaque pixel le
+   plus sombre des trois canaux : sur fond blanc, le texte coloré devient aussi
+   foncé que du noir. Mesuré le 30/09/2026 sur trois vraies captures : 12 valeurs
+   sur 14 en gris (graisse viscérale et âge corporel manquants), **14 sur 14**
+   avec `min`, aucune valeur fausse de plus, et plus vite (10 s au lieu de 15 s
+   pour les trois). Les quatre anciennes passes restent derrière, en rattrapage.
+   Le Vocabulaire garde son mode `raw` : sur une photo de papier jauni, le canal
+   le plus sombre assombrirait le fond.
+   **L'arrêt anticipé attend les libellés vus** : une passe qui n'apporte rien
+   n'arrête plus la lecture si un libellé de la capture attend encore sa valeur
+   (`vus`, rempli par `_extract_values`). L'âge corporel orange n'apparaissait
+   qu'à la 3e passe, et la lecture s'arrêtait à la 2e.
 2. **Appariement par COLONNES, jamais par lignes.** FitDays coupe ses libellés
    longs sur deux lignes et place la valeur sur la ligne du milieu :
    `Graisse` / `21.3 %` / `corporelle`. Un appariement ligne à ligne rate la
@@ -1023,13 +1043,10 @@ pour plusieurs captures choisies à la main : **toutes sont une seule pesée**.
   `._IMG_1234.PNG`) ont une extension d'image sans en être une : ignorés.
 * Le chemin d'extraction est choisi par Pilote, jamais repris de l'archive : un
   membre `../../x.png` ne sort pas du dossier temporaire (testé).
-* Vérifié le 30/09/2026 sur le vrai zip FitDays d'Arthur (3 captures) : 12 valeurs
-  sur 14, toutes justes, et exactement le même résultat qu'en choisissant les trois
-  images une à une.
-* Défaut constaté ce jour-là, sans lien avec le zip et **non corrigé** : l'âge
-  corporel (orange) n'est lu qu'aux passes ×2 et ×3, mais `read_screenshot` s'arrête
-  dès qu'une passe n'apporte rien (à la 2e) ; la graisse viscérale « 7.0 » n'est vue
-  par aucune passe.
+* Vérifié le 30/09/2026 sur le vrai zip FitDays d'Arthur (3 captures) : exactement
+  le même résultat qu'en choisissant les trois images une à une.
+* `_images_du_zip` sert aussi au Vocabulaire (4.3.9), qui y ajoute `.pdf` par
+  son paramètre `exts`.
 
 ### L'import ne valide jamais tout seul
 

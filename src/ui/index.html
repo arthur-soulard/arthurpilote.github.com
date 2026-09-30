@@ -4553,8 +4553,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="voBulkInverser()"
         title="Échange le mot et la réponse sur chaque ligne (fiche qui met la traduction en premier)">
         <i class="ph ph-arrows-left-right"></i> Inverser</button>
-      <span class="vo-bulk-hint">ou colle une capture d'écran (<b>Ctrl+V</b>). Lue hors ligne,
-        à relire avant d'ajouter.</span>
+      <span class="vo-bulk-hint">Image, PDF ou <b>.zip</b> reçu par mail, ou colle une capture
+        d'écran (<b>Ctrl+V</b>). Lue hors ligne, à relire avant d'ajouter.</span>
     </div>
     <textarea class="vo-bulk" id="vo-bulk-text" spellcheck="false" oninput="voBulkPreview()"
       placeholder="resilient = résilient&#10;to thrive = prospérer, s'épanouir&#10;véhément = qui s'exprime avec force et passion"></textarea>
@@ -19758,7 +19758,7 @@ async function voBulkPickImages() {
   if (!r || r.cancelled) return;
   if (!r.ok) { showToastModern(r.error || "Sélection impossible", "err"); return; }
   const paths = r.paths || [];
-  const nom = paths.some(p => /\.pdf$/i.test(p)) ? "fichier" : "image";
+  const nom = paths.some(p => /\.(pdf|zip)$/i.test(p)) ? "fichier" : "image";
   if (paths.length) voBulkLire(() => pywebview.api.vocabulaire_read_images(paths), paths.length, nom);
 }
 
