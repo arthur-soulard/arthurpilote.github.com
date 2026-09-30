@@ -480,7 +480,8 @@ def usb_state() -> dict:
     drives = list_removable_drives()
     return {"ok": True, "drives": drives, "count": len(drives),
             "lastPushAt": cfg.get("lastPushAt", ""),
-            "lastPushPath": cfg.get("lastPushPath", "")}
+            "lastPushPath": cfg.get("lastPushPath", ""),
+            "lastBackupAt": cfg.get("lastBackupAt", "")}
 
 
 # ─── Inventaire ───────────────────────────────────────────────────────────────

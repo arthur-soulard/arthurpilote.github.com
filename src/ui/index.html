@@ -2212,6 +2212,7 @@ thead th, .wish-table thead th {
 .home-user-add { background: transparent; }
 .home-actions { grid-column: 2; grid-row: 2; justify-content: flex-end; margin-top: 0; }
 .home-usb-state { grid-column: 2; grid-row: 3; text-align: right; font-size: 12px; color: var(--txt2); margin-top: 2px; }
+.home-usb-state.vieux { color: var(--a); font-weight: 500; }
 @media (max-width: 1150px) {
   .home-hero { grid-template-columns: minmax(0, 1fr); }
   .home-users, .home-actions, .home-usb-state { grid-column: 1; grid-row: auto; }
@@ -17693,6 +17694,16 @@ async function svPushToUsb(root) {
   if (st) st.textContent = (res && res.error) || "";
 }
 
+const SV_ALERTE_JOURS = 7;   // au-delà, l'accueil signale la sauvegarde en orange
+
+/** Dernière copie des données sur une clé : envoi (Téléverser) ou archive, la
+    plus récente des deux. null si aucune. L'accueil et la tuile lisent celle-ci. */
+function svDerniereCopie(s) {
+  const ds = [s.lastPushAt, s.lastBackupAt]
+    .map(x => x ? new Date(x) : null).filter(d => d && !isNaN(d));
+  return ds.length ? new Date(Math.max(...ds)) : null;
+}
+
 async function svRenderUsbState() {
   const st = document.getElementById("home-usb-state");
   if (!st || !window.pywebview || !pywebview.api) return;
@@ -17708,6 +17719,21 @@ async function svRenderUsbState() {
   if (s.count === 0)      parts.push("Aucune clé USB branchée");
   else if (s.count === 1) parts.push(`Clé détectée : ${s.drives[0].letter} ${s.drives[0].label}`);
   else                    parts.push(`${s.count} clés branchées`);
+
+  // Sauvegarde trop ancienne (ou jamais faite) : en orange, avec quoi faire.
+  // En petit gris, « dernier envoi 24 sept. » passait inaperçu une semaine durant.
+  const der = svDerniereCopie(s);
+  const j = der ? Math.floor((new Date() - der) / 86400000) : null;
+  if (j === null || j >= SV_ALERTE_JOURS) {
+    const quand = der ? `Dernière sauvegarde sur clé il y a ${j} jours`
+                      : "Aucune sauvegarde sur clé USB";
+    const quoi = s.count ? "clique sur Téléverser" : "branche ta clé USB";
+    st.classList.add("vieux");
+    st.innerHTML = `<i class="ph ph-warning"></i> ${escHtml(quand)} · ${escHtml(quoi)}`;
+    return;
+  }
+  st.classList.remove("vieux");
+
   if (s.lastPushAt) {
     const d = new Date(s.lastPushAt);
     if (!isNaN(d)) parts.push("dernier envoi " + d.toLocaleDateString("fr-FR",
@@ -20231,8 +20257,9 @@ function voBulkInverser() {
 /* ── Lecture d'une image (capture d'écran, photo de page) ou d'un PDF ──────
    Même moteur que les pesées de Santé : l'OCR de Windows, hors ligne. Un PDF
    est lu page par page, chaque page rendue en image par Windows. La
-   lecture ne fait que REMPLIR la zone, à la suite de ce qui s'y trouve déjà :
-   on relit, on corrige, puis « Ajouter ». Rien n'est enregistré avant. */
+   lecture ne fait que REMPLIR le tableau de relecture, à la suite de ce qui
+   s'y trouve déjà : on relit, on corrige, puis « Ajouter ». Rien n'est
+   enregistré avant. */
 
 let _voBulkNote = "";     // bilan de la dernière lecture, sous la zone
 let _voBulkBusy = false;
@@ -20778,18 +20805,17 @@ const DASH_WIDGETS = [
     render() {
       const s = window._dashUsb;
       if (!s) return null;
-      if (!s.lastPushAt && !s.count) return null;
+      const d = svDerniereCopie(s);   // la même date que la ligne sous les boutons
+      if (!d && !s.count) return null;
       let sub = s.count ? `${s.count} clé${s.count > 1 ? "s" : ""} branchée${s.count > 1 ? "s" : ""}`
                         : "aucune clé branchée";
-      let val = "—";
-      if (s.lastPushAt) {
-        const d = new Date(s.lastPushAt);
-        if (!isNaN(d)) {
-          const j = Math.floor((new Date() - d) / 86400000);
-          val = j === 0 ? "Aujourd'hui" : (j === 1 ? "Hier" : "Il y a " + j + " j");
-        }
-      } else { val = "Jamais"; }
-      return { lbl: "Dernière sauvegarde USB", val, sub, go: null };
+      let val = "Jamais", cls = "c-a";
+      if (d) {
+        const j = Math.floor((new Date() - d) / 86400000);
+        val = j === 0 ? "Aujourd'hui" : (j === 1 ? "Hier" : "Il y a " + j + " j");
+        if (j < SV_ALERTE_JOURS) cls = "";
+      }
+      return { lbl: "Dernière sauvegarde USB", val, cls, sub, go: null };
     },
   },
 ];
