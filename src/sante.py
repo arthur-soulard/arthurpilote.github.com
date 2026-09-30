@@ -244,14 +244,17 @@ def ocr_available() -> dict:
     return {"ok": True}
 
 
-def _run_ocr(image_path: str, timeout: int = 90) -> dict:
-    """Lance ocr_win.ps1 et retourne {ok, words:[{t,x,y,w,h}], ...}."""
+def _run_ocr(image_path: str, timeout: int = 90, extra: tuple = ()) -> dict:
+    """
+    Lance ocr_win.ps1 et retourne {ok, words:[{t,x,y,w,h}], ...}.
+    `extra` : parametres de plus pour le script (mode PDF de vocabulaire.py).
+    """
     out_fd, out_path = tempfile.mkstemp(prefix="pilote_ocr_", suffix=".json")
     os.close(out_fd)
     try:
         cmd = ["powershell.exe", "-NoProfile", "-NonInteractive",
                "-ExecutionPolicy", "Bypass", "-File", _ocr_script_path(),
-               "-ImagePath", str(image_path), "-JsonPath", out_path]
+               "-ImagePath", str(image_path), "-JsonPath", out_path] + list(extra)
         flags = 0
         if sys.platform == "win32":
             flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)

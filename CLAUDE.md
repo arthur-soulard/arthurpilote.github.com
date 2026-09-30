@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.6**
+**Version actuelle : 4.3.7**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -27,6 +27,7 @@ Pilote/
 │   ├── pret.py         # Module « Prêt étudiant » (pret.json)
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
+│   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── formation.py    # Module « Formation »     (formation.json) + certificats
 │   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
@@ -867,23 +868,57 @@ Détails qui ont une raison :
 Tuiles d'accueil : `voc-jour` (« Liste du jour à faire », qui **disparaît** dès
 qu'il n'y a plus rien de dû — c'est tout son intérêt) et `voc-acquis`.
 
-### Lire une capture ou une photo de liste (ajout en masse)
+### Lire une capture, une photo de liste ou un PDF (ajout en masse)
 
-Bouton « Lire une image » dans `ov-vo-bulk`, ou Ctrl+V d'une capture (Win+Maj+S)
-pendant que la fenêtre est ouverte. Même moteur que Santé (`ocr_win.ps1`, hors
+Bouton « Lire une image ou un PDF » dans `ov-vo-bulk`, ou Ctrl+V d'une capture
+(Win+Maj+S) pendant que la fenêtre est ouverte. Le même bouton est dans l'en-tête des onglets
+Réviser et Mots (`voLireImage()` : ouvre la fenêtre et le sélecteur d'images) :
+en 4.3.5 il n'était que dans Mots → Ajout en masse, et Arthur ne l'a pas trouvé. Même moteur que Santé (`ocr_win.ps1`, hors
 ligne) ; `vocabulaire.lire_images()` / `lire_image_collee()`, API
-`vocabulaire_pick_images`, `vocabulaire_read_images`, `vocabulaire_read_pasted`.
+`vocabulaire_pick_images` (son propre filtre « Images et PDF »),
+`vocabulaire_read_images`, `vocabulaire_read_pasted`.
 JS : `voBulkPickImages`, `voBulkLire`, le gestionnaire `paste`, `voBulkPreview`
 (compte sous la zone les mots prêts et les lignes sans « = », qui seront ignorées).
 
 * **Ça ne fait que remplir la zone**, à la suite de son contenu, une ligne
   `mot = réponse` par mot. Rien n'est enregistré avant « Ajouter » : même règle que
   l'import Santé. Ne pas transformer ça en ajout direct.
-* Deux mises en page reconnues : **deux colonnes** (mot | traduction) et
-  **« mot : définition »** sur une ligne (`:`, `=`, tiret entouré d'espaces, flèche).
-  Le reste arrive tel quel, sans « = » : l'aperçu le signale.
+* **PDF (30/09/2026)** : `_lire_pdf` fait rendre chaque page en PNG par le moteur
+  PDF de Windows (`Windows.Data.Pdf`, hors ligne, rien à installer), via le mode
+  `-PdfDir` d'`ocr_win.ps1`, puis lit chaque page comme une photo. Même chemin
+  pour un PDF numérique ou scanné. Rendu à 2× la taille nominale (~190 dpi, texte
+  d'une vingtaine de pixels), 20 pages au plus (`PDF_PAGES_MAX`, signalé sous la
+  zone). Le mode PDF est **dans** `ocr_win.ps1` et pas dans un second script
+  exprès : un nouveau fichier devrait entrer dans les `datas` de la spec (le piège
+  n° 4). Mesuré sur une fiche de 3 pages : 30 mots sur 30, accents compris, en 9 s.
+* **La page est d'abord coupée en blocs** (`_blocs`, 30/09/2026) : titre, tableau,
+  paragraphe, chacun lu avec sa propre mise en page. Constaté sur deux photos de
+  fiches de connecteurs (tableaux à quatre colonnes sous des titres qui traversent
+  leurs colonnes) : lues d'un seul tenant, aucune colonne n'apparaissait, **2 paires
+  sur 330 mots lus** ; par blocs, 44 et 41. Même panne sur un PDF à deux colonnes
+  sous un titre centré. Coupure sur un blanc de plus de 1,6 interligne (interligne
+  mesuré dans les colonnes), hauteurs redressées de la pente des lignes : sur une
+  photo tournée d'un degré, la même ligne descend de 14 px d'une colonne à l'autre.
+* Dans un bloc : **les colonnes se prennent deux par deux** (mot | traduction |
+  mot | traduction), `_gouttieres` trouve tous les blancs verticaux ; une colonne
+  restée seule (phrases d'exemple) sort telle quelle, un séparateur imprimé en tête
+  de réponse (« = POUR ») est retiré (`_SEP_TETE`). Et **« mot : définition »** sur
+  une ligne (`:`, `=`, tiret entouré d'espaces, flèche). Le reste arrive tel quel,
+  sans « = » : l'aperçu le signale.
+* Une ligne seule dans son bloc (titre, en-tête, pied de page) n'est jamais coupée
+  en « mot = réponse » : « Artificial Intelligence — Vocabulary » n'est pas un mot.
+  Sauf si c'est toute l'image (capture d'un seul mot).
+* **Bouton « Inverser »** (`voBulkInverser`, 4.3.7) : échange mot et réponse sur
+  chaque ligne de la zone. Demandé par Arthur pour une fiche PDF qui met le français
+  en premier, à l'inverse de ses photos. Coupe au même endroit que `voBulkParse` ;
+  si le nouveau mot contient un « = », la ligne prend une tabulation (prioritaire
+  à la lecture). Deux clics redonnent exactement le contenu d'origine.
+* `_separer` ne rattache une ligne à la définition précédente que si celle-ci était
+  **pleine** (son premier mot n'aurait pas tenu avant la marge droite) : sans ça,
+  toutes les phrases d'un exercice qui suivent « Words: … » finissaient collées
+  en une ligne géante, comptée comme un mot.
 * **Le moteur rend chaque colonne en lignes séparées** : l'appariement se fait par
-  position (`_gouttiere` trouve le blanc entre colonnes, `_apparier` réassocie).
+  position (`_gouttieres` trouve les blancs entre colonnes, `_apparier` réassocie).
   Sur une photo penchée que le moteur n'a pas redressée, toute la colonne de droite
   est décalée d'une même hauteur : `_apparier` cherche ce décalage avant d'apparier.
   C'est pour ça que `ocr_win.ps1` renvoie `l` (numéro de ligne du moteur) et `angle`
@@ -897,7 +932,12 @@ JS : `voBulkPickImages`, `voBulkLire`, le gestionnaire `paste`, `voBulkPreview`
   (`PETIT_TEXTE`) : là, l'agrandissement corrige tout ; au-dessus, il dégrade.
 * Seul le français est installé comme langue d'OCR chez Arthur ; il lit bien
   l'anglais, sauf le pronom « I » lu « l » : `_L_POUR_I` le corrige (un « l » seul
-  ou « l'd », « l'm »… n'existent pas en français).
+  ou « l'd », « l'm »… n'existent pas en français). Même chose pour « In » lu « ln »
+  (`_LN_POUR_IN`, vu quatre fois sur deux fiches).
+* Une cellule sur deux lignes dans un tableau serré (« As a matter of fact, in fact, /
+  at all events, in any case ») : la seconde ligne sort seule, car elle tombe à
+  l'écart habituel entre deux entrées. Voulu, même règle que la traduction trop
+  longue plus haut.
 * Un mot isolé très court (« si ») est parfois ignoré par le moteur : la ligne du mot
   reste alors seule, sans « = », donc visible.
 * Du texte collé garde son comportement normal : il l'emporte sur une image.

@@ -29,9 +29,9 @@ langues codees en dur.
 Aucun mot n'est livre : l'interet du module est ce que l'utilisateur y met.
 Seules les deux listes de depart existent, et elles sont modifiables.
 
-Une capture d'ecran ou une photo de liste peut pre-remplir l'ajout en masse
-(lire_images, en fin de fichier) : l'utilisateur relit toujours avant
-d'ajouter.
+Une capture d'ecran, une photo de liste ou un PDF peut pre-remplir l'ajout
+en masse (lire_images, en fin de fichier) : l'utilisateur relit toujours
+avant d'ajouter.
 
 Emplacement      : <app_dir>/users/<slug>/vocabulaire.json
 Backup quotidien : <app_dir>/users/<slug>/backups_vocabulaire/
@@ -244,8 +244,14 @@ def _purge_historique(hist: list) -> list:
 # corrige tout ("owever", accents perdus, "si" oublie). Au-dessus, il degrade
 # ("Ild" revient, un glossaire en deux colonnes se melange).
 #
-# Deux mises en page reconnues :
-#   * deux colonnes (mot | traduction) : le moteur rend chaque colonne en
+# La page est d'abord coupee en blocs (un titre, un tableau, un paragraphe :
+# _blocs), chacun avec sa propre mise en page. Une fiche de cours enchaine
+# des tableaux sous des titres qui traversent leurs colonnes ; lue d'un seul
+# tenant, aucune colonne n'y apparaissait.
+#
+# Deux mises en page reconnues dans un bloc :
+#   * des colonnes prises deux par deux (mot | traduction, ou mot |
+#     traduction | mot | traduction) : le moteur rend chaque colonne en
 #     lignes SEPAREES, il faut les reapparier par position (_apparier) ;
 #   * "mot : definition" sur une ligne : coupure au premier separateur.
 # Le reste arrive tel quel dans la zone, a completer a la main.
@@ -260,13 +266,19 @@ _PUCE_TETE = re.compile(r"^\s*(?:\d{1,3}\s*[.)]|[•·▪◦*]|[-–—](?=\s))\
 # Premier separateur mot / reponse. Un tiret n'en est un qu'entoure d'espaces :
 # "well-known" reste entier.
 _SEPARATEUR = re.compile(r"\s*(?:=|:|→|->|\s[-–—]\s)\s*")
+# Separateur imprime en tete de la colonne des reponses ("TO + verbe | = POUR").
+_SEP_TETE = re.compile(r"^\s*(?:=|:|→|->)\s*")
 # Le moteur (francais) lit le pronom anglais "I" comme un "l". Un "l" seul
 # n'existe pas en francais (c'est toujours "l'"), et "l'd", "l'm"... non plus.
 _L_POUR_I = re.compile(r"(?<![\w'’])l(?=['’](?:d|m|ll|ve)\b|(?![\w'’]))")
+# Meme confusion sur "In" en debut de ligne ("ln addition", "ln spite of") :
+# "ln" n'est un mot ni en francais ni en anglais.
+_LN_POUR_IN = re.compile(r"(?<![\w'’])ln(?![\w'’])")
 
 
 def _propre(s: str) -> str:
     s = _L_POUR_I.sub("I", s or "")
+    s = _LN_POUR_IN.sub("In", s)
     return re.sub(r"\s+", " ", s).strip()
 
 
@@ -304,21 +316,77 @@ def _segments(words: list) -> list:
     return [s for s in out if not _PUCE_SEULE.match(s["t"].strip())]
 
 
-def _gouttiere(segs: list):
+def _blocs(segs: list) -> list:
     """
-    Blanc vertical entre deux colonnes : (debut, fin) en pixels, ou None.
+    Coupe la page en bandes horizontales : titre, tableau, paragraphe...
 
-    On projette les morceaux sur l'axe horizontal et on cherche une bande que
-    rien ne traverse, plus large qu'une espace, avec du texte en quantite des
-    deux cotes. Un titre qui court sur presque toute la largeur ne compte pas
-    dans la projection : il boucherait le blanc.
+    La coupure tombe sur un blanc nettement plus haut que l'interligne,
+    mesure dans les colonnes (entre un morceau et le plus proche en dessous
+    qu'il chevauche). Sur une photo un peu tournee, une meme ligne descend
+    d'une colonne a l'autre et rogne ce blanc : les hauteurs sont redressees
+    de la pente mesuree entre morceaux voisins d'une meme ligne.
+    """
+    h = statistics.median(s["h"] for s in segs)
+
+    def cx(s):
+        return (s["x0"] + s["x1"]) / 2.0
+
+    pentes = [(b["cy"] - a["cy"]) / (cx(b) - cx(a)) for a in segs for b in segs
+              if b["x0"] > a["x1"] and abs(b["cy"] - a["cy"]) < 0.8 * h]
+    pente = statistics.median(pentes) if len(pentes) >= 3 else 0.0
+    for s in segs:
+        s["y"] = s["cy"] - pente * cx(s)   # hauteur redressee (sert aussi a _lire_bloc)
+
+    def haut(s):
+        return s["y"] - s["h"] / 2.0
+
+    def bas(s):
+        return s["y"] + s["h"] / 2.0
+
+    blancs = []
+    for s in segs:
+        dessous = [haut(t) - bas(s) for t in segs
+                   if t["y"] > s["y"] + 0.5 * h
+                   and t["x0"] < s["x1"] and t["x1"] > s["x0"]]
+        if dessous:
+            blancs.append(min(dessous))
+    seuil = max(h, 1.6 * statistics.median(blancs)) if blancs else 2 * h
+
+    blocs, fond = [], None
+    for s in sorted(segs, key=haut):
+        if fond is None or haut(s) - fond > seuil:
+            blocs.append([])
+            fond = bas(s)
+        blocs[-1].append(s)
+        fond = max(fond, bas(s))
+    return blocs
+
+
+def _colonne(s: dict, goutt: list):
+    """Rang de la colonne d'un morceau, None s'il traverse une gouttiere."""
+    i = sum(1 for _, b in goutt if s["x0"] >= b)
+    if i < len(goutt) and s["x1"] > goutt[i][0]:
+        return None
+    return i
+
+
+def _gouttieres(segs: list) -> list:
+    """
+    Blancs verticaux entre colonnes : [(debut, fin)] en pixels, de gauche a
+    droite ; vide s'il n'y a qu'une colonne.
+
+    On projette les morceaux sur l'axe horizontal et on garde les bandes que
+    rien ne traverse, plus larges qu'une espace. Un titre qui court sur
+    presque toute la largeur ne compte pas dans la projection : il boucherait
+    le blanc. Une colonne doit porter du texte en quantite : un en-tete ou un
+    numero de page isole n'en fait pas une, sa gouttiere est retiree.
     """
     if len(segs) < 4:
-        return None
+        return []
     x_min = min(s["x0"] for s in segs)
     largeur = max(s["x1"] for s in segs) - x_min
     if largeur <= 0:
-        return None
+        return []
     h = statistics.median(s["h"] for s in segs)
     couvert = [False] * (largeur + 1)
     for s in segs:
@@ -327,8 +395,7 @@ def _gouttiere(segs: list):
         for x in range(s["x0"] - x_min, s["x1"] - x_min + 1):
             couvert[x] = True
 
-    meilleure, score_max = None, 0
-    x = 0
+    goutt, x = [], 0
     while x <= largeur:
         if couvert[x]:
             x += 1
@@ -336,17 +403,24 @@ def _gouttiere(segs: list):
         debut = x
         while x <= largeur and not couvert[x]:
             x += 1
-        a, b = debut + x_min, x + x_min
-        if b - a < 1.5 * h:
-            continue
-        score = min(sum(1 for s in segs if s["x1"] <= a),
-                    sum(1 for s in segs if s["x0"] >= b))
-        if score < 2 or score < 0.25 * len(segs):
-            continue
-        if score > score_max or (score == score_max
-                                 and b - a > meilleure[1] - meilleure[0]):
-            meilleure, score_max = (a, b), score
-    return meilleure
+        if x - debut >= 1.5 * h:
+            goutt.append((debut + x_min, x + x_min))
+
+    mini = max(2, 0.15 * len(segs))
+    while goutt:
+        nb = [0] * (len(goutt) + 1)
+        for s in segs:
+            i = _colonne(s, goutt)
+            if i is not None:
+                nb[i] += 1
+        i = min(range(len(nb)), key=nb.__getitem__)
+        if nb[i] >= mini:
+            break
+        # La colonne trop maigre rejoint sa voisine la plus proche.
+        j = min((j for j in (i - 1, i) if 0 <= j < len(goutt)),
+                key=lambda j: goutt[j][1] - goutt[j][0])
+        del goutt[j]
+    return goutt
 
 
 def _apparier(gauche: list, droite: list) -> list:
@@ -416,33 +490,39 @@ def _apparier(gauche: list, droite: list) -> list:
         else:
             brut.append((y, t))
 
-    out = [(e["y"], _PUCE_TETE.sub("", " ".join(e["mot"])) + " = " + " ".join(e["rep"]))
+    out = [(e["y"], _PUCE_TETE.sub("", " ".join(e["mot"])) + " = "
+            + _SEP_TETE.sub("", " ".join(e["rep"])))
            for e in entrees]
     return sorted(out + brut)
 
 
-def _separer(lignes: list) -> list:
+def _separer(lignes: list, droite: float) -> list:
     """
     Lignes "mot : definition" (ou =, tiret, fleche) -> "mot = definition".
+    `lignes` : [(y, texte, x0, x1)], de haut en bas.
 
-    Une ligne sans separateur qui suit une entree, sans blanc marque entre
-    les deux, est la suite de sa definition.
+    Une ligne sans separateur est la suite de la definition precedente si
+    elle la suit sans blanc marque ET si la precedente etait pleine : son
+    premier mot n'aurait pas tenu avant la marge `droite`. Sans ce second
+    test, toutes les phrases d'un exercice qui suivent "Words: ..." se
+    collaient a sa "definition".
     """
     ecarts = [b[0] - a[0] for a, b in zip(lignes, lignes[1:])]
     pas = statistics.median(ecarts) if ecarts else 0
-    out, y_prec = [], None
-    for y, t in lignes:
+    out, prec = [], None
+    for y, t, x0, x1 in lignes:
         net = _PUCE_TETE.sub("", t)
         m = _SEPARATEUR.search(net)
+        premier_mot = (x1 - x0) * (len(t.split()[0]) + 1) / max(len(t), 1)
         if (m and m.start() > 0 and net[m.end():].strip()
                 and len(net[:m.start()].split()) <= 6):
             out.append([net[:m.start()], net[m.end():]])
-        elif (out and isinstance(out[-1], list) and y_prec is not None
-              and y - y_prec <= 1.5 * pas):
+        elif (out and isinstance(out[-1], list) and prec is not None
+              and y - prec[0] <= 1.5 * pas and prec[1] + premier_mot > droite):
             out[-1][1] += " " + t
         else:
             out.append(t)
-        y_prec = y
+        prec = (y, x1)
     return [" = ".join(o) if isinstance(o, list) else o for o in out]
 
 
@@ -450,29 +530,69 @@ def _lignes_depuis_mots(words: list) -> list:
     segs = _segments(words)
     if not segs:
         return []
-    goutt = _gouttiere(segs)
+    droite = max(s["x1"] for s in segs)
+    blocs = _blocs(segs)
+    return [_propre(t) for bloc in blocs
+            for t in _lire_bloc(bloc, droite, len(blocs) > 1)]
+
+
+def _lignes_de(segs: list) -> list:
+    """[(y, texte, x0, x1)] de haut en bas, pour _separer."""
+    return sorted((s["cy"], s["t"], s["x0"], s["x1"]) for s in segs)
+
+
+def _lire_bloc(segs: list, droite: float, plusieurs: bool) -> list:
+    """
+    Lignes d'un bloc. `droite` : marge droite de la page ; `plusieurs` :
+    la page compte d'autres blocs.
+    """
+    goutt = _gouttieres(segs)
     if goutt:
-        a, b = goutt
-        gauche = [s for s in segs if s["x1"] <= a]
-        droite = [s for s in segs if s["x0"] >= b]
-        traverse = [(s["cy"], s["t"]) for s in segs if s["x1"] > a and s["x0"] < b]
+        colonnes = [[] for _ in range(len(goutt) + 1)]
+        traverse = []
+        for s in segs:
+            i = _colonne(s, goutt)
+            if i is None:
+                traverse.append((s["cy"], s["t"]))
+            else:
+                colonnes[i].append(s)
         # Un glossaire mis en page sur deux colonnes ("mot : definition" des
-        # deux cotes) n'est pas une liste mot | traduction : on lit la
-        # colonne de gauche, puis celle de droite.
+        # deux cotes) n'est pas une liste mot | traduction : on lit les
+        # colonnes l'une apres l'autre.
+        gauche = colonnes[0]
         avec_sep = sum(1 for s in gauche if _SEPARATEUR.search(_PUCE_TETE.sub("", s["t"])))
-        if avec_sep * 2 < len(gauche):
-            lignes = sorted(_apparier(gauche, droite) + traverse)
-            return [_propre(t) for _, t in lignes]
-        colonnes = [sorted((s["cy"], s["t"]) for s in c) for c in (gauche, droite)]
-        return [_propre(t) for c in colonnes for t in _separer(c)]
+        if avec_sep * 2 >= len(gauche):
+            return ([t for _, t in sorted(traverse)]
+                    + [t for c in colonnes
+                       for t in _separer(_lignes_de(c), max(s["x1"] for s in c))])
+        # Colonnes prises deux par deux : mot | traduction | mot | traduction.
+        # Une colonne restee seule (des phrases d'exemple) se lit a part.
+        out = []
+        for k in range(0, len(colonnes), 2):
+            if k + 1 < len(colonnes):
+                lignes = _apparier(colonnes[k], colonnes[k + 1])
+                if k == 0:
+                    lignes = sorted(lignes + traverse)
+                out += [t for _, t in lignes]
+            else:
+                c = colonnes[k]
+                out += _separer(_lignes_de(c), max(s["x1"] for s in c))
+        return out
 
     # Une seule colonne : on reprend les lignes entieres du moteur.
     par_ligne = {}
     for s in sorted(segs, key=lambda s: s["x0"]):
         par_ligne.setdefault(s["ligne"], []).append(s)
-    lignes = sorted((sum(s["cy"] for s in ss) / len(ss), " ".join(s["t"] for s in ss))
+    lignes = sorted((sum(s["cy"] for s in ss) / len(ss), " ".join(s["t"] for s in ss),
+                     ss[0]["x0"], max(s["x1"] for s in ss))
                     for ss in par_ligne.values())
-    return [_propre(t) for t in _separer(lignes)]
+    # Une ligne isolee entre deux blancs (titre, en-tete, pied de page) reste
+    # telle quelle : "Unit 4 — Travel vocabulary" n'est pas un mot. Sauf si
+    # c'est toute l'image : la capture d'un seul mot.
+    h = statistics.median(s["h"] for s in segs)
+    if plusieurs and max(s["y"] for s in segs) - min(s["y"] for s in segs) < h:
+        return [t for _, t, _, _ in lignes]
+    return _separer(lignes, droite)
 
 
 def _ocr(chemin: str, tmpdir: str, scale: float) -> dict:
@@ -507,13 +627,49 @@ def _lire_image(chemin: str) -> dict:
     return {"ok": True, "lignes": _lignes_depuis_mots(res.get("words") or [])}
 
 
+# Chaque page coute quelques secondes de lecture, sans barre de progression :
+# un manuel entier bloquerait la fenetre de longues minutes.
+PDF_PAGES_MAX = 20
+
+
+def _lire_pdf(chemin: str) -> dict:
+    """
+    Un PDF, page par page : Windows rend chaque page en image (ocr_win.ps1,
+    mode PDF), puis elle est lue comme une photo. Un PDF numerique ou scanne,
+    c'est le meme chemin.
+    """
+    tmpdir = tempfile.mkdtemp(prefix="pilote_pdf_")
+    try:
+        rendu = sante._run_ocr(chemin, extra=("-PdfDir", tmpdir,
+                                              "-PdfMaxPages", str(PDF_PAGES_MAX)))
+        if not rendu.get("ok"):
+            return {"ok": False,
+                    "error": "PDF illisible (abîmé ou protégé par un mot de passe ?)."}
+        pages = rendu.get("pages") or []
+        lignes, erreurs = [], []
+        for page in pages:
+            r = _lire_image(page)
+            if r["ok"]:
+                lignes += r["lignes"]
+            else:
+                erreurs.append(r["error"])
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+    if pages and len(erreurs) == len(pages):
+        return {"ok": False, "error": erreurs[0]}
+    out = {"ok": True, "lignes": lignes}
+    if (rendu.get("total") or 0) > PDF_PAGES_MAX:
+        out["note"] = "seules les %d premières pages ont été lues" % PDF_PAGES_MAX
+    return out
+
+
 def lire_images(chemins: list) -> dict:
     """
-    Lit des captures ou des photos de listes de mots.
+    Lit des captures, des photos de listes de mots ou des PDF.
 
-    Retourne {ok, lignes:[str], details:[{file, ok, lignes, error}]}, les
-    lignes au format de l'ajout en masse. `ok` n'est faux que si AUCUNE image
-    n'a pu etre lue.
+    Retourne {ok, lignes:[str], details:[{file, ok, lignes, error, note}]},
+    les lignes au format de l'ajout en masse. `ok` n'est faux que si AUCUN
+    fichier n'a pu etre lu.
     """
     chk = sante.ocr_available()
     if not chk["ok"]:
@@ -523,13 +679,16 @@ def lire_images(chemins: list) -> dict:
         nom = os.path.basename(p)
         if not os.path.isfile(p):
             details.append({"file": nom, "ok": False, "lignes": 0,
-                            "error": "Image introuvable."})
+                            "error": "Fichier introuvable."})
             continue
-        r = _lire_image(p)
+        if os.path.splitext(p)[1].lower() == ".pdf":
+            r = _lire_pdf(p)
+        else:
+            r = _lire_image(p)
         lues = r.get("lignes") or []
         lignes += lues
         details.append({"file": nom, "ok": r["ok"], "lignes": len(lues),
-                        "error": r.get("error", "")})
+                        "error": r.get("error", ""), "note": r.get("note", "")})
     if not any(d["ok"] for d in details):
         err = details[0]["error"] if details else "Aucune image."
         return {"ok": False, "error": err, "lignes": [], "details": details}
