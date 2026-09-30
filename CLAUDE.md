@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.7**
+**Version actuelle : 4.3.8**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -928,8 +928,27 @@ JS : `voBulkPickImages`, `voBulkLire`, le gestionnaire `paste`, `voBulkPreview`
   mieux vaut une ligne à trier qu'un mot collé à la mauvaise traduction.
 * **Image en gris seulement, à la résolution d'origine** (mesuré le 29/09/2026 sur
   des images de test) : contrastée, une photo penchée n'est plus redressée et « I'd »
-  devient « Ild ». Relecture ×2 seulement si les mots font moins de 12 px de haut
-  (`PETIT_TEXTE`) : là, l'agrandissement corrige tout ; au-dessus, il dégrade.
+  devient « Ild ». Relecture agrandie seulement si les mots font moins de 12 px de
+  haut (`PETIT_TEXTE`) : là, l'agrandissement corrige tout ; au-dessus, il dégrade.
+  L'agrandissement vise un texte d'une vingtaine de pixels (`_passe`, ×2 à ×4).
+* **Une capture d'écran de photo se lit mal, quoi qu'on fasse** (mesuré le
+  30/09/2026 en comptant les paires EXACTEMENT justes, la photo pleine résolution
+  servant de référence) : en dessous de 900 px de haut pour une page A4, moins de
+  la moitié des paires sont justes ; à 550 px, la première passe ne trouve rien et
+  les agrandissements ×2 à ×4 ne rendent que du charabia (0 paire juste sur 18).
+  D'où : rien de lu → message « choisis plutôt la photo elle-même » ; texte de
+  8 px ou moins → lu, avec la note « lecture incertaine » sous la zone. Ne pas
+  remettre de passe ×4 « au cas où » : le nombre de paires monte, pas leur justesse.
+* **Photo couchée** (orientation perdue en route, téléphone tenu de côté) : le
+  moteur n'y lit que des lettres isolées (2 mots lisibles sur 36, contre 72 à 100 %
+  sur une page droite). `_lire_image` réessaie à 270°, 90° puis 180° et garde le
+  sens le plus lisible (`_lisibles`) : 5 → 43 paires. À l'envers, le moteur se
+  débrouille déjà seul. Coût : une seconde lecture, seulement quand la première
+  est illisible.
+* Vérifié le 30/09/2026 dans le Pilote **installé** (4.3.7, piloté par
+  l'accessibilité de Windows) : les deux photos d'origine choisies par le
+  sélecteur donnent 84 paires, comme en dev. Une plainte « trop peu de mots » vient
+  donc de la façon dont l'image arrive (capture collée, photo couchée), pas de l'exe.
 * Seul le français est installé comme langue d'OCR chez Arthur ; il lit bien
   l'anglais, sauf le pronom « I » lu « l » : `_L_POUR_I` le corrige (un « l » seul
   ou « l'd », « l'm »… n'existent pas en français). Même chose pour « In » lu « ln »
@@ -990,6 +1009,27 @@ Quatre pièges, tous traités — ne pas « simplifier » :
 Autres garde-fous : `%` rendu « 0/0 » (`_PCT_GARBLE`), point décimal perdu
 (« 152 » → 15.2 via `_validate`, qui REFUSE plutôt que d'inscrire une valeur
 hors bornes), dates rejetées comme valeurs (`_NOT_A_VALUE`).
+
+### Captures envoyées en .zip (4.3.8)
+
+Arthur s'envoie ses captures par mail ; Gmail rend les pièces jointes en un seul
+`.zip` (« tout télécharger »). Le sélecteur de Santé accepte donc les `.zip`
+(`sante_pick_screenshots`), et `read_screenshots` remplace chaque zip par les images
+qu'il contient (`_images_du_zip`, PNG / JPG / HEIC, 20 au plus, 25 Mo chacune),
+extraites dans un dossier temporaire supprimé à la fin. Ce sont les mêmes règles que
+pour plusieurs captures choisies à la main : **toutes sont une seule pesée**.
+
+* Les fichiers cachés que macOS et l'iPhone glissent dans une archive (`__MACOSX/`,
+  `._IMG_1234.PNG`) ont une extension d'image sans en être une : ignorés.
+* Le chemin d'extraction est choisi par Pilote, jamais repris de l'archive : un
+  membre `../../x.png` ne sort pas du dossier temporaire (testé).
+* Vérifié le 30/09/2026 sur le vrai zip FitDays d'Arthur (3 captures) : 12 valeurs
+  sur 14, toutes justes, et exactement le même résultat qu'en choisissant les trois
+  images une à une.
+* Défaut constaté ce jour-là, sans lien avec le zip et **non corrigé** : l'âge
+  corporel (orange) n'est lu qu'aux passes ×2 et ×3, mais `read_screenshot` s'arrête
+  dès qu'une passe n'apporte rien (à la 2e) ; la graisse viscérale « 7.0 » n'est vue
+  par aucune passe.
 
 ### L'import ne valide jamais tout seul
 

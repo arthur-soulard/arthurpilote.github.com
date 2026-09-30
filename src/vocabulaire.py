@@ -239,10 +239,20 @@ def _purge_historique(hist: list) -> list:
 # Mesure sur des images de test (29/09/2026) : l'image simplement passee en
 # gris se lit mieux que retouchee. Contrastee, une photo penchee n'est plus
 # redressee par le moteur et "I'd" devient "Ild". Une passe a la resolution
-# d'origine ; une seconde, agrandie x2, seulement si le texte est minuscule
+# d'origine ; une seconde, agrandie, seulement si le texte est minuscule
 # (mots de moins de PETIT_TEXTE pixels de haut) : la, l'agrandissement
 # corrige tout ("owever", accents perdus, "si" oublie). Au-dessus, il degrade
 # ("Ild" revient, un glossaire en deux colonnes se melange).
+#
+# Mesure le 30/09/2026 sur les photos de deux fiches reduites a la taille
+# d'une capture d'ecran, en comptant les paires EXACTEMENT justes (la photo
+# pleine resolution servant de reference) : l'agrandissement doit viser un
+# texte d'une vingtaine de pixels (x3 pour des mots de 7 px : 19 et 16
+# paires justes sur 43 et 41, contre 10 et 12 a x2). Mais en dessous de
+# 900 px de haut, AUCUN agrandissement ne rend une page lisible, et une
+# image dont la premiere passe ne trouve aucun mot (550 px) ne donne que du
+# charabia a x2, x3 ou x4 : 0 paire juste sur 18. On ne l'agrandit pas, on
+# conseille de choisir la photo elle-meme.
 #
 # La page est d'abord coupee en blocs (un titre, un tableau, un paragraphe :
 # _blocs), chacun avec sa propre mise en page. Une fiche de cours enchaine
@@ -595,24 +605,61 @@ def _lire_bloc(segs: list, droite: float, plusieurs: bool) -> list:
     return _separer(lignes, droite)
 
 
-def _ocr(chemin: str, tmpdir: str, scale: float) -> dict:
-    prep = os.path.join(tmpdir, "p%s.png" % scale)
+def _ocr(chemin: str, tmpdir: str, scale: float, angle: int = 0) -> dict:
+    prep = os.path.join(tmpdir, "p%s_%d.png" % (scale, angle))
     # Gris seulement ("raw") : voir la mesure en tete de section. Si Pillow ne
     # sait pas ouvrir l'image, le decodeur de Windows tente l'original.
-    source = prep if sante._preprocess(chemin, prep, scale, "raw") else chemin
-    return sante._run_ocr(source)
+    pret = sante._preprocess(chemin, prep, scale, "raw")
+    if angle:
+        if not pret:
+            return {"ok": False, "error": "rotation impossible"}
+        from PIL import Image
+        with Image.open(prep) as im:
+            tournee = im.rotate(angle, expand=True)
+        tournee.save(prep)
+    return sante._run_ocr(prep if pret else chemin)
+
+
+def _lisibles(res: dict) -> int:
+    """Mots d'au moins deux lettres : le reste est du bruit ("o", "c", "1.")."""
+    return sum(1 for w in res.get("words") or []
+               if len(re.findall(r"[^\W\d_]", w["t"])) >= 2)
+
+
+def _passe(chemin: str, tmpdir: str, angle: int) -> dict:
+    """Une orientation : resolution d'origine, puis agrandie si le texte est petit."""
+    res = _ocr(chemin, tmpdir, 1.0, angle)
+    mots = res.get("words") or []
+    # Rien de lu du tout : agrandir n'y change rien (voir la mesure en tete
+    # de section), _lire_image le dit a l'utilisateur.
+    h = statistics.median(w["h"] for w in mots) if mots else 0
+    if res.get("ok") and mots and h < PETIT_TEXTE:
+        # Viser un texte d'une vingtaine de pixels.
+        f = max(2, min(4, round(21.0 / h)))
+        agrandi = _ocr(chemin, tmpdir, float(f), angle)
+        if agrandi.get("ok") and agrandi.get("words"):
+            res = agrandi
+            res["minuscule"] = f >= 3
+    return res
 
 
 def _lire_image(chemin: str) -> dict:
     tmpdir = tempfile.mkdtemp(prefix="pilote_voc_")
     try:
-        res = _ocr(chemin, tmpdir, 1.0)
+        res = _passe(chemin, tmpdir, 0)
+        # Photo couchee (telephone tenu de cote, orientation perdue en
+        # route) : le moteur n'y voit que des lettres isolees, 2 mots lisibles
+        # sur 36 mesure le 30/09/2026, contre 72 a 100 % sur une page droite.
+        # On essaie les autres sens et on garde le plus lisible. A l'envers,
+        # le moteur se debrouille seul : 180 degres vient en dernier.
         mots = res.get("words") or []
-        if (res.get("ok") and mots
-                and statistics.median(w["h"] for w in mots) < PETIT_TEXTE):
-            agrandi = _ocr(chemin, tmpdir, 2.0)
-            if agrandi.get("ok") and agrandi.get("words"):
-                res = agrandi
+        if res.get("ok") and mots and _lisibles(res) < 0.5 * len(mots):
+            for angle in (270, 90, 180):
+                essai = _passe(chemin, tmpdir, angle)
+                if essai.get("ok") and _lisibles(essai) > _lisibles(res):
+                    res = essai
+                if _lisibles(res) >= 0.5 * len(res.get("words") or []):
+                    break
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
     if not res.get("ok"):
@@ -624,7 +671,16 @@ def _lire_image(chemin: str) -> dict:
         elif not err.startswith("OCR trop long"):
             err = "Image illisible (format non reconnu ?)."
         return {"ok": False, "error": err}
-    return {"ok": True, "lignes": _lignes_depuis_mots(res.get("words") or [])}
+    if not res.get("words"):
+        return {"ok": False,
+                "error": ("Aucun texte lisible. Si c'est une capture d'écran d'une "
+                          "photo, choisis plutôt la photo elle-même : son texte est "
+                          "bien plus net.")}
+    out = {"ok": True, "lignes": _lignes_depuis_mots(res.get("words") or [])}
+    if res.get("minuscule"):
+        out["note"] = ("texte très petit, lecture incertaine (la photo elle-même "
+                       "se lit mieux qu'une capture d'écran)")
+    return out
 
 
 # Chaque page coute quelques secondes de lecture, sans barre de progression :
@@ -714,7 +770,11 @@ def lire_image_collee(data_url: str) -> dict:
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(octets)
-        return lire_images([chemin])
+        r = lire_images([chemin])
+        # Le nom du fichier temporaire ne dit rien a l'utilisateur.
+        for d in r.get("details") or []:
+            d["file"] = "capture collée"
+        return r
     finally:
         try:
             os.remove(chemin)
