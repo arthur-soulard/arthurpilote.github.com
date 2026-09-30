@@ -2364,6 +2364,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .expo-det { grid-column: 1 / -1; display: none; flex-wrap: wrap; gap: 4px 16px; margin-top: 7px; font-size: 12px; color: var(--txt2); }
 .expo-row.open .expo-det { display: flex; }
 .expo-row.gris .expo-nm b { color: var(--txt2); font-style: italic; }
+.expo-row.vide .expo-nm b, .expo-row.vide .expo-pct { color: var(--txt3); font-weight: 400; }
 .expo-plus { margin-top: 8px; }
 .expo-note { font-size: 12px; color: var(--txt2); margin: 12px 0 0; max-width: 90ch; }
 .expo-pos { padding: 14px 0; border-bottom: 1px solid var(--brd); }
@@ -7168,6 +7169,7 @@ function expoCleNom(nom) {
     .join(" ");
 }
 function expoPct(x) {
+  if (!x) return "0 %";
   if (x > 0 && x < 0.01) return "< 0,01 %";
   return x.toLocaleString("fr-FR", { minimumFractionDigits: x < 1 ? 2 : 1, maximumFractionDigits: x < 1 ? 2 : 1 }) + " %";
 }
@@ -7283,9 +7285,10 @@ function expoRowHtml(o, calc, echelle) {
       : (o.cle === "_inconnu" ? "composition non renseignée"
         : expoPct(pp.pctEtf) + (pp.l.p.type === "etf" ? " de l'ETF" : " de la position"));
     return `<span><i class="expo-pt" style="background:${pp.l.couleur}"></i>${qui} : ${expoEur(pp.pct * calc.total / 100)} · ${dansEtf}</span>`;
-  }).join("");
+  }).join("") || "<span>Aucun de tes titres n'y est exposé pour l'instant.</span>";
   const gris = o.cle === "_nd" || o.cle === "_inconnu";
-  return `<div class="expo-row${gris ? " gris" : ""}" role="button" tabindex="0" aria-expanded="false"
+  const vide = !o.par.length;
+  return `<div class="expo-row${gris ? " gris" : ""}${vide ? " vide" : ""}" role="button" tabindex="0" aria-expanded="false"
       onclick="expoToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();expoToggle(this)}">
     <span class="expo-nm">${o.rang ? `<span class="expo-rang">${o.rang}</span>` : ""}${o.ico ? `<i class="ph ph-${o.ico}"></i>` : ""}<b>${escHtml(o.nom)}</b>${o.meta ? `<span class="expo-meta">${escHtml(o.meta)}</span>` : ""}</span>
     <span class="expo-eur">${expoEur(o.pct * calc.total / 100)}</span>
@@ -7400,7 +7403,12 @@ function expoRenderGeo(calc) {
     b.setAttribute("aria-pressed", b.dataset.v === mode ? "true" : "false"));
   let h;
   if (mode === "zones") {
-    h = calc.zones.map(z => expoRowHtml(Object.assign({}, z,
+    // Les cinq zones toujours affichées, même à 0 % : une zone absente se voit
+    // (sinon « Pays émergents » disparaissait et semblait oublié)
+    const zones = calc.zones.slice();
+    Object.keys(EXPO_ZONES).forEach(z => { if (!zones.some(x => x.cle === z)) zones.push({ cle: z, pct: 0, par: [] }); });
+    zones.sort((a, b) => (a.cle.startsWith("_") - b.cle.startsWith("_")) || (b.pct - a.pct));
+    h = zones.map(z => expoRowHtml(Object.assign({}, z,
       { nom: EXPO_ZONES[z.cle] || expoNomPays(z.cle) }), calc)).join("");
     h += `<p class="expo-note">Zones au sens de MSCI : la Corée du Sud, Taïwan, la Pologne ou la Grèce comptent parmi les pays émergents.</p>`;
   } else {
