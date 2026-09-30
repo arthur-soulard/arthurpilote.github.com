@@ -46,7 +46,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.7"
+APP_VERSION = "4.3.8"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -258,13 +258,14 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     def sante_pick_screenshots(self) -> dict:
-        """Selecteur de captures FitDays (plusieurs a la fois)."""
+        """Selecteur de captures FitDays (plusieurs a la fois, ou un .zip)."""
         try:
             win = webview.windows[0]
             result = win.create_file_dialog(
                 webview.OPEN_DIALOG,
                 allow_multiple=True,
-                file_types=("Images (*.png;*.jpg;*.jpeg;*.heic)", "All files (*.*)"),
+                file_types=("Captures ou zip (*.png;*.jpg;*.jpeg;*.heic;*.zip)",
+                            "All files (*.*)"),
             )
             if not result:
                 return {"ok": False, "cancelled": True}

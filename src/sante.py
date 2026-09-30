@@ -39,6 +39,7 @@ import re
 import sys
 import json
 import shutil
+import zipfile
 import datetime
 import tempfile
 import subprocess
@@ -584,14 +585,82 @@ def read_screenshot(path: str, deja_lues=None) -> dict:
             "time": date_info.get("time", ""), "passes": passes, "engine": lang}
 
 
+# ─── Captures envoyees en .zip ────────────────────────────────────────────────
+# Arthur s'envoie ses captures par mail, et Gmail rend les pieces jointes en
+# un seul .zip ("tout telecharger"). Chaque image de l'archive est lue comme
+# si elle avait ete choisie a la main. Les fichiers caches que macOS et
+# l'iPhone glissent dans une archive (__MACOSX/, "._IMG_1234.PNG") portent
+# une extension d'image sans en etre une : ils sont ignores.
+
+ZIP_EXTS = (".png", ".jpg", ".jpeg", ".heic")
+ZIP_IMAGES_MAX = 20
+ZIP_IMAGE_OCTETS_MAX = 25 * 1024 * 1024
+
+
+def _images_du_zip(chemin: str, dossier: str):
+    """Extrait les images d'une archive dans `dossier` -> (chemins, erreur)."""
+    out = []
+    try:
+        with zipfile.ZipFile(chemin) as zf:
+            membres = sorted((i for i in zf.infolist()
+                              if not i.is_dir()
+                              and not i.filename.startswith("__MACOSX/")
+                              and not os.path.basename(i.filename).startswith(".")
+                              and os.path.splitext(i.filename)[1].lower() in ZIP_EXTS
+                              and i.file_size <= ZIP_IMAGE_OCTETS_MAX),
+                             key=lambda i: i.filename.lower())
+            for n, info in enumerate(membres[:ZIP_IMAGES_MAX]):
+                # Le chemin est choisi ici, jamais repris de l'archive : rien
+                # ne peut en sortir ("../../x.png"). Un sous-dossier par image
+                # garde son nom d'origine, meme si deux portent le meme.
+                sous = os.path.join(dossier, str(n))
+                os.makedirs(sous, exist_ok=True)
+                cible = os.path.join(sous, os.path.basename(info.filename))
+                with zf.open(info) as src, open(cible, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                out.append(cible)
+    except RuntimeError:     # archive chiffree
+        return [], "Fichier zip protégé par un mot de passe."
+    except (zipfile.BadZipFile, OSError, ValueError):
+        return [], "Fichier zip illisible."
+    if not out:
+        return [], "Aucune image (PNG ou JPG) dans ce fichier zip."
+    return out, ""
+
+
 def read_screenshots(paths: list) -> dict:
     """
     Lit PLUSIEURS captures du meme instant (ecran principal + details).
+    Un .zip compte pour les images qu'il contient.
 
     Les valeurs se completent d'une capture a l'autre. En cas de desaccord sur
     une meme metrique, la premiere lue l'emporte : c'est un signal qu'on
     remonte a l'UI plutot qu'un arbitrage silencieux.
     """
+    tmpdir = tempfile.mkdtemp(prefix="pilote_zip_")
+    try:
+        images, erreurs_zip = [], []
+        for k, p in enumerate(paths or []):
+            if os.path.splitext(p)[1].lower() == ".zip":
+                lues, err = _images_du_zip(p, os.path.join(tmpdir, str(k)))
+                images += lues
+                if err:
+                    erreurs_zip.append({"file": os.path.basename(p), "ok": False,
+                                        "found": 0, "error": err})
+            else:
+                images.append(p)
+        if not images and erreurs_zip:
+            return {"ok": False, "values": {}, "files": erreurs_zip,
+                    "missing": [m["id"] for m in METRICS],
+                    "error": erreurs_zip[0]["error"]}
+        res = _read_images(images)
+        res["files"] = erreurs_zip + res["files"]
+        return res
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def _read_images(paths: list) -> dict:
     values, conflicts, date_, time_, details = {}, {}, "", "", []
     for p in paths or []:
         if len(values) >= len(METRICS) and date_:

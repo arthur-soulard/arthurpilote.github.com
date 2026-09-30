@@ -4576,11 +4576,12 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <p class="m-note" style="margin:0 0 14px">
         Choisis les captures de ta pesée — l'écran <b>Détails</b> suffit, tu peux
         y ajouter l'écran principal pour la date. Pilote les lit tout seul, hors ligne.
+        Envoyées par mail en un <b>.zip</b> ? Choisis directement le .zip.
       </p>
       <div class="sa-drop" onclick="saPickFiles()">
         <div class="sa-drop-ico">📷</div>
         <div><b>Choisir les captures</b></div>
-        <div class="m-note" style="margin:4px 0 0">PNG ou JPG · plusieurs à la fois</div>
+        <div class="m-note" style="margin:4px 0 0">PNG, JPG ou .zip · plusieurs à la fois</div>
       </div>
       <div id="sa-imp-files" class="sa-files"></div>
     </div>
@@ -17039,7 +17040,10 @@ async function saRunOcr() {
   document.getElementById("sa-imp-step1").style.display = "none";
   document.getElementById("sa-imp-step2").style.display = "";
   const prog = document.getElementById("sa-imp-progress");
-  if (prog) prog.textContent = `Lecture de ${_saImport.paths.length} capture${_saImport.paths.length > 1 ? "s" : ""}…`;
+  const n = _saImport.paths.length;
+  if (prog) prog.textContent = _saImport.paths.some(p => /\.zip$/i.test(p))
+    ? "Lecture des captures du zip…"      // on ne sait pas encore combien il en contient
+    : `Lecture de ${n} capture${n > 1 ? "s" : ""}…`;
 
   let res;
   try { res = await pywebview.api.sante_read_screenshots(_saImport.paths); }
