@@ -779,66 +779,6 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
   font-size: 9px; font-weight: 700; letter-spacing: .05em;
   text-transform: uppercase; white-space: nowrap; margin-top: 2px;
 }
-/* Pane secteurs */
-.sec-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-}
-@media (max-width: 1080px) { .sec-grid { grid-template-columns: 1fr; } }
-.sec-row {
-  display: grid;
-  grid-template-columns: 28px 1fr 70px 70px 70px 70px 50px;
-  align-items: center; gap: 8px;
-  padding: 10px 12px; border-bottom: 1px solid var(--brd);
-  font-size: 12px; font-family: var(--mono);
-  transition: background .12s;
-}
-.sec-row:last-child { border-bottom: 0; }
-.sec-row:hover { background: var(--bg3); }
-.sec-icon { font-size: 16px; text-align: center; }
-.sec-name { font-weight: 700; font-size: 12px; font-family: var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sec-bar-wrap { height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; margin-top: 3px; }
-.sec-bar-fill  { height: 100%; border-radius: 3px; transition: width .6s; }
-.sec-alert { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 99px; }
-.sec-alert-warn { background: var(--a2); color: var(--a); }
-.sec-alert-danger { background: var(--r2); color: var(--r); }
-.sec-alert-ok { background: var(--g2); color: var(--g); }
-.sec-detail-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 0; border-bottom: 1px dashed var(--brd); font-size: 11px;
-}
-.sec-detail-row:last-child { border-bottom: 0; }
-.sec-empty { text-align: center; color: var(--txt3); padding: 40px 0; font-size: 13px; }
-.sec-header-row {
-  display: grid;
-  grid-template-columns: 28px 1fr 70px 70px 70px 70px 50px;
-  gap: 8px; padding: 6px 12px;
-  font-size: 10px; font-weight: 700; color: var(--txt2);
-  text-transform: uppercase; letter-spacing: .07em; font-family: var(--font);
-  border-bottom: 1px solid var(--brd); background: var(--bg3);
-}
-.sec-threshold-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: .7rem 1rem; background: var(--bg3);
-  border-bottom: 1px solid var(--brd); flex-wrap: wrap;
-  font-size: 11px; color: var(--txt2);
-}
-.sec-threshold-row input { width: 56px; font-family: var(--mono); font-size: 12px;
-  padding: 3px 6px; border: 1px solid var(--brd2); border-radius: var(--rad);
-  background: var(--bg2); color: var(--txt); }
-.sec-detail-card {
-  background: var(--bg2); border: 1px solid var(--brd);
-  border-radius: var(--radl); box-shadow: var(--sh);
-  overflow: hidden; margin-top: 14px;
-}
-.sec-detail-card-h {
-  display: flex; align-items: center; gap: 10px;
-  padding: .75rem 1rem; border-bottom: 1px solid var(--brd);
-  background: var(--bg3);
-}
-.sec-detail-card-icon { font-size: 18px; }
-.sec-detail-card-name { font-weight: 700; font-size: 14px; }
-.sec-detail-card-pct  { font-family: var(--mono); font-weight: 700; font-size: 13px; margin-left: auto; }
-
 /* ══════════════════════════════════════════════════
    FINANCES PERSO — module "Mes comptes"
 ══════════════════════════════════════════════════ */
@@ -2163,12 +2103,12 @@ body { font-variant-numeric: tabular-nums; }
 }
 
 /* — Cartes : plus de bordure, une ombre douce ; le titre passe en serif — */
-.card, .dash-card, .reco-card, .sec-detail-card, .fin-header, .fin-kpi, .mkpi,
+.card, .dash-card, .reco-card, .fin-header, .fin-kpi, .mkpi,
 .sp-goal, .sa-goal, .pea-info, .mc, .home-card, .vo-card, .vo-face, .vo-box {
   border-color: transparent;
 }
 .vo-card, .vo-face, .vo-box { border-radius: var(--radl); box-shadow: var(--sh); }
-.card-h, .dash-card-h, .sec-detail-card-h {
+.card-h, .dash-card-h {
   background: transparent; border-bottom-color: transparent;
   padding: 1rem 1.25rem .3rem;
 }
@@ -2177,8 +2117,6 @@ body { font-variant-numeric: tabular-nums; }
   text-transform: none; letter-spacing: -.005em; color: var(--txt);
 }
 .card-b, .dash-card-b { padding: .9rem 1.25rem 1.1rem; }
-.sec-header-row { background: transparent; text-transform: none; letter-spacing: 0; font-size: 11.5px; font-weight: 500; }
-.sec-threshold-row { background: transparent; }
 
 /* — Chiffres clés : grands chiffres serif, libellés en casse normale — */
 .mets { grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; }
@@ -2390,6 +2328,66 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .fin-ac-item.on { box-shadow: inset 2px 0 0 var(--accent); }
 .fin-ac-lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fin-ac-meta { font-size: 11.5px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+/* — Expositions : pays, secteurs et entreprises, ETF décomposés — */
+.expo-head-h { flex-wrap: wrap; gap: 10px; }
+.expo-maj { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+.expo-date { font-size: 12px; color: var(--txt2); }
+.expo-date.vieux { color: var(--a); }
+.expo-maj-btn { position: relative; overflow: hidden; min-width: 212px; justify-content: center; }
+.expo-maj-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent-soft); transition: width .25s; }
+.expo-maj-lbl { position: relative; display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.expo-maj-btn[aria-busy="true"] { cursor: progress; border-color: var(--accent); color: var(--accent-text); }
+.expo-intro { font-size: 12.5px; color: var(--txt2); margin: 0 0 14px; max-width: 78ch; }
+.expo-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--txt2); margin-top: 12px; }
+.expo-leg span, .expo-det span { display: inline-flex; align-items: center; gap: 6px; }
+.expo-pt { width: 9px; height: 9px; border-radius: 3px; flex: none; display: inline-block; }
+.expo-alerte { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--a); }
+.expo-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+@media (max-width: 1080px) { .expo-duo { grid-template-columns: 1fr; } }
+.expo-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0 12px; align-items: baseline;
+  padding: 7px 6px; margin: 0 -6px; border-radius: 8px; font-size: 13px; cursor: pointer;
+}
+.expo-row:hover { background: var(--hover); }
+.expo-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.expo-nm { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.expo-nm b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.expo-nm .ph { color: var(--txt2); font-size: 14px; align-self: center; }
+.expo-rang { color: var(--txt3); font-size: 11.5px; min-width: 18px; font-variant-numeric: tabular-nums; }
+.expo-meta { font-size: 11.5px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.expo-eur { font-size: 12px; color: var(--txt2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.expo-pct { font-weight: 600; text-align: right; min-width: 58px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.expo-bar { grid-column: 1 / -1; display: flex; height: 6px; border-radius: 99px; background: var(--bg4); overflow: hidden; margin-top: 6px; }
+.expo-bar i { display: block; height: 100%; }
+.expo-bar i + i { box-shadow: inset 1px 0 0 var(--bg2); }
+.expo-det { grid-column: 1 / -1; display: none; flex-wrap: wrap; gap: 4px 16px; margin-top: 7px; font-size: 12px; color: var(--txt2); }
+.expo-row.open .expo-det { display: flex; }
+.expo-row.gris .expo-nm b { color: var(--txt2); font-style: italic; }
+.expo-plus { margin-top: 8px; }
+.expo-note { font-size: 12px; color: var(--txt2); margin: 12px 0 0; max-width: 90ch; }
+.expo-pos { padding: 14px 0; border-bottom: 1px solid var(--brd); }
+.expo-pos:first-child { padding-top: 2px; }
+.expo-pos:last-child { border-bottom: 0; padding-bottom: 2px; }
+.expo-pos-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.expo-pos-nm { font-weight: 600; font-size: 14px; }
+.expo-pos-nm small { font-weight: 400; color: var(--txt2); font-size: 12px; margin-left: 6px; }
+.expo-pos-v { margin-left: auto; font-size: 13px; font-variant-numeric: tabular-nums; }
+.expo-pos-src { font-size: 12px; color: var(--txt2); margin-top: 4px; }
+.expo-pos-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 24px; font-size: 12.5px; margin-top: 8px; }
+.expo-pos-top b { font-weight: 500; color: var(--txt2); margin-right: 6px; }
+.expo-pos-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.expo-skel .dash-skel-bar { width: 100%; height: 14px; margin-bottom: 12px; }
+.expo-ed-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .expo-ed-cols { grid-template-columns: 1fr; } }
+.expo-ed-cols textarea {
+  width: 100%; min-height: 230px; resize: vertical; background: var(--bg3); border: 1px solid var(--brd2);
+  border-radius: var(--rad); padding: 9px 11px; color: var(--txt); font: inherit; font-size: 12.5px; line-height: 1.55;
+}
+.expo-ed-cols textarea:focus { outline: none; border-color: var(--accent); }
+.expo-ed-tot { font-size: 11.5px; color: var(--txt2); margin-top: 4px; min-height: 16px; }
+.expo-ed-tot.err { color: var(--r); }
+.expo-ed-aide { font-size: 12.5px; color: var(--txt2); margin: -4px 0 14px; }
 
 </style>
 </head>
@@ -2640,66 +2638,45 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
   </div>
 </div>
 
-<!-- ═══════════════════ SECTEURS ═══════════════════ -->
+<!-- ═══════════════════ EXPOSITIONS ═══════════════════ -->
 <div class="pane" id="pane-sector">
-  <div class="card" id="card-sector-overview">
-    <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
-      <span class="card-t">Exposition sectorielle</span>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--txt2)">Seuil alerte :</span>
-        <input id="sector-threshold" type="number" min="5" max="100" value="30"
-          onchange="renderSectors()" title="% du portefeuille au-delà duquel une alerte est affichée"
-          style="width:56px;font-family:var(--mono);font-size:12px;padding:3px 6px;border:1px solid var(--brd2);border-radius:var(--rad);background:var(--bg2);color:var(--txt)">
-        <span style="font-size:11px;color:var(--txt2)">%</span>
-        <button class="btn btn-sm btn-ghost" onclick="goTab('pos')" title="Aller aux positions pour modifier les secteurs"><i class="ph ph-pencil-simple"></i> Modifier secteurs</button>
+  <div class="card" id="card-expo-head">
+    <div class="card-h expo-head-h">
+      <span class="card-t">Exposition réelle</span>
+      <div class="expo-maj">
+        <span class="expo-date" id="expo-date"></span>
+        <button class="btn btn-sm expo-maj-btn" id="expo-maj-btn" onclick="expoMettreAJour()"
+          title="Relire la composition des ETF sur les sites d'iShares et d'Amundi">
+          <span class="expo-maj-fill" id="expo-maj-fill"></span>
+          <span class="expo-maj-lbl" id="expo-maj-lbl"><i class="ph ph-arrows-clockwise"></i> Mettre à jour les données</span>
+        </button>
       </div>
     </div>
-    <div id="sector-alerts-bar" style="display:none;padding:.6rem 1rem;background:var(--r2);border-bottom:1px solid var(--brd);font-size:11px;color:var(--r);font-weight:700"></div>
-    <div class="sec-grid" style="padding:1rem;gap:1rem">
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt2);margin-bottom:.6rem">Répartition (valeur de marché)</div>
-        <canvas id="sector-chart" height="280" style="max-height:280px"></canvas>
+    <div class="card-b" id="expo-resume"></div>
+  </div>
+  <div class="expo-duo">
+    <div class="card" id="card-expo-geo">
+      <div class="card-h">
+        <span class="card-t">Géographie</span>
+        <div class="rng" id="expo-geo-rng">
+          <button type="button" data-v="pays" onclick="expoSetGeo('pays')">Pays</button>
+          <button type="button" data-v="zones" onclick="expoSetGeo('zones')">Zones</button>
+        </div>
       </div>
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt2);margin-bottom:.6rem">Détail par secteur</div>
-        <div id="sector-detail-list"></div>
-      </div>
+      <div class="card-b" id="expo-geo"></div>
+    </div>
+    <div class="card" id="card-expo-sect">
+      <div class="card-h"><span class="card-t">Secteurs</span></div>
+      <div class="card-b" id="expo-sect"></div>
     </div>
   </div>
-  <div class="card" id="card-geo-overview" style="margin-top:0">
-    <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
-      <span class="card-t">Exposition géographique</span>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--txt2)">Seuil alerte :</span>
-        <input id="geo-threshold" type="number" min="5" max="100" value="50"
-          onchange="renderGeo()" title="% du portefeuille au-delà duquel une alerte de concentration géographique est affichée"
-          style="width:56px;font-family:var(--mono);font-size:12px;padding:3px 6px;border:1px solid var(--brd2);border-radius:var(--rad);background:var(--bg2);color:var(--txt)">
-        <span style="font-size:11px;color:var(--txt2)">%</span>
-        <button class="btn btn-sm btn-ghost" onclick="goTab('pos')" title="Aller aux positions pour ajuster les zones"><i class="ph ph-pencil-simple"></i> Modifier zones</button>
-      </div>
-    </div>
-    <div id="geo-alerts-bar" style="display:none;padding:.6rem 1rem;background:var(--r2);border-bottom:1px solid var(--brd);font-size:11px;color:var(--r);font-weight:700"></div>
-    <div class="sec-grid" style="padding:1rem;gap:1rem">
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt2);margin-bottom:.6rem">Répartition (valeur de marché)</div>
-        <canvas id="geo-chart" height="280" style="max-height:280px"></canvas>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt2);margin-bottom:.6rem">Détail par zone</div>
-        <div id="geo-detail-list"></div>
-      </div>
-    </div>
+  <div class="card" id="card-expo-ent">
+    <div class="card-h"><span class="card-t">Entreprises</span></div>
+    <div class="card-b" id="expo-ent"></div>
   </div>
-  <div class="card" id="card-sector-positions" style="margin-top:0">
-    <div class="card-h" style="flex-wrap:wrap;gap:.6rem">
-      <span class="card-t">Positions par secteur</span>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <select id="sector-filter-select" onchange="renderSectorPositions()" style="font-family:var(--mono);background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rad);padding:5px 8px;font-size:11px;color:var(--txt)">
-          <option value="">Tous les secteurs</option>
-        </select>
-      </div>
-    </div>
-    <div id="sector-positions-list" style="padding:.75rem 1rem"></div>
+  <div class="card" id="card-expo-pos">
+    <div class="card-h"><span class="card-t">Détail par position</span></div>
+    <div class="card-b" id="expo-pos"></div>
   </div>
 </div>
 
@@ -4705,6 +4682,29 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 </div>
 
 <!-- Modal : Ajouter position (crée aussi une transaction) -->
+<div class="ov" id="ov-expo-edit" onclick="if(event.target===this)closeOv('ov-expo-edit')">
+  <div class="modal" style="max-width:860px">
+    <h2 id="expo-ed-titre">Composition</h2>
+    <p class="expo-ed-aide">Une ligne par élément, « nom = pourcentage » (ce que tu lis sur la fiche justETF ou de l'émetteur).
+      Ce qui manque pour atteindre 100 % compte comme « non détaillé ».</p>
+    <div class="fg-row">
+      <div class="fg"><label>Indice suivi</label><input id="expo-ed-indice" placeholder="ex : MSCI World"></div>
+      <div class="fg"><label>Date des données</label><input id="expo-ed-date" type="date"></div>
+    </div>
+    <div class="fg"><label>Source</label><input id="expo-ed-source" placeholder="ex : fiche justETF du 31/08/2026"></div>
+    <div class="expo-ed-cols">
+      <div class="fg"><label>Pays</label><textarea id="expo-ed-pays" oninput="expoEdTotaux()" spellcheck="false" placeholder="États-Unis = 70,5"></textarea><div class="expo-ed-tot" id="expo-ed-pays-tot"></div></div>
+      <div class="fg"><label>Secteurs</label><textarea id="expo-ed-sect" oninput="expoEdTotaux()" spellcheck="false" placeholder="Technologies de l'information = 26,4"></textarea><div class="expo-ed-tot" id="expo-ed-sect-tot"></div></div>
+      <div class="fg"><label>Entreprises</label><textarea id="expo-ed-ent" oninput="expoEdTotaux()" spellcheck="false" placeholder="Nvidia = 5,5"></textarea><div class="expo-ed-tot" id="expo-ed-ent-tot"></div></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-ghost" id="expo-ed-reset" style="margin-right:auto" onclick="expoAnnulerPerso(null)"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux données téléchargées</button>
+      <button class="btn btn-ghost" onclick="closeOv('ov-expo-edit')">Annuler</button>
+      <button class="btn btn-primary" onclick="expoEdSave()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ov-pos" onclick="if(event.target===this)closeOv('ov-pos')">
   <div class="modal">
     <h2>Ajouter une position</h2>
@@ -4747,16 +4747,6 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
           <option value="media">🎬 Médias &amp; Divertissement</option>
           <option value="etf">📊 ETF / Fonds diversifié</option>
           <option value="autre">○ Autre</option>
-        </select>
-      </div>
-      <div class="fg"><label>Zone géographique</label>
-        <select id="f-geo" style="background:var(--bg2)" title="« Auto » détecte la zone via le ticker (actions) ou le nom (ETF). Choisissez une zone pour forcer.">
-          <option value="">🌐 Auto (détecté)</option>
-          <option value="am_nord">🌎 Amérique du Nord</option>
-          <option value="euro">🇪🇺 Europe</option>
-          <option value="asie_dev">🗾 Asie développée</option>
-          <option value="emergents">📈 Émergents</option>
-          <option value="autre">○ Autre / Diversifié</option>
         </select>
       </div>
     </div>
@@ -5061,65 +5051,6 @@ function sectorBadgeHtml(id) {
   const s = sectorById(id);
   const bg = s.color + "22";
   return `<span class="sector-badge" style="background:${bg};color:${s.color}">${s.icon} ${s.label}</span>`;
-}
-
-/* ─── Référentiel des zones géographiques ─── */
-const GEOS = [
-  { id: "am_nord",   label: "Amérique du Nord",   icon: "🌎", color: "#2563eb" },
-  { id: "euro",      label: "Europe",             icon: "🇪🇺", color: "#16a34a" },
-  { id: "asie_dev",  label: "Asie développée",    icon: "🗾", color: "#db2777" },
-  { id: "emergents", label: "Émergents",          icon: "📈", color: "#f97316" },
-  { id: "autre",     label: "Autre / Diversifié", icon: "○",  color: "#a1a1aa" },
-];
-function geoById(id) {
-  return GEOS.find(g => g.id === id) || { id: "autre", label: "Autre / Diversifié", icon: "○", color: "#a1a1aa" };
-}
-
-/* Suffixe de place de cotation → zone (heuristique, surchargeable par l'utilisateur) */
-const EXCHANGE_GEO = {
-  EPA:"euro", PAR:"euro", AMS:"euro", EAM:"euro", EBR:"euro", BRU:"euro",
-  ELI:"euro", LIS:"euro", ETR:"euro", FRA:"euro", GER:"euro", XETRA:"euro",
-  BIT:"euro", MIL:"euro", BME:"euro", MCE:"euro", MAD:"euro", VIE:"euro",
-  WBO:"euro", HEL:"euro", DUB:"euro", ISE:"euro",
-  LON:"euro", LSE:"euro", SWX:"euro", VTX:"euro", EBS:"euro",
-  STO:"euro", CPH:"euro", OSL:"euro",
-  NYSE:"am_nord", NASDAQ:"am_nord", NMS:"am_nord", NYQ:"am_nord", PCX:"am_nord",
-  TSE:"am_nord", TOR:"am_nord", CVE:"am_nord",
-  TYO:"asie_dev", TKS:"asie_dev", HKG:"emergents", SHA:"emergents", SHE:"emergents",
-};
-function detectGeoZone(ticker) {
-  if (!ticker) return "euro";
-  const m = String(ticker).toUpperCase().match(/^([A-Z]+)\s*:/);
-  return EXCHANGE_GEO[m ? m[1] : ""] || "euro";
-}
-
-/* Répartitions pré-câblées pour ETF courants (somme = 1). Première correspondance gagnante. */
-const ETF_GEO_PRESETS = [
-  { re:/s\s*&?\s*p\s*500|sp\s*500/i,                       mix:{ am_nord:1 } },
-  { re:/nasdaq|\bndx\b/i,                                   mix:{ am_nord:1 } },
-  { re:/msci\s*usa|\busa\b|\bus\b|états[- ]?unis|etats[- ]?unis/i, mix:{ am_nord:1 } },
-  { re:/emerging|émergent|emergent|pays\s*émergent|\bem\b/i, mix:{ emergents:1 } },
-  { re:/euro\s*stoxx|stoxx\s*50|msci\s*emu|zone\s*euro/i,   mix:{ euro:1 } },
-  { re:/stoxx\s*600|msci\s*europe|\beurope\b/i,             mix:{ euro:1 } },
-  { re:/cac\s*40|\bsbf\b|\bfrance\b/i,                      mix:{ euro:1 } },
-  { re:/\bdax\b|allemagne|germany/i,                        mix:{ euro:1 } },
-  { re:/japan|japon|topix|nikkei/i,                         mix:{ asie_dev:1 } },
-  { re:/pacific|pacifique|\basia\b|\basie\b/i,              mix:{ asie_dev:0.7, emergents:0.3 } },
-  { re:/all\s*country|\bacwi\b|\bimi\b|monde\s*entier/i,    mix:{ am_nord:0.62, euro:0.18, asie_dev:0.10, emergents:0.10 } },
-  { re:/world|monde|\bwld\b/i,                              mix:{ am_nord:0.70, euro:0.20, asie_dev:0.10 } },
-];
-function detectEtfMix(p) {
-  const hay = `${p.name||""} ${p.ticker||""}`;
-  for (const preset of ETF_GEO_PRESETS) if (preset.re.test(hay)) return { ...preset.mix };
-  return { autre: 1 };
-}
-
-/* Résout la répartition géo d'une position → { zoneId: poids } (somme = 1).
-   p.geo absent → auto (détection) ; p.geo = "<id>" → override forcé 100% cette zone. */
-function resolveGeoMix(p) {
-  if (p && p.geo) return { [p.geo]: 1 };
-  if (p && p.type === "etf") return detectEtfMix(p);
-  return { [detectGeoZone(p && p.ticker)]: 1 };
 }
 
 let _coursTimer  = null;
@@ -7115,280 +7046,632 @@ function renderTx() {
 }
 
 
-/* ─── Secteurs ─── */
-let _sectorChart = null;
+/* ─── Expositions : pays, secteurs et entreprises ───
+   Chaque ETF est décomposé selon l'INDICE qu'il suit (src/expositions.py : données
+   livrées avec l'app, remplacées ETF par ETF par le bouton « Mettre à jour les
+   données »). Une action compte pour son pays de cotation et son secteur. Une
+   correction à la main (« Modifier la composition ») vit dans
+   S.uiPrefs.expoPerso[ticker] et l'emporte sur tout le reste.
+   Base : les titres détenus, hors espèces (même base que la répartition de la vue
+   d'ensemble). Aucune limite ni alerte : Arthur lit les chiffres et les interprète. */
 
-function renderSectors() {
-  const positions = (S.positions || []);
-  if (!positions.length) {
-    const dl = document.getElementById("sector-detail-list");
-    const pl = document.getElementById("sector-positions-list");
-    if (dl) dl.innerHTML = '<div class="sec-empty">Aucune position — ajoutez des positions avec un secteur pour voir l\'analyse.</div>';
-    if (pl) pl.innerHTML = "";
-    return;
-  }
+const EXPO_ZONES = {
+  am_nord:   "Amérique du Nord",
+  europe:    "Europe",
+  pacifique: "Asie-Pacifique développée",
+  emergents: "Pays émergents",
+  autres:    "Autres pays",
+};
+/* code : [nom, zone (classement MSCI), autres noms acceptés dans l'éditeur] */
+const EXPO_PAYS = {
+  US:["États-Unis","am_nord","united states|usa|etats unis d amerique"], CA:["Canada","am_nord",""],
+  GB:["Royaume-Uni","europe","united kingdom|uk|grande bretagne|angleterre"], FR:["France","europe",""],
+  DE:["Allemagne","europe","germany"], CH:["Suisse","europe","switzerland"],
+  NL:["Pays-Bas","europe","netherlands|hollande"], SE:["Suède","europe","sweden"],
+  DK:["Danemark","europe","denmark"], IT:["Italie","europe","italy"], ES:["Espagne","europe","spain"],
+  FI:["Finlande","europe","finland"], BE:["Belgique","europe","belgium"], NO:["Norvège","europe","norway"],
+  IE:["Irlande","europe","ireland"], AT:["Autriche","europe","austria"], PT:["Portugal","europe",""],
+  LU:["Luxembourg","europe",""], IS:["Islande","europe","iceland"], MT:["Malte","europe","malta"],
+  CY:["Chypre","europe","cyprus"], JE:["Jersey","europe",""], GG:["Guernesey","europe","guernsey"],
+  IM:["Île de Man","europe","isle of man"], MC:["Monaco","europe",""], GI:["Gibraltar","europe",""],
+  JP:["Japon","pacifique","japan"], AU:["Australie","pacifique","australia"], HK:["Hong Kong","pacifique",""],
+  SG:["Singapour","pacifique","singapore"], NZ:["Nouvelle-Zélande","pacifique","new zealand"],
+  MO:["Macao","pacifique","macau"],
+  CN:["Chine","emergents","china"], TW:["Taïwan","emergents","taiwan"], IN:["Inde","emergents","india"],
+  KR:["Corée du Sud","emergents","south korea|korea|coree"], BR:["Brésil","emergents","brazil"],
+  ZA:["Afrique du Sud","emergents","south africa"], SA:["Arabie saoudite","emergents","saudi arabia"],
+  MX:["Mexique","emergents","mexico"], AE:["Émirats arabes unis","emergents","united arab emirates|uae|emirats"],
+  PL:["Pologne","emergents","poland"], MY:["Malaisie","emergents","malaysia"],
+  TH:["Thaïlande","emergents","thailand"], GR:["Grèce","emergents","greece"], KW:["Koweït","emergents","kuwait"],
+  PE:["Pérou","emergents","peru"], ID:["Indonésie","emergents","indonesia"], QA:["Qatar","emergents",""],
+  CL:["Chili","emergents","chile"], TR:["Turquie","emergents","turkey|turkiye"],
+  HU:["Hongrie","emergents","hungary"], PH:["Philippines","emergents",""], CO:["Colombie","emergents","colombia"],
+  CZ:["République tchèque","emergents","czech republic|tchequie"], EG:["Égypte","emergents","egypt"],
+  RU:["Russie","emergents","russia|russian federation"], AR:["Argentine","emergents","argentina"],
+  VN:["Viêt Nam","emergents","vietnam"], PK:["Pakistan","emergents",""], KZ:["Kazakhstan","emergents",""],
+  IL:["Israël","autres","israel"], KY:["Îles Caïmans","autres","cayman islands|caimans"],
+  BM:["Bermudes","autres","bermuda"], PA:["Panama","autres",""], PR:["Porto Rico","autres","puerto rico"],
+  UY:["Uruguay","autres",""],
+};
+/* Secteurs GICS : [nom, nom court, icône Phosphor, autres noms acceptés dans l'éditeur] */
+const EXPO_SECT = {
+  it:      ["Technologies de l'information", "Tech", "cpu", "technologie|technologies|tech|information technology|informatique"],
+  fin:     ["Finance", "Finance", "bank", "financials|services financiers|banque|banques"],
+  ind:     ["Industrie", "Industrie", "factory", "industrials|industriels"],
+  sante:   ["Santé", "Santé", "first-aid", "health care|healthcare|soins de sante"],
+  discr:   ["Consommation discrétionnaire", "Conso. discrétionnaire", "shopping-bag", "consumer discretionary|consommation cyclique|biens de consommation cycliques"],
+  comm:    ["Services de communication", "Communication", "broadcast", "communication|communication services|telecommunications|telecoms|medias"],
+  base:    ["Consommation de base", "Conso. de base", "basket", "consumer staples|consommation non cyclique|biens de consommation de base"],
+  energie: ["Énergie", "Énergie", "lightning", "energy"],
+  mat:     ["Matériaux", "Matériaux", "cube", "materials|matieres premieres|basic materials"],
+  util:    ["Services aux collectivités", "Services publics", "drop", "utilities|services publics"],
+  immo:    ["Immobilier", "Immobilier", "buildings", "real estate"],
+  autres:  ["Autres secteurs", "Autres", "dots-three", "autre|other|others|divers"],
+};
+/* Secteur d'une action (liste SECTORS de la fenêtre Position) -> secteur GICS */
+const EXPO_SECT_ACTION = {
+  tech: "it", semico: "it", sante: "sante", finance: "fin", industrie: "ind", automobile: "discr",
+  construction: "ind", conso: "base", agroalimentaire: "base", luxe: "discr", energie: "energie",
+  materiaux: "mat", telecom: "comm", utilities: "util", immobilier: "immo", transport: "ind", media: "comm",
+};
+/* Place de cotation -> pays (préfixe « EPA: » ou suffixe Yahoo « .PA ») */
+const EXPO_BOURSE = {
+  EPA:"FR", PAR:"FR", PA:"FR", AMS:"NL", EAM:"NL", AS:"NL", EBR:"BE", BRU:"BE", BR:"BE",
+  ELI:"PT", LIS:"PT", LS:"PT", ETR:"DE", FRA:"DE", GER:"DE", XETRA:"DE", DE:"DE", F:"DE",
+  BIT:"IT", MIL:"IT", MI:"IT", BME:"ES", MCE:"ES", MAD:"ES", MC:"ES", VIE:"AT", WBO:"AT", VI:"AT",
+  HEL:"FI", HE:"FI", DUB:"IE", ISE:"IE", IR:"IE", LON:"GB", LSE:"GB", L:"GB", SWX:"CH", VTX:"CH",
+  EBS:"CH", SW:"CH", STO:"SE", ST:"SE", CPH:"DK", CO:"DK", OSL:"NO", OL:"NO",
+  NYSE:"US", NASDAQ:"US", NMS:"US", NYQ:"US", PCX:"US", TSE:"CA", TOR:"CA", CVE:"CA", TO:"CA",
+  TYO:"JP", TKS:"JP", T:"JP", HKG:"HK", HK:"HK",
+};
 
-  const threshold = parseFloat((document.getElementById("sector-threshold")||{}).value || 30);
+let EXPO = null;               // {etfs: {WPEA: {...}}, maj, suivis} renvoyé par load_expositions
+let _expoChargement = null;
+let _expoMaj = null;           // {pct, etape} pendant une mise à jour
+let _expoMajTimer = null;
+const _expoTout = { pays: false, ent: false };
+let _expoEdTicker = null;
 
-  const byId = {};
-  positions.forEach(p => {
+function expoNorm(s) {
+  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+/* « EPA:WPEA » ou « WPEA.PA » -> « WPEA » */
+function expoCle(ticker) {
+  return String(ticker || "").toUpperCase().replace(/^[A-Z]+\s*:\s*/, "").replace(/\.[A-Z]{1,3}$/, "");
+}
+function expoPaysAction(ticker) {
+  const t = String(ticker || "").toUpperCase();
+  const m = t.match(/^([A-Z]+)\s*:/) || t.match(/\.([A-Z]{1,3})$/);
+  return (m && EXPO_BOURSE[m[1]]) || "FR";
+}
+function expoNomPays(code) {
+  if (code === "_nd") return "Non détaillé";
+  if (code === "_inconnu") return "Composition inconnue";
+  return EXPO_PAYS[code] ? EXPO_PAYS[code][0] : code;
+}
+function expoZone(code) {
+  if (code === "_nd" || code === "_inconnu") return code;
+  return EXPO_PAYS[code] ? EXPO_PAYS[code][1] : "autres";
+}
+function expoNomSect(id, court) {
+  if (id === "_nd") return "Non détaillé";
+  if (id === "_inconnu") return "Composition inconnue";
+  const s = EXPO_SECT[id];
+  return s ? s[court ? 1 : 0] : id;
+}
+/* Clé de rapprochement d'une entreprise d'après son nom (saisie à la main,
+   action détenue en direct) : « Airbus SE » et « Airbus » se rejoignent. */
+function expoCleNom(nom) {
+  return expoNorm(String(nom || "").replace(/\(.*?\)/g, " "))
+    .split(" ").filter(m => !["se","sa","nv","inc","corp","plc","ag","ltd","group","groupe","holding","holdings","co","the"].includes(m))
+    .join(" ");
+}
+function expoPct(x) {
+  if (x > 0 && x < 0.01) return "< 0,01 %";
+  return x.toLocaleString("fr-FR", { minimumFractionDigits: x < 1 ? 2 : 1, maximumFractionDigits: x < 1 ? 2 : 1 }) + " %";
+}
+function expoEur(x) {
+  return Math.round(x).toLocaleString("fr-FR") + " €";
+}
+function expoDate(iso) {
+  if (!iso) return "";
+  const d = new Date(String(iso).slice(0, 10) + "T12:00:00");
+  return isNaN(d) ? String(iso) : d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/* Composition d'une position : correction à la main, sinon données de l'ETF,
+   sinon action (pays de cotation + secteur). null = ETF inconnu de Pilote. */
+function expoCompo(p) {
+  const perso = S.uiPrefs && S.uiPrefs.expoPerso && S.uiPrefs.expoPerso[p.ticker];
+  if (perso) return Object.assign({}, perso, { statut: "perso" });
+  const etf = EXPO && EXPO.etfs && EXPO.etfs[expoCle(p.ticker)];
+  if (etf) return Object.assign({}, etf, { statut: etf.origine || "integre" });
+  if (p.type === "etf") return null;
+  const pays = expoPaysAction(p.ticker);
+  const sect = EXPO_SECT_ACTION[p.sector] || null;
+  return {
+    statut: "action", pays: { [pays]: 100 }, secteurs: sect ? { [sect]: 100 } : {},
+    entreprises: [{ id: "", nom: p.name || expoCle(p.ticker), pct: 100, pays, secteur: sect || "" }],
+  };
+}
+
+/* Tout le calcul de l'onglet. Chaque ligne garde le détail de ce qui vient de
+   chaque position (« part de chaque ETF »). */
+function expoCalcul() {
+  const lignes = (S.positions || []).map(p => {
     const e = computePos(p);
-    const sid = p.sector || "autre";
-    if (!byId[sid]) byId[sid] = { val: 0, inv: 0, pv: 0, positions: [] };
-    byId[sid].val += e.val != null ? e.val : e.inv;
-    byId[sid].inv += e.inv;
-    byId[sid].pv  += e.pv || 0;
-    byId[sid].positions.push({ p, e });
-  });
-
-  const totalVal = Object.values(byId).reduce((s, x) => s + x.val, 0);
-
-  const sorted = Object.entries(byId)
-    .map(([sid, data]) => ({ sid, ...data, sec: sectorById(sid), pct: totalVal > 0 ? data.val / totalVal * 100 : 0 }))
-    .sort((a, b) => b.val - a.val);
-
-  const alertBar = document.getElementById("sector-alerts-bar");
-  const overexposed = sorted.filter(x => x.pct >= threshold);
-  if (alertBar) {
-    if (overexposed.length) {
-      alertBar.style.display = "";
-      alertBar.innerHTML = "⚠ Surexposition détectée : "
-        + overexposed.map(x => `${x.sec.icon} ${x.sec.label} (${x.pct.toFixed(1)}%)`).join(" · ");
-    } else {
-      alertBar.style.display = "none";
+    return { p, val: e.val != null ? e.val : (e.inv || 0) };
+  }).filter(l => l.val > 0).sort((a, b) => b.val - a.val);
+  const total = lignes.reduce((s, l) => s + l.val, 0);
+  const pays = {}, secteurs = {}, ents = {}, parNom = {};
+  const ajoute = (map, cle, pctEtf, l, extra) => {
+    const x = map[cle] || (map[cle] = Object.assign({ cle, pct: 0, par: [] }, extra || {}));
+    const pct = l.poids * pctEtf / 100;
+    x.pct += pct;
+    x.par.push({ l, pct, pctEtf });
+    return x;
+  };
+  const inconnus = [];
+  lignes.forEach((l, i) => {
+    l.poids   = total > 0 ? l.val / total * 100 : 0;
+    l.couleur = CLRS[i % CLRS.length];
+    l.cle     = expoCle(l.p.ticker);
+    l.compo   = expoCompo(l.p);
+    const c = l.compo;
+    if (!c) {
+      inconnus.push(l);
+      ajoute(pays, "_inconnu", 100, l);
+      ajoute(secteurs, "_inconnu", 100, l);
+      return;
     }
-  }
-
-  const canvas = document.getElementById("sector-chart");
-  if (canvas) {
-    if (_sectorChart) { _sectorChart.destroy(); _sectorChart = null; }
-    _sectorChart = new Chart(canvas.getContext("2d"), {
-      type: "doughnut",
-      data: {
-        labels: sorted.map(x => x.sec.label),
-        datasets: [{
-          data: sorted.map(x => x.val),
-          backgroundColor: sorted.map(x => x.sec.color + "cc"),
-          borderColor: sorted.map(x => x.sec.color),
-          borderWidth: 1.5,
-          hoverOffset: 6,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        cutout: "62%",
-        plugins: {
-          legend: { position: "bottom", labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } },
-          tooltip: {
-            callbacks: {
-              label: ctx => {
-                const x = sorted[ctx.dataIndex];
-                return ` ${x.pct.toFixed(1)}% · ${x.val.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €`;
-              }
-            }
-          }
-        }
-      }
+    let sp = 0, ss = 0;
+    Object.entries(c.pays || {}).forEach(([k, v]) => { if (v > 0) { ajoute(pays, k, v, l); sp += v; } });
+    Object.entries(c.secteurs || {}).forEach(([k, v]) => { if (v > 0) { ajoute(secteurs, k, v, l); ss += v; } });
+    if (sp < 99.95) ajoute(pays, "_nd", 100 - sp, l);
+    if (ss < 99.95) ajoute(secteurs, "_nd", 100 - ss, l);
+    (c.entreprises || []).forEach(e => {
+      if (!(e.pct > 0)) return;
+      // Même entreprise d'un ETF à l'autre : même ISIN, sinon même nom
+      const cn  = expoCleNom(e.nom);
+      const cle = e.id || parNom[cn] || ("n:" + cn);
+      if (e.id && cn && !parNom[cn]) parNom[cn] = e.id;
+      const x = ajoute(ents, cle, e.pct, l, { nom: e.nom, pays: e.pays || "", secteur: e.secteur || "" });
+      if (!x.pays && e.pays) x.pays = e.pays;
+      if (!x.secteur && e.secteur) x.secteur = e.secteur;
     });
-  }
-
-  const dl = document.getElementById("sector-detail-list");
-  if (dl) {
-    dl.innerHTML = sorted.map(x => {
-      const alertCls = x.pct >= threshold ? "sec-alert-danger" : x.pct >= threshold * 0.75 ? "sec-alert-warn" : "sec-alert-ok";
-      const alertTxt = x.pct >= threshold ? "⚠ Surexposé" : x.pct >= threshold * 0.75 ? "⚡ Attention" : "✓ OK";
-      const pvSign   = x.pv >= 0 ? "+" : "−";
-      const pvCls    = x.pv >= 0 ? "pos" : "neg";
-      return `<div style="padding:10px 0;border-bottom:1px solid var(--brd)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:18px">${x.sec.icon}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:13px">${x.sec.label}</div>
-            <div style="font-size:10px;color:var(--txt2);font-family:var(--mono)">${x.positions.length} position${x.positions.length>1?"s":""}</div>
-          </div>
-          <span class="sec-alert ${alertCls}" style="font-size:10px">${alertTxt}</span>
-          <span style="font-family:var(--mono);font-weight:800;font-size:14px;color:${x.sec.color}">${x.pct.toFixed(1)}%</span>
-        </div>
-        <div class="sec-bar-wrap" style="margin-bottom:6px">
-          <div class="sec-bar-fill" style="width:${Math.min(x.pct,100).toFixed(1)}%;background:${x.sec.color}"></div>
-        </div>
-        <div style="display:flex;gap:16px;font-size:11px;font-family:var(--mono);color:var(--txt2);flex-wrap:wrap">
-          <span>Valeur : <strong style="color:var(--txt)">${x.val.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €</strong></span>
-          <span>Investi : <strong style="color:var(--txt)">${x.inv.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €</strong></span>
-          <span class="${pvCls}">PV : <strong>${pvSign}${Math.abs(x.pv).toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €</strong></span>
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  const sfSel = document.getElementById("sector-filter-select");
-  if (sfSel) {
-    const cur = sfSel.value;
-    sfSel.innerHTML = '<option value="">Tous les secteurs</option>'
-      + sorted.map(x => `<option value="${x.sid}"${x.sid===cur?" selected":""}>${x.sec.icon} ${x.sec.label} (${x.pct.toFixed(1)}%)</option>`).join("");
-  }
-
-  renderSectorPositions();
-  renderGeo();
+  });
+  // Une entreprise saisie à la main sous un nom connu rejoint la ligne de l'ISIN
+  Object.keys(ents).filter(k => k.startsWith("n:")).forEach(k => {
+    const cible = parNom[k.slice(2)];
+    if (cible && ents[cible]) {
+      ents[cible].pct += ents[k].pct;
+      ents[cible].par = ents[cible].par.concat(ents[k].par);
+      delete ents[k];
+    }
+  });
+  const zones = {};
+  Object.values(pays).forEach(x => {
+    const z = expoZone(x.cle);
+    const y = zones[z] || (zones[z] = { cle: z, pct: 0, par: [] });
+    y.pct += x.pct;
+    x.par.forEach(pp => {
+      const q = y.par.find(r => r.l === pp.l);
+      if (q) { q.pct += pp.pct; q.pctEtf += pp.pctEtf; } else y.par.push(Object.assign({}, pp));
+    });
+  });
+  const trie = map => Object.values(map).sort((a, b) =>
+    (a.cle.startsWith("_") - b.cle.startsWith("_")) || (b.pct - a.pct));
+  const entreprises = Object.values(ents).sort((a, b) => b.pct - a.pct);
+  return {
+    lignes, total, inconnus,
+    pays: trie(pays), zones: trie(zones), secteurs: trie(secteurs), entreprises,
+    couverture: entreprises.reduce((s, e) => s + e.pct, 0),
+  };
 }
 
-/* ─── Exposition géographique ─── */
-let _geoChart = null;
-
-function renderGeo() {
-  const positions = (S.positions || []);
-  const dl       = document.getElementById("geo-detail-list");
-  const canvas   = document.getElementById("geo-chart");
-  const alertBar = document.getElementById("geo-alerts-bar");
-
-  if (!positions.length) {
-    if (dl) dl.innerHTML = '<div class="sec-empty">Aucune position — ajoutez des positions pour voir l\'exposition géographique.</div>';
-    if (_geoChart) { _geoChart.destroy(); _geoChart = null; }
-    if (alertBar) alertBar.style.display = "none";
-    return;
-  }
-
-  const threshold = parseFloat((document.getElementById("geo-threshold")||{}).value || 50);
-
-  const byZone = {};
-  positions.forEach(p => {
-    const e   = computePos(p);
-    const val = e.val != null ? e.val : e.inv;
-    const mix = resolveGeoMix(p);
-    Object.entries(mix).forEach(([zid, w]) => {
-      if (!byZone[zid]) byZone[zid] = { val: 0, inv: 0, pv: 0 };
-      byZone[zid].val += val * w;
-      byZone[zid].inv += e.inv * w;
-      byZone[zid].pv  += (e.pv || 0) * w;
-    });
-  });
-
-  const totalVal = Object.values(byZone).reduce((s, x) => s + x.val, 0);
-  const sorted = Object.entries(byZone)
-    .map(([zid, d]) => ({ zid, ...d, geo: geoById(zid), pct: totalVal > 0 ? d.val / totalVal * 100 : 0 }))
-    .sort((a, b) => b.val - a.val);
-
-  if (alertBar) {
-    const over = sorted.filter(x => x.pct >= threshold);
-    if (over.length) {
-      alertBar.style.display = "";
-      alertBar.innerHTML = "⚠ Concentration géographique : "
-        + over.map(x => `${x.geo.icon} ${x.geo.label} (${x.pct.toFixed(1)}%)`).join(" · ");
-    } else {
-      alertBar.style.display = "none";
-    }
-  }
-
-  if (canvas) {
-    if (_geoChart) { _geoChart.destroy(); _geoChart = null; }
-    _geoChart = new Chart(canvas.getContext("2d"), {
-      type: "doughnut",
-      data: {
-        labels: sorted.map(x => x.geo.label),
-        datasets: [{
-          data: sorted.map(x => x.val),
-          backgroundColor: sorted.map(x => x.geo.color + "cc"),
-          borderColor: sorted.map(x => x.geo.color),
-          borderWidth: 1.5,
-          hoverOffset: 6,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        cutout: "62%",
-        plugins: {
-          legend: { position: "bottom", labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } },
-          tooltip: {
-            callbacks: {
-              label: ctx => {
-                const x = sorted[ctx.dataIndex];
-                return ` ${x.pct.toFixed(1)}% · ${x.val.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €`;
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  if (dl) {
-    dl.innerHTML = sorted.map(x => {
-      const alertCls = x.pct >= threshold ? "sec-alert-danger" : x.pct >= threshold * 0.75 ? "sec-alert-warn" : "sec-alert-ok";
-      const alertTxt = x.pct >= threshold ? "⚠ Concentré" : x.pct >= threshold * 0.75 ? "⚡ Attention" : "✓ OK";
-      const pvSign   = x.pv >= 0 ? "+" : "−";
-      const pvCls    = x.pv >= 0 ? "pos" : "neg";
-      return `<div style="padding:10px 0;border-bottom:1px solid var(--brd)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:18px">${x.geo.icon}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:13px">${x.geo.label}</div>
-          </div>
-          <span class="sec-alert ${alertCls}" style="font-size:10px">${alertTxt}</span>
-          <span style="font-family:var(--mono);font-weight:800;font-size:14px;color:${x.geo.color}">${x.pct.toFixed(1)}%</span>
-        </div>
-        <div class="sec-bar-wrap" style="margin-bottom:6px">
-          <div class="sec-bar-fill" style="width:${Math.min(x.pct,100).toFixed(1)}%;background:${x.geo.color}"></div>
-        </div>
-        <div style="display:flex;gap:16px;font-size:11px;font-family:var(--mono);color:var(--txt2);flex-wrap:wrap">
-          <span>Valeur : <strong style="color:var(--txt)">${x.val.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €</strong></span>
-          <span>Investi : <strong style="color:var(--txt)">${x.inv.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €</strong></span>
-          <span class="${pvCls}">PV : <strong>${pvSign}${Math.abs(x.pv).toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})} €</strong></span>
-        </div>
-      </div>`;
-    }).join("");
-  }
+/* Une ligne cliquable : barre découpée par position, détail au clic.
+   echelle : le % qui remplit la barre (100 %, ou la première entreprise). */
+function expoRowHtml(o, calc, echelle) {
+  const k = 100 / (echelle || 100);
+  const barre = o.par.map(pp =>
+    `<i style="width:${Math.min(100, pp.pct * k).toFixed(3)}%;background:${pp.l.couleur}"></i>`).join("");
+  const det = o.par.map(pp => {
+    const qui = escHtml(pp.l.cle);
+    const dansEtf = pp.l.compo && pp.l.compo.statut === "action"
+      ? "action détenue en direct"
+      : (o.cle === "_inconnu" ? "composition non renseignée"
+        : expoPct(pp.pctEtf) + (pp.l.p.type === "etf" ? " de l'ETF" : " de la position"));
+    return `<span><i class="expo-pt" style="background:${pp.l.couleur}"></i>${qui} : ${expoEur(pp.pct * calc.total / 100)} · ${dansEtf}</span>`;
+  }).join("");
+  const gris = o.cle === "_nd" || o.cle === "_inconnu";
+  return `<div class="expo-row${gris ? " gris" : ""}" role="button" tabindex="0" aria-expanded="false"
+      onclick="expoToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();expoToggle(this)}">
+    <span class="expo-nm">${o.rang ? `<span class="expo-rang">${o.rang}</span>` : ""}${o.ico ? `<i class="ph ph-${o.ico}"></i>` : ""}<b>${escHtml(o.nom)}</b>${o.meta ? `<span class="expo-meta">${escHtml(o.meta)}</span>` : ""}</span>
+    <span class="expo-eur">${expoEur(o.pct * calc.total / 100)}</span>
+    <span class="expo-pct">${expoPct(o.pct)}</span>
+    <div class="expo-bar">${barre}</div>
+    <div class="expo-det">${det}</div>
+  </div>`;
+}
+function expoToggle(el) {
+  const ouvert = el.classList.toggle("open");
+  el.setAttribute("aria-expanded", ouvert ? "true" : "false");
+}
+function expoVoirTout(quoi) {
+  _expoTout[quoi] = !_expoTout[quoi];
+  expoRender();
+}
+function expoSetGeo(v) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.expoGeo = v;
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
+    window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
+  expoRender();
 }
 
-function renderSectorPositions() {
-  const sfSel  = document.getElementById("sector-filter-select");
-  const filter = sfSel ? sfSel.value : "";
-  const target = document.getElementById("sector-positions-list");
-  if (!target) return;
+function expoCharger(force) {
+  if (EXPO && !force) return Promise.resolve(EXPO);
+  if (_expoChargement) return _expoChargement;
+  const api = window.pywebview && window.pywebview.api;
+  if (!api || !api.load_expositions) {
+    EXPO = EXPO || { etfs: {}, erreur: "Les compositions ne se lisent que dans l'application." };
+    return Promise.resolve(EXPO);
+  }
+  const premier = !EXPO;
+  _expoChargement = api.load_expositions().then(r => {
+    if (r && r.ok) EXPO = r;
+    else EXPO = EXPO || { etfs: {}, erreur: (r && r.error) || "lecture impossible" };
+    // Une mise à jour lancée avant un rechargement de la page tourne peut-être encore
+    if (premier && api.expositions_status) {
+      api.expositions_status().then(s => { if (s && s.ok && s.enCours) expoSuivre(s); }).catch(() => {});
+    }
+    return EXPO;
+  }).catch(e => {
+    EXPO = EXPO || { etfs: {}, erreur: String(e) };
+    return EXPO;
+  }).finally(() => { _expoChargement = null; });
+  return _expoChargement;
+}
 
-  const positions = (S.positions || []).filter(p => !filter || (p.sector || "autre") === filter);
-  if (!positions.length) {
-    target.innerHTML = '<div class="sec-empty">Aucune position pour ce secteur.</div>';
+/* Point d'entrée de l'onglet (goTab("sector"), persist(), fenêtres Position) */
+function renderSectors() {
+  expoRenderBouton();
+  if (!EXPO) {
+    const sq = '<div class="expo-skel"><span class="dash-skel-bar"></span><span class="dash-skel-bar"></span><span class="dash-skel-bar"></span></div>';
+    ["expo-resume", "expo-geo", "expo-sect", "expo-ent", "expo-pos"].forEach(id => {
+      const el = document.getElementById(id); if (el) el.innerHTML = sq;
+    });
+    expoCharger().then(() => expoRender());
     return;
   }
+  expoRender();
+}
 
-  const groups = {};
-  positions.forEach(p => {
-    const sid = p.sector || "autre";
-    if (!groups[sid]) groups[sid] = [];
-    groups[sid].push(p);
-  });
+function expoRender() {
+  if (!document.getElementById("expo-resume")) return;
+  expoRenderBouton();
+  const calc = expoCalcul();
+  const vide = '<div class="m-empty">Aucune position : ajoute des titres dans <a href="#" onclick="goTab(\'pos\');return false">Positions</a> pour voir leur exposition.</div>';
+  if (!calc.lignes.length) {
+    document.getElementById("expo-resume").innerHTML = vide;
+    ["expo-geo", "expo-sect", "expo-ent", "expo-pos"].forEach(id => { document.getElementById(id).innerHTML = ""; });
+    return;
+  }
+  expoRenderResume(calc);
+  expoRenderGeo(calc);
+  expoRenderSect(calc);
+  expoRenderEnt(calc);
+  expoRenderPos(calc);
+}
 
-  target.innerHTML = Object.entries(groups).map(([sid, ps]) => {
-    const sec = sectorById(sid);
-    const rows = ps.map(p => {
-      const e      = computePos(p);
-      const pvCls  = (e.pv||0) >= 0 ? "pos" : "neg";
-      const pvSign = (e.pv||0) >= 0 ? "+" : "−";
-      const pvStr  = e.pv != null ? (pvSign + Math.abs(e.pv).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €") : "—";
-      const pvPStr = e.pvP != null ? " (" + (e.pvP>=0?"+":"") + e.pvP.toFixed(2).replace(".",",") + " %)" : "";
-      const valStr = e.val!=null ? e.val.toLocaleString("fr-FR",{minimumFractionDigits:0,maximumFractionDigits:0})+" €" : "—";
-      return `<div class="sec-detail-row">
-        <div>
-          <span style="font-weight:700;font-size:13px">${p.name}</span>
-          <span style="font-size:10px;color:var(--txt2);font-family:var(--mono);margin-left:6px">${p.ticker}</span>
-          <span class="badge ${p.type==="etf"?"be":"ba"}" style="margin-left:4px">${p.type==="etf"?"ETF":"Action"}</span>
-        </div>
-        <div style="display:flex;gap:14px;align-items:center;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
-          <span style="color:var(--txt2)">${e.qty} × ${e.pru>0?e.pru.toFixed(2)+" € PRU":"—"}</span>
-          <span>${valStr}</span>
-          <span class="${pvCls}" style="font-weight:700">${pvStr}${pvPStr}</span>
-        </div>
-      </div>`;
-    }).join("");
-    return `<div class="sec-detail-card">
-      <div class="sec-detail-card-h">
-        <span class="sec-detail-card-icon">${sec.icon}</span>
-        <span class="sec-detail-card-name" style="color:${sec.color}">${sec.label}</span>
-        <span style="font-size:10px;color:var(--txt2);font-family:var(--mono);margin-left:4px">${ps.length} position${ps.length>1?"s":""}</span>
+function expoRenderResume(calc) {
+  const reel = t => t.filter(x => !x.cle.startsWith("_"));
+  const p1 = reel(calc.pays)[0], s1 = reel(calc.secteurs)[0], e1 = calc.entreprises[0];
+  const top10 = calc.entreprises.slice(0, 10).reduce((s, e) => s + e.pct, 0);
+  const nbPays = reel(calc.pays).length;
+  const kpi = (lbl, val, sub) => `<div class="mkpi"><div class="mkpi-lbl">${lbl}</div><div class="mkpi-val">${val}</div><div class="mkpi-sub">${sub}</div></div>`;
+  let h = `<p class="expo-intro">Ce que contiennent vraiment tes titres (${expoEur(calc.total)}, hors espèces) :
+    chaque ETF est décomposé selon l'indice qu'il suit. Clique sur une ligne pour voir d'où elle vient.</p>
+    <div class="mkpis">
+      ${p1 ? kpi("Premier pays", expoPct(p1.pct), escHtml(expoNomPays(p1.cle)) + " · " + nbPays + " pays") : ""}
+      ${s1 ? kpi("Premier secteur", expoPct(s1.pct), escHtml(expoNomSect(s1.cle))) : ""}
+      ${e1 ? kpi("Première entreprise", expoPct(e1.pct), escHtml(e1.nom)) : ""}
+      ${calc.entreprises.length >= 10 ? kpi("10 premières entreprises", expoPct(top10), "du portefeuille") : ""}
+    </div>`;
+  if (calc.lignes.length > 1) {
+    h += `<div class="expo-leg">${calc.lignes.map(l =>
+      `<span><i class="expo-pt" style="background:${l.couleur}"></i>${escHtml(l.cle)} · ${expoPct(l.poids)}</span>`).join("")}</div>`;
+  }
+  if (calc.inconnus.length) {
+    h += `<div class="expo-alerte"><i class="ph ph-warning-circle"></i>
+      Composition inconnue pour ${calc.inconnus.map(l => escHtml(l.cle)).join(", ")} :
+      renseigne-la dans « Détail par position », en bas de l'onglet.</div>`;
+  }
+  if (EXPO && EXPO.erreur) {
+    h += `<div class="expo-alerte"><i class="ph ph-warning-circle"></i>${escHtml(EXPO.erreur)}</div>`;
+  }
+  document.getElementById("expo-resume").innerHTML = h;
+}
+
+function expoRenderGeo(calc) {
+  const mode = (S.uiPrefs && S.uiPrefs.expoGeo) === "zones" ? "zones" : "pays";
+  document.querySelectorAll("#expo-geo-rng button").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.v === mode ? "true" : "false"));
+  let h;
+  if (mode === "zones") {
+    h = calc.zones.map(z => expoRowHtml(Object.assign({}, z,
+      { nom: EXPO_ZONES[z.cle] || expoNomPays(z.cle) }), calc)).join("");
+    h += `<p class="expo-note">Zones au sens de MSCI : la Corée du Sud, Taïwan, la Pologne ou la Grèce comptent parmi les pays émergents.</p>`;
+  } else {
+    const MAX = 12;
+    const liste = _expoTout.pays ? calc.pays : calc.pays.slice(0, MAX);
+    h = liste.map(x => expoRowHtml(Object.assign({}, x, { nom: expoNomPays(x.cle) }), calc)).join("");
+    if (calc.pays.length > MAX) {
+      h += `<button class="btn btn-sm btn-ghost expo-plus" onclick="expoVoirTout('pays')">${_expoTout.pays
+        ? '<i class="ph ph-caret-up"></i> Réduire'
+        : `<i class="ph ph-caret-down"></i> Afficher les ${calc.pays.length - MAX} autres pays`}</button>`;
+    }
+  }
+  document.getElementById("expo-geo").innerHTML = h;
+}
+
+function expoRenderSect(calc) {
+  const autres = calc.secteurs.find(x => x.cle === "autres");
+  document.getElementById("expo-sect").innerHTML = calc.secteurs.map(x =>
+    expoRowHtml(Object.assign({}, x, { nom: expoNomSect(x.cle), ico: EXPO_SECT[x.cle] ? EXPO_SECT[x.cle][2] : "" }), calc)
+  ).join("") + `<p class="expo-note">Secteurs de la classification GICS, celle de MSCI, S&amp;P et des émetteurs.
+    Une action détenue en direct prend le secteur choisi dans sa fiche Position.
+    ${autres && autres.pct >= 0.1 ? "« Autres secteurs » : ce que la source ne détaille pas. Amundi y réunit ses deux plus petits secteurs, en général services aux collectivités et immobilier." : ""}</p>`;
+}
+
+function expoRenderEnt(calc) {
+  const MAX = 15;
+  const liste = _expoTout.ent ? calc.entreprises.slice(0, 60) : calc.entreprises.slice(0, MAX);
+  // Barres à l'échelle de la première entreprise : sur 100 %, 5 % ne se verrait pas
+  const echelle = calc.entreprises.length ? calc.entreprises[0].pct : 100;
+  let h = liste.map((e, i) => expoRowHtml(Object.assign({}, e, {
+    rang: i + 1,
+    meta: [e.pays ? expoNomPays(e.pays) : "", e.secteur ? expoNomSect(e.secteur, true) : ""].filter(Boolean).join(" · "),
+  }), calc, echelle)).join("");
+  if (calc.entreprises.length > MAX) {
+    const n = Math.min(60, calc.entreprises.length);
+    h += `<button class="btn btn-sm btn-ghost expo-plus" onclick="expoVoirTout('ent')">${_expoTout.ent
+      ? '<i class="ph ph-caret-up"></i> Réduire'
+      : `<i class="ph ph-caret-down"></i> Afficher les ${n} premières`}</button>`;
+  }
+  const partiels = calc.lignes.filter(l => l.compo && l.compo.statut !== "action" && !l.compo.lignes).map(l => l.cle);
+  h += `<p class="expo-note">Les lignes connues couvrent ${expoPct(calc.couverture)} du portefeuille : au-delà,
+    des centaines d'entreprises pèsent chacune trop peu pour être listées.
+    ${partiels.length ? `Pour ${partiels.map(escHtml).join(", ")}, l'émetteur ne publie que les 10 premières lignes de l'indice.` : ""}</p>`;
+  document.getElementById("expo-ent").innerHTML = calc.entreprises.length ? h
+    : '<div class="m-empty">Aucune entreprise connue pour ces positions.</div>';
+}
+
+function expoRenderPos(calc) {
+  const top = (map, nom) => Object.entries(map || {}).filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${escHtml(nom(k))} ${expoPct(v)}`).join(" · ");
+  document.getElementById("expo-pos").innerHTML = calc.lignes.map(l => {
+    const c = l.compo, id = Number(l.p.id);
+    let src, badge = "";
+    if (!c) {
+      src = "Composition inconnue : Pilote ne suit pas cet ETF. Renseigne-la d'après sa fiche justETF ou celle de l'émetteur.";
+    } else if (c.statut === "action") {
+      src = `Action : pays de cotation (${escHtml(expoNomPays(Object.keys(c.pays)[0]))}), secteur ${
+        c.secteurs && Object.keys(c.secteurs).length ? "« " + escHtml(expoNomSect(Object.keys(c.secteurs)[0])) + " », d'après sa fiche Position" : "non renseigné dans sa fiche Position"}.`;
+    } else {
+      const bits = [];
+      if (c.indice) bits.push("Indice " + escHtml(c.indice));
+      if (c.lignes) bits.push(c.lignes.toLocaleString("fr-FR") + " lignes");
+      if (c.source) bits.push(escHtml(c.source));
+      if (c.date) bits.push("données du " + expoDate(c.date));
+      src = bits.join(" · ");
+      badge = c.statut === "perso" ? '<span class="m-tag accent">Modifiée à la main</span>'
+            : c.statut === "maj"   ? '<span class="m-tag">Mise à jour le ' + expoDate(c.releve) + '</span>'
+            : '<span class="m-tag">Livrée avec Pilote</span>';
+    }
+    const perso = c && c.statut === "perso";
+    return `<div class="expo-pos">
+      <div class="expo-pos-h">
+        <i class="expo-pt" style="background:${l.couleur}"></i>
+        <span class="expo-pos-nm">${escHtml(l.cle)}<small>${escHtml(l.p.name || "")}</small></span>
+        ${badge}
+        <span class="expo-pos-v">${expoEur(l.val)} · ${expoPct(l.poids)}</span>
       </div>
-      <div style="padding:.5rem 1rem">${rows}</div>
+      <div class="expo-pos-src">${src}</div>
+      ${c ? `<div class="expo-pos-top">
+        <div><b>Pays</b>${top(c.pays, expoNomPays) || "—"}</div>
+        <div><b>Secteurs</b>${top(c.secteurs, k => expoNomSect(k, true)) || "—"}</div>
+      </div>` : ""}
+      <div class="expo-pos-acts">
+        <button class="btn btn-sm btn-ghost" onclick="expoOuvrirEdition(${id})"><i class="ph ph-pencil-simple"></i> ${c ? "Modifier la composition" : "Renseigner la composition"}</button>
+        ${perso ? `<button class="btn btn-sm btn-ghost" onclick="expoAnnulerPerso(${id})"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux données ${l.p.type === "etf" ? "de l'ETF" : "automatiques"}</button>` : ""}
+      </div>
     </div>`;
   }).join("");
+}
+
+/* ─── Bouton « Mettre à jour les données » ───
+   Python lit les sites d'iShares et d'Amundi dans un thread ; on suit sa
+   progression toutes les 400 ms. Rien n'est bloqué : on peut changer d'onglet,
+   le bouton retrouve son état au retour. */
+function expoRenderBouton() {
+  const btn = document.getElementById("expo-maj-btn");
+  if (!btn) return;
+  const lbl = document.getElementById("expo-maj-lbl"), fill = document.getElementById("expo-maj-fill");
+  const date = document.getElementById("expo-date");
+  if (_expoMaj) {
+    btn.setAttribute("aria-busy", "true");
+    lbl.innerHTML = `<i class="ph ph-arrows-clockwise"></i> Mise à jour… ${Math.round(_expoMaj.pct)} %`;
+    fill.style.width = Math.max(2, Math.min(100, _expoMaj.pct)) + "%";
+    if (date) { date.textContent = _expoMaj.etape ? "Lecture de " + _expoMaj.etape : ""; date.classList.remove("vieux"); }
+    return;
+  }
+  btn.removeAttribute("aria-busy");
+  lbl.innerHTML = '<i class="ph ph-arrows-clockwise"></i> Mettre à jour les données';
+  fill.style.width = "0";
+  if (!date) return;
+  // Date des données effectivement utilisées : la plus ancienne des positions
+  const dates = (S.positions || []).map(p => { const c = EXPO && expoCompo(p); return c && c.statut !== "action" && c.date; })
+    .filter(Boolean).sort();
+  const plusVieille = dates[0];
+  const age = plusVieille ? (Date.now() - new Date(plusVieille + "T12:00:00")) / 864e5 : 0;
+  date.textContent = plusVieille ? "Données du " + expoDate(plusVieille) + (age > 120 ? " : à rafraîchir" : "") : "";
+  date.classList.toggle("vieux", age > 120);
+}
+
+async function expoMettreAJour() {
+  if (_expoMaj) return;
+  const api = window.pywebview && window.pywebview.api;
+  if (!api || !api.expositions_update) {
+    showToastModern("La mise à jour ne fonctionne que dans l'application", "warn");
+    return;
+  }
+  _expoMaj = { pct: 1, etape: "" };
+  expoRenderBouton();
+  try {
+    const r = await api.expositions_update();
+    if (!r || !r.ok) throw new Error((r && r.error) || "échec du lancement");
+    expoSuivre();
+  } catch (e) {
+    _expoMaj = null;
+    expoRenderBouton();
+    showToastModern("Mise à jour impossible : " + e.message, "err");
+  }
+}
+function expoSuivre(s) {
+  if (s) _expoMaj = { pct: s.pct, etape: s.etape };
+  expoRenderBouton();
+  if (_expoMajTimer) return;
+  _expoMajTimer = setInterval(async () => {
+    let s;
+    try { s = await window.pywebview.api.expositions_status(); } catch (e) { return; }
+    if (!s || !s.ok) return;
+    if (s.enCours) { _expoMaj = { pct: s.pct, etape: s.etape }; expoRenderBouton(); return; }
+    clearInterval(_expoMajTimer);
+    _expoMajTimer = null;
+    _expoMaj = { pct: 100, etape: "" };
+    expoRenderBouton();
+    await expoCharger(true);
+    _expoMaj = null;
+    if (document.getElementById("pane-sector")?.classList.contains("active")) expoRender();
+    else expoRenderBouton();
+    const nOk = (s.ok || []).length, nKo = (s.erreurs || []).length;
+    if (!nKo) showToastModern(`Compositions à jour : ${nOk} ETF relus sur les sites des émetteurs`, "ok");
+    else if (nOk) showToastModern(`${nOk} ETF mis à jour, ${nKo} en échec (${s.erreurs.map(x => x.etf).join(", ")}) : leurs données précédentes restent`, "warn");
+    else showToastModern("Aucun site n'a répondu : les données précédentes restent. Vérifie la connexion.", "err");
+  }, 400);
+}
+
+/* ─── Fenêtre « Modifier la composition » ───
+   Trois zones de texte, une ligne par élément « nom = pourcentage ». Ce qui
+   manque pour atteindre 100 % compte comme « non détaillé ». */
+function expoOuvrirEdition(id) {
+  const p = (S.positions || []).find(x => x.id === id);
+  if (!p) return;
+  const ticker = _expoEdTicker = p.ticker;
+  const c = expoCompo(p) || {};
+  const nb = v => Number(v).toLocaleString("fr-FR", { maximumFractionDigits: 3, useGrouping: false });
+  const txt = (map, nom) => Object.entries(map || {}).filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]).map(([k, v]) => `${nom(k)} = ${nb(v)}`).join("\n");
+  document.getElementById("expo-ed-titre").textContent = "Composition de " + expoCle(ticker);
+  document.getElementById("expo-ed-indice").value = c.indice || "";
+  document.getElementById("expo-ed-source").value = c.statut === "action" ? "" : (c.source || "");
+  document.getElementById("expo-ed-date").value = c.date || todayISO();
+  document.getElementById("expo-ed-pays").value = txt(c.pays, expoNomPays);
+  document.getElementById("expo-ed-sect").value = txt(c.secteurs, k => expoNomSect(k));
+  document.getElementById("expo-ed-ent").value = (c.entreprises || []).filter(e => e.pct > 0)
+    .map(e => `${e.nom} = ${nb(e.pct)}`).join("\n");
+  document.getElementById("expo-ed-reset").style.display =
+    (S.uiPrefs && S.uiPrefs.expoPerso && S.uiPrefs.expoPerso[ticker]) ? "" : "none";
+  expoEdTotaux();
+  document.getElementById("ov-expo-edit").classList.add("open");
+}
+
+/* Lit une zone de texte. genre : "pays" | "sect" | "ent". */
+function expoEdLire(genre) {
+  const id = { pays: "expo-ed-pays", sect: "expo-ed-sect", ent: "expo-ed-ent" }[genre];
+  const res = { map: {}, liste: [], erreurs: [], avertis: [], total: 0 };
+  let index = null;
+  if (genre === "pays") {
+    index = { autre: "_nd", autres: "_nd", other: "_nd", others: "_nd", reste: "_nd", divers: "_nd" };
+    Object.entries(EXPO_PAYS).forEach(([code, v]) => {
+      index[expoNorm(code)] = code; index[expoNorm(v[0])] = code;
+      v[2].split("|").filter(Boolean).forEach(a => { index[expoNorm(a)] = code; });
+    });
+  } else if (genre === "sect") {
+    index = {};
+    Object.entries(EXPO_SECT).forEach(([sid, v]) => {
+      index[expoNorm(sid)] = sid; index[expoNorm(v[0])] = sid; index[expoNorm(v[1])] = sid;
+      v[3].split("|").filter(Boolean).forEach(a => { index[expoNorm(a)] = sid; });
+    });
+  }
+  document.getElementById(id).value.split("\n").forEach((brut, i) => {
+    const ligne = brut.trim();
+    if (!ligne) return;
+    const m = ligne.match(/^(.+?)\s*(?:=|:|;|\t)?\s*(\d+(?:[.,]\d+)?)\s*%?\s*$/);
+    if (!m) { res.erreurs.push(`ligne ${i + 1} : pas de pourcentage`); return; }
+    const nom = m[1].replace(/[=:;\s]+$/, "").trim(), v = parseFloat(m[2].replace(",", "."));
+    if (!(v > 0)) return;
+    res.total += v;
+    if (genre === "ent") { res.liste.push({ id: "", nom, pct: v, pays: "", secteur: "" }); return; }
+    let cle = index[expoNorm(nom)];
+    if (!cle) {
+      if (genre === "sect") { res.erreurs.push(`« ${nom} » n'est pas un secteur connu`); return; }
+      cle = nom;   // pays hors liste : gardé tel quel, rangé dans « Autres pays »
+      res.avertis.push(`« ${nom} » inconnu, rangé dans « Autres pays »`);
+    }
+    res.map[cle] = (res.map[cle] || 0) + v;
+  });
+  delete res.map._nd;    // « Autre = 17 % » : c'est la part non détaillée, recalculée
+  return res;
+}
+function expoEdTotaux() {
+  let ok = true;
+  [["pays", "expo-ed-pays-tot"], ["sect", "expo-ed-sect-tot"], ["ent", "expo-ed-ent-tot"]].forEach(([g, id]) => {
+    const r = expoEdLire(g), el = document.getElementById(id);
+    let msg = "Total : " + expoPct(r.total);
+    const trop = r.total > 100.5;
+    if (trop) msg += " : dépasse 100 %";
+    else if (g !== "ent" && r.total < 99.95) msg += " · " + expoPct(100 - r.total) + " non détaillé";
+    if (r.erreurs.length) msg = r.erreurs.join(" · ");
+    else if (r.avertis.length) msg += " · " + r.avertis.join(" · ");
+    el.textContent = msg;
+    el.classList.toggle("err", trop || r.erreurs.length > 0);
+    if (trop || r.erreurs.length) ok = false;
+  });
+  return ok;
+}
+function expoEdSave() {
+  if (!_expoEdTicker) return;
+  if (!expoEdTotaux()) { showToastModern("Corrige les lignes en rouge avant d'enregistrer", "warn"); return; }
+  const pays = expoEdLire("pays"), sect = expoEdLire("sect"), ent = expoEdLire("ent");
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.expoPerso = S.uiPrefs.expoPerso || {};
+  S.uiPrefs.expoPerso[_expoEdTicker] = {
+    indice: document.getElementById("expo-ed-indice").value.trim(),
+    source: document.getElementById("expo-ed-source").value.trim() || "Saisie à la main",
+    date:   document.getElementById("expo-ed-date").value || todayISO(),
+    pays: pays.map, secteurs: sect.map,
+    entreprises: ent.liste.sort((a, b) => b.pct - a.pct),
+    modifieLe: todayISO(),
+  };
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
+    window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
+  closeOv("ov-expo-edit");
+  expoRender();
+  showToastModern("Composition de " + expoCle(_expoEdTicker) + " enregistrée", "ok");
+}
+function expoAnnulerPerso(id) {
+  const p = (S.positions || []).find(x => x.id === id);
+  const ticker = p ? p.ticker : _expoEdTicker;
+  if (!ticker || !(S.uiPrefs && S.uiPrefs.expoPerso && S.uiPrefs.expoPerso[ticker])) return;
+  if (!confirm("Effacer ta composition de " + expoCle(ticker) + " et revenir aux données téléchargées ?")) return;
+  delete S.uiPrefs.expoPerso[ticker];
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
+    window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
+  closeOv("ov-expo-edit");
+  expoRender();
 }
 /* ─── Wishlist ─── */
 function starsHtml(id, cur) {
@@ -8386,8 +8669,6 @@ function closeOv(id) {
     if(tkEl){ tkEl.readOnly=false; tkEl.style.opacity=""; }
     const secEl=document.getElementById("f-sector");
     if(secEl){ secEl.value=""; }
-    const geoEl=document.getElementById("f-geo");
-    if(geoEl){ geoEl.value=""; }
     const btn=document.querySelector("#ov-pos .btn-primary");
     if(btn){ btn.textContent="Enregistrer"; btn.onclick=savePos; }
   }
@@ -8585,7 +8866,6 @@ function savePos() {
       name: name || ticker,
       type:      document.getElementById("f-type").value,
       sector:    document.getElementById("f-sector").value || null,
-      geo:       document.getElementById("f-geo").value || null,
       cours:     null,
       dividende: parseFloat(document.getElementById("f-div").value)||0,
       exdiv:     document.getElementById("f-exdiv").value.trim()||null,
@@ -8623,7 +8903,6 @@ function editPos(id) {
   document.getElementById("f-name").value   = p.name||"";
   document.getElementById("f-type").value   = p.type||"action";
   document.getElementById("f-sector").value = p.sector||"";
-  document.getElementById("f-geo").value    = p.geo||"";
   document.getElementById("f-div").value    = p.dividende||"";
   document.getElementById("f-exdiv").value  = p.exdiv||"";
   /* Ticker figé */
@@ -8648,7 +8927,6 @@ function saveEditPos(id) {
   p.name      = document.getElementById("f-name").value.trim()||p.name;
   p.type      = document.getElementById("f-type").value;
   p.sector    = document.getElementById("f-sector").value || null;
-  p.geo       = document.getElementById("f-geo").value || null;
   p.dividende = parseFloat(document.getElementById("f-div").value)||0;
   p.exdiv     = document.getElementById("f-exdiv").value.trim()||null;
   persist(); closeOv("ov-pos"); renderPositions(); renderDividends();
@@ -12026,9 +12304,10 @@ const CARD_ITEMS = [
   { id: "card-pos",              label: "Positions · Tableau" },
   { id: "card-twr",              label: "Vue d'ensemble · Évolution du capital" },
   { id: "card-realized",         label: "Vue d'ensemble · Plus/moins-values réalisées" },
-  { id: "card-sector-overview",  label: "Expositions · Analyse sectorielle" },
-  { id: "card-geo-overview",     label: "Expositions · Analyse géographique" },
-  { id: "card-sector-positions", label: "Expositions · Positions par secteur" },
+  { id: "card-expo-geo",         label: "Expositions · Géographie" },
+  { id: "card-expo-sect",        label: "Expositions · Secteurs" },
+  { id: "card-expo-ent",         label: "Expositions · Entreprises" },
+  { id: "card-expo-pos",         label: "Expositions · Détail par position" },
   { id: "card-div-chart",        label: "Dividendes · Graphique" },
   { id: "card-div-list",         label: "Dividendes · Tableau reçus" },
   { id: "card-tx",               label: "Transactions · Tableau" },
