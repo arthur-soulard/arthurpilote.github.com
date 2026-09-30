@@ -721,7 +721,9 @@ def _lire_pdf(chemin: str) -> dict:
 
 def lire_images(chemins: list) -> dict:
     """
-    Lit des captures, des photos de listes de mots ou des PDF.
+    Lit des captures, des photos de listes de mots ou des PDF. Un .zip (celui
+    que Gmail fabrique avec les pieces jointes) compte pour les images et les
+    PDF qu'il contient : meme extraction que Sante (sante._images_du_zip).
 
     Retourne {ok, lignes:[str], details:[{file, ok, lignes, error, note}]},
     les lignes au format de l'ajout en masse. `ok` n'est faux que si AUCUN
@@ -731,20 +733,33 @@ def lire_images(chemins: list) -> dict:
     if not chk["ok"]:
         return {"ok": False, "error": chk["error"], "lignes": []}
     lignes, details = [], []
-    for p in chemins or []:
-        nom = os.path.basename(p)
-        if not os.path.isfile(p):
-            details.append({"file": nom, "ok": False, "lignes": 0,
-                            "error": "Fichier introuvable."})
-            continue
-        if os.path.splitext(p)[1].lower() == ".pdf":
-            r = _lire_pdf(p)
-        else:
-            r = _lire_image(p)
-        lues = r.get("lignes") or []
-        lignes += lues
-        details.append({"file": nom, "ok": r["ok"], "lignes": len(lues),
-                        "error": r.get("error", ""), "note": r.get("note", "")})
+    tmpdir = tempfile.mkdtemp(prefix="pilote_zip_")
+    try:
+        for k, p in enumerate(chemins or []):
+            nom = os.path.basename(p)
+            if not os.path.isfile(p):
+                details.append({"file": nom, "ok": False, "lignes": 0,
+                                "error": "Fichier introuvable."})
+                continue
+            fichiers = [p]
+            if os.path.splitext(p)[1].lower() == ".zip":
+                fichiers, err = sante._images_du_zip(
+                    p, os.path.join(tmpdir, str(k)), sante.ZIP_EXTS + (".pdf",))
+                if err:
+                    details.append({"file": nom, "ok": False, "lignes": 0, "error": err})
+                    continue
+            for f in fichiers:
+                if os.path.splitext(f)[1].lower() == ".pdf":
+                    r = _lire_pdf(f)
+                else:
+                    r = _lire_image(f)
+                lues = r.get("lignes") or []
+                lignes += lues
+                details.append({"file": os.path.basename(f), "ok": r["ok"],
+                                "lignes": len(lues), "error": r.get("error", ""),
+                                "note": r.get("note", "")})
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
     if not any(d["ok"] for d in details):
         err = details[0]["error"] if details else "Aucune image."
         return {"ok": False, "error": err, "lignes": [], "details": details}
