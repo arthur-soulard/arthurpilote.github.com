@@ -264,7 +264,15 @@ def _purge_historique(hist: list) -> list:
 #     traduction | mot | traduction) : le moteur rend chaque colonne en
 #     lignes SEPAREES, il faut les reapparier par position (_apparier) ;
 #   * "mot : definition" sur une ligne : coupure au premier separateur.
-# Le reste arrive tel quel dans la zone, a completer a la main.
+# Puis les titres bilingues ("To express cause / pour exprimer la cause") et
+# les listes de connecteurs dessous deviennent des paires (_titres_et_listes).
+# Le reste (consignes, phrases) arrive sans "=" : l'interface le met de cote.
+#
+# Mesure le 30/09/2026 sur les deux photos de fiches de connecteurs, contre la
+# liste ideale recopiee a la main (106 paires, titres compris) : 78 justes et
+# 7 fausses avant les titres, les cellules sur deux lignes (_SUITE) et les
+# traits de tableau (_chercheur_traits) ; 104 justes et 0 fausse apres. Les
+# deux manquantes sont illisibles pour le moteur (un "=" et un "if" non lus).
 
 IMAGE_MAX_OCTETS = 25 * 1024 * 1024
 PETIT_TEXTE = 12   # hauteur mediane des mots, en pixels
@@ -278,6 +286,12 @@ _PUCE_TETE = re.compile(r"^\s*(?:\d{1,3}\s*[.)]|[•·▪◦*]|[-–—](?=\s))\
 _SEPARATEUR = re.compile(r"\s*(?:=|:|→|->|\s[-–—]\s)\s*")
 # Separateur imprime en tete de la colonne des reponses ("TO + verbe | = POUR").
 _SEP_TETE = re.compile(r"^\s*(?:=|:|→|->)\s*")
+# Fin de ligne qui appelle une suite dans la meme cellule : virgule, points de
+# suspension, article ou mot-outil ("As a matter of fact, in fact," / "on the"
+# / "C'est la raison pour"). Pas les prepositions : "Because of", "Due to"
+# sont des expressions entieres.
+_SUITE = re.compile(r"(?:,|…|\.\.|(?<![\w'’])(?:the|a|an|and|or|pour|de|du|des|"
+                    r"la|le|les|un|une|et|ou|d['’]|l['’]))\s*$", re.I)
 # Le moteur (francais) lit le pronom anglais "I" comme un "l". Un "l" seul
 # n'existe pas en francais (c'est toujours "l'"), et "l'd", "l'm"... non plus.
 _L_POUR_I = re.compile(r"(?<![\w'’])l(?=['’](?:d|m|ll|ve)\b|(?![\w'’]))")
@@ -369,7 +383,106 @@ def _blocs(segs: list) -> list:
             fond = bas(s)
         blocs[-1].append(s)
         fond = max(fond, bas(s))
-    return blocs
+    return blocs, pente
+
+
+def _chercheur_traits(image, pente: float):
+    """
+    Traits horizontaux d'un tableau (bordures des cases), rendus en hauteurs
+    redressees comme s["y"] : chercher(xa, xb, ya, yb) -> [y, ...].
+
+    La ligne est suivie a la pente du texte (une photo tournee d'un degre
+    decale un trait de 20 px d'un bord du tableau a l'autre), et un trait
+    n'est jamais tout a fait droit (papier courbe, objectif) : le tableau est
+    coupe en morceaux d'une quarantaine de points, chacun cherche son trait a
+    2 px pres, et c'est la moyenne des morceaux qui compte. Une ligne de
+    pixels est un trait quand elle depasse 80 % de points nettement plus
+    sombres que le fond. Mesure sur les deux photos de fiches (30/09/2026, en
+    version reduite et d'origine) : 100 % sur les traits, 66 % au plus sur
+    une ligne de texte. Une bande sombre epaisse (en-tete de tableau fonce)
+    n'est pas un trait.
+
+    Tout le calcul par pixel est fait par Pillow (en C) : l'image est
+    redressee une fois (cisaillement de la pente), puis chaque bande est
+    seuillee et reduite a un point par morceau et par ligne. En Python pixel
+    par pixel, une photo de 12 Mpx coutait plusieurs secondes.
+    """
+    from PIL import Image, ImageStat
+    larg, haut = image.size
+    # Pixel (x, y) de l'image redressee = pixel (x, y + pente * x) d'origine :
+    # la hauteur y y est exactement le s["y"] des morceaux de texte.
+    droite = image.transform(image.size, Image.AFFINE, (1, 0, 0, pente, 1, 0),
+                             resample=Image.NEAREST, fillcolor=255)
+
+    def chercher(xa, xb, ya, yb, h):
+        xa, xb = max(0, int(xa)), min(larg, int(xb))
+        ya, yb = max(0, int(ya)), min(haut, int(yb))
+        if xb - xa < 60 or yb - ya < 5:
+            return []
+        bande = droite.crop((xa, max(0, ya - 2), xb, min(haut, yb + 2)))
+        seuil = ImageStat.Stat(bande).median[0] - 60
+        if seuil <= 0:
+            return []
+        n = max(1, (xb - xa) // 150)
+        sombre = bande.point(lambda p: 255 if p < seuil else 0)
+        part = sombre.resize((n, sombre.size[1]), Image.BOX)
+        valeurs = list(part.getdata())
+        rangs = [valeurs[i * n:(i + 1) * n] for i in range(part.size[1])]
+        y0 = max(0, ya - 2)
+
+        def score(y):
+            i = y - y0
+            fenetre = rangs[max(0, i - 2):i + 3]
+            return sum(max(r[k] for r in fenetre) for k in range(n)) / (255.0 * n)
+
+        # Un trait couvre plusieurs lignes de pixels : un seul trait.
+        traits = []
+        for y in (y for y in range(ya, yb) if score(y) > 0.8):
+            if traits and y - traits[-1][-1] <= 2:
+                traits[-1].append(y)
+            else:
+                traits.append([y])
+        return [sum(t) / len(t) for t in traits if len(t) <= h + 4]
+
+    return chercher
+
+
+def _fusion_cases(entrees: list, bords: list) -> list:
+    """
+    Deux entrees entre les deux memes traits d'un tableau sont les deux
+    lignes d'une meme case : "I disagree with / I disapprove of" en face de
+    "Je ne suis pas d'accord / avec". La traduction est recollee ; a gauche,
+    une 2e ligne en majuscule est une expression de plus, qui partage la
+    traduction.
+
+    On ne s'y fie que si les traits sont reguliers : un trait manque ferait
+    une case deux fois plus haute que les autres, et deux lignes du tableau
+    seraient alors fusionnees a tort.
+    """
+    if len(bords) < 3:
+        return entrees
+    hauteurs = [b - a for a, b in zip(bords, bords[1:])]
+    if max(hauteurs) > 1.6 * min(hauteurs):
+        return entrees
+
+    def case(e):
+        k = bisect.bisect(bords, e["yd"])
+        return k if 0 < k < len(bords) else None
+
+    out = []
+    for e in sorted(entrees, key=lambda e: e["y"]):
+        p = out[-1] if out else None
+        if p is None or case(e) is None or case(e) != case(p):
+            out.append(e)
+            continue
+        if e["rep"] is not p["rep"]:
+            p["rep"].extend(e["rep"])
+        if e["mot"][0][:1].isupper() and not _SUITE.search(p["mot"][-1]):
+            e["rep"] = p["rep"]
+            out.append(e)
+        else:
+            p["mot"].extend(e["mot"])
+    return out
 
 
 def _colonne(s: dict, goutt: list):
@@ -433,9 +546,10 @@ def _gouttieres(segs: list) -> list:
     return goutt
 
 
-def _apparier(gauche: list, droite: list) -> list:
+def _apparier(gauche: list, droite: list, traits=None) -> list:
     """
     Reforme les lignes "mot = traduction" d'une liste en deux colonnes.
+    `traits` : chercheur de bordures de tableau (_chercheur_traits), ou None.
 
     Sur une photo penchee que le moteur n'a pas redressee, toute la colonne de
     droite est decalee de la meme hauteur (l'ecart horizontal entre colonnes
@@ -480,25 +594,45 @@ def _apparier(gauche: list, droite: list) -> list:
         pris_g.add(i)
         pris_d.add(j)
         g, d = gauche[i], droite[j]
-        entrees.append({"y": g["cy"], "mot": [g["t"]], "rep": [d["t"]],
+        entrees.append({"y": g["cy"], "yd": g["y"], "mot": [g["t"]], "rep": [d["t"]],
                         "fin_g": g["cy"], "fin_d": d["cy"] - dec})
     entrees.sort(key=lambda e: e["y"])
 
     ecarts = [b["y"] - a["y"] for a, b in zip(entrees, entrees[1:])]
     seuil = 0.85 * statistics.median(ecarts) if ecarts else 1.8 * h
 
-    restes = [(g["cy"], "g", g["t"]) for i, g in enumerate(gauche) if i not in pris_g]
-    restes += [(d["cy"] - dec, "d", d["t"]) for j, d in enumerate(droite) if j not in pris_d]
+    restes = [(g["cy"], "g", g["t"], g["y"]) for i, g in enumerate(gauche) if i not in pris_g]
+    restes += [(d["cy"] - dec, "d", d["t"], d["y"]) for j, d in enumerate(droite) if j not in pris_d]
     brut = []
-    for y, cote, t in sorted(restes):
+    for y, cote, t, yd in sorted(restes):
         fin = "fin_g" if cote == "g" else "fin_d"
+        cle = "mot" if cote == "g" else "rep"
         dessus = [e for e in entrees if e[fin] < y]
         e = max(dessus, key=lambda e: e[fin]) if dessus else None
-        if e and y - e[fin] <= seuil:
-            e["mot" if cote == "g" else "rep"].append(t)
-            e[fin] = y
+        if not e:
+            brut.append((y, t))
+            continue
+        # Dans un tableau serre, la 2e ligne d'une cellule tombe a l'ecart
+        # habituel entre deux entrees : elle n'est rattachee que si la ligne
+        # du dessus appelle une suite ("in fact," / "on the" / "pour").
+        suite = _SUITE.search(e[cle][-1])
+        if y - e[fin] <= seuil or (suite and y - e[fin] <= 2.2 * h):
+            if cote == "g" and not suite and t[:1].isupper():
+                # "I agree with / I approve of" : deux expressions, une
+                # traduction commune (la meme liste, les ajouts suivent).
+                entrees.append({"y": y, "yd": yd, "mot": [t], "rep": e["rep"],
+                                "fin_g": y, "fin_d": e["fin_d"]})
+            else:
+                e[cle].append(t)
+                e[fin] = y
         else:
             brut.append((y, t))
+
+    if traits and len(entrees) >= 2:
+        tout = gauche + droite
+        bords = traits(min(s["x0"] for s in gauche), max(s["x1"] for s in droite),
+                       min(s["y"] for s in tout) - 2 * h, max(s["y"] for s in tout) + 2 * h, h)
+        entrees = _fusion_cases(entrees, bords)
 
     out = [(e["y"], _PUCE_TETE.sub("", " ".join(e["mot"])) + " = "
             + _SEP_TETE.sub("", " ".join(e["rep"])))
@@ -536,14 +670,50 @@ def _separer(lignes: list, droite: float) -> list:
     return [" = ".join(o) if isinstance(o, list) else o for o in out]
 
 
-def _lignes_depuis_mots(words: list) -> list:
+def _lignes_depuis_mots(words: list, image=None) -> list:
+    """`image` : l'image lue (en gris), pour reperer les traits des tableaux."""
     segs = _segments(words)
     if not segs:
         return []
     droite = max(s["x1"] for s in segs)
-    blocs = _blocs(segs)
-    return [_propre(t) for bloc in blocs
-            for t in _lire_bloc(bloc, droite, len(blocs) > 1)]
+    blocs, pente = _blocs(segs)
+    traits = _chercheur_traits(image, pente) if image is not None else None
+    return _titres_et_listes([_propre(t) for bloc in blocs
+                              for t in _lire_bloc(bloc, droite, len(blocs) > 1, traits)])
+
+
+# Titre bilingue d'une fiche : "To express cause / pour exprimer la cause".
+# La barre doit etre entouree d'espaces : "nom/pronom" reste entier.
+_TITRE = re.compile(r"^(?P<a>[^/=:]{2,80}?)\s+/\s+(?P<b>[^/=:]{2,80})$")
+
+
+def _est_liste(t: str) -> bool:
+    """Liste de connecteurs : "First, firstly, first of all, ..." """
+    t = t.strip()
+    return ((t.count(",") >= 1 or t.endswith(("..", "…")))
+            and len(t.split()) <= 30 and not t.endswith(":"))
+
+
+def _titres_et_listes(lignes: list) -> list:
+    """
+    Un titre bilingue devient une paire ("To express cause = pour exprimer
+    la cause"), et une liste de connecteurs juste dessous, sans traduction
+    a elle, prend celle du titre ("First, firstly, ... = pour commencer").
+    Des qu'autre chose suit (une paire, une phrase), la liste est finie :
+    les phrases d'exemple sous un tableau restent a part.
+    """
+    out, titre = [], None
+    for t in lignes:
+        m = _TITRE.match(t) if " = " not in t else None
+        if m:
+            titre = m.group("b").strip()
+            out.append(m.group("a").strip() + " = " + titre)
+        elif titre and " = " not in t and _est_liste(t):
+            out.append(t + " = " + titre)
+        else:
+            titre = None
+            out.append(t)
+    return out
 
 
 def _lignes_de(segs: list) -> list:
@@ -551,10 +721,10 @@ def _lignes_de(segs: list) -> list:
     return sorted((s["cy"], s["t"], s["x0"], s["x1"]) for s in segs)
 
 
-def _lire_bloc(segs: list, droite: float, plusieurs: bool) -> list:
+def _lire_bloc(segs: list, droite: float, plusieurs: bool, traits=None) -> list:
     """
     Lignes d'un bloc. `droite` : marge droite de la page ; `plusieurs` :
-    la page compte d'autres blocs.
+    la page compte d'autres blocs ; `traits` : voir _chercheur_traits.
     """
     goutt = _gouttieres(segs)
     if goutt:
@@ -580,7 +750,7 @@ def _lire_bloc(segs: list, droite: float, plusieurs: bool) -> list:
         out = []
         for k in range(0, len(colonnes), 2):
             if k + 1 < len(colonnes):
-                lignes = _apparier(colonnes[k], colonnes[k + 1])
+                lignes = _apparier(colonnes[k], colonnes[k + 1], traits)
                 if k == 0:
                     lignes = sorted(lignes + traverse)
                 out += [t for _, t in lignes]
@@ -617,7 +787,9 @@ def _ocr(chemin: str, tmpdir: str, scale: float, angle: int = 0) -> dict:
         with Image.open(prep) as im:
             tournee = im.rotate(angle, expand=True)
         tournee.save(prep)
-    return sante._run_ocr(prep if pret else chemin)
+    res = sante._run_ocr(prep if pret else chemin)
+    res["_image"] = prep if pret else None   # l'image lue, pour les traits des tableaux
+    return res
 
 
 def _lisibles(res: dict) -> int:
@@ -660,6 +832,16 @@ def _lire_image(chemin: str) -> dict:
                     res = essai
                 if _lisibles(res) >= 0.5 * len(res.get("words") or []):
                     break
+        # L'image de la passe retenue, chargee avant d'effacer le dossier :
+        # ses traits de tableau servent au decoupage (_chercheur_traits).
+        image = None
+        if res.get("_image"):
+            try:
+                from PIL import Image
+                with Image.open(res["_image"]) as im:
+                    image = im.convert("L")
+            except Exception:
+                image = None
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
     if not res.get("ok"):
@@ -676,7 +858,7 @@ def _lire_image(chemin: str) -> dict:
                 "error": ("Aucun texte lisible. Si c'est une capture d'écran d'une "
                           "photo, choisis plutôt la photo elle-même : son texte est "
                           "bien plus net.")}
-    out = {"ok": True, "lignes": _lignes_depuis_mots(res.get("words") or [])}
+    out = {"ok": True, "lignes": _lignes_depuis_mots(res.get("words") or [], image)}
     if res.get("minuscule"):
         out["note"] = ("texte très petit, lecture incertaine (la photo elle-même "
                        "se lit mieux qu'une capture d'écran)")
