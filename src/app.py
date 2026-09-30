@@ -47,7 +47,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.12"
+APP_VERSION = "4.3.13"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -899,8 +899,29 @@ def install_crash_handler() -> None:
         except Exception:
             return False
 
+    def _is_closed_window(exc_type, tb) -> bool:
+        """
+        pywebview renvoie le resultat de chaque appel JS -> Python a la page
+        qui l'a lance. Quand cet appel est Api.close() (la croix de la barre
+        de titre), la fenetre n'existe deja plus : KeyError: 'master' dans
+        evaluate_js, une fois par fermeture (286 entrees sur 288 du crash.log
+        au 30/09/2026). Rien n'est perdu, la fonction appelee a fini avant.
+        Differer la fermeture serait risque : evaluate_js attend la reponse
+        de la page, et si la fenetre fermait entre-temps, ce fil (non daemon)
+        pourrait attendre pour toujours et empecher l'app de se terminer
+        (d'apres le code de pywebview 4.4.1, pas essaye).
+        """
+        try:
+            if not issubclass(exc_type, KeyError):
+                return False
+            import traceback as _tb
+            last = _tb.extract_tb(tb)[-1]
+            return last.name == "evaluate_js" and "webview" in last.filename
+        except Exception:
+            return False
+
     def _hook(exc_type, exc, tb):
-        if _is_benign(exc):
+        if _is_benign(exc) or _is_closed_window(exc_type, tb):
             return  # ignore silencieusement les bugs connus de libs tierces
         try:
             _rotate_crash_log()
