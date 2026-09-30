@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.11**
+**Version actuelle : 4.3.12**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -1318,6 +1318,9 @@ Une ligne `nom = pourcentage` ; ce qui manque pour 100 % devient « non détaill
   déduit de son secteur de fiche (`EXPO_SECT_ACTION`). Le champ « Zone géographique »
   de la fenêtre Position a disparu (remplacé par la composition).
 * Zones au sens de MSCI (Corée, Taïwan, Pologne, Grèce = émergents) : `EXPO_PAYS`.
+  Les cinq zones sont **toujours** affichées, même à 0 % (grisées) : avec WPEA seul
+  (MSCI World, pays développés), « Pays émergents » disparaissait et Arthur a cru à
+  un oubli (« où se retrouve la Chine ? »). La Chine arrive avec PEMS ou GPEA.
 * Base = titres hors espèces, comme la répartition de la vue d'ensemble.
 * JS : préfixe `expo*`, point d'entrée `renderSectors()` (nom historique, appelé par
   `goTab("sector")` et après une modification de position).
