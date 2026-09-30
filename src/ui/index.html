@@ -2001,6 +2001,33 @@ label.fo-check {
 .vo-bulk-hint b { color: var(--txt2); }
 .vo-bulk-img .ph-circle-notch { animation: sa-spin .8s linear infinite; }
 
+/* Relecture d'une lecture d'image : un tableau Mot | Réponse à cocher */
+.vo-rev { border: 1px solid var(--brd2); border-radius: var(--rad); background: var(--bg3); }
+.vo-rev-head, .vo-rev-row {
+  display: grid; grid-template-columns: 22px 1fr 1fr 18px; gap: 6px; align-items: center;
+}
+.vo-rev-head { padding: 7px 10px; font-size: 11.5px; color: var(--txt3); border-bottom: 1px solid var(--brd); }
+/* La fenêtre doit garder « Ajouter » en vue sur un écran de 768 px de haut */
+.vo-rev-list { max-height: max(140px, calc(100vh - 520px)); overflow-y: auto; }
+.vo-rev-row { padding: 2px 10px; }
+.vo-rev-row + .vo-rev-row { border-top: 1px solid var(--brd); }
+.vo-rev input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+.vo-rev-in {
+  width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid transparent; border-radius: 6px;
+  background: transparent; color: var(--txt); font: inherit; font-size: 12.5px;
+}
+.vo-rev-in:hover { border-color: var(--brd2); }
+.vo-rev-in:focus { outline: none; border-color: var(--accent); background: var(--bg2); }
+.vo-rev-row.off .vo-rev-in { color: var(--txt3); }
+.vo-rev-flag { color: var(--a); font-size: 14px; line-height: 1; }
+.vo-rev-vide { padding: 14px 10px; font-size: 12px; color: var(--txt3); }
+.vo-rev-mis { margin-top: 8px; font-size: 12px; color: var(--txt2); }
+.vo-rev-mis summary { cursor: pointer; padding: 3px 0; }
+.vo-rev-mis summary span { color: var(--txt3); }
+.vo-rev-mis-list { max-height: 150px; overflow-y: auto; margin-top: 4px; }
+.vo-rev-mis-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.vo-rev-mis-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
 /* Réglage des listes (Paramètres → Vocabulaire) */
 .vo-li-row {
   display: flex; align-items: center; gap: 9px;
@@ -4540,7 +4567,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 <div class="ov" id="ov-vo-bulk" onclick="if(event.target===this)closeOv('ov-vo-bulk')">
   <div class="modal" style="max-width:640px">
     <h2>Ajout en masse</h2>
-    <p class="m-note" style="margin:0 0 12px">
+    <p class="m-note" id="vo-bulk-aide" style="margin:0 0 12px">
       Une ligne par mot, le mot et sa réponse séparés par <b>=</b> ou par une
       <b>tabulation</b> (ce que colle un tableur). La coupure se fait au premier
       séparateur : une définition peut donc contenir des « = » ensuite.
@@ -4550,7 +4577,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     <div class="vo-bulk-img">
       <button class="btn btn-ghost btn-sm" id="vo-bulk-imgbtn" onclick="voBulkPickImages()">
         <i class="ph ph-image"></i> Lire une image ou un PDF</button>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="voBulkInverser()"
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" id="vo-bulk-vue" onclick="voBulkBasculer()"></button>
+      <button class="btn btn-ghost btn-sm" onclick="voBulkInverser()"
         title="Échange le mot et la réponse sur chaque ligne (fiche qui met la traduction en premier)">
         <i class="ph ph-arrows-left-right"></i> Inverser</button>
       <span class="vo-bulk-hint">Image, PDF ou <b>.zip</b> reçu par mail, ou colle une capture
@@ -4558,6 +4586,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     </div>
     <textarea class="vo-bulk" id="vo-bulk-text" spellcheck="false" oninput="voBulkPreview()"
       placeholder="resilient = résilient&#10;to thrive = prospérer, s'épanouir&#10;véhément = qui s'exprime avec force et passion"></textarea>
+    <div id="vo-bulk-rev" hidden></div>
     <div id="vo-bulk-prev" class="m-note" style="margin-top:10px" aria-live="polite"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-vo-bulk')">Annuler</button>
@@ -19643,7 +19672,160 @@ function voOpenBulk() {
   document.getElementById("vo-bulk-text").value = "";
   document.getElementById("vo-bulk-prev").textContent = "";
   _voBulkNote = "";
+  _voBulkRows = null;
+  _voBulkMis = [];
+  voBulkMode();
   document.getElementById("ov-vo-bulk").classList.add("open");
+}
+
+/* ── Relecture en tableau ──────────────────────────────────────────────────
+   Après une lecture d'image, la zone de texte laisse place à un tableau
+   Mot | Réponse : une case à cocher par ligne, chaque case modifiable. Les
+   lignes sans « = » (titres, consignes, phrases d'exemple) sont mises de
+   côté, repliées dessous : en vrac dans la zone, elles faisaient croire que
+   la lecture avait raté (« 30 lignes ignorées »). Une ligne douteuse arrive
+   décochée, avec sa raison. `_voBulkRows` vaut null en mode texte. */
+
+let _voBulkRows = null;   // [{mot, rep, ok, doute}] en mode tableau
+let _voBulkMis  = [];     // lignes mises de côté
+
+const VO_MOTS_OUTILS = new Set(["avec", "de", "du", "des", "que", "qui", "à", "par", "sur",
+  "dans", "et", "ou", "the", "of", "to", "with", "and", "or", "a", "an"]);
+
+/** Raison de douter d'une paire lue, ou "" si elle a l'air saine. */
+function voBulkDoute(mot, rep) {
+  if (VO_MOTS_OUTILS.has(rep.toLowerCase()) || VO_MOTS_OUTILS.has(mot.toLowerCase()))
+    return "Un seul petit mot : sans doute un morceau de case";
+  if (!/[a-zà-ÿ]/.test(mot + rep) && mot.split(/\s+/).length <= 2 && rep.split(/\s+/).length <= 2)
+    return "En-tête de tableau ?";
+  if ((rep.match(/\s[–—-]\s/g) || []).length >= 2 || (mot.match(/\s[–—-]\s/g) || []).length >= 2)
+    return "Liste de mots, pas une traduction";
+  if (/[<>|•*{}\\]/.test(mot + rep)) return "Caractères douteux : lecture à vérifier";
+  return "";
+}
+
+/** Lignes de texte -> paires à relire + lignes mises de côté. */
+function voBulkDecouper(lignes) {
+  const rows = [], mis = [];
+  lignes.forEach(ligne => {
+    const l = ligne.trim();
+    if (!l) return;
+    let i = l.indexOf("\t");
+    if (i < 0) i = l.indexOf("=");
+    const mot = i < 0 ? "" : l.slice(0, i).trim(), rep = i < 0 ? "" : l.slice(i + 1).trim();
+    if (!mot || !rep) { mis.push(l); return; }
+    const doute = voBulkDoute(mot, rep);
+    rows.push({ mot, rep, ok: !doute, doute });
+  });
+  return { rows, mis };
+}
+
+/** Montre la zone de texte ou le tableau, selon `_voBulkRows`. */
+function voBulkMode() {
+  const tableau = _voBulkRows !== null;
+  document.getElementById("vo-bulk-text").hidden = tableau;
+  document.getElementById("vo-bulk-rev").hidden = !tableau;
+  document.getElementById("vo-bulk-aide").hidden = tableau;   // elle décrit le texte
+  document.getElementById("vo-bulk-vue").innerHTML = tableau
+    ? `<i class="ph ph-text-align-left"></i> Modifier en texte`
+    : `<i class="ph ph-table"></i> Relire en tableau`;
+  if (tableau) voBulkRenderRev();
+  voBulkPreview();
+}
+
+function voBulkRenderRev() {
+  const box = document.getElementById("vo-bulk-rev");
+  const rows = _voBulkRows || [];
+  const tous = rows.length && rows.every(r => r.ok);
+  const lignes = rows.map((r, i) => `
+    <div class="vo-rev-row${r.ok ? "" : " off"}" data-i="${i}">
+      <input type="checkbox" ${r.ok ? "checked" : ""} onchange="voBulkCocher(${i}, this.checked)"
+        aria-label="Garder ce mot">
+      <input class="vo-rev-in" value="${escHtml(r.mot)}" title="${escHtml(r.mot)}" oninput="voBulkEdit(${i}, 'mot', this.value)" aria-label="Mot">
+      <input class="vo-rev-in" value="${escHtml(r.rep)}" title="${escHtml(r.rep)}" oninput="voBulkEdit(${i}, 'rep', this.value)" aria-label="Réponse">
+      <span class="vo-rev-flag" ${r.doute ? `title="${escHtml(r.doute)}" aria-label="${escHtml(r.doute)}"` : ""}>${r.doute ? `<i class="ph ph-warning"></i>` : ""}</span>
+    </div>`).join("");
+  const n = _voBulkMis.length;
+  box.innerHTML = `
+    <div class="vo-rev">
+      <div class="vo-rev-head">
+        <input type="checkbox" ${tous ? "checked" : ""} onchange="voBulkToutCocher(this.checked)" aria-label="Tout cocher">
+        <span>Mot</span><span>Réponse</span><span></span>
+      </div>
+      <div class="vo-rev-list">${lignes || `<div class="vo-rev-vide">Aucun mot lu. Reprends une ligne mise de côté, ou lis une autre image.</div>`}</div>
+    </div>
+    ${n ? `<details class="vo-rev-mis">
+      <summary>${n} ligne${n > 1 ? "s" : ""} mise${n > 1 ? "s" : ""} de côté <span>(titres, consignes, phrases)</span></summary>
+      <div class="vo-rev-mis-list">${_voBulkMis.map((t, i) => `
+        <div class="vo-rev-mis-row"><span>${escHtml(t)}</span>
+          <button class="btn btn-ghost btn-sm" onclick="voBulkReprendre(${i})" title="En faire un mot à compléter">
+            <i class="ph ph-plus"></i> Mot</button></div>`).join("")}</div>
+    </details>` : ""}`;
+}
+
+function voBulkCocher(i, ok) {
+  const r = _voBulkRows && _voBulkRows[i];
+  if (!r) return;
+  r.ok = ok;
+  const el = document.querySelector(`#vo-bulk-rev .vo-rev-row[data-i="${i}"]`);
+  if (el) el.classList.toggle("off", !ok);
+  voBulkPreview();
+}
+
+function voBulkToutCocher(ok) {
+  (_voBulkRows || []).forEach(r => { r.ok = ok; });
+  voBulkRenderRev();
+  voBulkPreview();
+}
+
+/* Pas de nouveau rendu pendant la frappe : le curseur resterait en route.
+   Une ligne reprise de côté se coche d'elle-même une fois complète. */
+function voBulkEdit(i, cle, valeur) {
+  const r = _voBulkRows && _voBulkRows[i];
+  if (!r) return;
+  r[cle] = valeur;
+  if (r.aCompleter && r.mot.trim() && r.rep.trim()) {
+    r.aCompleter = false;
+    r.ok = true;
+    r.doute = "";
+    const el = document.querySelector(`#vo-bulk-rev .vo-rev-row[data-i="${i}"]`);
+    if (el) {
+      el.classList.remove("off");
+      el.querySelector('input[type="checkbox"]').checked = true;
+      el.querySelector(".vo-rev-flag").innerHTML = "";
+    }
+  }
+  voBulkPreview();
+}
+
+/** Une ligne mise de côté devient un mot, réponse à compléter. */
+function voBulkReprendre(i) {
+  const t = _voBulkMis.splice(i, 1)[0];
+  if (t === undefined) return;
+  _voBulkRows.push({ mot: t, rep: "", ok: false, doute: "Réponse à compléter", aCompleter: true });
+  voBulkRenderRev();
+  voBulkPreview();
+  const rows = document.querySelectorAll("#vo-bulk-rev .vo-rev-row");
+  const der = rows[rows.length - 1];
+  if (der) { der.scrollIntoView({ block: "nearest" }); der.querySelectorAll(".vo-rev-in")[1].focus(); }
+}
+
+/** Texte -> tableau, ou tableau -> texte (toutes les lignes, cochées ou non). */
+function voBulkBasculer() {
+  const zone = document.getElementById("vo-bulk-text");
+  if (_voBulkRows === null) {
+    const { rows, mis } = voBulkDecouper(zone.value.split("\n"));
+    if (!rows.length && !mis.length) { showToastModern("Rien à relire : la zone est vide", "warn"); return; }
+    _voBulkRows = rows;
+    _voBulkMis = mis;
+  } else {
+    zone.value = _voBulkRows
+      .map(r => r.mot.includes("=") ? `${r.mot}\t${r.rep}` : `${r.mot} = ${r.rep}`)
+      .concat(_voBulkMis).join("\n");
+    _voBulkRows = null;
+    _voBulkMis = [];
+  }
+  voBulkMode();
 }
 
 /** Coupe au PREMIER séparateur : une définition peut contenir des « = ». */
@@ -19665,7 +19847,16 @@ function voBulkParse(texte) {
 
 async function voBulkAdd() {
   const listeId = document.getElementById("vo-bulk-liste").value;
-  const { lignes, rejets } = voBulkParse(document.getElementById("vo-bulk-text").value);
+  let lignes, rejets;
+  if (_voBulkRows !== null) {
+    // Tableau : les lignes cochées et complètes, rien d'autre.
+    lignes = _voBulkRows.filter(r => r.ok && r.mot.trim() && r.rep.trim())
+      .map(r => ({ mot: r.mot.trim(), reponse: r.rep.trim() }));
+    rejets = [];
+    if (!lignes.length) { showToastModern("Aucun mot coché", "warn"); return; }
+  } else {
+    ({ lignes, rejets } = voBulkParse(document.getElementById("vo-bulk-text").value));
+  }
   if (!lignes.length) {
     showToastModern("Aucune ligne exploitable — sépare le mot et sa réponse par =", "warn");
     return;
@@ -19701,6 +19892,15 @@ async function voBulkAdd() {
 function voBulkPreview() {
   const prev = document.getElementById("vo-bulk-prev");
   if (!prev) return;
+  if (_voBulkRows !== null) {
+    const coches = _voBulkRows.filter(r => r.ok && r.mot.trim() && r.rep.trim()).length;
+    const total = _voBulkRows.length;
+    const douteux = _voBulkRows.filter(r => !r.ok).length;
+    let c = `<b>${coches} mot${coches > 1 ? "s" : ""}</b> coché${coches > 1 ? "s" : ""} sur ${total}`;
+    if (douteux) c += ` · <span style="color:var(--a)">${douteux} décoché${douteux > 1 ? "s" : ""} (à vérifier ou à écarter)</span>`;
+    prev.innerHTML = _voBulkNote ? _voBulkNote + "<br>" + c : c;
+    return;
+  }
   const { lignes, rejets } = voBulkParse(document.getElementById("vo-bulk-text").value);
   let html = _voBulkNote;
   if (lignes.length || rejets.length) {
@@ -19719,6 +19919,13 @@ function voBulkPreview() {
     tabulation (prioritaire à la lecture) pour ne pas être recoupée au mauvais
     endroit. Un second clic remet tout comme avant. */
 function voBulkInverser() {
+  if (_voBulkRows !== null) {
+    if (!_voBulkRows.length) { showToastModern("Aucun mot à inverser", "warn"); return; }
+    _voBulkRows.forEach(r => { [r.mot, r.rep] = [r.rep, r.mot]; });
+    voBulkRenderRev();
+    voBulkPreview();
+    return;
+  }
   const zone = document.getElementById("vo-bulk-text");
   let n = 0;
   zone.value = zone.value.split("\n").map(ligne => {
@@ -19785,12 +19992,20 @@ async function voBulkLire(appel, nbImages, nom = "image") {
   const lignes = res.lignes || [];
   if (!lignes.length) { showToastModern("Aucun texte trouvé sur l'image", "warn"); return; }
 
-  const avant = zone.value.replace(/\s+$/, "");
-  zone.value = (avant ? avant + "\n" : "") + lignes.join("\n");
-  zone.scrollTop = zone.scrollHeight;
-  const n = lignes.length, s = n > 1 ? "s" : "";
+  // Ce qui était déjà dans la zone passe dans le tableau, à la suite duquel
+  // arrivent les mots lus.
+  if (_voBulkRows === null) {
+    const avant = voBulkDecouper(zone.value.split("\n"));
+    _voBulkRows = avant.rows;
+    _voBulkMis = avant.mis;
+  }
+  const lus = voBulkDecouper(lignes);
+  const debut = _voBulkRows.length;
+  _voBulkRows.push(...lus.rows);
+  _voBulkMis.push(...lus.mis);
+  const n = lus.rows.length, s = n > 1 ? "s" : "";
   const sur = nbImages > 1 ? `${nbImages} ${nom}s` : (nom === "image" ? "l'image" : "le fichier");
-  _voBulkNote = `${n} ligne${s} lue${s} sur ${sur}.`
+  _voBulkNote = `${n} mot${s} lu${s} sur ${sur}.`
               + ` Relis-les : la lecture peut confondre des lettres.`;
   const ratees = (res.details || []).filter(d => !d.ok);
   if (ratees.length) {
@@ -19800,7 +20015,10 @@ async function voBulkLire(appel, nbImages, nom = "image") {
   // Un PDF trop long n'est lu qu'en partie : on le dit.
   (res.details || []).filter(d => d.ok && d.note)
     .forEach(d => { _voBulkNote += ` ${escHtml(d.file)} : ${escHtml(d.note)}.`; });
-  voBulkPreview();
+  voBulkMode();
+  // Les nouveaux mots en vue, sous ceux qui étaient déjà là.
+  const nouveau = document.querySelector(`#vo-bulk-rev .vo-rev-row[data-i="${debut}"]`);
+  if (nouveau && debut) nouveau.scrollIntoView({ block: "start" });
 }
 
 /* Ctrl+V d'une capture (Win+Maj+S) pendant que la fenêtre est ouverte. Du

@@ -233,7 +233,10 @@ def _preprocess(src: str, dst: str, scale: float, mode: str) -> bool:
         f = min(scale, MAX_SIDE / max(w, h))
         if f > 1.0:
             im = im.resize((int(w * f), int(h * f)), Image.LANCZOS)
-        im.save(dst)
+        # Compression minimale : le fichier ne vit que le temps d'une lecture.
+        # Au reglage par defaut, une photo de 12 Mpx prenait 6,5 s a ecrire
+        # (mesure le 30/09/2026) ; les pixels sont les memes.
+        im.save(dst, compress_level=1)
         return True
     except Exception as e:
         print(f"[sante] pretraitement KO : {e}", flush=True)

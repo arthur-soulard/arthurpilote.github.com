@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.9**
+**Version actuelle : 4.3.10**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -880,9 +880,44 @@ ligne) ; `vocabulaire.lire_images()` / `lire_image_collee()`, API
 JS : `voBulkPickImages`, `voBulkLire`, le gestionnaire `paste`, `voBulkPreview`
 (compte sous la zone les mots prêts et les lignes sans « = », qui seront ignorées).
 
-* **Ça ne fait que remplir la zone**, à la suite de son contenu, une ligne
-  `mot = réponse` par mot. Rien n'est enregistré avant « Ajouter » : même règle que
-  l'import Santé. Ne pas transformer ça en ajout direct.
+* **Ça ne fait que remplir la fenêtre**, à la suite de son contenu. Rien n'est
+  enregistré avant « Ajouter » : même règle que l'import Santé. Ne pas transformer
+  ça en ajout direct.
+* **Relecture en tableau (30/09/2026, demandée par Arthur : « là c'est pas bon du
+  tout »).** Après une lecture, la zone de texte laisse place à un tableau
+  Mot | Réponse (`#vo-bulk-rev`, `_voBulkRows` = null en mode texte) : une case à
+  cocher par ligne, chaque case modifiable, « Ajouter » ne prend que les lignes
+  cochées et complètes. Les lignes sans « = » (titres, consignes, phrases) sont
+  **mises de côté** (`_voBulkMis`), repliées sous le tableau, et « + Mot » en
+  refait un mot à compléter, qui se coche tout seul une fois complet. En vrac dans
+  la zone, elles faisaient croire que la lecture avait raté. Une paire douteuse
+  arrive **décochée** avec sa raison (`voBulkDoute` : un seul petit mot comme
+  « avec », en-tête en majuscules, liste « a — b — c », caractères suspects).
+  « Modifier en texte » / « Relire en tableau » basculent (`voBulkBasculer`),
+  « Inverser » marche dans les deux modes. Du texte tapé ou collé reste en mode
+  texte, comme avant. La liste prend `calc(100vh - 520px)` : « Ajouter » reste
+  visible sur l'écran d'Arthur (768 px).
+* **Titres bilingues et listes** (`_titres_et_listes`) : « To express cause /
+  pour exprimer la cause » devient une paire ; une liste de connecteurs juste
+  dessous (« First, firstly, … ») prend la traduction du titre. Tout autre ligne
+  arrête la liste : les phrases d'exemple sous un tableau restent de côté.
+* **Cellules sur deux lignes.** Sans traits de tableau : une ligne orpheline se
+  recolle à la case du dessus si celle-ci « appelle une suite » (`_SUITE` : virgule,
+  « … », article, « pour » ; pas les prépositions, « Because of » est entier). À
+  gauche, une 2e ligne en majuscule (« I agree with / I approve of ») devient une
+  expression de plus qui **partage** la traduction (même liste Python). Avec traits :
+  `_chercheur_traits` repère les bordures horizontales (image cisaillée de la pente
+  du texte, bandes seuillées et réduites par Pillow, morceaux de ~150 px à ±2 px :
+  100 % sur un trait, 66 % au plus sur du texte), et `_fusion_cases` fusionne deux
+  entrées tombées entre les deux mêmes traits (« I disagree with / I disapprove of »
+  = « Je ne suis pas d'accord / avec »), **seulement si les traits sont réguliers**
+  (un trait manqué ferait une case deux fois plus haute, et deux lignes seraient
+  fusionnées à tort).
+* **Mesuré** sur les deux photos de connecteurs contre la liste idéale (106 paires) :
+  78 justes, 7 fausses avant ; 104 justes, 0 fausse après, en version réduite comme
+  d'origine. Les deux manquantes sont illisibles pour le moteur (« = » et « if »).
+  Lecture des deux photos dans l'app : 12 s (130 s avant d'accélérer les traits et
+  l'écriture du PNG, voir `_preprocess`).
 * **.zip (4.3.9)** : `lire_images` remplace un zip par les images et les PDF qu'il
   contient, avec l'extraction de Santé (`sante._images_du_zip(..., exts)` :
   fichiers cachés de macOS/iPhone ignorés, rien ne sort du dossier temporaire).
@@ -1025,6 +1060,10 @@ Quatre pièges, tous traités — ne pas « simplifier » :
    chiffre : sans `_contraste_cutoff()`, un écart de 0.4 % est enregistré comme
    une valeur. Le gros cadran, lui, n'a pas de libellé : `_dial_weight()` le
    reconnaît à sa taille (repli quand seul cet écran est fourni).
+
+`_preprocess` écrit ses PNG avec `compress_level=1` (30/09/2026) : au réglage par
+défaut, une photo de 12 Mpx prenait 6,5 s à écrire, pour un fichier qui ne vit que
+le temps d'une lecture. Mêmes pixels, même lecture.
 
 Autres garde-fous : `%` rendu « 0/0 » (`_PCT_GARBLE`), point décimal perdu
 (« 152 » → 15.2 via `_validate`, qui REFUSE plutôt que d'inscrire une valeur
