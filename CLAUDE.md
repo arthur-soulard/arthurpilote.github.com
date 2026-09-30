@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.10**
+**Version actuelle : 4.3.11**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -31,6 +31,8 @@ Pilote/
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── formation.py    # Module « Formation »     (formation.json) + certificats
 │   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
+│   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
+│   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
@@ -61,6 +63,7 @@ tous modules confondus :
 Donnees/
 ├── users.json                # liste des utilisateurs + utilisateur actif
 ├── sauvegarde.json           # config de la sauvegarde USB (niveau installation)
+├── etf_compositions.json     # compositions des ETF téléchargées (données publiques, niveau installation)
 ├── users/<slug>/
 │   ├── pea_data.json         # PEA              (+ backups/)
 │   ├── finances.json         # Mes comptes      (+ backups_finances/)
@@ -1255,6 +1258,69 @@ modification, un décochage, une suppression ou le bouton Retour se voient parto
   **entier** (`_peaPv.total`), parts du prêt comprises ; la « valeur du portefeuille »
   du prêt n'est ajoutée nulle part. Ne jamais créer de compte « placements du prêt » :
   PEA, AV et Livret A sont déjà comptés par leurs propres lignes.
+
+## Onglet Expositions (`pane-sector`, `expositions.py`)
+
+Ce que contiennent vraiment les titres : pays, zones, secteurs et entreprises, chaque
+ETF étant décomposé selon **l'indice qu'il suit**. Refait le 30/09/2026 : avant, un ETF
+comptait pour un seul secteur « ETF / Fonds » et ses zones étaient devinées d'après
+son nom (« world » = 70 % Amérique du Nord…). **Aucune limite ni alerte** : choix
+d'Arthur, il lit les chiffres et les interprète (les anciens seuils ont disparu).
+
+**Toujours l'indice, jamais le panier détenu.** Les ETF d'un PEA sont synthétiques
+(swap) : ils détiennent des actions européennes et reçoivent la performance de
+l'indice. L'API Amundi renvoie pour PEMS un panier ASML, Infineon, Nordea… sans
+rapport avec son exposition. Sources, par ETF (`ETFS` dans `expositions.py`) :
+
+| ETF | Indice | Source |
+|---|---|---|
+| WPEA | MSCI World | lignes d'iShares Core MSCI World (SWDA), même indice |
+| PNAS | Nasdaq-100 | lignes d'iShares Nasdaq 100 (CNDX) |
+| ESE | S&P 500 | lignes d'iShares Core S&P 500 (CSPX) |
+| ETZ | STOXX Europe 600 | lignes d'Amundi Core STOXX Europe 600 (MEUD, physique) |
+| PEMS, PANX, GPEA | leur indice | répartition publiée par Amundi (pays, secteurs, 10 premières lignes) |
+
+* iShares ne publie **aucune** répartition pour WPEA lui-même (fiche d'août : « données
+  non disponibles ») : d'où SWDA. Pas SSAC pour GPEA : il détient l'Inde, le Brésil, la
+  Chine A et l'Arabie saoudite via d'autres ETF, classés « Finance / Irlande » (2,4 %).
+* API iShares : `…/product-data/api/v2/get-product-data?component=holdings.all&portfolioId=…`
+  (l'ancien lien `.ajax?fileType=csv` renvoie désormais la page HTML). API Amundi :
+  POST `https://www.amundietf.fr/mapi/ProductAPI/getProductsData`, champ `breakDown`
+  (`INDEX_TOP10` porte son poids dans `adjustedWeight`, pas dans `weight`).
+* **Pays = pays du risque (MSCI, S&P, émetteurs)**, pas pays du siège : Linde, Eaton,
+  Accenture, Medtronic comptent aux États-Unis. justETF classe au siège : WPEA y montre
+  70,0 % d'États-Unis, contre 73,0 % ici. Secteurs GICS ; « Autres secteurs » d'Amundi
+  = ses deux plus petits (en général services aux collectivités et immobilier).
+* Vérifié le 30/09/2026 : MSCI World et S&P 500 d'iShares contre les indices publiés par
+  Amundi (CW8, LU1681048804) → pays à 0,07 point près, secteurs à 0,1 point ; PEMS
+  contre la fiche MSCI de son indice, PANX contre celle de Solactive, top 10 contre justETF.
+* Une même entreprise sous plusieurs ISIN (Alphabet A/C, Samsung ordinaire/préférentielle,
+  ASML d'Amsterdam et son ADR du Nasdaq) est additionnée via `MEME_ENTREPRISE`. Les noms
+  d'usage des grosses lignes sont dans `NOMS`, le reste passe par `_joli_nom()`.
+
+**Données.** `expositions_base.py` (généré, livré avec le code) sert tant qu'aucune
+mise à jour n'a réussi ; le bouton **« Mettre à jour les données »** relit les sites
+dans un thread (`lancer_mise_a_jour`, progression `etat()`, API `load_expositions`,
+`expositions_update`, `expositions_status`), le JS suit toutes les 400 ms et affiche le
+pourcentage dans le bouton, sans bloquer la navigation. Résultat dans
+`Donnees/etf_compositions.json`, **au niveau de l'installation** (données publiques,
+comme `sauvegarde.json`). ETF par ETF : un site qui ne répond pas, ou une lecture
+incohérente (`_valider` : pays ou secteurs loin de 100 %), laisse l'ancienne composition.
+Pour rafraîchir les données livrées avant une version : `python src/expositions.py`.
+
+**Corrections à la main** (« Modifier la composition », fenêtre `ov-expo-edit`) :
+`S.uiPrefs.expoPerso[ticker]`, propres à l'utilisateur, prioritaires sur tout le reste.
+Une ligne `nom = pourcentage` ; ce qui manque pour 100 % devient « non détaillé » ;
+« Autre » (copié de justETF) aussi. Sert aussi à un ETF que Pilote ne suit pas
+(« Composition inconnue »).
+
+* Une **action** compte pour son pays de cotation (`EXPO_BOURSE`) et le secteur GICS
+  déduit de son secteur de fiche (`EXPO_SECT_ACTION`). Le champ « Zone géographique »
+  de la fenêtre Position a disparu (remplacé par la composition).
+* Zones au sens de MSCI (Corée, Taïwan, Pologne, Grèce = émergents) : `EXPO_PAYS`.
+* Base = titres hors espèces, comme la répartition de la vue d'ensemble.
+* JS : préfixe `expo*`, point d'entrée `renderSectors()` (nom historique, appelé par
+  `goTab("sector")` et après une modification de position).
 
 ## Wishlist : frais des ETF
 

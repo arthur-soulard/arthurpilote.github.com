@@ -40,13 +40,14 @@ import patrimoine
 import sante
 import formation
 import vocabulaire
+import expositions
 import sauvegarde
 import notifications
 import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.10"
+APP_VERSION = "4.3.11"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -533,6 +534,28 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e), "lignes": [],
                     "trace": traceback.format_exc()}
+
+    # -- Expositions : composition des ETF (donnees publiques, niveau installation)
+
+    def load_expositions(self) -> dict:
+        try:
+            return {"ok": True, **expositions.charger()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
+
+    def expositions_update(self) -> dict:
+        """Bouton « Mettre a jour les donnees » : non bloquant, progression via
+        expositions_status()."""
+        try:
+            return {"ok": True, "lance": expositions.lancer_mise_a_jour()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def expositions_status(self) -> dict:
+        try:
+            return {"ok": True, **expositions.etat()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def server_port(self) -> int:
         return server.get_port()
