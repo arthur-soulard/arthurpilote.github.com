@@ -46,7 +46,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.6"
+APP_VERSION = "4.3.7"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -501,8 +501,21 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     def vocabulaire_pick_images(self) -> dict:
-        """Meme selecteur d'images que Sante (plusieurs a la fois)."""
-        return self.sante_pick_screenshots()
+        """Images ou PDF (plusieurs a la fois) : le PDF est lu page par page."""
+        try:
+            win = webview.windows[0]
+            result = win.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=True,
+                file_types=("Images et PDF (*.png;*.jpg;*.jpeg;*.heic;*.pdf)",
+                            "All files (*.*)"),
+            )
+            if not result:
+                return {"ok": False, "cancelled": True}
+            paths = list(result) if isinstance(result, (list, tuple)) else [result]
+            return {"ok": True, "paths": paths}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def vocabulaire_read_images(self, paths: list) -> dict:
         """OCR de captures ou de photos : pre-remplit l'ajout en masse."""

@@ -12,10 +12,18 @@
 # Les positions sont indispensables : c'est elles qui permettent d'apparier
 # un libelle a sa valeur sur la meme ligne, l'ordre de lecture du moteur
 # n'etant pas fiable sur une mise en page en colonnes.
+#
+# Mode PDF (vocabulaire.py) : avec -PdfDir, ImagePath est un PDF dont chaque
+# page est rendue en PNG dans ce dossier par le moteur PDF de Windows
+# (Windows.Data.Pdf, hors ligne lui aussi), SANS lecture. Le JSON vaut alors
+#   {ok, total, pages:[chemins des PNG]}
+# et chaque page repasse ensuite par ce script comme une image.
 
 param(
     [Parameter(Mandatory = $true)][string]$ImagePath,
-    [Parameter(Mandatory = $true)][string]$JsonPath
+    [Parameter(Mandatory = $true)][string]$JsonPath,
+    [string]$PdfDir = "",
+    [int]$PdfMaxPages = 20
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,6 +48,38 @@ try {
     }
 
     [Windows.Storage.StorageFile, Windows.Storage, ContentType = WindowsRuntime] | Out-Null
+
+    if ($PdfDir) {
+        # Meme passerelle, pour une operation qui ne renvoie rien (IAsyncAction)
+        $asTaskAction = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
+            $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and
+            $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncAction' })[0]
+        [Windows.Data.Pdf.PdfDocument, Windows.Data.Pdf, ContentType = WindowsRuntime] | Out-Null
+
+        $file   = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync($ImagePath)) ([Windows.Storage.StorageFile])
+        $doc    = Await ([Windows.Data.Pdf.PdfDocument]::LoadFromFileAsync($file)) ([Windows.Data.Pdf.PdfDocument])
+        $folder = Await ([Windows.Storage.StorageFolder]::GetFolderFromPathAsync($PdfDir)) ([Windows.Storage.StorageFolder])
+        $n = [Math]::Min([int]$doc.PageCount, $PdfMaxPages)
+        $pages = for ($i = 0; $i -lt $n; $i++) {
+            $page = $doc.GetPage($i)
+            # Deux fois la taille nominale (~190 dpi) : le texte courant fait
+            # alors une vingtaine de pixels de haut, ce que le moteur lit le
+            # mieux. Plafond de 4000 px pour une page geante.
+            $f = [Math]::Min(2.0, 4000 / [Math]::Max($page.Size.Width, $page.Size.Height))
+            $opt = New-Object Windows.Data.Pdf.PdfPageRenderOptions
+            $opt.DestinationWidth  = [uint32][Math]::Round($page.Size.Width * $f)
+            $opt.DestinationHeight = [uint32][Math]::Round($page.Size.Height * $f)
+            $png    = Await ($folder.CreateFileAsync("page$($i + 1).png", [Windows.Storage.CreationCollisionOption]::ReplaceExisting)) ([Windows.Storage.StorageFile])
+            $stream = Await ($png.OpenAsync([Windows.Storage.FileAccessMode]::ReadWrite)) ([Windows.Storage.Streams.IRandomAccessStream])
+            $asTaskAction.Invoke($null, @($page.RenderToStreamAsync($stream, $opt))).Wait(-1) | Out-Null
+            $stream.Dispose()
+            $page.Dispose()
+            $png.Path
+        }
+        Write-Json ([pscustomobject]@{ ok = $true; total = [int]$doc.PageCount; pages = @($pages) })
+        exit 0
+    }
+
     [Windows.Graphics.Imaging.BitmapDecoder, Windows.Graphics.Imaging, ContentType = WindowsRuntime] | Out-Null
     [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime] | Out-Null
 
