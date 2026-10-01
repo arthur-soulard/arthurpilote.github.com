@@ -2,6 +2,53 @@
 
 Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
 
+## Enregistrement du PEA (4.3.14)
+
+`persist()` → `_syncToPython()` (délai de 0,4 s) → `_syncToPythonNow()` : relit
+`pea_data.json`, y recopie `S`, écrit.
+
+* **Défense « PEA vierge »** : un état où positions, transactions, dépôts,
+  clôtures, wishlist, dividendes et stratégies sont **tous** vides (`_peaContenu`)
+  n'écrase jamais un fichier rempli : c'est l'état par défaut d'une lecture ratée.
+  Jusqu'à la 4.3.13 la règle ne regardait que les positions : vendre ou supprimer
+  sa dernière ligne bloquait ensuite **tout** enregistrement du PEA, sans rien dire
+  (reproduit : trois ventes, le disque gardait une position et une transaction de
+  moins). Une vente laisse des transactions, elle passe. Vider volontairement
+  (« Réinitialiser les données PEA », Retour sur la toute première saisie) pose
+  `_peaVideVoulu`, qui lève la défense pour une écriture.
+* **Le badge « ✓ Sauvegardé » suit l'écriture réelle** (avant : affiché au clic,
+  même si l'écriture échouait ensuite). Un échec ou un refus s'affiche en rouge
+  (`_alerteEnregistrement`, même message au plus une fois toutes les 10 s).
+* **Achat daté du futur** (ordre passé pour demain) : `computePos` ne le compte
+  qu'à sa date, la quantité vaut donc 0. `_achatAVenir(p)` garde la ligne dans
+  les positions, avec « achat prévu le 2 oct. » ; avant la 4.3.14 elle passait
+  parmi les positions clôturées à 0 € et disparaissait pour de bon.
+* Enregistrements en attente, fermeture, changement d'utilisateur : voir
+  « Enregistrements en attente » dans `CLAUDE.md` (conventions de code).
+
+## Cours et courbe hors ligne (4.3.14)
+
+`pea_data.json._cache` (cours et historiques, `dump_cache()`) est rechargé dans le
+serveur par `hydrate_cache()` à chaque `GET /data`, donc **avant** les premiers
+`/cours` et `/history` de la page. Quand Yahoo ne répond pas (hors ligne, ou
+limite de requêtes), `get_prices` / `get_history` rendent ce dernier état connu
+et listent les tickers concernés dans `stale` (réponse JSON).
+
+* Jusqu'à la 4.3.13, rien de ce cache ne servait : les cours n'étaient repris
+  qu'au format de l'ancien tracker (`cours`, alors que `dump_cache` écrit `prix`),
+  l'historique périmé était ignoré, et la page écrasait sa propre copie de secours
+  par une réponse vide. Hors ligne, la courbe était vide et le libellé affichait
+  « Dernière actualisation » à l'heure du jour.
+* `hydrate_cache` ne remplit que les clés **absentes** : `Api.load_data()` la
+  rappelle à chaque enregistrement, et écraser un cours frais par sa copie disque
+  relançait Yahoo à chaque fois.
+* Côté page : `_coursEtat` (`ok` / `perime` / `erreur`). Aucun cours neuf →
+  libellé « Yahoo injoignable · derniers cours connus », une seule notification
+  par panne (`_yahooDownSignale`), pas de « Mis à jour ». La carte « Évolution du
+  capital » affiche la même mention (`showCacheLabel(null)`).
+* Essai de référence : serveur isolé, Yahoo coupé, lancement → 178 points de
+  courbe depuis le cache ; Yahoo rétabli → « Dernière actualisation ».
+
 ## Onglet Expositions (`pane-sector`, `expositions.py`)
 
 Ce que contiennent vraiment les titres : pays, zones, secteurs et entreprises, chaque

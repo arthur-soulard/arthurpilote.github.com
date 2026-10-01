@@ -5068,30 +5068,59 @@ const UNDO_MAX   = 20;
 function pushUndo() {
   _undoStack.push(JSON.stringify({S: JSON.parse(JSON.stringify(S)), NID: {...NID}}));
   if (_undoStack.length > UNDO_MAX) _undoStack.shift();
+  _majBoutonRetour();
+}
+
+/* Retour n'agit que sur ce que montre l'onglet ouvert (4.3.14). Avant, il
+   annulait la dernière action du PEA ou du Prêt depuis n'importe quel onglet :
+   depuis Mes comptes, il défaisait sans le montrer une saisie du PEA.
+   * section PEA : ses actions ;
+   * section Prêt étudiant : les siennes et celles du PEA (elle affiche les
+     ordres payés avec le prêt, saisis par les fenêtres du PEA) ;
+   * ailleurs : rien à annuler, bouton grisé. */
+function _undoModulesOuverts() {
+  const sec = _navSectionOf(document.body.dataset.activeTab || "");
+  if (sec && sec.id === "sec-pea")  return ["pea"];
+  if (sec && sec.id === "sec-pret") return ["pea", "pret"];
+  return [];
+}
+/* Instantané du prêt : JSON de {PR} (prPushUndo) ; du PEA : JSON de {S, NID} */
+function _undoModule(snapTxt) { return snapTxt.startsWith('{"PR"') ? "pret" : "pea"; }
+function _undoIndex() {
+  const mods = _undoModulesOuverts();
+  for (let i = _undoStack.length - 1; i >= 0; i--)
+    if (mods.includes(_undoModule(_undoStack[i]))) return i;
+  return -1;
+}
+function _majBoutonRetour() {
   const btn = document.getElementById("btn-undo");
-  if (btn) btn.disabled = false;
+  if (!btn) return;
+  btn.disabled = _undoIndex() < 0;
+  btn.title = _undoModulesOuverts().length
+    ? "Annuler la dernière action"
+    : "Retour annule les actions du PEA et du Prêt étudiant, depuis leurs onglets";
 }
 
 function undoLast() {
-  if (!_undoStack.length) return;
-  const snap = JSON.parse(_undoStack.pop());
+  const i = _undoIndex();
+  if (i < 0) return;
+  const snap = JSON.parse(_undoStack.splice(i, 1)[0]);
   if (snap.PR) {   // action du module Prêt (prPushUndo) : on ne touche pas au PEA
     PR = snap.PR;
     prPersist();
     prRenderAll();
-    const b = document.getElementById("btn-undo");
-    if (b) b.disabled = _undoStack.length === 0;
-    showToast("↩ Action annulée", "warn");
+    _majBoutonRetour();
+    showToast("↩ Action du prêt annulée", "warn");
     return;
   }
   S   = snap.S;
   NID = snap.NID;
+  _peaVideVoulu = true;   // annuler la toute première saisie revient à un PEA vide : voulu
   persist(false);
   renderAll();
   updateStatus();
-  const btn = document.getElementById("btn-undo");
-  if (btn) btn.disabled = _undoStack.length === 0;
-  showToast("\u21A9 Action annulée", "warn");
+  _majBoutonRetour();
+  showToast("\u21A9 Action du PEA annulée", "warn");
 }
 
 /* ─── Load / persist ─── */
@@ -5163,56 +5192,148 @@ function persist(badge) {
   S._nid = NID;
   try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) {}
   try { localStorage.setItem(LS_VAR, JSON.stringify(_wsVar)); } catch(e) {}
-  // Sync vers le backend Python (debounce 400 ms)
-  _syncToPython();
-  if (badge !== false) flash();
+  // Sync vers le backend Python (debounce 400 ms). Le badge « Sauvegardé »
+  // ne s'affiche qu'une fois le fichier réellement écrit (_syncToPythonNow).
+  _syncToPython(badge !== false);
   // Les ordres payés avec le prêt vivent ici : l'onglet Prêt ouvert suit
   // (saisie depuis ses boutons, bouton Retour)
   if (typeof prRefreshIfVisible === "function") prRefreshIfVisible();
 }
 
 let _pySyncTimer = null;
+let _pySyncBadge = false;
 let _hydrationDone = false;   // <- gardien : tant qu'on n'a pas charge les donnees, ON N'ECRIT PAS
+// Posé par une action qui vide volontairement le PEA (Réinitialiser, Retour) :
+// lève, pour une écriture, la défense « PEA vierge » de _syncToPythonNow.
+let _peaVideVoulu = false;
 
-function _syncToPython() {
+function _syncToPython(badge) {
   if (!window.pywebview || !window.pywebview.api) return;
   if (!_hydrationDone) {
     // Bug-shield : si l'hydratation n'a pas reussi, on n'ecrase JAMAIS le fichier
     console.warn("[sync] hydratation pas finie, ecriture refusee");
+    _alerteEnregistrement("PEA non enregistré : le fichier n'a pas pu être lu au démarrage (voir le bandeau en haut).");
     return;
   }
+  if (badge) _pySyncBadge = true;
   if (_pySyncTimer) clearTimeout(_pySyncTimer);
-  _pySyncTimer = setTimeout(async () => {
-    try {
-      const r = await window.pywebview.api.load_data();
-      const d = (r && r.ok && r.data) ? r.data : {};
-      // Defense supplementaire : si S est vide mais d a des donnees, on n'ecrit pas
-      if ((!S.positions || S.positions.length === 0) && d.positions && d.positions.length > 0) {
-        console.warn("[sync] S vide mais disque non-vide, ecriture refusee");
-        return;
-      }
-      d.positions       = S.positions       || [];
-      d.transactions    = S.transactions    || [];
-      d.depots          = S.depots          || [];
-      d.divReceived     = S.divReceived     || [];
-      d.divFuture       = S.divFuture       || [];
-      d.wishlist        = S.wishlist        || [];
-      d.strategies      = S.strategies      || [];
-      d.closedPositions = S.closedPositions || [];
-      d.cashSolde       = S.cashSolde || 0;
-      d._nid            = NID;
-      d.config = d.config || {};
-      d.config.prenom    = S.prenom    || "";
-      d.config.banque    = S.banque    || "";
-      d.config.ouverture = S.ouverture || "";
-      // Preferences UI (accent, PIN hash, etc.) — sinon perdues au prochain boot
-      d.uiPrefs = S.uiPrefs || {};
-      await window.pywebview.api.save_data(d);
-    } catch(e) {
-      console.warn("Sync Python KO:", e);
-    }
-  }, 400);
+  _pySyncTimer = setTimeout(_syncToPythonNow, 400);
 }
+
+/* Nombre d'éléments saisis dans un état du PEA (mémoire ou fichier) */
+function _peaContenu(o) {
+  return ["positions", "transactions", "depots", "closedPositions", "wishlist",
+          "divReceived", "divFuture", "strategies"]
+    .reduce((n, k) => n + (Array.isArray(o && o[k]) ? o[k].length : 0), 0);
+}
+
+async function _syncToPythonNow() {
+  if (_pySyncTimer) { clearTimeout(_pySyncTimer); _pySyncTimer = null; }
+  const badge = _pySyncBadge;
+  _pySyncBadge = false;
+  try {
+    const r = await window.pywebview.api.load_data();
+    if (!r || !r.ok || !r.data) throw new Error("relecture du fichier impossible");
+    const d = r.data;
+    // Defense : un PEA resté entièrement vierge (lecture ratée, état par défaut)
+    // n'écrase jamais un fichier rempli. Jusqu'à la 4.3.13 la règle portait sur
+    // les seules positions : vendre ou supprimer sa dernière ligne bloquait
+    // alors tout enregistrement, sans rien dire (le badge affichait même
+    // « Sauvegardé »). Une vente laisse des transactions : elle passe.
+    if (_peaContenu(S) === 0 && _peaContenu(d) > 0 && !_peaVideVoulu) {
+      console.warn("[sync] PEA vierge mais disque rempli, ecriture refusee");
+      _alerteEnregistrement("PEA non enregistré : l'état en mémoire est vide alors que le fichier contient des données. Relance Pilote.");
+      return;
+    }
+    d.positions       = S.positions       || [];
+    d.transactions    = S.transactions    || [];
+    d.depots          = S.depots          || [];
+    d.divReceived     = S.divReceived     || [];
+    d.divFuture       = S.divFuture       || [];
+    d.wishlist        = S.wishlist        || [];
+    d.strategies      = S.strategies      || [];
+    d.closedPositions = S.closedPositions || [];
+    d.cashSolde       = S.cashSolde || 0;
+    d._nid            = NID;
+    d.config = d.config || {};
+    d.config.prenom    = S.prenom    || "";
+    d.config.banque    = S.banque    || "";
+    d.config.ouverture = S.ouverture || "";
+    // Preferences UI (accent, PIN hash, etc.) — sinon perdues au prochain boot
+    d.uiPrefs = S.uiPrefs || {};
+    const w = await window.pywebview.api.save_data(d);
+    if (!w || !w.ok) throw new Error((w && w.error) || "écriture refusée");
+    _peaVideVoulu = false;
+    if (badge && !w.gele) flash();
+  } catch(e) {
+    console.warn("Sync Python KO:", e);
+    _alerteEnregistrement("Enregistrement du PEA impossible : " + ((e && e.message) || e));
+  }
+}
+
+/* Échec d'enregistrement : toujours le dire (jusqu'à la 4.3.13, le PEA et
+   Mes comptes n'écrivaient que dans la console). Un même message au plus une
+   fois toutes les 10 s : la sauvegarde est retentée à chaque modification. */
+let _alerteEnregDernier = {msg: "", t: 0};
+function _alerteEnregistrement(msg) {
+  if (_ecrituresGelees) return;
+  const now = Date.now();
+  if (msg === _alerteEnregDernier.msg && now - _alerteEnregDernier.t < 10000) return;
+  _alerteEnregDernier = {msg, t: now};
+  showToastModern(msg, "err");
+}
+
+/* ─── Enregistrements en attente ou en cours ───
+   Le PEA et Mes comptes attendent 0,4 s avant d'écrire (une rafale de saisies
+   = une écriture). Avant la 4.3.14, fermer la fenêtre pendant ce délai perdait
+   la modification ; changer d'utilisateur, restaurer ou importer pendant ce
+   délai pouvait l'écrire APRÈS le changement, donc par-dessus les données
+   restaurées, ou dans le dossier de l'autre utilisateur (le fichier visé est
+   choisi côté Python au moment d'écrire). D'où :
+   * _vidangeurs : par module, une fonction qui écrit tout de suite ce qui
+     attend (PEA ici, Mes comptes dans son bloc) ;
+   * _surveillerEcritures() : enveloppe les méthodes save_* du pont pywebview
+     pour connaître les écritures en cours, et les ignorer une fois gelées ;
+   * _viderEnregistrements() avant de fermer, _gelerEnregistrements() avant
+     de changer les données sous les pieds de la page (puis rechargement). */
+const _vidangeurs = [async () => { if (_pySyncTimer) await _syncToPythonNow(); }];
+const _ecrituresEnCours = new Set();
+let _ecrituresGelees = false;
+
+function _surveillerEcritures() {
+  const api = window.pywebview && window.pywebview.api;
+  if (!api || api.__surveille) return;
+  Object.keys(api).forEach(nom => {
+    if (!/^save_/.test(nom) || typeof api[nom] !== "function") return;
+    const brut = api[nom];
+    api[nom] = function () {
+      // Gelé : la page va être rechargée sur d'autres données, cette écriture
+      // viendrait d'un état périmé. Rien n'est écrit, sans alerte.
+      if (_ecrituresGelees) return Promise.resolve({ok: true, gele: true});
+      const p = Promise.resolve(brut.apply(api, arguments));
+      _ecrituresEnCours.add(p);
+      const fin = () => _ecrituresEnCours.delete(p);
+      p.then(fin, fin);
+      return p;
+    };
+  });
+  api.__surveille = true;
+}
+
+async function _viderEnregistrements() {
+  for (const vider of _vidangeurs) {
+    try { await vider(); } catch (e) { console.warn("[vidange]", e); }
+  }
+  await Promise.allSettled([..._ecrituresEnCours]);
+}
+
+/* À appeler juste avant de changer d'utilisateur, de restaurer ou d'importer.
+   En cas d'échec de l'opération : _degelerEnregistrements(). */
+async function _gelerEnregistrements() {
+  await Promise.race([_viderEnregistrements(), new Promise(r => setTimeout(r, 5000))]);
+  _ecrituresGelees = true;
+}
+function _degelerEnregistrements() { _ecrituresGelees = false; }
 
 function flash() {
   const b = document.getElementById("sbadge");
@@ -5238,6 +5359,7 @@ function resetDef(ask) {
 function resetFromConfig() {
   if (!confirm("Réinitialiser toutes les données ? Positions, transactions, dépôts, dividendes — tout sera effacé. Cette action est irréversible.")) return;
   closeOv("ov-config");
+  _peaVideVoulu = true;   // vider le PEA est ici la demande : la défense s'efface
   resetDef(false);
 }
 
@@ -5472,12 +5594,23 @@ function renderMetrics() {
 }
 
 /* ─── Positions ─── */
+/* Date du premier achat à venir (daté après aujourd'hui) d'une position, ou "".
+   Un tel achat ne compte pas encore dans computePos : sans lui, une ligne créée
+   avec un ordre pour demain passait parmi les positions clôturées à 0 € et
+   disparaissait pour de bon (corrigé en 4.3.14). */
+function _achatAVenir(p) {
+  const cut = todayISO();
+  return S.transactions
+    .filter(t => t.asset === p.ticker && t.type === "Achat" && normDate(t.date) > cut)
+    .map(t => normDate(t.date)).sort()[0] || "";
+}
+
 function renderPositions() {
   if (!S.closedPositions) S.closedPositions = [];
   let mutated = false;
   S.positions.forEach(p => {
     const e = computePos(p);
-    if (e.qty <= 0.0001) {
+    if (e.qty <= 0.0001 && !_achatAVenir(p)) {
       const existing = S.closedPositions.find(c => c.ticker === p.ticker);
       if (existing) {
         existing.realised  += e.realised;
@@ -5489,7 +5622,7 @@ function renderPositions() {
       mutated = true;
     }
   });
-  S.positions = S.positions.filter(p => computePos(p).qty > 0.0001);
+  S.positions = S.positions.filter(p => computePos(p).qty > 0.0001 || _achatAVenir(p));
   if (mutated) persist(false);
   const body = document.getElementById("pos-body");
   const eps  = S.positions.map(p => computePos(p));
@@ -5500,10 +5633,11 @@ function renderPositions() {
     const rI = ti>0 ? e.inv/ti*100 : 0;
     const rV = (tv>0 && e.val!=null) ? e.val/tv*100 : null;
     const r  = rV!=null ? rV : rI;
+    const aVenir = e.qty <= 0.0001 ? _achatAVenir(p) : "";
     return `<tr>
       <td>
         <div class="tk">${p.name}</div>
-        <div class="tk2">${p.ticker}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
+        <div class="tk2">${p.ticker}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
         <span class="badge ${p.type==="etf"?"be":"ba"}">${p.type==="etf"?"ETF":"Action"}</span>
       </td>
       <td>${sectorBadgeHtml(p.sector)}</td>
@@ -5580,6 +5714,11 @@ async function loadPerfHistory() {
     if (!r.ok) throw new Error("HTTP " + r.status);
     const data = await r.json();
     if (!data.ok || !data.history) throw new Error("Reponse invalide");
+    /* Rien du tout (Yahoo injoignable et aucun historique en cache côté
+       serveur) : on garde la copie locale au lieu de l'écraser par du vide. */
+    if (!Object.keys(data.history).length) throw new Error("historique vide");
+    /* Historique rendu depuis le cache du serveur faute de Yahoo */
+    const perime = (data.stale || []).length > 0;
 
     /* Supplement avec les 30 derniers jours (intervalle daily garanti)
        pour que les plages courtes 1S/1M aient toujours des points récents. */
@@ -5613,7 +5752,8 @@ async function loadPerfHistory() {
     try { localStorage.setItem(LS_HIST, JSON.stringify(payload)); } catch(e) {}
 
     _perfHistory = data.history;
-    hideCacheLabel();
+    if (perime) showCacheLabel(null);
+    else hideCacheLabel();
     return data.history;
   } catch(e) {
     console.warn("[history]", e.message);
@@ -5632,9 +5772,14 @@ async function loadPerfHistory() {
   return null;
 }
 
+/* ts : heure de la copie locale ; null = derniers cours connus du serveur
+   (Yahoo injoignable) */
 function showCacheLabel(ts) {
   const el = document.getElementById("twr-cache-lbl");
-  if (el) { el.textContent = "Donnees du " + ts + " (serveur eteint)"; el.style.display = "block"; }
+  if (!el) return;
+  el.textContent = ts ? "Données de " + ts + " (copie locale)"
+                      : "Yahoo injoignable · derniers cours connus";
+  el.style.display = "block";
 }
 function hideCacheLabel() {
   const el = document.getElementById("twr-cache-lbl");
@@ -7849,7 +7994,7 @@ async function fetchLocalCours() {
   if (S.wishlist) S.wishlist.forEach(w => { if (w.ticker) tickers.push(w.ticker); });
   // Lignes cibles du « Prochain achat » : leur cours sert même sans position ni wishlist
   if (typeof pacCfg === "function") pacCfg().cibles.forEach(c => { if (c.ticker) tickers.push(c.ticker); });
-  if (tickers.length === 0) return { prices: {}, variations: {} };
+  if (tickers.length === 0) return { prices: {}, variations: {}, frais: 0, demandes: 0 };
 
   const unique = [...new Set(tickers)];
   const url = LOCAL_COURS_URL + "?tickers=" + encodeURIComponent(unique.join(",")) + "&cb=" + Date.now();
@@ -7884,12 +8029,22 @@ async function fetchLocalCours() {
     variations[dotKey2] = varEntry;
   });
 
-  return { prices, variations };
+  // Yahoo injoignable : le serveur rend les derniers cours connus et les liste
+  // dans `stale`. `frais` = cours vraiment actualises ; 0 = rien de neuf.
+  const stale = new Set(data.stale || []);
+  const frais = Object.keys(data.prices).filter(tk => !stale.has(tk)).length;
+  return { prices, variations, frais, demandes: unique.length };
 }
+
+/* Etat de la derniere actualisation des cours, lu par le hook de
+   applyCoursData : "ok", "perime" (Yahoo injoignable, derniers cours connus)
+   ou "erreur" (serveur local en panne). */
+let _coursEtat = "ok";
 
 async function applyCoursData() {
   try {
-    const { prices, variations } = await fetchLocalCours();
+    const { prices, variations, frais, demandes } = await fetchLocalCours();
+    _coursEtat = (frais === 0 && demandes > 0) ? "perime" : "ok";
 
     let changed = false;
     S.positions.forEach(p => {
@@ -7911,7 +8066,9 @@ async function applyCoursData() {
     }
 
     const t = new Date().toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
-    if (changed) {
+    if (_coursEtat === "perime") {
+      // Derniers cours connus : ni « mis à jour », ni « aucun ticker »
+    } else if (changed) {
       S.lastUpdate = t + " (Yahoo Finance)";
     } else if (S.positions.length > 0) {
       showToast("\u26A0\uFE0F Cours reçus mais aucun ticker correspondant", "warn");
@@ -7924,6 +8081,7 @@ async function applyCoursData() {
     updateStatus();
 
   } catch(e) {
+    _coursEtat = "erreur";
     console.warn("cours_server:", e.message);
     showToast("\u274C Cours indisponibles \u2014 v\u00E9rifiez la connexion Internet", "err");
   }
@@ -8656,6 +8814,8 @@ function goTab(n) {
   // Ici et pas dans un patch de goTab : chaque patch appelle cette version
   // d'origine, le fil d'Ariane suit donc tous les chemins de navigation.
   if (typeof _updateCrumb === "function") _updateCrumb(n);
+  // Même raison : Retour suit l'onglet ouvert, quel que soit le chemin
+  if (typeof _majBoutonRetour === "function") _majBoutonRetour();
 }
 
 /* ─── Modals ─── */
@@ -9272,9 +9432,15 @@ async function renderHomeUsers() {
 
 async function switchUser(slug) {
   if (!(window.pywebview && window.pywebview.api && window.pywebview.api.set_active_user)) return;
+  // Le dossier visé par une écriture est choisi au moment d'écrire : tout ce
+  // qui attend part AVANT la bascule, rien ne part après (voir _vidangeurs).
+  await _gelerEnregistrements();
   const r = await window.pywebview.api.set_active_user(slug);
   if (r && r.ok) location.reload();
-  else showToastModern("Changement d'utilisateur impossible : " + ((r && r.error) || "?"), "err");
+  else {
+    _degelerEnregistrements();
+    showToastModern("Changement d'utilisateur impossible : " + ((r && r.error) || "?"), "err");
+  }
 }
 
 /* ── Modale creation / edition ── */
@@ -9346,10 +9512,14 @@ async function deleteUserFromModal() {
   if (!api) return;
   if (!confirm("Retirer cet utilisateur de la liste ?\n\nSes donn\u00e9es restent sur le disque "
              + "(dossier Donnees/users/) et peuvent \u00eatre r\u00e9cup\u00e9r\u00e9es \u00e0 la main.")) return;
-  const r = await api.delete_user(_userEditingSlug);
-  if (!r || !r.ok) { showToastModern("\u00c9chec : " + ((r && r.error) || "?"), "err"); return; }
-  closeOv("ov-user");
   const wasActive = USERS_STATE && USERS_STATE.active === _userEditingSlug;
+  if (wasActive) await _gelerEnregistrements();   // même raison que switchUser
+  const r = await api.delete_user(_userEditingSlug);
+  if (!r || !r.ok) {
+    _degelerEnregistrements();
+    showToastModern("\u00c9chec : " + ((r && r.error) || "?"), "err"); return;
+  }
+  closeOv("ov-user");
   USERS_STATE = r.state || null;
   if (wasActive) { location.reload(); return; }
   await _loadUsers(true);
@@ -9899,6 +10069,7 @@ async function _showWelcomeIfFirstRun() {
       if (!cand) return;
       btn.style.opacity = "0.5";
       btn.textContent = "Récupération en cours…";
+      await _gelerEnregistrements();   // même raison que l'import
       try {
         const r = await fetch(`http://127.0.0.1:${_PEA_PORT}/recover-data?from=` + encodeURIComponent(cand.path), {cache:"no-store"});
         const d = await r.json();
@@ -9906,10 +10077,12 @@ async function _showWelcomeIfFirstRun() {
           showToastModern(`✓ Récupéré : ${d.stats.positions} positions, ${d.stats.transactions} tx, ${d.stats.depots} dépôts`, "ok");
           setTimeout(() => location.reload(), 800);
         } else {
+          _degelerEnregistrements();
           showToastModern("✗ Erreur : " + (d.error || "inconnue"), "err");
           btn.style.opacity = "1";
         }
       } catch(e) {
+        _degelerEnregistrements();
         showToastModern("✗ " + e.message, "err");
         btn.style.opacity = "1";
       }
@@ -10240,6 +10413,8 @@ async function svRestore(path, when) {
              + "pour TOUS les utilisateurs.\n"
              + "Une archive de sécurité de l'état actuel sera créée avant.\n\n"
              + "L'application se rechargera ensuite.")) return;
+  // Une écriture en attente passerait sinon PAR-DESSUS les fichiers restaurés
+  await _gelerEnregistrements();
   try {
     const res = await pywebview.api.sauvegarde_restore(path);
     if (res && res.ok) {
@@ -10248,9 +10423,10 @@ async function svRestore(path, when) {
           + "L'application va se recharger.");
       location.reload();
     } else {
+      _degelerEnregistrements();
       showToastModern((res && res.error) || "Restauration impossible", "err");
     }
-  } catch (e) { showToastModern("Erreur : " + e, "err"); }
+  } catch (e) { _degelerEnregistrements(); showToastModern("Erreur : " + e, "err"); }
 }
 
 /** Point d'entrée : openSettings("sport") ouvre directement la bonne section. */
@@ -12404,7 +12580,10 @@ function _injectTitlebar() {
   document.getElementById("tb-max").onclick = () => {
     if (window.pywebview && window.pywebview.api) window.pywebview.api.maximize_toggle();
   };
-  document.getElementById("tb-close").onclick = () => {
+  document.getElementById("tb-close").onclick = async () => {
+    // Ce qui attend son écriture (0,4 s) part d'abord : sans ça, fermer juste
+    // après une saisie la perdait. 3 s au plus, la fenêtre doit se fermer.
+    await Promise.race([_viderEnregistrements(), new Promise(r => setTimeout(r, 3000))]);
     if (window.pywebview && window.pywebview.api) window.pywebview.api.close();
     else window.close();
   };
@@ -12630,6 +12809,7 @@ function _setCoursHealth(state, label) {
 /* — Hook sur applyCoursData pour mettre a jour le pill et donner du feedback — */
 const _applyCoursDataOrig = applyCoursData;
 let _refreshInFlight = false;
+let _yahooDownSignale = false;
 applyCoursData = async function(opts) {
   if (_refreshInFlight) return;
   _refreshInFlight = true;
@@ -12638,13 +12818,21 @@ applyCoursData = async function(opts) {
   _setCoursHealth("warn", "Actualisation en cours…");
   try {
     await _applyCoursDataOrig.apply(this);
+    // L'original attrape ses propres erreurs : c'est _coursEtat qui dit si les
+    // cours sont neufs. Avant la 4.3.14, hors ligne, le libellé affichait
+    // « Dernière actualisation » à l'heure du jour sur des cours inchangés.
+    if (_coursEtat !== "ok") throw new Error(_coursEtat);
+    _yahooDownSignale = false;
     const t = new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"});
     _setCoursHealth("ok", "Dernière actualisation " + t);
     if (manual) showToastModern("✓ Cours actualisés à " + t, "ok");
   } catch(e) {
-    _setCoursHealth("err", "Actualisation impossible");
+    _setCoursHealth("err", _coursEtat === "perime" ? "Yahoo injoignable · derniers cours connus"
+                                                   : "Actualisation impossible");
     if (manual) showToastModern("✗ Yahoo injoignable", "err");
-    if (window.pywebview && window.pywebview.api) {
+    // Une notification par panne, pas une toutes les 3 min
+    if (window.pywebview && window.pywebview.api && !_yahooDownSignale) {
+      _yahooDownSignale = true;
       const prefs = (window.__appPrefs && window.__appPrefs.notifs) || {};
       if (prefs.yahooDown) {
         window.pywebview.api.notify(
@@ -12702,12 +12890,14 @@ async function doImportDialog() {
     showToastModern("Import indisponible hors de l'app", "warn"); return;
   }
   if (!confirm("Importer remplacera vos données actuelles. Un backup automatique sera créé. Continuer ?")) return;
+  await _gelerEnregistrements();   // rien ne doit réécrire l'ancien PEA par-dessus l'import
   const r = await window.pywebview.api.import_dialog();
   if (r && r.ok) {
     showToastModern("✓ Import réussi — rechargement…", "ok");
     setTimeout(() => location.reload(), 600);
-  } else if (r && !r.cancelled) {
-    showToastModern("Import échoué : " + (r.message || ""), "err");
+  } else {
+    _degelerEnregistrements();
+    if (r && !r.cancelled) showToastModern("Import échoué : " + (r.message || ""), "err");
   }
 }
 
@@ -13105,14 +13295,24 @@ async function finLoad() {
 function finPersist() {
   if (!F) return;
   if (_finSaveTimer) clearTimeout(_finSaveTimer);
-  _finSaveTimer = setTimeout(async () => {
-    try {
-      if (window.pywebview && window.pywebview.api && window.pywebview.api.save_finances) {
-        await window.pywebview.api.save_finances(F);
-      }
-    } catch(e) { console.warn("[fin] save KO:", e); }
-  }, 400);
+  _finSaveTimer = setTimeout(finSaveNow, 400);
 }
+
+/* Écrit tout de suite (fin du délai, ou vidange avant fermeture : voir
+   _vidangeurs). Un échec s'affiche : jusqu'à la 4.3.13 il n'allait qu'à la
+   console. */
+async function finSaveNow() {
+  if (_finSaveTimer) { clearTimeout(_finSaveTimer); _finSaveTimer = null; }
+  if (!F || !(window.pywebview && window.pywebview.api && window.pywebview.api.save_finances)) return;
+  try {
+    const r = await window.pywebview.api.save_finances(F);
+    if (!r || !r.ok) throw new Error((r && r.error) || "écriture refusée");
+  } catch(e) {
+    console.warn("[fin] save KO:", e);
+    _alerteEnregistrement("Enregistrement de Mes comptes impossible : " + ((e && e.message) || e));
+  }
+}
+_vidangeurs.push(async () => { if (_finSaveTimer) await finSaveNow(); });
 
 // ── Helpers ──
 function _finEsc(s) {
@@ -15595,14 +15795,14 @@ async function prPersist() {
   } catch (e) { showToastModern("Sauvegarde prêt échouée", "err"); }
 }
 
-/** Instantané du prêt dans la même pile que le PEA : le bouton Retour annule la
-    dernière action, qu'elle vienne de l'un ou de l'autre. */
+/** Instantané du prêt dans la même pile que le PEA : depuis l'onglet Prêt, le
+    bouton Retour annule la dernière action, qu'elle vienne de l'un ou de
+    l'autre (voir _undoModulesOuverts). */
 function prPushUndo() {
   if (!PR) return;
   _undoStack.push(JSON.stringify({ PR }));
   if (_undoStack.length > UNDO_MAX) _undoStack.shift();
-  const btn = document.getElementById("btn-undo");
-  if (btn) btn.disabled = false;
+  _majBoutonRetour();
 }
 
 async function prSave(msg) {
@@ -15991,7 +16191,7 @@ function prSubmit(ev) {
   document.querySelectorAll("#pr-form-body [name]").forEach(el => { data[el.name] = el.value; });
   prPushUndo();
   const res = _prSubmitFn ? _prSubmitFn(data) : true;
-  if (res === false) _undoStack.pop();   // saisie refusée : rien n'a changé
+  if (res === false) { _undoStack.pop(); _majBoutonRetour(); }   // saisie refusée : rien n'a changé
   else closeOv("ov-pr-form");
   return false;
 }
@@ -21351,6 +21551,7 @@ function _appReady() {
     const httpOk = await _hydrateFromHttp();
     // 2. On attend pywebview pour les API ecriture (export, save, notifs)
     const hasPy  = await _waitForPywebview(10000);
+    if (hasPy) _surveillerEcritures();
     if (hasPy && !httpOk) {
       // Si l'HTTP avait echoue, on tente via le bridge pywebview
       await _hydrateFromPython();

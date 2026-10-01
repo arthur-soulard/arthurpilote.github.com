@@ -203,7 +203,12 @@ def fetch_yahoo(yahoo_ticker: str):
     return None
 
 
-def get_prices(tickers):
+def get_prices(tickers, stale=None):
+    """
+    Cours actuels. Yahoo injoignable (hors ligne, ou limite de requetes) : on
+    rend le dernier cours connu, meme perime, et son ticker va dans `stale`
+    (liste fournie par l'appelant) pour que l'UI ne le presente pas comme frais.
+    """
     result, now = {}, time.time()
     to_fetch = []
     for tk in tickers:
@@ -225,14 +230,19 @@ def get_prices(tickers):
             data["ts"] = time.time()
             with _lock:
                 _cache[ytk] = data
-        return tk, data
+            return tk, data, False
+        with _lock:
+            old = _cache.get(ytk)
+        return tk, (dict(old) if old else None), True
 
     with ThreadPoolExecutor(max_workers=min(len(to_fetch), 8)) as ex:
         futures = {ex.submit(_fetch_one, tk): tk for tk in to_fetch}
         for fut in as_completed(futures):
-            tk, data = fut.result()
+            tk, data, perime = fut.result()
             if data:
                 result[tk] = data
+                if perime and stale is not None:
+                    stale.append(tk)
 
     return result
 
@@ -280,8 +290,12 @@ def fetch_yahoo_history(yahoo_ticker: str, range_param: str = "max", interval: s
     return None
 
 
-def get_history(tickers, range_param: str = "max"):
-    """Cache separe par range pour permettre du daily sur les courtes plages."""
+def get_history(tickers, range_param: str = "max", stale=None):
+    """
+    Cache separe par range pour permettre du daily sur les courtes plages.
+    Yahoo injoignable : dernier historique connu, ticker ajoute a `stale`
+    (meme regle que get_prices).
+    """
     cache_key_suffix = f"::{range_param}"
     result, now = {}, time.time()
     for tk in tickers:
@@ -297,6 +311,10 @@ def get_history(tickers, range_param: str = "max"):
             with _lock:
                 _history_cache[cache_key] = {**data, "ts": now}
             result[tk] = data
+        elif cached:
+            result[tk] = {"dates": cached["dates"], "closes": cached["closes"]}
+            if stale is not None:
+                stale.append(tk)
     return result
 
 
@@ -914,26 +932,41 @@ def get_analysts(tickers):
 # ─── Hydratation du cache depuis pea_data.json (mode hors-ligne) ─────────────
 
 def hydrate_cache(prices_cache: dict, history_cache: dict) -> None:
-    """Charge dans le cache memoire les valeurs venant du disque (au demarrage)."""
-    now = time.time()
+    """
+    Charge dans le cache memoire les valeurs venant du disque (pea_data.json,
+    cle _cache). ts = 0 : perimees, Yahoo est interroge au prochain appel, et
+    elles ne servent que s'il ne repond pas (get_prices, get_history).
+
+    Ne remplit que les cles ABSENTES : Api.load_data() rappelle cette fonction
+    a chaque enregistrement du PEA, et ecraser un cours frais par sa copie
+    disque a ts = 0 relancait Yahoo a chaque fois.
+
+    Jusqu'a la 4.3.13, rien de ce cache ne servait hors ligne : les cours
+    n'etaient repris qu'au format de l'ancien tracker ("cours", alors que
+    dump_cache ecrit "prix"), et l'historique perime etait ignore quand Yahoo
+    ne repondait pas.
+    """
     with _lock:
         for tk, v in (prices_cache or {}).items():
-            if isinstance(v, dict) and "cours" in v:
-                # Format ancien tracker : {name, cours, w1, m1, y1}
-                _cache[to_yahoo(tk)] = {
-                    "prix": v.get("cours"),
-                    "w1":   v.get("w1"),
-                    "m1":   v.get("m1"),
-                    "y1":   v.get("y1"),
-                    "ts":   0,  # 0 force le refresh au prochain appel
-                }
+            if not isinstance(v, dict):
+                continue
+            # Format actuel (dump_cache) : "prix" ; ancien tracker : "cours"
+            prix = v.get("prix", v.get("cours"))
+            ytk = to_yahoo(tk)
+            if prix is None or ytk in _cache:
+                continue
+            _cache[ytk] = {"prix": prix, "d1": v.get("d1"), "w1": v.get("w1"),
+                           "m1": v.get("m1"), "y1": v.get("y1"), "t": v.get("t"),
+                           "ts": 0}
         for tk, v in (history_cache or {}).items():
-            if isinstance(v, dict) and v.get("dates") and v.get("closes"):
-                _history_cache[to_yahoo(tk)] = {
-                    "dates": v["dates"],
-                    "closes": v["closes"],
-                    "ts": 0,
-                }
+            if not (isinstance(v, dict) and v.get("dates") and v.get("closes")):
+                continue
+            # Cle "WPEA.PA::max" (dump_cache) ; sans "::range" = format
+            # d'avant les plages, qui etait toujours range=max
+            key = tk if "::" in tk else to_yahoo(tk) + "::max"
+            if key in _history_cache or ("::" not in tk and key in history_cache):
+                continue
+            _history_cache[key] = {"dates": v["dates"], "closes": v["closes"], "ts": 0}
 
 
 def dump_cache() -> dict:
@@ -1055,7 +1088,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             if not raw.strip():
                 return self._json(400, {"error": "Parametre tickers manquant"})
             tickers = [t.strip() for t in raw.split(",") if t.strip()]
-            return self._json(200, {"ok": True, "prices": get_prices(tickers)})
+            stale = []   # rendus depuis le cache faute de Yahoo
+            prices = get_prices(tickers, stale)
+            return self._json(200, {"ok": True, "prices": prices, "stale": stale})
 
         if parsed.path == "/history":
             raw = params.get("tickers", [""])[0]
@@ -1066,7 +1101,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             # Whitelist
             if range_p not in {"1mo","3mo","6mo","ytd","1y","2y","5y","10y","max"}:
                 range_p = "max"
-            return self._json(200, {"ok": True, "history": get_history(tickers, range_param=range_p)})
+            stale = []   # rendus depuis le cache faute de Yahoo
+            history = get_history(tickers, range_param=range_p, stale=stale)
+            return self._json(200, {"ok": True, "history": history, "stale": stale})
 
         if parsed.path == "/analysts":
             raw = params.get("tickers", [""])[0]
@@ -1172,6 +1209,12 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             try:
                 import storage as _storage
                 data = _storage.load_data()
+                # C'est la premiere lecture de chaque chargement de page (lancement,
+                # changement d'utilisateur) : le cache disque doit etre en place
+                # AVANT les premiers /cours et /history, sinon un lancement hors
+                # ligne s'ouvre sans cours ni courbe.
+                cache = data.get("_cache") or {}
+                hydrate_cache(cache.get("prices"), cache.get("history"))
                 load_info = _storage.get_last_load_info()
                 debug = {
                     "data_path": str(_storage.get_data_path()),

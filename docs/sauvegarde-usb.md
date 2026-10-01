@@ -31,6 +31,10 @@ Sa config vit donc dans `Donnees/sauvegarde.json`, à côté de `users.json`.
   utilisateur qui n'y figure pas. `sauvegarde.json` est volontairement exclu de la
   restauration (sinon on repointerait vers une clé qu'on n'utilise plus).
   Protection zip-slip sur chaque membre.
+* Côté page, `svRestore` gèle les enregistrements avant de restaurer
+  (`_gelerEnregistrements`, 4.3.14) : une écriture en attente serait sinon passée
+  **par-dessus** les fichiers restaurés, avant le rechargement. Même chose pour
+  l'import d'un `pea_data.json` et la récupération d'une ancienne installation.
 * API : `sauvegarde_status`, `sauvegarde_set_config`, `sauvegarde_pick_folder`,
   `sauvegarde_use_drive`, `sauvegarde_run`, `sauvegarde_list`,
   `sauvegarde_restore`, `sauvegarde_open_folder`, `sauvegarde_push_usb`,

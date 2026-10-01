@@ -47,7 +47,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.13"
+APP_VERSION = "4.3.14"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -73,7 +73,14 @@ def acquire_single_instance_lock() -> bool:
         threading.Thread(target=_listen_for_focus_pings, args=(s,), daemon=True).start()
         return True
     except OSError:
-        # Deja en cours -> on ping pour faire remonter la fenetre existante
+        # Deja en cours -> on ping pour faire remonter la fenetre existante.
+        # Windows ne laisse passer au premier plan que le processus lance par
+        # l'utilisateur, c'est-a-dire celui-ci : il cede ce droit a l'autre.
+        try:
+            import ctypes
+            ctypes.windll.user32.AllowSetForegroundWindow(-1)   # ASFW_ANY
+        except Exception:
+            pass
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as c:
                 c.settimeout(2)
@@ -103,17 +110,36 @@ def _listen_for_focus_pings(server_sock: socket.socket) -> None:
                 if w is not None:
                     w.restore()
                     w.show()
-                    # Force le focus (Windows)
+                    # Force le focus (Windows). Jusqu'a la 4.3.13, on passait
+                    # la fenetre DEJA au premier plan : l'appel ne faisait rien.
                     try:
                         import ctypes
-                        hwnd = ctypes.windll.user32.GetForegroundWindow()
-                        ctypes.windll.user32.SetForegroundWindow(hwnd)
+                        hwnd = _hwnd_principale()
+                        if hwnd:
+                            ctypes.windll.user32.SetForegroundWindow(hwnd)
                     except Exception:
                         pass
             except Exception:
                 pass
         except Exception:
             return
+
+
+def _hwnd_principale() -> int:
+    """
+    HWND de la fenetre principale de Pilote (0 si introuvable).
+
+    Pas GetForegroundWindow() : la fenetre au premier plan n'est pas forcement
+    la notre (fermeture depuis la barre des taches, clic ailleurs pendant
+    l'agrandissement) ; la remise au premier plan, elle, visait la fenetre qui
+    y etait deja et ne faisait donc rien (essaye le 01/10/2026).
+    appicon._main_hwnd() cherche la fenetre de CE processus.
+    """
+    try:
+        import appicon
+        return appicon._main_hwnd() or 0
+    except Exception:
+        return 0
 
 
 # ─── Bridge JS <-> Python ─────────────────────────────────────────────────────
@@ -635,7 +661,9 @@ class Api:
                 except Exception:
                     pass
 
-            hwnd = user32.GetForegroundWindow()
+            hwnd = _hwnd_principale()
+            if not hwnd:
+                return
 
             # Si deja "maximise", on restaure
             if getattr(self, "_is_max", False):
@@ -1186,7 +1214,7 @@ def main() -> int:
                 import ctypes as _ct
                 from ctypes import wintypes as _wt
                 _u32 = _ct.windll.user32
-                _hwnd = _u32.GetForegroundWindow()
+                _hwnd = _hwnd_principale()
                 class _R(_ct.Structure):
                     _fields_ = [("left", _wt.LONG), ("top", _wt.LONG),
                                 ("right", _wt.LONG), ("bottom", _wt.LONG)]

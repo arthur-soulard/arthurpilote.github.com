@@ -167,8 +167,16 @@ def net_worth(data: dict, date_iso: str = None) -> dict:
             "net": actifs - dettes, "detail": detail}
 
 
-def serie_mensuelle(data: dict, mois: int = 36) -> list:
-    """Patrimoine net mois par mois, pour la courbe."""
+def serie_mensuelle(data: dict) -> list:
+    """
+    Patrimoine net mois par mois, du premier releve au mois en cours : pour la
+    courbe, et pour la colonne « Net » du tableau des releves.
+
+    Jusqu'a la 4.3.13, la boucle s'arretait apres 37 points comptes depuis le
+    PREMIER releve : au-dela de trois ans, la courbe se figeait sur un mois
+    ancien et ne suivait plus la tuile (essaye sur 58 mois : courbe arretee
+    en janvier 2025). Tout l'historique est desormais rendu.
+    """
     releves = [r for r in data.get("releves", []) if r.get("date")]
     if not releves:
         return []
@@ -180,12 +188,12 @@ def serie_mensuelle(data: dict, mois: int = 36) -> list:
     fin = datetime.date.today().replace(day=1)
 
     out = []
-    while d <= fin and len(out) < mois + 1:
+    while d <= fin:
         nw = net_worth(data, d.isoformat())
         out.append({"date": d.isoformat(), "net": nw["net"],
                     "actifs": nw["actifs"], "dettes": nw["dettes"]})
         d = (d.replace(day=28) + datetime.timedelta(days=7)).replace(day=1)
-    return out[-(mois + 1):]
+    return out
 
 
 def mois_saisi(data: dict, date_iso: str = None) -> bool:

@@ -43,5 +43,11 @@ compte courant saisis au solde réel de la banque), et une fois en dette. La
 l'argent du prêt qui attend sur un compte non suivi (compte courant sans ligne)
 manque aux avoirs alors que la dette est là.
 
+**La courbe couvre tout l'historique** (`serie_mensuelle`), du premier relevé
+au mois en cours ; elle nourrit aussi la colonne « Net » du tableau des relevés.
+Jusqu'à la 4.3.13, la boucle s'arrêtait 37 points après le **premier** relevé :
+au-delà de trois ans, la courbe se figeait (essayé sur 58 mois : arrêt en
+janvier 2025, tuile à 6 700 €, dernier point à 4 600 €).
+
 Seul le type `dette` compte négativement. Un compte `auto` ne peut pas être
 supprimé : il serait recréé au chargement suivant.
