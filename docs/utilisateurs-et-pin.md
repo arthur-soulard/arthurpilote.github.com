@@ -13,6 +13,14 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
   `_renderUserPill()` (pastille en bas de sidebar), `userAvatarHtml(u, cls)`.
 * `server.with_pin_flags(state)` ajoute `hasPin` à chaque utilisateur — utilisé pour
   afficher le cadenas 🔒.
+* **Bascule sans fuite (4.3.14)** : le fichier visé par une écriture est choisi côté
+  Python **au moment d'écrire**. Une écriture encore en attente (délai de 0,4 s du
+  PEA et de Mes comptes, actualisation des cours) pouvait donc partir après la
+  bascule, dans le dossier du nouvel utilisateur (lu dans le code). `switchUser` et la suppression de
+  l'utilisateur actif appellent d'abord `_gelerEnregistrements()` : tout ce qui
+  attend part chez l'utilisateur actuel, puis plus rien n'est écrit jusqu'au
+  rechargement. Essayé : saisie + écriture déclenchée pendant la bascule → la
+  saisie chez l'ancien utilisateur, rien chez le nouveau.
 * **Isolation** : `storage.scan_orphan_data()` exclut tout ce qui vit sous
   `get_app_dir()`. Sans ça l'écran de bienvenue proposerait d'importer les données
   d'un autre utilisateur de la même installation. Ne pas retirer ce filtre.

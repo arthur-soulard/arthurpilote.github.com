@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.13**
+**Version actuelle : 4.3.14**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -89,8 +89,10 @@ les onglets masqués sont propres à chacun (ils vivent dans `pea_data.json`).
 
 `pea_data.json` contient une clé `_cache` (cours et historiques Yahoo) qui pèse à
 elle seule plus que toutes les données réunies : ~200 Ko contre ~6 Ko. Elle est
-volontairement persistée — c'est ce qui fait vivre l'app **hors ligne**
-(`Api.load_data` la repasse au serveur via `server.hydrate_cache`).
+volontairement persistée — c'est ce qui fait vivre l'app **hors ligne** :
+`GET /data` la repasse au serveur (`server.hydrate_cache`) avant les premiers cours,
+et le serveur la rend quand Yahoo ne répond pas (liste `stale`). Jusqu'à la 4.3.13,
+elle ne servait en fait à rien : voir `docs/modules/pea.md`, « Cours et courbe hors ligne ».
 
 Mais `storage._daily_backup()` l'**exclut** : un backup ne doit contenir que
 l'irremplaçable. Sans ça, 200 Ko de cache régénérable étaient recopiés sept fois
@@ -122,7 +124,10 @@ de la page disparue, et l'app ne se terminerait plus.
    C'est grâce à lui que le renommage en Pilote n'a pas déplacé les données : le Setup
    reconnaît l'installation existante et réinstalle dans son dossier. Conséquence : le
    dossier d'installation s'appelle toujours `%LocalAppData%\Programs\Suivi PEA\`.
-   C'est normal, ne pas « corriger ».
+   C'est normal, ne pas « corriger ». Et `Donnees\` vit **dans** ce dossier : jamais
+   `{app}` dans `[UninstallDelete]`, jamais `UninstallLogMode` repassé en `append`
+   (jusqu'à la 4.3.13, désinstaller effaçait toutes les données ; détail dans
+   `docs/mise-a-jour.md`).
 3. **La sémantique de `_hydrationDone`** (index.html) → ce drapeau autorise l'écriture
    disque. Il doit suivre la **réussite de la lecture** (`!_debug.load_error`), jamais le
    volume de données : un utilisateur qui vient d'être créé a un PEA vide et doit
@@ -197,6 +202,8 @@ Titlebar custom (fenêtre frameless, 36 px) : logo + « Pilote » + boutons fen�
 C'est le seul endroit où « Pilote » est écrit.
 Topbar minimale : fil d'Ariane (« Accueil », « PEA › Positions »), indicateur
 « Dernière actualisation HH:MM » avec Actualiser (`.refresh-grp`), et Retour (undo).
+Retour suit l'onglet ouvert (`_undoModulesOuverts`) : section PEA → ses actions,
+section Prêt → les siennes et celles du PEA, ailleurs → grisé.
 Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
 **d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
 suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
@@ -315,6 +322,14 @@ Corollaires à ne pas défaire :
   `jsonstore.JsonStore` + deux méthodes `load_`/`save_` dans la classe `Api` de `app.py`.
   Il sera automatiquement propre à chaque utilisateur. Penser à l'ajouter aussi
   à `DASH_WIDGETS` s'il a un chiffre à montrer sur l'accueil.
+* **Enregistrements en attente** (4.3.14, bloc juste après `_syncToPython`) : les
+  méthodes `save_*` du pont pywebview sont enveloppées (`_surveillerEcritures`) ;
+  un module qui retarde ses écritures ajoute sa fonction « écrire maintenant » à
+  `_vidangeurs` (PEA, Mes comptes). La croix vide tout avant de fermer ; changer
+  d'utilisateur, restaurer, importer appellent `_gelerEnregistrements()` avant
+  d'agir, `_degelerEnregistrements()` en cas d'échec. Une nouvelle méthode
+  d'écriture s'appelle donc `save_<module>`, sinon elle échappe au gel. Un échec
+  d'écriture s'affiche toujours (`_alerteEnregistrement`), jamais seulement en console.
 * Le JS garde l'état en mémoire (`S`, `SP`, `PR`, `SA`, `PA`) et Python ne fait que
   persister. Exception : `load_patrimoine` / `save_patrimoine` renvoient `net`, `serie`
   et `moisSaisi` déjà calculés — l'UI ne refait pas ces calculs.

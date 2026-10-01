@@ -54,6 +54,17 @@ thème de l'utilisateur actif.
   sur la 4.2.7 officielle (Python 3.11), gardé par précaution.
 * Un second lancement pendant le chargement ne force pas l'ouverture
   (`_listen_for_focus_pings` attend `_revealed`).
+* **La fenêtre de Pilote se trouve par `_hwnd_principale()`** (app.py, qui reprend
+  `appicon._main_hwnd()` : la fenêtre visible de CE processus), jamais par
+  `GetForegroundWindow()` (4.3.14) : agrandissement, taille mémorisée à la
+  fermeture, remise au premier plan. La remise au premier plan passait la fenêtre
+  déjà au premier plan à `SetForegroundWindow` et ne faisait rien (reproduit le
+  01/10/2026). Windows ne laisse passer devant que le processus lancé par
+  l'utilisateur : la 2e instance cède ce droit (`AllowSetForegroundWindow(-1)`)
+  avant d'envoyer son ping. Non vérifié en vrai : pendant l'essai, la session
+  n'avait aucune fenêtre au premier plan (`GetForegroundWindow()` = 0), et rien ne
+  pouvait passer devant. Test à la main : Pilote ouvert derrière une autre
+  fenêtre, double-clic sur son raccourci → il doit revenir devant.
 
 ## Icône à la couleur du thème (`appicon.py`)
 

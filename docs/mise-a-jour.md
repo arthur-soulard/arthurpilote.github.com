@@ -52,3 +52,31 @@ Points critiques :
 * Le polling JS (`setInterval` 400 ms) doit démarrer **avant** l'appel Python `start_update()`
 * `start_update()` côté Python est non-bloquant (lance un thread)
 * Ne pas réduire le délai de 5 secondes du batch
+
+## Désinstaller garde les données (4.3.14)
+
+`Donnees/` vit dans le dossier d'installation (`{app}`). Jusqu'à la 4.3.13,
+`[UninstallDelete]` effaçait tout `{app}` : **désinstaller supprimait toutes les
+données**, tous utilisateurs confondus.
+
+* Retirer la ligne ne suffit pas. Inno ajoute chaque installation au **même**
+  journal de désinstallation (`unins*.dat`, mode `append` par défaut), et
+  l'ancienne consigne y reste. Essayé le 01/10/2026 avec un installeur de test
+  (autre AppId, autre dossier) : version 4.3.13 installée, mise à jour sans la
+  ligne, désinstallation → `Donnees` effacé quand même.
+* D'où `UninstallLogMode=overwrite` : chaque installation réécrit le journal, la
+  mise à jour en 4.3.14 le purge. `[UninstallDelete]` ne vise plus que `_internal`.
+  **Ne jamais remettre `{app}` dans `[UninstallDelete]`, ni repasser en `append`.**
+* `DefaultDirName={code:DossierParDefaut}` : après une désinstallation, plus de
+  trace dans le registre, et une installation neuve irait dans `Programs\Pilote`
+  (Pilote s'ouvrirait vide, données à côté). La fonction revient à
+  `Programs\Suivi PEA` quand il contient un `Donnees`.
+* Désinstallation à la main : un message dit où sont restées les données
+  (`CurUninstallStepChanged`, pas en silencieux). Script en ASCII : accents en
+  `#$00E9`, commentaires `[Code]` en `//` (une accolade de constante comme `{app}`
+  ferme un commentaire `{ }`).
+* Essais du 01/10/2026 (installeur de test) : mise à jour 4.3.13 → 4.3.14 puis
+  désinstallation → `Donnees` intact, exe et `_internal` retirés ; réinstallation
+  sans choisir de dossier → retour dans `Suivi PEA`, données retrouvées ;
+  installation neuve sur un PC vierge → `Programs\Pilote`. Seule la mise à jour
+  vers la 4.3.14 protège : désinstaller une 4.3.13 efface encore tout.
