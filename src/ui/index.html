@@ -2131,7 +2131,11 @@ body { font-variant-numeric: tabular-nums; }
 .mc-val, .mkpi-val, .fin-kpi-val, .fin-balance-val, .home-card-val {
   font-family: var(--serif); font-weight: 500; letter-spacing: -.01em;
 }
-.mc-val { font-size: 30px; line-height: 1.1; }
+/* Le chiffre suit la largeur de sa carte : en fenêtre de 1 280 px, 30 px
+   coupaient tout montant à 5 chiffres (« 10 700,0… »). 17,5 % de la carte
+   laisse passer « +12 089,36 € » ; 30 px quand il y a la place. */
+.mc { container-type: inline-size; }
+.mc-val { font-size: 30px; font-size: min(30px, 17.5cqw); line-height: 1.1; }
 /* La couleur ne sert qu'à dire hausse ou baisse : les montants neutres
    (dépôts, valeur, frais, dividendes) restent à la couleur du texte. */
 .mc-val.c-b, .mc-val.c-a, .mc-val.c-p { color: var(--txt); }
@@ -6100,7 +6104,15 @@ function _benchPriceAt(benchHistory, dateIso) {
   return best >= 0 ? closes[best] : null;
 }
 
-/* Construit la serie benchmark a partir des transactions reelles (Achats/Ventes).
+/* Construit la serie benchmark : « et si chaque versement avait achete cet indice ? »
+   La courbe du portefeuille compte titres + especes : une vente n'y change rien,
+   l'argent passe en especes. Les flux du benchmark sont donc les VERSEMENTS et
+   RETRAITS (S.depots), comme pour computePnl, pas les achats et ventes. Jusqu'a
+   la 4.3.15, une vente suivie d'un rachat faisait plonger les trois courbes de
+   comparaison entre les deux dates : l'argent de la vente sortait de l'indice
+   et ne revenait qu'au rachat (vu par Arthur le 03/10/2026).
+   Aucun versement saisi : la courbe ne compte que les titres (especes a 0), les
+   achats et ventes restent alors les flux.
    Si syntheticStart={date, amount} est fourni :
      - On "achete" amount EUR de benchmark a syntheticStart.date (= valeur portefeuille
        au debut de la plage visible)
@@ -6109,7 +6121,14 @@ function _benchPriceAt(benchHistory, dateIso) {
    Resultat : la courbe benchmark part exactement de la valeur du portefeuille
    au debut de la plage (YTD ou MAX), pas en accumulant depuis le big bang. */
 function _buildBenchSeries(benchHistory, dates, transactions, syntheticStart) {
-  let events = (transactions || [])
+  const depots = (S.depots || []).filter(d => d.date && (d.amount || 0) !== 0);
+  let events = depots.length
+    ? depots.map(d => ({
+        date:   normDate(d.date),
+        amount: Math.abs(d.amount),
+        type:   d.amount > 0 ? "Achat" : "Vente"   // retrait = vente de l'indice
+      }))
+    : (transactions || [])
     .filter(t => (t.type === "Achat" || t.type === "Vente") && t.date && t.qty > 0 && t.cours > 0)
     .map(t => ({
       date:   normDate(t.date),
@@ -6165,11 +6184,13 @@ async function _initBenchmarkUi() {
     cb.checked = !!_benchEnabled[bench];
     cb.onchange = () => toggleBenchmark(bench, cb.checked);
   });
-  // Pre-charge les benchmarks deja actifs (sinon le 1er affichage est vide)
-  for (const bench of Object.keys(_benchEnabled)) {
-    if (_benchEnabled[bench]) await _loadBenchHistory(bench);
-  }
+  // Pre-charge les benchmarks deja actifs (sinon le 1er affichage est vide).
+  // renderPerf() n'attend pas ce chargement : la courbe peut etre dessinee
+  // avant qu'il finisse, et les comparaisons arrivees apres restaient
+  // absentes jusqu'a un decochage (vu le 03/10/2026 : CAC 40 seul sur trois).
+  await Promise.all(Object.keys(_benchEnabled).filter(b => _benchEnabled[b]).map(_loadBenchHistory));
   _benchUiReady = true;
+  if (_ch.perf) drawPerfChart();
 }
 
 async function toggleBenchmark(bench, enabled) {
