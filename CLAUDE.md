@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.17**
+**Version actuelle : 4.3.18**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -41,7 +41,7 @@ Pilote/
 │   ├── notifications.py
 │   └── ui/
 │       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~21 400 lignes)
-│       └── vendor/     # Chart.js, polices woff2, icônes Phosphor : servis en local (aucun CDN)
+│       └── vendor/     # Chart.js, polices woff2 (drapeaux compris), icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
 │   ├── pilote.spec     # Spec PyInstaller → dist/Pilote/ (Pilote.exe + _internal/)
@@ -227,9 +227,11 @@ Paramètres.
 | Vocabulaire     | vo-reviser, vo-boites, vo-mots, vo-stats                            |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
-`_navSectionOf(tabId)`. Section dépliée persistée dans `S.uiPrefs.navOpen` ("" = tout
-replié). `SIDEBAR_ITEMS` reste dérivé à plat de `NAV_SECTIONS` pour l'API historique
-(onglets masquables via ⊘, Ctrl+1..7, écran Paramètres).
+`_navSectionOf(tabId)`. Section dépliée gardée en mémoire seulement (`_navOuverte`,
+"" = tout replié) : Pilote s'ouvre toujours sur l'Accueil, toutes sections repliées
+(demande d'Arthur, 4.3.18). L'ancienne clé `S.uiPrefs.navOpen` est ignorée.
+`SIDEBAR_ITEMS` reste dérivé à plat de `NAV_SECTIONS` pour l'API historique (onglets
+masquables via ⊘, Ctrl+1..7, écran Paramètres).
 
 Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
 (finances, sports, prêt, accueil) : ils s'enchaînent, ne pas casser l'ordre.

@@ -9,7 +9,7 @@
      hors ligne, et ne doit signaler son demarrage a aucun CDN. -->
 <!-- ?v= : /vendor/ est servi avec un cache d'un jour. Changer ce numero a
      chaque modification de fonts.css, sinon l'ancienne feuille peut survivre. -->
-<link href="/vendor/fonts.css?v=2" rel="stylesheet">
+<link href="/vendor/fonts.css?v=3" rel="stylesheet">
 <link href="/vendor/phosphor/phosphor.css" rel="stylesheet">
 <script src="/vendor/chart.umd.js"></script>
 <style>
@@ -2359,6 +2359,9 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .expo-nm { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .expo-nm b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .expo-nm .ph { color: var(--txt2); font-size: 14px; align-self: center; }
+/* Drapeau : police de vendor/fonts.css, Windows n'en dessine aucun */
+.expo-drap { font-family: "Twemoji Country Flags", var(--font); font-size: 15px; line-height: 1; align-self: center; flex: none; }
+.expo-meta .expo-drap, .expo-pos-top .expo-drap { font-size: 12.5px; margin-right: 4px; vertical-align: -1px; }
 .expo-rang { color: var(--txt3); font-size: 11.5px; min-width: 18px; font-variant-numeric: tabular-nums; }
 .expo-meta { font-size: 11.5px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .expo-eur { font-size: 12px; color: var(--txt2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -2573,8 +2576,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <thead><tr>
         <th>Titre</th><th>Secteur</th><th>Qté</th><th>PRU auto</th><th>Cours</th>
         <th title="Évolution 30 derniers jours">30j</th>
-        <th title="Price/Earnings Ratio (actions uniquement)">PER</th>
-        <th title="Rendement du dividende (actions uniquement)">Dividendes</th>
+        <th id="pos-th-per" title="Price/Earnings Ratio (actions uniquement)">PER</th>
+        <th id="pos-th-div" title="Rendement du dividende (actions uniquement)">Dividendes</th>
         <th>Valeur</th><th>Investi</th><th>+/− EUR</th><th>+/− %</th>
         <th>Répartition</th><th></th>
       </tr></thead>
@@ -5632,6 +5635,13 @@ function renderPositions() {
   const eps  = S.positions.map(p => computePos(p));
   const ti   = eps.reduce((s,e)=>s+e.inv, 0);
   const tv   = eps.reduce((s,e)=>e.val!=null?s+e.val:s, 0);
+  // PER et Dividendes : colonnes montrées seulement si au moins un titre a la
+  // donnée (Yahoo n'en donne que pour les actions). Avec des ETF seuls, elles
+  // ne contenaient que des « n/a » ; une action qui en a les fait réapparaître.
+  const avecPER = S.positions.some(p => p.type === "action" && _wsKey[p.ticker]?.trailingPE != null);
+  const avecDiv = S.positions.some(p => p.type === "action" && _wsKey[p.ticker]?.divYield != null);
+  document.getElementById("pos-th-per").style.display = avecPER ? "" : "none";
+  document.getElementById("pos-th-div").style.display = avecDiv ? "" : "none";
   body.innerHTML = eps.map((e,i) => {
     const p  = S.positions[i];
     const rI = ti>0 ? e.inv/ti*100 : 0;
@@ -5649,8 +5659,8 @@ function renderPositions() {
       <td>${e.pru>0 ? eur(e.pru) : "—"}</td>
       <td>${p.cours!=null ? eur(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
       <td>${_renderSparkline(_wsSpark[p.ticker])}</td>
-      <td>${p.type === "action" ? _renderPER(p.ticker)   : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>
-      <td>${p.type === "action" ? _renderYield(p.ticker) : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>
+      ${avecPER ? `<td>${p.type === "action" ? _renderPER(p.ticker)   : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
+      ${avecDiv ? `<td>${p.type === "action" ? _renderYield(p.ticker) : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
       <td>${e.val!=null ? eur(e.val) : "—"}</td>
       <td>${eur(e.inv)}</td>
       <td class="${pcls(e.pv)}">${eur(e.pv,true)}</td>
@@ -7308,6 +7318,13 @@ function expoNomPays(code) {
   if (code === "_inconnu") return "Composition inconnue";
   return EXPO_PAYS[code] ? EXPO_PAYS[code][0] : code;
 }
+/* Drapeau d'un pays (code ISO à deux lettres) : l'emoji drapeau, que la police
+   « Twemoji Country Flags » (vendor/fonts.css) dessine. Rien pour _nd, _inconnu. */
+function expoDrapeau(code) {
+  if (!/^[A-Z]{2}$/.test(code || "")) return "";
+  const emoji = String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+  return `<span class="expo-drap" aria-hidden="true">${emoji}</span>`;
+}
 function expoZone(code) {
   if (code === "_nd" || code === "_inconnu") return code;
   return EXPO_PAYS[code] ? EXPO_PAYS[code][1] : "autres";
@@ -7447,7 +7464,7 @@ function expoRowHtml(o, calc, echelle) {
   const vide = !o.par.length;
   return `<div class="expo-row${gris ? " gris" : ""}${vide ? " vide" : ""}" role="button" tabindex="0" aria-expanded="false"
       onclick="expoToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();expoToggle(this)}">
-    <span class="expo-nm">${o.rang ? `<span class="expo-rang">${o.rang}</span>` : ""}${o.ico ? `<i class="ph ph-${o.ico}"></i>` : ""}<b>${escHtml(o.nom)}</b>${o.meta ? `<span class="expo-meta">${escHtml(o.meta)}</span>` : ""}</span>
+    <span class="expo-nm">${o.rang ? `<span class="expo-rang">${o.rang}</span>` : ""}${o.ico ? `<i class="ph ph-${o.ico}"></i>` : ""}${o.drap ? expoDrapeau(o.drap) : ""}<b>${escHtml(o.nom)}</b>${o.meta ? `<span class="expo-meta">${o.metaDrap ? expoDrapeau(o.metaDrap) : ""}${escHtml(o.meta)}</span>` : ""}</span>
     <span class="expo-eur">${expoEur(o.pct * calc.total / 100)}</span>
     <span class="expo-pct">${expoPct(o.pct)}</span>
     <div class="expo-bar">${barre}</div>
@@ -7571,7 +7588,7 @@ function expoRenderGeo(calc) {
   } else {
     const MAX = 12;
     const liste = _expoTout.pays ? calc.pays : calc.pays.slice(0, MAX);
-    h = liste.map(x => expoRowHtml(Object.assign({}, x, { nom: expoNomPays(x.cle) }), calc)).join("");
+    h = liste.map(x => expoRowHtml(Object.assign({}, x, { nom: expoNomPays(x.cle), drap: x.cle }), calc)).join("");
     if (calc.pays.length > MAX) {
       h += `<button class="btn btn-sm btn-ghost expo-plus" onclick="expoVoirTout('pays')">${_expoTout.pays
         ? '<i class="ph ph-caret-up"></i> Réduire'
@@ -7597,6 +7614,7 @@ function expoRenderEnt(calc) {
   const echelle = calc.entreprises.length ? calc.entreprises[0].pct : 100;
   let h = liste.map((e, i) => expoRowHtml(Object.assign({}, e, {
     rang: i + 1,
+    metaDrap: e.pays,
     meta: [e.pays ? expoNomPays(e.pays) : "", e.secteur ? expoNomSect(e.secteur, true) : ""].filter(Boolean).join(" · "),
   }), calc, echelle)).join("");
   if (calc.entreprises.length > MAX) {
@@ -7614,8 +7632,8 @@ function expoRenderEnt(calc) {
 }
 
 function expoRenderPos(calc) {
-  const top = (map, nom) => Object.entries(map || {}).filter(([, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${escHtml(nom(k))} ${expoPct(v)}`).join(" · ");
+  const top = (map, nom, drap) => Object.entries(map || {}).filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${drap ? expoDrapeau(k) : ""}${escHtml(nom(k))} ${expoPct(v)}`).join(" · ");
   document.getElementById("expo-pos").innerHTML = calc.lignes.map(l => {
     const c = l.compo, id = Number(l.p.id);
     let src, badge = "";
@@ -7645,7 +7663,7 @@ function expoRenderPos(calc) {
       </div>
       <div class="expo-pos-src">${src}</div>
       ${c ? `<div class="expo-pos-top">
-        <div><b>Pays</b>${top(c.pays, expoNomPays) || "—"}</div>
+        <div><b>Pays</b>${top(c.pays, expoNomPays, true) || "—"}</div>
         <div><b>Secteurs</b>${top(c.secteurs, k => expoNomSect(k, true)) || "—"}</div>
       </div>` : ""}
       <div class="expo-pos-acts">
@@ -9083,6 +9101,10 @@ function savePos() {
   if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
   // Actualiser les cours immédiatement pour la nouvelle position
   applyCoursData();
+  // Et sa courbe 30j, son PER, son rendement : sans ça, ils n'apparaissaient
+  // qu'au rafraîchissement suivant (3 min)
+  fetchSparklines();
+  fetchKeystats();
 }
 
 function editPos(id) {
@@ -9119,6 +9141,7 @@ function saveEditPos(id) {
   p.exdiv     = document.getElementById("f-exdiv").value.trim()||null;
   persist(); closeOv("ov-pos"); renderPositions(); renderDividends();
   if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
+  fetchKeystats();   // une ligne passée d'ETF à action a maintenant un PER à charger
 }
 
 
@@ -12555,16 +12578,11 @@ function _setActiveSidebar(id) {
   });
 }
 
-/* Section depliee : une seule a la fois, memorisee entre deux lancements */
-function _navSaveOpen(secId) {
-  S.uiPrefs = S.uiPrefs || {};
-  if (S.uiPrefs.navOpen === secId) return;   // secId vide = toutes repliees
-  S.uiPrefs.navOpen = secId;
-  try { persist(false); } catch(e) {}
-  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs) {
-    try { window.pywebview.api.save_ui_prefs(S.uiPrefs); } catch(e) {}
-  }
-}
+/* Section depliee : une seule a la fois ("" = toutes repliees). Gardee en
+   memoire seulement : Pilote s'ouvre toujours toutes sections repliees.
+   Jusqu'a la 4.3.17 elle etait enregistree (S.uiPrefs.navOpen, desormais
+   ignore) et la section du lancement precedent restait ouverte. */
+let _navOuverte = "";
 
 function _navToggleSection(secId) {
   const el = document.querySelector(`.sb-sec[data-sec="${secId}"]`);
@@ -12573,7 +12591,7 @@ function _navToggleSection(secId) {
   // Accordeon : une seule section depliee, et un second clic la referme
   document.querySelectorAll(".sb-sec").forEach(x => x.classList.remove("open"));
   if (!wasOpen) el.classList.add("open");
-  _navSaveOpen(wasOpen ? "" : secId);
+  _navOuverte = wasOpen ? "" : secId;
 }
 
 
@@ -12610,9 +12628,7 @@ function _injectTitlebar() {
 
 function _injectSidebar() {
   const hidden = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
-  const openId = (S.uiPrefs && S.uiPrefs.navOpen !== undefined)
-    ? S.uiPrefs.navOpen                 // "" = toutes repliees
-    : NAV_SECTIONS[0].id;               // premier lancement : PEA deplie
+  const openId = _navOuverte;           // au lancement : toutes repliees
   // Icones Phosphor (servies par /vendor/phosphor/) : une par section
   const NAV_ICONS = {
     "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "graduation-cap",
