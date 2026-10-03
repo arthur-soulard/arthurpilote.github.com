@@ -112,8 +112,25 @@ Une ligne `nom = pourcentage` ; ce qui manque pour 100 % devient « non détaill
   (MSCI World, pays développés), « Pays émergents » disparaissait et Arthur a cru à
   un oubli (« où se retrouve la Chine ? »). La Chine arrive avec PEMS ou GPEA.
 * Base = titres hors espèces, comme la répartition de la vue d'ensemble.
+* **Drapeaux** (03/10/2026) à côté de chaque pays : Géographie, Entreprises, Détail
+  par position (`expoDrapeau(code)`). Windows ne dessine aucun emoji drapeau, il
+  écrit « FR » : la police `vendor/fonts/twemoji-country-flags.woff2` (78 Ko,
+  paquet country-flag-emoji-polyfill 0.1.8, dessins Twemoji sous CC-BY 4.0) les
+  dessine, limitée aux lettres-drapeaux par `unicode-range` dans `fonts.css`.
 * JS : préfixe `expo*`, point d'entrée `renderSectors()` (nom historique, appelé par
   `goTab("sector")` et après une modification de position).
+
+## Positions : colonnes PER et Dividendes (03/10/2026)
+
+Affichées seulement si au moins un titre a la donnée (`avecPER`, `avecDiv` dans
+`renderPositions`), chacune pour son compte. Yahoo n'en donne que pour les actions :
+avec des ETF seuls, elles ne contenaient que des « n/a ». Une action qui a un PER (ou
+un rendement) fait réapparaître la colonne : `savePos` et `saveEditPos` relancent
+`fetchKeystats()`, sinon il fallait attendre le rafraîchissement suivant (3 min).
+Vérifié : LVMH ajoutée, PER 17,3 et 3,43 % affichés 0,3 s après.
+
+Même chose pour la mini-courbe **30j** d'une ligne ajoutée : `savePos` relance
+`fetchSparklines()` (affichée 0,8 s après l'ajout, au lieu de « — » pendant 3 min).
 
 ## Positions et Wishlist : formats des nombres (4.3.17)
 

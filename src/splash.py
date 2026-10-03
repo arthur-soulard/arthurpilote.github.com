@@ -3,8 +3,13 @@ splash.py — Petite fenetre de chargement affichee au lancement de Pilote.
 
 La fenetre principale est creee CACHEE et ne s'ouvre qu'une fois l'accueil
 pret : boot() (index.html) appelle Api.app_ready(), qui la montre et ferme
-celle-ci. En attendant, on voit le logo a la couleur d'accent, le nom et
-trois points qui s'allument tour a tour.
+celle-ci. En attendant, animation « Signature » (choisie par Arthur le
+03/10/2026 parmi trois maquettes) : le logo arrive en rebondissant, le P
+monte dans la tuile, « Pilote » s'ecrit lettre par lettre ; puis, en
+boucle, un reflet passe sur la tuile, des ondes en partent et une barre
+glisse dessous. Rien que transform et opacity : pendant le chargement, le
+processeur est pris par Python et WebView2, ces proprietes-la restent
+fluides.
 
 Le HTML est construit ici plutot que dans un fichier a part : un splash.html
 devrait etre ajoute aux datas de build/pilote.spec, et l'oublier ne se
@@ -18,7 +23,7 @@ import base64
 import re
 from pathlib import Path
 
-SIZE = (300, 230)
+SIZE = (340, 260)
 
 # Memes jetons que :root et html[data-theme="dark"] dans index.html
 _THEMES = {
@@ -64,30 +69,77 @@ def build_html(ui_dir: Path, accent: str, theme: str) -> str:
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%%; background: var(--bg); overflow: hidden; user-select: none; cursor: default; }
 body {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
   border: 1px solid var(--brd); color: var(--txt);
   font-family: "Onest", system-ui, sans-serif;
 }
-.logo {
-  width: 64px; height: 64px; border-radius: 17px; background: var(--accent); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 500; font-size: 40px;
+/* Logo : halo qui respire, deux ondes, tuile qui rebondit, P qui monte, reflet */
+.logo { position: relative; width: 72px; height: 72px; }
+.halo {
+  position: absolute; inset: -80px; border-radius: 50%%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 24%%, transparent), transparent);
+  animation: halo 3.4s .5s ease-in-out infinite alternate both;
 }
-.nom { font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 24px; margin-top: 4px; }
-.dots { display: flex; gap: 7px; margin-top: 8px; }
-.dots i { width: 7px; height: 7px; border-radius: 50%%; background: var(--accent); opacity: .25;
-          animation: pulse 1.2s ease-in-out infinite; }
-.dots i:nth-child(2) { animation-delay: .2s; }
-.dots i:nth-child(3) { animation-delay: .4s; }
-@keyframes pulse { 0%%, 100%% { opacity: .25; } 40%% { opacity: 1; } }
-/* Un indicateur de chargement doit rester visible : sans animation, les
-   points s'allument quand meme, plus lentement (opacite seule). */
-@media (prefers-reduced-motion: reduce) { .dots i { animation-duration: 2.4s; } }
-.txt { font-size: 12.5px; color: var(--txt2); }
+@keyframes halo { from { opacity: .35; transform: scale(.8); } to { opacity: 1; transform: scale(1.08); } }
+.onde {
+  position: absolute; inset: 0; border-radius: 19px; border: 2px solid var(--accent); opacity: 0;
+  animation: onde 2.6s .75s cubic-bezier(.15,.6,.3,1) infinite;
+}
+.onde + .onde { animation-delay: 2.05s; }
+@keyframes onde { 0%% { transform: scale(1); opacity: .6; } 100%% { transform: scale(1.85); opacity: 0; } }
+.tuile {
+  position: relative; width: 72px; height: 72px; border-radius: 19px; overflow: hidden;
+  background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center;
+  font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 500; font-size: 44px;
+  box-shadow: 0 12px 26px -12px color-mix(in srgb, var(--accent) 80%%, transparent);
+  animation: pop .8s cubic-bezier(.2,.9,.3,1.25) both;
+}
+@keyframes pop { 0%% { transform: scale(.25) rotate(-14deg); opacity: 0; } 55%% { opacity: 1; } 100%% { transform: none; opacity: 1; } }
+.tuile .p { display: block; line-height: 1; animation: monte .65s .3s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes monte { from { transform: translateY(115%%); } to { transform: none; } }
+.reflet {
+  position: absolute; inset: -30%%; transform: translateX(-130%%);
+  background: linear-gradient(105deg, transparent 38%%, rgba(255,255,255,.5) 50%%, transparent 62%%);
+  animation: reflet 2.8s 1.1s ease-in-out infinite;
+}
+@keyframes reflet { 0%% { transform: translateX(-130%%); } 42%%, 100%% { transform: translateX(130%%); } }
+/* Nom ecrit lettre par lettre */
+.nom {
+  display: flex; overflow: hidden; margin-top: 16px; padding: 0 3px .14em;
+  font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 31px; line-height: 1.1;
+}
+.nom span { display: inline-block; animation: lettre .6s cubic-bezier(.2,.8,.2,1) both; }
+.nom span:nth-child(1) { animation-delay: .55s; } .nom span:nth-child(2) { animation-delay: .61s; }
+.nom span:nth-child(3) { animation-delay: .67s; } .nom span:nth-child(4) { animation-delay: .73s; }
+.nom span:nth-child(5) { animation-delay: .79s; } .nom span:nth-child(6) { animation-delay: .85s; }
+@keyframes lettre { from { transform: translateY(105%%) rotate(10deg); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Barre de chargement : un trait qui glisse en boucle */
+.piste {
+  width: 136px; height: 3px; border-radius: 9px; background: var(--brd); overflow: hidden; margin-top: 12px;
+  animation: fondu .4s 1.15s both;
+}
+.piste i {
+  display: block; width: 42%%; height: 100%%; border-radius: 9px; background: var(--accent);
+  animation: glisse 1.5s 1.15s cubic-bezier(.65,0,.35,1) infinite;
+}
+@keyframes glisse { from { transform: translateX(-100%%); } to { transform: translateX(240%%); } }
+.txt { font-size: 12.5px; color: var(--txt2); margin-top: 10px; animation: fondu .5s 1.3s both; }
+@keyframes fondu { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* Mouvement reduit : tout s'affiche d'emblee, sans rebond ni onde. La barre
+   continue de glisser, plus lentement : un indicateur de chargement doit
+   rester visible. */
+@media (prefers-reduced-motion: reduce) {
+  .halo, .onde, .tuile, .tuile .p, .reflet, .nom span, .piste, .txt { animation: none; }
+  .halo { opacity: .7; }
+  .piste i { animation-duration: 3s; animation-delay: 0s; }
+}
 </style></head>
 <body>
-  <div class="logo">P</div>
-  <div class="nom">Pilote</div>
-  <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="logo" aria-hidden="true">
+    <div class="halo"></div><i class="onde"></i><i class="onde"></i>
+    <div class="tuile"><span class="p">P</span><i class="reflet"></i></div>
+  </div>
+  <div class="nom" aria-hidden="true"><span>P</span><span>i</span><span>l</span><span>o</span><span>t</span><span>e</span></div>
+  <div class="piste" aria-hidden="true"><i></i></div>
   <div class="txt" role="status">Chargement de tes donn&eacute;es&hellip;</div>
 </body></html>""" % {"faces": faces, "accent": accent, **t}

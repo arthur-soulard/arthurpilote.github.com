@@ -5,9 +5,19 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 ## Démarrage : écran de chargement (`splash.py`, 4.2.7)
 
 La fenêtre principale est créée **cachée** (`hidden=True`) et ne s'ouvre qu'une fois
-l'accueil prêt. En attendant, une petite fenêtre sans bordure (300 × 230) montre le
-logo « P » à la couleur d'accent, « Pilote » et trois points qui s'allument, dans le
-thème de l'utilisateur actif.
+l'accueil prêt. En attendant, une petite fenêtre sans bordure (340 × 260) montre le
+logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisateur actif.
+
+* **Animation « Signature »** (03/10/2026). Arthur voulait « un truc plus dynamique,
+  plus wahou » que les trois points : il l'a choisie parmi trois maquettes (Signature,
+  Orbite des huit sections, Courbe de portefeuille). Le logo arrive en rebondissant,
+  le P monte dans la tuile, « Pilote » s'écrit lettre par lettre (1,4 s) ; ensuite, en
+  boucle, un reflet passe sur la tuile, des ondes en partent, une barre glisse dessous.
+  CSS seul, rien que `transform` et `opacity` : pendant le chargement, le processeur
+  est pris par Python et WebView2, ces propriétés restent fluides. En mouvement réduit
+  (effets d'animation de Windows coupés), tout s'affiche d'emblée et seule la barre
+  glisse, plus lentement. Vérifié dans une vraie fenêtre pywebview (thèmes clair et
+  sombre), pas encore dans l'exe compilé.
 
 * `boot()` appelle `_appReady()` → `Api.app_ready()` → `reveal_main_window()` (app.py) :
   montre la fenêtre, ferme l'écran de chargement, pose l'icône à l'accent. Une seule
