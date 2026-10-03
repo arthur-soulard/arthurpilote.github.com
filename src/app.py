@@ -47,7 +47,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.19"
+APP_VERSION = "4.3.20"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -1194,6 +1194,12 @@ def main() -> int:
             background_color=splash.background(theme),
         )
         _splash_window.events.shown += _paint_accent_icon
+
+        def _arrondir_splash():
+            # A cet instant la fenetre principale est encore cachee : la seule
+            # fenetre visible de Pilote est l'ecran de chargement
+            splash.arrondir_coins(_hwnd_principale(), theme)
+        _splash_window.events.shown += _arrondir_splash
     except Exception as e:
         print(f"[app] ecran de chargement KO : {e}", flush=True)
         _splash_window = None
