@@ -8,7 +8,8 @@ Adapte de cours_server_v4.py pour etre :
 
 Endpoints (memes que avant) :
   GET /cours?tickers=EPA:ESE,EPA:SGO    -> cours actuels + variations w/m/y
-  GET /history?tickers=EPA:ESE          -> historique journalier (range=max)
+  GET /history?tickers=EPA:ESE          -> historique journalier (range=max,
+                                           since=AAAA-MM-JJ facultatif)
   GET /ping                              -> health check
 """
 from __future__ import annotations
@@ -249,13 +250,28 @@ def get_prices(tickers, stale=None):
 
 # ─── Historiques ──────────────────────────────────────────────────────────────
 
-def fetch_yahoo_history(yahoo_ticker: str, range_param: str = "max", interval: str = "1d"):
+def fetch_yahoo_history(yahoo_ticker: str, range_param: str = "max", interval: str = "1d",
+                        since: str | None = None):
+    # range=max : Yahoo ignore interval=1d et renvoie un point par SEMAINE (titre
+    # recent, WPEA) ou par MOIS (indice ancien, CAC 40), date du debut de la
+    # periode mais au cours de sa fin (mesure le 03/10/2026). On demande donc la
+    # periode explicitement (period1/period2), qui reste journaliere : depuis
+    # `since` (AAAA-MM-JJ, moins 7 jours pour avoir un cours au premier jour
+    # meme s'il tombe un week-end) ou depuis le tout debut.
+    if range_param == "max":
+        debut = 0
+        if since:
+            debut = max(0, int(datetime.datetime.strptime(since, "%Y-%m-%d")
+                               .replace(tzinfo=datetime.timezone.utc).timestamp()) - 7 * 86400)
+        periode = f"period1={debut}&period2={int(time.time())}"
+    else:
+        periode = f"range={range_param}"
     for host in ("query1", "query2"):
         try:
             url = (
                 f"https://{host}.finance.yahoo.com/v8/finance/chart/"
                 + urllib.parse.quote(yahoo_ticker)
-                + f"?interval={interval}&range={range_param}&events=history"
+                + f"?interval={interval}&{periode}&events=history"
             )
             req = urllib.request.Request(url, headers={
                 "User-Agent": USER_AGENT,
@@ -272,6 +288,17 @@ def fetch_yahoo_history(yahoo_ticker: str, range_param: str = "max", interval: s
             closes_raw = result[0].get("indicators", {}).get("quote", [{}])[0].get("close", [])
             if not timestamps or not closes_raw:
                 continue
+
+            # Dernier jour : les ETF de Paris (WPEA, PEMS, PNAS, ESE, PANX) n'ont
+            # pas de cloture dans l'historique journalier, seulement dans le cours
+            # en direct (constate le 03/10/2026, pas les actions ni les indices).
+            # Sans elle, la courbe s'arretait la veille.
+            meta = result[0].get("meta", {})
+            live, live_t = meta.get("regularMarketPrice"), meta.get("regularMarketTime")
+            if (len(closes_raw) == len(timestamps) and closes_raw[-1] is None and live and live_t
+                    and datetime.datetime.utcfromtimestamp(live_t).date()
+                        == datetime.datetime.utcfromtimestamp(timestamps[-1]).date()):
+                closes_raw = closes_raw[:-1] + [live]
 
             dates, closes = [], []
             for ts, c in zip(timestamps, closes_raw):
@@ -290,26 +317,32 @@ def fetch_yahoo_history(yahoo_ticker: str, range_param: str = "max", interval: s
     return None
 
 
-def get_history(tickers, range_param: str = "max", stale=None):
+def get_history(tickers, range_param: str = "max", stale=None, since=None):
     """
     Cache separe par range pour permettre du daily sur les courtes plages.
     Yahoo injoignable : dernier historique connu, ticker ajoute a `stale`
     (meme regle que get_prices).
+    `since` (range=max seulement) : l'historique ne remonte que jusque-la. Une
+    entree du cache ne sert que si elle remonte au moins aussi loin.
     """
     cache_key_suffix = f"::{range_param}"
+    if range_param != "max":
+        since = None
     result, now = {}, time.time()
     for tk in tickers:
         ytk = to_yahoo(tk)
         cache_key = ytk + cache_key_suffix
         with _lock:
             cached = _history_cache.get(cache_key)
-            if cached and (now - cached["ts"]) < HISTORY_CACHE_TTL:
+            couvre = cached and (not cached.get("since")
+                                 or (since is not None and cached["since"] <= since))
+            if couvre and (now - cached["ts"]) < HISTORY_CACHE_TTL:
                 result[tk] = {"dates": cached["dates"], "closes": cached["closes"]}
                 continue
-        data = fetch_yahoo_history(ytk, range_param=range_param, interval="1d")
+        data = fetch_yahoo_history(ytk, range_param=range_param, interval="1d", since=since)
         if data:
             with _lock:
-                _history_cache[cache_key] = {**data, "ts": now}
+                _history_cache[cache_key] = {**data, "ts": now, "since": since}
             result[tk] = data
         elif cached:
             result[tk] = {"dates": cached["dates"], "closes": cached["closes"]}
@@ -1101,8 +1134,13 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             # Whitelist
             if range_p not in {"1mo","3mo","6mo","ytd","1y","2y","5y","10y","max"}:
                 range_p = "max"
+            since = (params.get("since", [""])[0] or "").strip()
+            try:
+                since = datetime.datetime.strptime(since, "%Y-%m-%d").strftime("%Y-%m-%d")
+            except ValueError:
+                since = None
             stale = []   # rendus depuis le cache faute de Yahoo
-            history = get_history(tickers, range_param=range_p, stale=stale)
+            history = get_history(tickers, range_param=range_p, stale=stale, since=since)
             return self._json(200, {"ok": True, "history": history, "stale": stale})
 
         if parsed.path == "/analysts":
