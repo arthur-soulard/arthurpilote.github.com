@@ -5,7 +5,8 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 ## Démarrage : écran de chargement (`splash.py`, 4.2.7)
 
 La fenêtre principale est créée **cachée** (`hidden=True`) et ne s'ouvre qu'une fois
-l'accueil prêt. En attendant, une petite fenêtre sans bordure (340 × 260) montre le
+l'accueil prêt. En attendant, une fenêtre sans bordure (460 × 350 depuis la 4.3.19 ; 340 × 260 en 4.3.18, contenu grossi
+de 35 % par `.scene { zoom }`) montre le
 logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisateur actif.
 
 * **Animation « Signature »** (03/10/2026). Arthur voulait « un truc plus dynamique,
