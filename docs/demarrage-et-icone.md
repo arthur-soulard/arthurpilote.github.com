@@ -11,10 +11,23 @@ thème de l'utilisateur actif.
 
 * `boot()` appelle `_appReady()` → `Api.app_ready()` → `reveal_main_window()` (app.py) :
   montre la fenêtre, ferme l'écran de chargement, pose l'icône à l'accent. Une seule
-  fois (`_revealed`). Le signal part **après** les modules et le premier chargement
-  des cours (5 s au plus : sans réseau on ouvre avec les derniers connus), dans le
+  fois (`_revealed`). Le signal part **après** les modules, le premier chargement
+  des cours **et l'historique du PEA** (5 s au plus pour les deux : sans réseau on
+  ouvre avec les derniers connus), dans le
   `catch` de `boot()` aussi, et **dès l'écran du code PIN** (`_checkPinLock`) : le
   code se tape dans la fenêtre, elle ne peut pas rester cachée.
+* **Historique du PEA attendu (03/10/2026).** Arthur voyait des données se charger
+  encore une fois la fenêtre ouverte. Mesuré avec un journal horodaté : l'historique
+  (mini-courbe et chiffres 1S, 1M, YTD de la tuile « Performance du PEA ») arrivait
+  0,8 s **après** l'ouverture, suivi d'un second appel `range=1mo` : la tuile se
+  redessinait 1,6 s après l'ouverture.
+  Désormais `boot()` le demande avec les cours (`perfSeriesAsync()`) et attend les
+  deux ; le second appel a disparu (historique journalier, voir
+  `docs/modules/pea.md`). Délai d'ouverture inchangé : 2,5 s avant comme après, de
+  la première requête à l'ouverture (dev, utilisateur de test, 3 titres).
+  Les PER, rendements et mini-courbes des tableaux Positions et Wishlist
+  (`/keystats`, `/sparkline`, `/analysts`) ne sont toujours **pas** attendus : rien
+  ne s'en affiche sur l'accueil.
 * **Filet de sécurité** : `REVEAL_TIMEOUT` (20 s), un `threading.Timer` qui ouvre la
   fenêtre quoi qu'il arrive. Un JS en panne ne doit jamais laisser l'app invisible.
 * **`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`** (posée dans `main()`) : cachée,

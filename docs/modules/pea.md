@@ -231,12 +231,43 @@ YTD (prb-ytd), Max (prb-max, défaut).
 * `buildTwrSeries(history)` — série journalière à partir de l'historique Yahoo
 * `drawPerfChart()`       — dessine le Chart.js ; si < 2 points après filtre →
                             bascule sur MAX avec message
-* `loadPerfHistory()`     — double fetch : `range=max` + `range=1mo` (30 derniers jours
-                            journaliers garantis, fusionnés) pour que 1S/1M aient
-                            toujours leurs points récents
+* `loadPerfHistory()`     — un seul appel `/history?…&since=<premier ordre>`
+                            (`_perfDepuisParam()`, repris par les comparaisons)
 * `computePnl(series, allTxs, range)` — P&L sur la plage (TWR pour les plages partielles)
 
-Format labels axe X : 1S, 1M, YTD → « 12 mai » ; 6M, Max → « nov. 25 »
+Format labels axe X : 1S, 1M, YTD → « 12 mai » ; 6M, Max → « nov. 25 ». L'infobulle
+donne toujours le jour exact (« mer. 1 juil. 2026 »).
+
+### Courbe au jour près (03/10/2026)
+
+Arthur trouvait les courbes imprécises. Cause mesurée : **`range=max` chez Yahoo
+ignore `interval=1d`**. Il rend un point par semaine (WPEA, 132 points depuis 2024)
+ou par mois (CAC 40 depuis 1990), daté du début de la période mais au cours de sa
+fin. Converti en UTC, le point de la semaine tombait le **dimanche** (aucune cotation)
+avec la clôture du vendredi suivant. Seuls les 30 derniers jours étaient justes,
+grâce à un second appel `range=1mo` fusionné.
+
+Sur un portefeuille de test d'environ 10 000 € : 166 points dont 120 dimanches,
+53 points sur 6 mois au lieu de 128, et jusqu'à **282 € d'écart** avec la vraie
+valeur du jour (dimanche 20/09/2026 : 9 964,59 € affichés, 9 876,42 € le vendredi).
+Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
+
+* `server.fetch_yahoo_history` ne demande plus jamais `range=max` : il envoie
+  `period1`/`period2`, qui reste journalier. `since` (AAAA-MM-JJ, moins 7 jours de
+  marge pour un premier jour en week-end) limite le volume : sans lui, 50 ans de
+  S&P 500 jour par jour finiraient dans `pea_data.json._cache`.
+* Cache serveur : une entrée `::max` garde son `since` et ne sert qu'à une demande
+  qui ne remonte pas plus loin. Les anciennes entrées hebdomadaires du disque
+  (`ts = 0`) sont redemandées au premier lancement en ligne ; hors ligne, elles
+  servent encore telles quelles.
+* **Dernier jour des ETF de Paris** : WPEA, PEMS, PNAS, ESE, PANX n'ont pas de
+  clôture pour la dernière séance dans l'historique journalier (constaté le
+  03/10/2026 ; les actions et les indices l'ont). On prend le cours en direct
+  (`regularMarketPrice`) quand il date du même jour, sinon la courbe s'arrêtait la
+  veille. Vérifié : dernier point identique à la carte « Valeur du PEA ».
+* Comparateur d'ETF (Simulateurs), plage « 15 ans » : `since` = 16 ans.
+* Yahoo garde quelques trous (WPEA : clôture vide le 22/12/2025 et du 29/12/2025
+  au 02/01/2026) : `priceAt` reprend le dernier cours connu, comme un jour férié.
 
 Points critiques :
 * `_perfFullSeries` est mis en cache (reconstruit uniquement si null), invalidé à

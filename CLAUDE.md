@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.14**
+**Version actuelle : 4.3.15**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -238,7 +238,9 @@ Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
 
 * `GET /data` → hydratation initiale de l'UI (+ `_debug.load_error`)
 * `GET /cours?tickers=EPA:ESE,WPEA.PA` → cours actuels + variations d1/w1/m1/y1
-* `GET /history?tickers=…[&range=max]` → historique journalier
+* `GET /history?tickers=…[&range=max][&since=AAAA-MM-JJ]` → historique journalier
+  (`max` n'est jamais demandé tel quel à Yahoo, qui le rend par semaine ou par mois :
+  voir `docs/modules/pea.md`, « Courbe au jour près »)
   (ranges : 1mo, 3mo, 6mo, ytd, 1y, 2y, 5y, 10y, max)
 * `GET /sparkline`, `/keystats`, `/analysts`, `/search`, `/ping`
 * `GET /users` → liste des utilisateurs (+ `hasPin`)
