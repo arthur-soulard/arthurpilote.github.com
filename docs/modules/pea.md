@@ -178,8 +178,11 @@ ne jamais modifier le calcul sans les relancer.
   Les comparaisons au budget se font sur les montants non arrondis.
 * **Quantités** : `computePos(p).qty` (rien n'est stocké). Une ligne cible non
   détenue vaut 0 ; les positions hors allocation sont listées à part.
-* **Budget** = `computeCash()` (versement à saisir dans Dépôts avant). Une saisie
-  à la main (`_pacBudget`) n'est pas enregistrée.
+* **Budget** : bascule « Réel | Prévisionnel » (`cfg.budgetMode`, enregistrée ;
+  Prévisionnel par défaut). Réel = `computeCash()` ; Prévisionnel = espèces +
+  versements prévus de l'onglet Dépôts (`pacBudgetAuto`). Sans versement prévu,
+  les deux sont égaux. Une saisie à la main (`_pacBudget`) l'emporte et n'est
+  pas enregistrée.
 * **Ordre gratuit** : détecté (`pacGratuitDetecte`) = achat ou vente du mois,
   ≤ seuil, sans frais. Vérifié sur les données d'Arthur le 27/09/2026 : ses ordres
   sans frais font tous < 500 €. La case l'emporte pour le mois **tant que la
@@ -217,9 +220,10 @@ Fonctions `so*`, bloc juste après Prochain achat.
   premier ordre de la liste qui tient sous le seuil est gratuit, même après un
   ordre plus gros. C'est la lecture de `pacGratuitDetecte`. Flèches ↑↓ pour
   réordonner.
-* Budget (espèces par défaut) et case « Ordre gratuit du mois disponible »
-  (détection de Prochain achat par défaut) : propres au simulateur, en mémoire,
-  jamais enregistrés. Ils valent pour l'éditeur **et** toutes les cartes.
+* Budget (celui de Prochain achat par défaut) et case « Ordre gratuit du mois
+  disponible » (état de Prochain achat par défaut) : propres au simulateur, en
+  mémoire, jamais enregistrés. Ils valent pour l'éditeur et les cartes proposées ;
+  un scénario enregistré garde son propre budget (voir plus bas).
 * **Scénarios** dans `S.uiPrefs.simOrdres = {scenarios: [{id, nom, lignes:
   [{ticker, mode "parts"|"eur", val, prix|null}]}]}` : recalculés aux cours du jour
   à chaque affichage, sauf un prix saisi à la main. Le brouillon ne vit qu'en
@@ -240,6 +244,54 @@ Fonctions `so*`, bloc juste après Prochain achat.
   comparaison, et l'offre Fortuneo × Amundi (achats de 500 € à 100 000 € sans
   courtage sur ~120 ETF Amundi jusqu'au 31/12/2026 ; ni WPEA, ni PEMS
   FR001400ZGO4, ni PNAS FR001400ZGR7 n'y figurent, seulement PAEEM et PUST).
+
+### Scénarios proposés et budget par scénario (03/10/2026)
+
+* Budget du simulateur : sa propre saisie, sinon celle de Prochain achat (`_pacBudget`),
+  sinon le budget réel ou prévisionnel (`pacBudgetAuto`).
+* Un scénario enregistré garde son budget (`budget` dans `S.uiPrefs.simOrdres`) et
+  sa carte est calculée avec : il ne passe plus en « Reste » négatif quand les
+  espèces retombent. L'ouvrir remet ce budget dans le champ.
+* Trois cartes d'office (non enregistrées, recalculées) : « Stratégie à la lettre »
+  (= plan de Prochain achat), « Frais minimum » (`soAuto(1, true)` : un seul ordre,
+  le gratuit, sur la ligne la plus en retard) et « Équilibre » (`soAuto(2, false)` :
+  deux lignes au plus, avec scission du gros ordre pour garder le gratuit).
+  Courtage proportionnel : au-delà de 500 €, « Équilibre » ne coûte presque pas
+  moins que le plan exact ; seul « Frais minimum » économise vraiment (en laissant
+  le reste en espèces).
+* Retirés à la demande d'Arthur : alertes « au-dessus de sa cible » et « dérive »
+  (et le réglage `seuilDerive`), et l'alerte « Calcul sur le cours de clôture… » :
+  la date des cours est en petit dans l'en-tête de la carte (`#pac-cours`).
+
+### Versements prévus, nuage coût / précision, passer un scénario, historique (03/10/2026)
+
+* **Versements prévus** (onglet Dépôts, « Prévoir un versement ») : `S.depotsPrevus
+  [{id, date, amount, note}]`, clé de premier niveau de `pea_data.json`, **à part de
+  `S.depots`** : ni les espèces, ni le total déposé, ni les courbes ne les comptent.
+  Ajoutée aux **deux** chemins de chargement (`_hydrateFromPython` et
+  `_hydrateFromHttp`), à l'écriture (`_syncToPythonNow`), à `loadState` et à
+  l'import : en oublier un, et les versements prévus disparaissent au redémarrage.
+  Date au plus un mois après aujourd'hui (`depPrevuMax`), refusée au-delà. Une date
+  passée reste affichée (« arrivé ? ») jusqu'à « Arrivé » : `ov-dep` pré-rempli,
+  le dépôt rejoint `S.depots` seulement à l'enregistrement, et le prévu disparaît.
+* **Mois d'achat** : en Prévisionnel, celui du dernier versement prévu
+  (`pacMoisAchat`). S'il tombe le mois prochain, son ordre gratuit est disponible :
+  `pacGratuitEtat` le dit et grise la case (elle règle le mois en cours).
+* **Coût ou précision** (`soNuageHtml`) : nuage SVG sous les cartes, frais en x
+  (axe resserré autour des valeurs : elles ne diffèrent souvent que de centimes),
+  écart max à la cible en y. Une carte qui laisse plus de 10 % du budget (et plus
+  de 20 €) non investi le dit dans son étiquette. Tous au même point : une phrase.
+* **Passer** (icône sur chaque carte, `soPasser`) : fenêtre avec les ordres de la
+  carte, parts / cours exécuté / frais modifiables (avis d'opéré), date, case
+  « Payé avec le prêt ». Chaque ligne cochée devient un « Achat » (et la position
+  si besoin, comme « Saisir »). Alerte si les espèces réelles ne couvrent pas :
+  confirmer d'abord le versement arrivé. Un seul `pushUndo` : Retour défait achats
+  et historique ensemble.
+* **Historique** (`S.uiPrefs.simOrdres.historique`) : date, scénario, ordres,
+  investi, frais, économie de frais par rapport à « Stratégie à la lettre » au même
+  budget (calculée le jour du passage, `fraisLettre`), écart après, valeur des parts
+  au cours du jour et plus-value. Retirer une ligne ne touche pas aux transactions.
+  `soSaveScenarios` garde l'historique (il écrasait tout `simOrdres`).
 
 ## Graphique « Évolution du capital » (vue d'ensemble du PEA, `#card-twr`)
 

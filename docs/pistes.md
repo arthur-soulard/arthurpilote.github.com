@@ -21,6 +21,11 @@ Autres pistes :
 - Simulateur de sortie : « si je vends tout et solde le prêt, il me reste X € »
 - Recherche globale (Ctrl+K) sur transactions, séances, pesées, comptes
 - Import CSV du relevé bancaire pour « Mes comptes »
+- Onglet Stratégie (brainstorming du 03/10/2026, non retenues ce jour-là) :
+  projection sur 12 mois d'un scénario répété (écart à la cible et frais
+  cumulés) ; rééquilibrage avec ventes, en calcul affiché seulement ; seuil de
+  tolérance (n'acheter une ligne qu'à plus de X points sous sa cible) ; étaler
+  un gros versement sur deux mois pour deux ordres gratuits
 
 **Écartées, ne pas y revenir sans raison nouvelle :**
 
