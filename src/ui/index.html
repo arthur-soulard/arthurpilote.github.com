@@ -5383,7 +5383,7 @@ function pcls(n)  { return n == null ? "neu" : n >= 0 ? "pos" : "neg"; }
 function vcls(n)  { return n == null ? "vz"  : n >  0 ? "vp"  : n < 0 ? "vn" : "vz"; }
 function vfmt(n)  {
   if (n == null || isNaN(n)) return '<span class="vz">—</span>';
-  return `<span class="${vcls(n)}">${n > 0 ? "+" : ""}${n.toFixed(2).replace(".",",")}%</span>`;
+  return `<span class="${vcls(n)}">${n > 0 ? "+" : ""}${n.toFixed(2).replace(".",",")}&nbsp;%</span>`;
 }
 function dbtn(fn, id) {
   return `<button onclick="${fn}(${id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:13px;padding:2px 5px" onmouseover="this.style.color='var(--r)'" onmouseout="this.style.color='var(--txt3)'" title="Supprimer" aria-label="Supprimer"><i class="ph ph-trash"></i></button>`;
@@ -8139,17 +8139,22 @@ function _renderSparkline(closes, width, height) {
 }
 
 /* ─── Helper PER seul ─── */
+/* Nombre à la française (« 17,3 » et non « 17.3 ») */
+function _frNum(n, dec) {
+  return n.toLocaleString("fr-FR", {minimumFractionDigits: dec, maximumFractionDigits: dec});
+}
+
 function _renderPER(ticker) {
   const k = _wsKey[ticker];
   if (!k || k.trailingPE == null) return '<span style="color:var(--txt3);font-size:11px">—</span>';
   const tooltip = [
-    "PER (trailing 12m) : " + k.trailingPE.toFixed(1),
-    "Forward PER : "        + (k.forwardPE != null ? k.forwardPE.toFixed(1) : "?"),
-    "Plus haut 52s : "      + (k.fiftyTwoWeekHigh != null ? k.fiftyTwoWeekHigh.toFixed(2) + " " + (k.currency||"") : "?"),
-    "Plus bas 52s : "       + (k.fiftyTwoWeekLow  != null ? k.fiftyTwoWeekLow.toFixed(2)  + " " + (k.currency||"") : "?"),
-    "Capitalisation : "     + (k.marketCap != null ? (k.marketCap/1e9).toFixed(2) + " Md " + (k.currency||"") : "?"),
+    "PER (trailing 12m) : " + _frNum(k.trailingPE, 1),
+    "Forward PER : "        + (k.forwardPE != null ? _frNum(k.forwardPE, 1) : "?"),
+    "Plus haut 52s : "      + (k.fiftyTwoWeekHigh != null ? _frNum(k.fiftyTwoWeekHigh, 2) + " " + (k.currency||"") : "?"),
+    "Plus bas 52s : "       + (k.fiftyTwoWeekLow  != null ? _frNum(k.fiftyTwoWeekLow, 2)  + " " + (k.currency||"") : "?"),
+    "Capitalisation : "     + (k.marketCap != null ? _frNum(k.marketCap/1e9, 2) + " Md " + (k.currency||"") : "?"),
   ].join("\n");
-  return `<span title="${tooltip.replace(/"/g,'&quot;')}" style="font-size:11px;font-family:var(--mono);font-weight:600">${k.trailingPE.toFixed(1)}</span>`;
+  return `<span title="${tooltip.replace(/"/g,'&quot;')}" style="font-size:11px;font-family:var(--mono);font-weight:600">${_frNum(k.trailingPE, 1)}</span>`;
 }
 
 /* ─── Helper dividend yield seul ─── */
@@ -8157,7 +8162,7 @@ function _renderYield(ticker) {
   const k = _wsKey[ticker];
   if (!k || k.divYield == null) return '<span style="color:var(--txt3);font-size:11px">—</span>';
   const pct = k.divYield * 100;
-  return `<span title="Rendement annuel du dividende" style="font-size:11px;font-family:var(--mono);font-weight:600;color:var(--p)">${pct.toFixed(2)}%</span>`;
+  return `<span title="Rendement annuel du dividende" style="font-size:11px;font-family:var(--mono);font-weight:600;color:var(--p)">${_frNum(pct, 2)}&nbsp;%</span>`;
 }
 
 /* ─── Fetch sparklines (positions + wishlist actions/ETF) ─── */

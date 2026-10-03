@@ -115,6 +115,14 @@ Une ligne `nom = pourcentage` ; ce qui manque pour 100 % devient « non détaill
 * JS : préfixe `expo*`, point d'entrée `renderSectors()` (nom historique, appelé par
   `goTab("sector")` et après une modification de position).
 
+## Positions et Wishlist : formats des nombres (4.3.17)
+
+PER, rendement du dividende (`_renderPER`, `_renderYield`, via `_frNum`) et
+variations 1 semaine / 1 mois / 1 an (`vfmt`) s'écrivent à la française :
+« 17,3 », « 3,43 % », « -4,61 % », espace insécable avant « % ». Ils sortaient
+en « 17.3 », « 3.43% », « -4,61% ». L'onglet Recommandations (masqué, plus dans
+la barre latérale) garde son ancien format.
+
 ## Wishlist : frais des ETF
 
 Colonne « Frais/an » (TER, frais de gestion annuels) dans le tableau des ETF,
