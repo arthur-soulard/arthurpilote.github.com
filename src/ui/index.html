@@ -532,6 +532,25 @@ td:first-child { text-align: left; padding-left: 2px; font-family: var(--font); 
 .so-cmp-t tbody th { padding: 11px 10px 11px 2px; font-weight: 500; color: var(--txt2); font-size: 12px; }
 .so-cmp-t .so-best { color: var(--accent-text); font-weight: 700; }
 .so-ord { text-align: left; font-size: 11.5px; line-height: 1.7; white-space: nowrap; }
+.so-nuage-w { margin-top: 18px; }
+.so-nuage { display: block; width: 100%; max-width: 720px; height: auto; }
+.so-nuage .ax { stroke: var(--brd2); stroke-width: 1; }
+.so-nuage .gr { stroke: var(--brd); stroke-dasharray: 2 4; }
+.so-nuage text { fill: var(--txt2); font-size: 11px; font-family: var(--font); }
+.so-nuage text.nom { fill: var(--txt); font-size: 11.5px; font-weight: 600; }
+.so-nuage circle { fill: var(--accent); stroke: var(--bg2); stroke-width: 2; }
+.so-hist td, .so-hist th { white-space: nowrap; }
+.so-hist td.so-hist-l { white-space: normal; min-width: 110px; }
+.so-hist small { display: block; color: var(--txt3); font-size: 10.5px; }
+.so-hist tfoot td { font-weight: 600; border-top: 1px solid var(--brd2); }
+.sop-table input[type="number"] { width: 92px; }
+.sop-opts { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin: 4px 0 12px; }
+#dep-prevus:not(:empty) { margin-bottom: 12px; padding: 0 20px; }
+.dep-prev-t { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin: 2px 0 8px; font-size: 12.5px; font-weight: 600; }
+.dep-prev { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 6px; padding: 7px 10px 7px 12px; border: 1px dashed var(--brd3); border-radius: var(--rad); font-size: 12.5px; }
+.dep-prev > i { color: var(--accent-text); font-size: 16px; }
+.dep-prev b { font-family: var(--mono); }
+.dep-prev.retard { border-color: var(--a); background: var(--a2); }
 
 /* ══════════════════════════════════════════════════
    PILOTE — surcharges desktop app (sidebar, titlebar, dark theme)
@@ -2742,9 +2761,11 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <span class="card-t">Dépôts PEA</span>
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-size:10px;color:var(--txt2);font-family:var(--mono)" id="dep-total-lbl"></span>
+        <button class="btn btn-sm btn-ghost" onclick="openDepPrevu()"><i class="ph ph-calendar-plus"></i> Prévoir un versement</button>
         <button class="btn btn-sm btn-primary" onclick="openAddDepot()"><i class="ph ph-plus"></i> Ajouter</button>
       </div>
     </div>
+    <div id="dep-prevus"></div>
     <div class="tw"><table>
       <thead><tr><th>Date</th><th>Montant</th><th>Note</th><th></th></tr></thead>
       <tbody id="dep-body"></tbody>
@@ -2765,6 +2786,9 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     </div>
     <div class="card-b">
       <div class="pac-ctrl">
+        <span class="so-tog" role="group" aria-label="Budget réel ou prévisionnel">
+          <button type="button" id="pac-mode-reel" onclick="pacSetMode('reel')" title="Les espèces du PEA">Réel</button>
+          <button type="button" id="pac-mode-prev" onclick="pacSetMode('prev')" title="Les espèces + les versements prévus (onglet Dépôts)">Prévisionnel</button></span>
         <label class="pac-check">Budget du mois
           <input id="pac-budget" type="number" step="0.01" min="0" oninput="pacSetBudget(this.value)"> €</label>
         <span class="pac-dim" id="pac-especes"></span>
@@ -2798,6 +2822,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <div id="so-ed"></div>
       <div id="so-res"></div>
       <div id="so-scen" class="so-scen"></div>
+      <div id="so-hist" class="so-scen"></div>
     </div>
   </div>
   <div class="card" id="card-strat">
@@ -4881,6 +4906,22 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
   </div>
 </div>
 
+<!-- Modal : Versement prévu (pas encore arrivé sur le PEA) -->
+<div class="ov" id="ov-depp" onclick="if(event.target===this)closeOv('ov-depp')">
+  <div class="modal">
+    <h2 id="depp-t">Prévoir un versement</h2>
+    <div class="m-note">Tant qu'il n'est pas arrivé, il ne compte ni dans les espèces ni dans le total déposé.
+      La Stratégie s'en sert pour son budget prévisionnel.</div>
+    <div class="fg"><label>Date d'arrivée prévue (dans un mois au plus)</label><input id="dp-date" type="date"></div>
+    <div class="fg"><label>Montant (EUR)</label><input id="dp-amt" type="number" step="0.01" min="0" placeholder="500"></div>
+    <div class="fg"><label>Note</label><input id="dp-note" placeholder="virement du compte courant…"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-depp')">Annuler</button>
+      <button class="btn btn-primary" id="dp-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal : Dividende estimatif futur -->
 <div class="ov" id="ov-divf" onclick="if(event.target===this)closeOv('ov-divf')">
   <div class="modal" style="max-width:420px">
@@ -5136,6 +5177,7 @@ async function _hydrateFromPython() {
       positions:       d.positions       || [],
       transactions:    d.transactions    || [],
       depots:          d.depots          || [],
+      depotsPrevus:    d.depotsPrevus    || [],
       divHist:         [],
       divReceived:     d.divReceived     || [],
       divFuture:       d.divFuture       || [],
@@ -5179,7 +5221,7 @@ function loadState() {
       if (!Array.isArray(p.positions)) throw new Error("format invalide");
       S = p;
       NID = S._nid || NID;
-      ["depots","divHist","wishlist","divReceived","divFuture","closedPositions","strategies"].forEach(k => { if (!S[k]) S[k] = []; });
+      ["depots","depotsPrevus","divHist","wishlist","divReceived","divFuture","closedPositions","strategies"].forEach(k => { if (!S[k]) S[k] = []; });
       if (S.cashSolde == null) S.cashSolde = 0;
       if (!S.banque) S.banque = "Ma banque";
       if (S.prenom == null) S.prenom = "";
@@ -5249,6 +5291,7 @@ async function _syncToPythonNow() {
     d.positions       = S.positions       || [];
     d.transactions    = S.transactions    || [];
     d.depots          = S.depots          || [];
+    d.depotsPrevus    = S.depotsPrevus    || [];
     d.divReceived     = S.divReceived     || [];
     d.divFuture       = S.divFuture       || [];
     d.wishlist        = S.wishlist        || [];
@@ -7972,6 +8015,108 @@ function renderDepots() {
       <td style="white-space:nowrap">${ebtn("editDepot",d.id)}${dbtn("delDepot",d.id)}</td>
     </tr>`
   ).join("")||`<tr><td colspan="4" style="text-align:center;color:var(--txt2);padding:14px">Aucun dépôt saisi</td></tr>`;
+  renderDepPrevus();
+}
+
+/* ─── Versements prévus (S.depotsPrevus) ───
+   Un versement annoncé, pas encore arrivé : à part de S.depots, pour que ni
+   les espèces, ni le total déposé, ni les courbes ne le comptent. Prochain
+   achat et le simulateur d'ordres s'en servent en mode « Prévisionnel ».
+   Un mois de différé au plus. « Arrivé » ouvre la fenêtre de dépôt pré-remplie :
+   rien ne devient un vrai dépôt sans « Enregistrer ». */
+function depPrevus() {
+  return (S.depotsPrevus || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+}
+function depPrevuMax() {
+  const n = new Date(), j = n.getDate();
+  const d = new Date(n.getFullYear(), n.getMonth() + 1, 1);
+  d.setDate(Math.min(j, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function depDateFr(iso) {
+  return new Date(iso + "T00:00:00").toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit", year: "numeric"});
+}
+function renderDepPrevus() {
+  const el = document.getElementById("dep-prevus");
+  if (!el) return;
+  const L = depPrevus();
+  if (!L.length) { el.innerHTML = ""; return; }
+  const auj = new Date(todayISO() + "T00:00:00");
+  el.innerHTML = `<div class="dep-prev-t">Versements prévus
+      <span class="pac-dim">pas encore sur le PEA : ni dans les espèces, ni dans le total déposé</span></div>`
+    + L.map(d => {
+      const j = Math.round((new Date(d.date + "T00:00:00") - auj) / 86400000);
+      const quand = j > 1 ? "dans " + j + " jours" : j === 1 ? "demain" : j === 0 ? "aujourd'hui"
+        : "prévu il y a " + (-j) + " jour" + (j < -1 ? "s" : "") + " : arrivé ?";
+      return `<div class="dep-prev${j < 0 ? " retard" : ""}">
+        <i class="ph ph-clock"></i><b>${eur(d.amount)}</b><span>le ${depDateFr(d.date)}</span>
+        <span class="pac-dim">${quand}${d.note ? " · " + escHtml(d.note) : ""}</span>
+        <span style="flex:1"></span>
+        <button class="btn btn-sm btn-ghost" onclick="depPrevuArrive(${d.id})"><i class="ph ph-check"></i> Arrivé</button>
+        <button class="m-iconbtn" title="Modifier" aria-label="Modifier ce versement prévu" onclick="openDepPrevu(${d.id})"><i class="ph ph-pencil-simple"></i></button>
+        <button class="m-iconbtn danger" title="Supprimer" aria-label="Supprimer ce versement prévu" onclick="delDepPrevu(${d.id})"><i class="ph ph-x"></i></button>
+      </div>`;
+    }).join("");
+}
+function openDepPrevu(id) {
+  const d = id != null ? (S.depotsPrevus || []).find(x => x.id === id) : null;
+  const inp = document.getElementById("dp-date");
+  inp.max = depPrevuMax();
+  inp.value = d ? d.date : todayISO();
+  document.getElementById("dp-amt").value  = d ? d.amount : "";
+  document.getElementById("dp-note").value = d ? (d.note || "") : "";
+  document.getElementById("depp-t").textContent = d ? "Modifier le versement prévu" : "Prévoir un versement";
+  document.getElementById("dp-save").onclick = () => saveDepPrevu(d ? d.id : null);
+  document.getElementById("ov-depp").classList.add("open");
+  setTimeout(() => document.getElementById("dp-amt").focus(), 60);
+}
+function saveDepPrevu(id) {
+  const date   = document.getElementById("dp-date").value;
+  const amount = parseFloat(document.getElementById("dp-amt").value);
+  const note   = document.getElementById("dp-note").value.trim();
+  if (!date || isNaN(amount) || amount <= 0) { showToastModern("Date et montant requis", "warn"); return; }
+  if (date > depPrevuMax()) { showToastModern("Un mois de différé au plus : le " + depDateFr(depPrevuMax()) + " au plus tard", "warn"); return; }
+  pushUndo();
+  S.depotsPrevus = S.depotsPrevus || [];
+  if (id != null) {
+    const i = S.depotsPrevus.findIndex(x => x.id === id);
+    if (i >= 0) S.depotsPrevus[i] = {...S.depotsPrevus[i], date, amount, note};
+  } else {
+    if (!NID.depp) NID.depp = 1;
+    S.depotsPrevus.push({id: NID.depp++, date, amount, note});
+  }
+  persist(); closeOv("ov-depp"); renderDepPrevus();
+  if (typeof pacRender === "function") pacRender();
+}
+function delDepPrevu(id) {
+  pushUndo();
+  S.depotsPrevus = (S.depotsPrevus || []).filter(x => x.id !== id);
+  persist(); renderDepPrevus();
+  if (typeof pacRender === "function") pacRender();
+}
+/* Arrivé : la fenêtre de dépôt, pré-remplie ; à l'enregistrement, le dépôt
+   rejoint S.depots et le versement prévu disparaît. */
+function depPrevuArrive(id) {
+  const d = (S.depotsPrevus || []).find(x => x.id === id);
+  if (!d) return;
+  openAddDepot();
+  document.getElementById("d-date").value = d.date < todayISO() ? d.date : todayISO();
+  document.getElementById("d-amt").value  = d.amount;
+  document.getElementById("d-note").value = d.note || "";
+  document.querySelector("#ov-dep h2").textContent = "Versement arrivé";
+  const btn = document.querySelector("#ov-dep .btn-primary");
+  btn.textContent = "Enregistrer le dépôt";
+  btn.onclick = () => {
+    const date = document.getElementById("d-date").value;
+    const amount = parseFloat(document.getElementById("d-amt").value);
+    const note = document.getElementById("d-note").value.trim();
+    if (!date || isNaN(amount) || amount <= 0) return;
+    pushUndo();
+    S.depots.push({id: NID.dep++, date, amount, note});
+    S.depotsPrevus = (S.depotsPrevus || []).filter(x => x.id !== id);
+    persist(); closeOv("ov-dep"); renderDepots(); renderMetrics(); renderPeaInfo();
+    if (typeof pacRender === "function") pacRender();
+  };
 }
 
 function editDepot(id) {
@@ -9394,7 +9539,7 @@ function doImport(ev) {
       const data=JSON.parse(e.target.result);
       if(!data.positions||!data.transactions) throw new Error("Format invalide");
       S=data; NID=data._nid||{pos:Date.now(),tx:Date.now()+1,wish:Date.now()+2,dep:Date.now()+3};
-      ["depots","divHist","wishlist","divReceived","divFuture"].forEach(k=>{if(!S[k])S[k]=[];});
+      ["depots","depotsPrevus","divHist","wishlist","divReceived","divFuture"].forEach(k=>{if(!S[k])S[k]=[];});
       persist(); renderAll(); updateStatus();
     } catch(err){ alert("Erreur import : "+err.message); }
     finally{ ev.target.value=""; }
@@ -11476,7 +11621,6 @@ const PAC_DEFAUT = {
   seuilGratuit: 500,   // € : le 1er ordre du mois jusqu'à ce montant est gratuit
   taux: 0.35,          // % de courtage, sans minimum
   marge: 0.2,          // % : prix limite = dernier cours × (1 + marge)
-  seuilDerive: 5,      // points d'écart à la cible après achat avant alerte
   gratuitForce: null,  // {mois: "AAAA-MM", utilise, vu} : la case touchée à la main
 };
 const PAC_TAUX_MAX = 0.5;   // % : plafond légal du courtage d'un PEA pour un ordre en ligne
@@ -11661,9 +11805,38 @@ function pacCfg() {
     seuilGratuit: num(c.seuilGratuit, PAC_DEFAUT.seuilGratuit),
     taux:         num(c.taux,         PAC_DEFAUT.taux),
     marge:        num(c.marge,        PAC_DEFAUT.marge),
-    seuilDerive:  num(c.seuilDerive,  PAC_DEFAUT.seuilDerive),
     gratuitForce: c.gratuitForce || null,
+    budgetMode:   c.budgetMode === "reel" ? "reel" : "prev",
   };
+}
+
+/* Budget sans saisie à la main : les espèces (Réel), ou les espèces plus les
+   versements prévus de l'onglet Dépôts (Prévisionnel, le défaut : sans
+   versement prévu, les deux sont égaux). */
+function pacPrevusSomme() { return (S.depotsPrevus || []).reduce((s, d) => s + (d.amount || 0), 0); }
+function pacBudgetAuto(cfg) {
+  const cash = pacR2(computeCash());
+  return (cfg || pacCfg()).budgetMode === "reel" ? cash : pacR2(cash + pacPrevusSomme());
+}
+/* Mois où les ordres partiront : celui du dernier versement prévu en
+   Prévisionnel (au plus le mois prochain), sinon le mois en cours. Un autre
+   mois a son propre ordre gratuit, encore disponible. */
+function pacMoisAchat(cfg) {
+  const m = todayISO().slice(0, 7);
+  if ((cfg || pacCfg()).budgetMode === "reel") return m;
+  return (S.depotsPrevus || []).reduce((x, d) => (d.date || "").slice(0, 7) > x ? d.date.slice(0, 7) : x, m);
+}
+function pacGratuitEtat(cfg) {
+  const mois = pacMoisAchat(cfg);
+  if (mois !== todayISO().slice(0, 7)) return { utilise: false, force: false, tx: null, mois, autreMois: true };
+  return { ...pacGratuit(cfg), mois };
+}
+function pacSetMode(m) {
+  const cfg = pacCfg();
+  cfg.budgetMode = m === "reel" ? "reel" : "prev";
+  pacSaveCfg(cfg);
+  _pacBudget = null;
+  pacRender();
 }
 function pacSaveCfg(cfg) {
   S.uiPrefs = S.uiPrefs || {};
@@ -11721,8 +11894,8 @@ function pacPlanCourant(opts) {
   opts = opts || {};
   const cfg = pacCfg();
   const especes = pacR2(computeCash());
-  const budget = opts.budget != null ? opts.budget : (_pacBudget != null ? _pacBudget : especes);
-  const g = pacGratuit(cfg);
+  const budget = opts.budget != null ? opts.budget : (_pacBudget != null ? _pacBudget : pacBudgetAuto(cfg));
+  const g = pacGratuitEtat(cfg);
   const base = { cfg, especes, budget, g, alertes: [], horsAlloc: [] };
   const qte = tk => { const p = S.positions.find(x => x.ticker === tk); return p ? computePos(p).qty : 0; };
   const cib = cfg.cibles.map(c => c.ticker);
@@ -11755,8 +11928,6 @@ function pacPlanCourant(opts) {
   const A = base.alertes;
   if (cfg.taux > PAC_TAUX_MAX)
     A.push(["warn", "Courtage ramené à 0,5 % : c'est le plafond légal pour un ordre passé en ligne sur un PEA."]);
-  if (base.coursInfo.cloture)
-    A.push(["info", "Calcul sur le " + base.coursInfo.txt + " : vérifie les prix limites à l'ouverture de la Bourse."]);
   if (!plan.ordres.length) {
     const achetables = plan.lignes.filter(l => !l.surpoids);
     const moinsChere = achetables.length ? Math.min(...achetables.map(l => l.pl)) : null;
@@ -11764,13 +11935,6 @@ function pacPlanCourant(opts) {
       + (moinsChere ? " (la moins chère coûte " + pacPrix(moinsChere) + ")" : "") + "."
       + (_pacBudget == null ? " Saisis ton versement dans Dépôts, ou tape un budget ci-dessus." : "")]);
   }
-  plan.lignes.filter(l => l.surpoids).forEach(l => A.push(["warn",
-    l.label + " est au-dessus de sa cible (" + pacPct(l.avant) + " % pour " + pacPct(l.cible) + " %) : pas d'achat ce mois-ci."]));
-  const derive = plan.lignes.filter(l => l.ecart != null && Math.abs(l.ecart) > cfg.seuilDerive);
-  if (derive.length)
-    A.push(["warn", "L'apport ne suffit pas à rééquilibrer : envisager un arbitrage. Après achat, "
-      + derive.map(l => l.label + " reste à " + pacPct(l.apres) + " % pour " + pacPct(l.cible) + " %").join(", ")
-      + " (plus de " + pacPct(cfg.seuilDerive) + " points d'écart). Information seulement : aucune vente n'est proposée."]);
   const sc = plan.ordres.filter(od => od.scinde);
   if (sc.length)
     A.push(["info", "Ordre " + sc[0].label + " scindé en deux pour profiter de l'ordre gratuit : "
@@ -11792,16 +11956,26 @@ function pacRender() {
   // Contrôles : on ne réécrit pas le budget pendant qu'on le tape
   const inp = document.getElementById("pac-budget");
   if (inp && document.activeElement !== inp) inp.value = r.budget;
-  document.getElementById("pac-especes").innerHTML = "Espèces du PEA : " + pacEur(r.especes)
-    + (_pacBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="pacSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux espèces</button>` : "");
+  const prev = r.cfg.budgetMode !== "reel";
+  document.getElementById("pac-mode-reel").setAttribute("aria-pressed", String(!prev));
+  document.getElementById("pac-mode-prev").setAttribute("aria-pressed", String(prev));
+  const P = depPrevus();
+  document.getElementById("pac-especes").innerHTML = "Espèces du PEA : " + pacEur(r.especes)
+    + (P.length ? " · prévu : " + P.map(d => pacEur(d.amount) + " le " + depDateFr(d.date).slice(0, 5)).join(", ")
+       : (prev ? " · aucun versement prévu (onglet Dépôts)" : ""))
+    + (_pacBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="pacSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir au budget ${prev ? "prévisionnel" : "réel"}</button>` : "");
   document.getElementById("pac-gratuit").checked = r.g.utilise;
+  document.getElementById("pac-gratuit").disabled = !!r.g.autreMois;
   const tx = r.g.tx;
   const txLbl = tx ? (tx.type === "Vente" ? "vente " : "achat ") + (tx.asset || "").replace(/^[A-Z]+:/, "")
     + " du " + new Date(normDate(tx.date) + "T00:00:00").toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"}) : "";
-  document.getElementById("pac-gratuit-info").textContent = r.g.force
+  const moisLong = r.g.autreMois ? new Date(r.g.mois + "-01T00:00:00").toLocaleDateString("fr-FR", {month: "long"}) : "";
+  document.getElementById("pac-gratuit-info").textContent = r.g.autreMois
+    ? "achat en " + moisLong + " (versement prévu) : son ordre gratuit est disponible"
+    : r.g.force
     ? "réglé à la main pour ce mois" + (tx ? " (détecté : " + txLbl + ")" : "")
     : (tx ? "détecté : " + txLbl : "aucun ordre sans frais ce mois-ci");
-  document.getElementById("pac-cours").textContent = r.coursInfo ? r.coursInfo.txt : "";
+  document.getElementById("pac-cours").textContent = r.coursInfo ? r.coursInfo.txt.charAt(0).toUpperCase() + r.coursInfo.txt.slice(1) : "";
 
   const ic = { info: "info", warn: "warning", err: "warning-octagon" };
   const alerte = (k, t) => `<div class="pac-alert ${k}"><i class="ph ph-${ic[k]}"></i><span>${escHtml(t)}</span></div>`;
@@ -11892,7 +12066,6 @@ function pacRenderCfg() {
     </div>
     <div class="fg-row">
       ${champ("marge", "Marge du prix limite (%)", cfg.marge, "0.1")}
-      ${champ("seuilDerive", "Alerte de dérive (points)", cfg.seuilDerive, "0.5")}
     </div>`;
   pacMajSomme();
 }
@@ -12077,8 +12250,8 @@ function soTarif() {
   const cfg = pacCfg();
   return { cfg, taux: Math.min(cfg.taux, PAC_TAUX_MAX) / 100, seuil: cfg.seuilGratuit, marge: cfg.marge / 100 };
 }
-function soBudget() { return _soBudget != null ? _soBudget : pacR2(computeCash()); }
-function soGratuitDispo() { return _soGratuit != null ? _soGratuit : !pacGratuit(pacCfg()).utilise; }
+function soBudget() { return _soBudget != null ? _soBudget : _pacBudget != null ? _pacBudget : pacBudgetAuto(); }
+function soGratuitDispo() { return _soGratuit != null ? _soGratuit : !pacGratuitEtat(pacCfg()).utilise; }
 function soLabel(tk) {
   const c = pacCfg().cibles.find(x => x.ticker === tk);
   return c ? pacLabel(c) : String(tk || "").replace(/^[A-Z]+:/, "");
@@ -12122,13 +12295,13 @@ function soRepartition(ordres, cfg) {
   return { lignes: L, ecartMax: Math.abs(somme - 100) > 1e-6 ? null : Math.max(...L.map(l => Math.abs(l.ecart))) };
 }
 
-function soEvaluer(lignes) {
+function soEvaluer(lignes, budget) {
   const t = soTarif();
   const ordres = lignes.map(l => {
     const pl = l.prix > 0 ? pacR3(l.prix) : soPrixAuto(l.ticker, t.marge);
     return { key: l.ticker || "", label: soLabel(l.ticker), n: soParts(l, pl), pl: pl || 0, sansPrix: !!l.ticker && !pl };
   });
-  const r = soCalcul(ordres, { budget: soBudget(), taux: t.taux, seuil: t.seuil, gratuitUtilise: !soGratuitDispo() });
+  const r = soCalcul(ordres, { budget: budget != null ? budget : soBudget(), taux: t.taux, seuil: t.seuil, gratuitUtilise: !soGratuitDispo() });
   r.repart = soRepartition(r.ordres, t.cfg);
   return r;
 }
@@ -12139,7 +12312,7 @@ function soScenarios() {
 }
 function soSaveScenarios(liste) {
   S.uiPrefs = S.uiPrefs || {};
-  S.uiPrefs.simOrdres = { scenarios: liste };
+  S.uiPrefs.simOrdres = { ...(S.uiPrefs.simOrdres || {}), scenarios: liste };
   persist(false);
   if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
     window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
@@ -12152,6 +12325,63 @@ function soPlanLignes() {
   if (r.bloque) return { erreur: r.bloque };
   return { lignes: r.plan.ordres.map(od => ({ ticker: od.key, mode: "parts", val: od.n, prix: null })) };
 }
+
+/* Les trois scénarios proposés d'office, recalculés avec le budget ci-dessus :
+   « Stratégie à la lettre » est le plan de Prochain achat ; « Frais minimum »
+   ne passe qu'un ordre, le gratuit (sous le seuil), sur la ligne la plus en
+   retard ; « Équilibre » passe deux ordres au plus, sur les deux lignes les plus
+   en retard, au prorata de leur retard. Le courtage étant proportionnel, c'est
+   le nombre de lignes achetées qui fait varier frais et précision. */
+function soAuto(nbMax, gratuitSeul) {
+  const r = pacPlanCourant({ budget: soBudget(), gratuitUtilise: !soGratuitDispo() });
+  if (!r || r.bloque) return null;
+  const t = soTarif(), B = soBudget();
+  const qte = tk => { const p = S.positions.find(x => x.ticker === tk); return p ? computePos(p).qty : 0; };
+  const L = r.plan.lignes.map(l => ({ key: l.key, label: l.label, pl: l.pl, v: qte(l.key) * l.p, t: l.cible / 100 }));
+  const V = L.reduce((s, l) => s + l.v, 0);
+  L.forEach(l => { l.a = l.t * (V + B) - l.v; });
+  const choix = L.filter(l => l.a > PAC_EPS).sort((x, y) => y.a - x.a).slice(0, nbMax);
+  if (!choix.length) return [];
+  const enveloppe = (gratuitSeul && soGratuitDispo()) ? Math.min(B, t.seuil) : B;
+  const sa = choix.reduce((s, l) => s + l.a, 0);
+  choix.forEach(l => { l.n = Math.floor(enveloppe * l.a / sa / l.pl + PAC_EPS); });
+  // Le plus gros ordre sous le seuil en premier : c'est lui le gratuit. Un
+  // ordre au-dessus du seuil est scindé comme dans Prochain achat : sa
+  // première partie, juste sous le seuil, passe gratuitement.
+  const ordre = () => {
+    const L = choix.filter(l => l.n > 0).map(l => ({ key: l.key, label: l.label, n: l.n, pl: l.pl }));
+    const gros = L.reduce((m, o) => (!m || o.n * o.pl > m.n * m.pl) ? o : m, null);
+    if (gros && soGratuitDispo() && gros.n * gros.pl > t.seuil + PAC_EPS) {
+      const nf = Math.floor(t.seuil / gros.pl + PAC_EPS);
+      if (nf > 0) { L.splice(L.indexOf(gros), 1, { ...gros, n: nf }, { ...gros, n: gros.n - nf }); }
+    }
+    return L.sort((x, y) => {
+      const ex = x.n * x.pl <= t.seuil + PAC_EPS, ey = y.n * y.pl <= t.seuil + PAC_EPS;
+      return (ey - ex) || (y.n * y.pl - x.n * x.pl);
+    });
+  };
+  const calc = () => soCalcul(ordre(), { budget: B, taux: t.taux, seuil: t.seuil, gratuitUtilise: !soGratuitDispo() });
+  while (calc().reste < 0) {
+    const c = choix.filter(l => l.n > 0);
+    if (!c.length) break;
+    c.reduce((m, l) => l.n * l.pl > m.n * m.pl ? l : m).n--;
+  }
+  // Compléter, ligne la plus en retard d'abord, sans sortir de l'enveloppe
+  for (let ajoute = true; ajoute;) {
+    ajoute = false;
+    for (const l of choix) {
+      l.n++;
+      const c = calc();
+      if (c.reste >= 0 && c.investi <= enveloppe + PAC_EPS) { ajoute = true; break; }
+      l.n--;
+    }
+  }
+  return ordre().map(l => ({ ticker: l.key, mode: "parts", val: l.n, prix: null }));
+}
+const SO_AUTO = [
+  { id: "auto-min", nom: "Frais minimum", sous: "un seul ordre, le gratuit", f: () => soAuto(1, true) },
+  { id: "auto-mid", nom: "Équilibre", sous: "deux ordres au plus", f: () => soAuto(2, false) },
+];
 
 /* Le brouillon diffère-t-il de ce qui est enregistré ? (pour ne demander
    confirmation que s'il y a vraiment quelque chose à perdre) */
@@ -12218,8 +12448,17 @@ function soDepuisPlan() {
 }
 function soOuvrir(id) {
   if (id === "plan") { soDepuisPlan(); return; }
+  const a = SO_AUTO.find(x => x.id === id);
+  if (a) {
+    const lignes = a.f();
+    if (!lignes || !lignes.length) { showToastModern("Aucun ordre possible avec ce budget", "warn"); return; }
+    if (soModifie() && !confirm("Remplacer les ordres en cours par « " + a.nom + " » ?")) return;
+    soCharger({ id: null, nom: "", lignes });
+    return;
+  }
   const s = soScenarios().find(x => x.id === id);
   if (!s) return;
+  if (s.budget != null) _soBudget = s.budget;
   if (_soEd.id !== id && soModifie() && !confirm("Remplacer les ordres en cours par « " + s.nom + " » ?")) return;
   soCharger({ id: s.id, nom: s.nom, lignes: s.lignes.map(l => ({...l})) });
 }
@@ -12240,7 +12479,8 @@ function soEnregistrer() {
   if (homonyme && !confirm("Un scénario « " + homonyme.nom + " » existe déjà. Le remplacer ?")) return;
   const id = homonyme ? homonyme.id : (liste.some(s => s.id === _soEd.id) ? _soEd.id : "so" + Date.now());
   const i = liste.findIndex(s => s.id === id);
-  if (i >= 0) liste[i] = { id, nom, lignes }; else liste.push({ id, nom, lignes });
+  const sc = { id, nom, lignes, budget: soBudget() };
+  if (i >= 0) liste[i] = sc; else liste.push(sc);
   _soEd.id = id;
   _soEd.nom = nom;
   soSaveScenarios(liste);
@@ -12268,14 +12508,16 @@ function soRender(force) {
   if (b && document.activeElement !== b) b.value = soBudget();
   const nom = document.getElementById("so-nom");
   if (nom && document.activeElement !== nom) nom.value = _soEd.nom || "";
-  document.getElementById("so-especes").innerHTML = "Espèces du PEA : " + pacEur(pacR2(computeCash()))
-    + (_soBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="soSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux espèces</button>` : "");
+  document.getElementById("so-especes").innerHTML = _soBudget != null
+    ? `<button class="btn btn-sm btn-ghost" onclick="soSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir au budget de Prochain achat</button>`
+    : "celui de Prochain achat (" + (_pacBudget != null ? "saisi à la main" : pacCfg().budgetMode === "reel" ? "réel" : "prévisionnel") + ")";
   document.getElementById("so-gratuit").checked = soGratuitDispo();
   // Les cours arrivent toutes les 3 minutes (pacRender) : pendant qu'on
   // tape dans un ordre, on recalcule sans redessiner les champs.
   const ed = document.getElementById("so-ed");
   if (force || !(ed && ed.contains(document.activeElement))) soRenderEd();
   soMaj();
+  soRenderHist();
 }
 
 function soRenderEd() {
@@ -12369,8 +12611,10 @@ function soRenderScen() {
   if (!el) return;
   const plan = soPlanLignes();
   const cartes = [];
-  if (plan.lignes && plan.lignes.length) cartes.push({ id: "plan", nom: "Plan proposé", plan: true, r: soEvaluer(plan.lignes) });
-  soScenarios().forEach(s => cartes.push({ id: s.id, nom: s.nom, r: soEvaluer(s.lignes) }));
+  if (plan.lignes && plan.lignes.length) cartes.push({ id: "plan", nom: "Stratégie à la lettre", sous: "le plan de Prochain achat", plan: true, r: soEvaluer(plan.lignes) });
+  SO_AUTO.forEach(a => { const l = a.f(); if (l && l.length) cartes.push({ id: a.id, nom: a.nom, sous: a.sous, plan: true, r: soEvaluer(l) }); });
+  // Un scénario enregistré garde le budget avec lequel il a été composé
+  soScenarios().forEach(s => cartes.push({ id: s.id, nom: s.nom, sous: s.budget != null ? "budget " + pacEur(s.budget) : "", r: soEvaluer(s.lignes, s.budget) }));
   // Les meilleurs, seulement s'il y a de quoi comparer
   const pleins = cartes.filter(c => c.r.nb > 0);
   const minFrais = pleins.length > 1 ? Math.min(...pleins.map(c => c.r.frais)) : null;
@@ -12382,7 +12626,7 @@ function soRenderScen() {
   const choisies = cartes.filter(c => !_soHorsComparaison.has(c.id));
 
   const carte = c => `<div class="so-carte${c.plan ? " plan" : ""}${c.id === _soEd.id ? " edit" : ""}">
-      <div class="so-carte-h"><b>${escHtml(c.nom)}</b>${c.plan ? `<span class="pac-dim">Prochain achat</span>` : ""}
+      <div class="so-carte-h"><b>${escHtml(c.nom)}</b>${c.sous ? `<span class="pac-dim">${escHtml(c.sous)}</span>` : ""}
         ${meilleurFrais(c) ? `<span class="so-badge">frais les plus bas</span>` : ""}
         ${meilleurEcart(c) ? `<span class="so-badge">plus proche de la cible</span>` : ""}</div>
       <div class="so-l"><span>Ordres</span><span>${c.r.nb}</span></div>
@@ -12394,6 +12638,7 @@ function soRenderScen() {
         <label class="so-cmp"><input type="checkbox"${_soHorsComparaison.has(c.id) ? "" : " checked"} onchange="soSetCompare('${c.id}', this.checked)"> Comparer</label>
         <span style="flex:1"></span>
         <button class="m-iconbtn" title="Ouvrir dans l'éditeur" aria-label="Ouvrir ${escHtml(c.nom)} dans l'éditeur" onclick="soOuvrir('${c.id}')"><i class="ph ph-folder-open"></i></button>
+        ${c.r.nb > 0 ? `<button class="m-iconbtn" title="Ordres passés : les saisir dans Transactions" aria-label="Passer ${escHtml(c.nom)}" onclick="soPasser('${c.id}')"><i class="ph ph-check-square-offset"></i></button>` : ""}
         ${c.plan ? "" : `<button class="m-iconbtn danger" title="Supprimer" aria-label="Supprimer ${escHtml(c.nom)}" onclick="soSupprScen('${c.id}')"><i class="ph ph-trash"></i></button>`}
       </div>
     </div>`;
@@ -12402,13 +12647,259 @@ function soRenderScen() {
     Le brouillon s'efface à la fermeture de Pilote.</div>`;
   el.innerHTML = `<div class="so-scen-h">
       <span class="so-scen-t">Scénarios</span>
-      <span class="pac-dim">recalculés aux cours du jour, avec le budget et l'ordre gratuit ci-dessus</span>
+      <span class="pac-dim">recalculés aux cours du jour ; les trois premiers avec le budget ci-dessus, les tiens avec leur propre budget</span>
       <span style="flex:1"></span>
       <button class="btn btn-sm btn-ghost" onclick="soToggleComparer()" aria-pressed="${_soComparer}"><i class="ph ph-columns"></i> ${_soComparer ? "Masquer la comparaison" : "Comparer (" + choisies.length + ")"}</button>
     </div>
     ${plan.erreur ? `<div class="pac-dim so-note">Plan proposé indisponible : ${escHtml(plan.erreur)}</div>` : ""}
     <div class="so-cards">${cartes.map(carte).join("")}</div>${vide}
+    ${soNuageHtml(cartes)}
     ${_soComparer ? soComparaisonHtml(choisies, meilleurFrais, meilleurEcart) : ""}`;
+}
+
+/* Coût ou précision : chaque carte placée selon ses frais (→) et son écart
+   max à la cible (↑). En bas à gauche : moins cher et plus près de la cible.
+   Deux cartes au même point partagent l'étiquette ; une carte qui laisse une
+   bonne part du budget en espèces le dit (« Frais minimum » au-delà de 500 €).
+   En SVG : suit le thème et l'accent sans redessin, et ne coûte rien à
+   recalculer à chaque frappe. */
+function soNuageHtml(cartes) {
+  const pts = [];
+  cartes.forEach(c => {
+    if (!(c.r.nb > 0) || !c.r.repart || c.r.repart.ecartMax == null) return;
+    const x = pacR2(c.r.frais), y = Math.round(c.r.repart.ecartMax * 10) / 10;
+    const nom = c.nom + (c.r.reste > Math.max(20, c.r.budget * 0.1) ? " (" + pacEur(c.r.reste) + " non investis)" : "");
+    const q = pts.find(o => o.x === x && o.y === y);
+    if (q) q.noms.push(nom); else pts.push({ x, y, noms: [nom] });
+  });
+  if (pts.length === 1 && pts[0].noms.length > 1)
+    return `<div class="pac-dim so-note">Coût ou précision : ${escHtml(pts[0].noms.join(", "))} reviennent au même,
+      ${pacEur(pts[0].x)} de frais et ${pacPct(pts[0].y)} pt d'écart à la cible.</div>`;
+  if (pts.length < 2) return "";
+  const W = 640, H = 230, g = { l: 46, r: 34, t: 22, b: 30 };
+  // Les frais des scénarios ne diffèrent souvent que de quelques centimes :
+  // l'axe se resserre autour d'eux (graduations en euros), l'écart part de 0.
+  const fx = pts.map(o => o.x), lo = Math.min(...fx), hi = Math.max(...fx);
+  const pad = Math.max(hi - lo, 0.4) * 0.25;
+  const xMin = Math.max(0, lo - pad), xMax = hi + pad;
+  const yMax = Math.max(...pts.map(o => o.y)) * 1.2 || 1;
+  const X = v => g.l + (v - xMin) / (xMax - xMin) * (W - g.l - g.r), Y = v => H - g.b - v / yMax * (H - g.t - g.b);
+  const nf = (v, d) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  let svg = "";
+  for (let i = 0; i <= 4; i++) {
+    const vx = xMin + (xMax - xMin) * i / 4, vy = yMax * i / 4;
+    svg += `<line class="gr" x1="${X(vx)}" y1="${g.t}" x2="${X(vx)}" y2="${H - g.b}"/>`
+         + `<text x="${X(vx)}" y="${H - g.b + 16}" text-anchor="middle">${nf(vx, 2)} €</text>`
+         + `<line class="gr" x1="${g.l}" y1="${Y(vy)}" x2="${W - g.r}" y2="${Y(vy)}"/>`
+         + `<text x="${g.l - 6}" y="${Y(vy) + 4}" text-anchor="end">${nf(vy, 1)}</text>`;
+  }
+  svg += `<line class="ax" x1="${g.l}" y1="${H - g.b}" x2="${W - g.r}" y2="${H - g.b}"/><line class="ax" x1="${g.l}" y1="${g.t}" x2="${g.l}" y2="${H - g.b}"/>`
+       + `<text x="${g.l}" y="${g.t - 8}">écart max à la cible (points)</text>`
+       + `<text x="${W - g.r}" y="${g.t - 8}" text-anchor="end">frais →</text>`;
+  pts.forEach(o => {
+    const cx = X(o.x), cy = Y(o.y), droite = cx > W * 0.62;
+    svg += `<circle cx="${cx}" cy="${cy}" r="5.5"><title>${escHtml(o.noms.join(", "))} : ${pacEur(o.x)} de frais, ${nf(o.y, 1)} pt d'écart</title></circle>`;
+    // Plusieurs noms au même point : empilés vers le haut dans la moitié basse
+    const haut = cy > H / 2, nb = o.noms.length;
+    o.noms.forEach((n, k) => {
+      const dy = haut ? (k - nb + 1) * 14 : k * 14;
+      svg += `<text class="nom" x="${droite ? cx - 10 : cx + 10}" y="${cy + 4 + dy}" text-anchor="${droite ? "end" : "start"}">${escHtml(n)}</text>`;
+    });
+  });
+  return `<div class="so-nuage-w"><div class="so-rep-t">Coût ou précision <span class="pac-dim">en bas à gauche : moins de frais et plus près de la cible</span></div>
+    <svg class="so-nuage" viewBox="0 0 ${W} ${H}" role="img" aria-label="Frais et écart à la cible de chaque scénario">${svg}</svg></div>`;
+}
+
+/* ── Passer un scénario : les ordres exécutés deviennent des achats ──
+   La fenêtre reprend les ordres de la carte ; on y corrige parts, cours et
+   frais d'après les avis d'opéré. Chaque ligne cochée devient une transaction
+   « Achat » (et la position si on ne la détient pas encore), comme « Saisir »
+   dans Prochain achat. Le passage s'inscrit dans l'historique. Un seul
+   pushUndo : Retour défait les achats et l'historique ensemble. */
+let _soPasser = null;   // {nom, budget, ordres, fraisLettre}
+
+function soCarteSource(id) {
+  if (id === "plan") {
+    const p = soPlanLignes();
+    return p.lignes && p.lignes.length ? { nom: "Stratégie à la lettre", lignes: p.lignes, budget: null } : null;
+  }
+  const a = SO_AUTO.find(x => x.id === id);
+  if (a) { const l = a.f(); return l && l.length ? { nom: a.nom, lignes: l, budget: null } : null; }
+  const sc = soScenarios().find(x => x.id === id);
+  return sc ? { nom: sc.nom, lignes: sc.lignes, budget: sc.budget } : null;
+}
+
+function soPasser(id) {
+  const src = soCarteSource(id);
+  if (!src) return;
+  const budget = src.budget != null ? src.budget : soBudget();
+  const r = soEvaluer(src.lignes, budget);
+  const ordres = r.ordres.filter(o => o.n > 0 && o.pl > 0);
+  if (!ordres.length) { showToastModern("Aucun ordre à passer dans ce scénario", "warn"); return; }
+  const lettre = pacPlanCourant({ budget, gratuitUtilise: !soGratuitDispo() });
+  _soPasser = { nom: src.nom, budget, ordres, fraisLettre: lettre && lettre.plan ? pacR2(lettre.plan.frais) : null };
+
+  let ov = document.getElementById("ov-so-passer");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "ov-so-passer";
+    ov.className = "ov";
+    ov.onclick = e => { if (e.target === ov) closeOv("ov-so-passer"); };
+    document.body.appendChild(ov);
+  }
+  const especes = pacR2(computeCash());
+  const total = ordres.reduce((x, o) => x + o.montant + o.frais, 0);
+  ov.innerHTML = `<div class="modal" style="max-width:720px">
+    <h2>Passer « ${escHtml(src.nom)} »</h2>
+    <div class="m-note">Une fois les ordres exécutés : corrige les parts, le cours et les frais d'après les avis d'opéré.
+      Chaque ligne cochée devient un achat dans Transactions.</div>
+    ${total > especes + 0.005 ? `<div class="pac-alerts"><div class="pac-alert warn"><i class="ph ph-warning"></i><span>Les espèces du PEA (${pacEur(especes)}) ne couvrent pas ces achats.
+      Si le versement est arrivé, confirme-le d'abord dans Dépôts (bouton Arrivé).</span></div></div>` : ""}
+    <div class="sop-opts">
+      <label class="pac-check">Date d'exécution <input id="sop-date" type="date" value="${todayISO()}"></label>
+      <label class="pac-check"><input type="checkbox" id="sop-pret"> Payé avec le prêt étudiant</label>
+    </div>
+    <div class="tw"><table class="so-table sop-table">
+      <thead><tr><th></th><th style="text-align:left">Titre</th><th>Parts</th><th>Cours exécuté</th><th>Frais</th><th>Montant</th></tr></thead>
+      <tbody>${ordres.map((o, i) => `<tr>
+        <td><input type="checkbox" id="sop-on-${i}" checked onchange="soPasserTotal()" aria-label="Enregistrer l'ordre ${i + 1}"></td>
+        <td style="text-align:left;font-weight:600">${escHtml(o.label)}${o.gratuit ? ` <span class="m-tag pos">gratuit</span>` : ""}</td>
+        <td><input id="sop-n-${i}" type="number" min="1" step="1" value="${o.n}" oninput="soPasserTotal()" aria-label="Parts, ordre ${i + 1}"></td>
+        <td><input id="sop-c-${i}" type="number" min="0" step="0.001" value="${pacR3(o.pl)}" oninput="soPasserTotal()" aria-label="Cours exécuté, ordre ${i + 1}"></td>
+        <td><input id="sop-f-${i}" type="number" min="0" step="0.01" value="${o.gratuit ? 0 : pacR2(o.frais)}" oninput="soPasserTotal()" aria-label="Frais, ordre ${i + 1}"></td>
+        <td id="sop-m-${i}" style="font-family:var(--mono)"></td>
+      </tr>`).join("")}</tbody></table></div>
+    <div class="pac-tot" id="sop-tot"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-so-passer')">Annuler</button>
+      <button class="btn btn-primary" onclick="soPasserValider()"><i class="ph ph-check"></i> Enregistrer les achats</button>
+    </div>
+  </div>`;
+  soPasserTotal();
+  ov.classList.add("open");
+}
+
+function soPasserLignes() {
+  return _soPasser.ordres.map((o, i) => ({
+    o, on: document.getElementById("sop-on-" + i).checked,
+    n: pacNum(document.getElementById("sop-n-" + i).value),
+    c: pacNum(document.getElementById("sop-c-" + i).value),
+    f: pacNum(document.getElementById("sop-f-" + i).value),
+  }));
+}
+function soPasserTotal() {
+  if (!_soPasser) return;
+  let inv = 0, fr = 0;
+  soPasserLignes().forEach((l, i) => {
+    const m = (l.n || 0) * (l.c || 0);
+    document.getElementById("sop-m-" + i).textContent = l.on && m > 0 ? pacEur(m) : "—";
+    if (l.on) { inv += m; fr += l.f || 0; }
+  });
+  document.getElementById("sop-tot").innerHTML = `<span>Investi<b>${pacEur(inv)}</b></span>`
+    + `<span>Frais<b>${pacEur(fr)}</b></span><span>Débité<b>${pacEur(inv + fr)}</b></span>`;
+}
+
+function soPasserValider() {
+  if (!_soPasser) return;
+  const date = document.getElementById("sop-date").value;
+  if (!date) { showToastModern("Date d'exécution requise", "warn"); return; }
+  const L = soPasserLignes().filter(l => l.on);
+  if (!L.length) { showToastModern("Coche au moins un ordre", "warn"); return; }
+  const bad = L.find(l => !(l.n > 0) || Math.floor(l.n) !== l.n || !(l.c > 0) || l.f == null || l.f < 0);
+  if (bad) { showToastModern(bad.o.label + " : parts entières, cours et frais (0 si gratuit) requis", "warn"); return; }
+  // Écart à la cible après ces achats, mesuré avant de les écrire
+  const rep = soRepartition(L.map(l => ({ key: l.o.key, n: l.n })), pacCfg());
+  const pret = document.getElementById("sop-pret").checked;
+  pushUndo();
+  const txIds = [];
+  L.forEach(l => {
+    if (!S.positions.some(x => x.ticker === l.o.key)) {
+      const w = (S.wishlist || []).find(x => x.ticker === l.o.key);
+      S.positions.push({ id: NID.pos++, ticker: l.o.key, name: w ? w.name : l.o.label,
+        type: w && w.wtype === "action" ? "action" : "etf", sector: (w && w.sector) || "etf",
+        cours: null, dividende: 0, exdiv: null });
+    }
+    const tx = { id: NID.tx++, date, asset: l.o.key, type: "Achat", cours: l.c, qty: l.n, frais: pacR2(l.f) };
+    if (pret) tx.pret = true;
+    S.transactions.push(tx);
+    txIds.push(tx.id);
+  });
+  const investi = L.reduce((x, l) => x + l.n * l.c, 0), frais = L.reduce((x, l) => x + l.f, 0);
+  S.uiPrefs = S.uiPrefs || {};
+  const so = S.uiPrefs.simOrdres || {};
+  S.uiPrefs.simOrdres = { ...so, historique: [...(so.historique || []), {
+    id: "h" + Date.now(), date, nom: _soPasser.nom, budget: _soPasser.budget,
+    ordres: L.map(l => ({ ticker: l.o.key, label: l.o.label, n: l.n, cours: l.c, frais: pacR2(l.f) })),
+    investi: pacR2(investi), frais: pacR2(frais), fraisLettre: _soPasser.fraisLettre,
+    ecartMax: rep && rep.ecartMax != null ? Math.round(rep.ecartMax * 10) / 10 : null, txIds,
+  }] };
+  persist();
+  closeOv("ov-so-passer");
+  _soPasser = null;
+  renderPositions(); renderTx();
+  if (typeof applyCoursData === "function") applyCoursData();
+  if (typeof fetchSparklines === "function") fetchSparklines();
+  pacRender();
+  showToastModern(L.length + " achat" + (L.length > 1 ? "s" : "") + " enregistré" + (L.length > 1 ? "s" : "") + " dans Transactions", "ok");
+}
+
+/* ── Historique des scénarios passés ──
+   Ce que chaque passage a coûté (frais, et l'écart à « Stratégie à la lettre »
+   au même budget, calculé le jour même) et ce que ses parts valent aujourd'hui. */
+function soHistorique() {
+  const c = S.uiPrefs && S.uiPrefs.simOrdres;
+  return (c && Array.isArray(c.historique)) ? c.historique : [];
+}
+function soSupprHist(id) {
+  if (!confirm("Retirer ce passage de l'historique ? Les achats restent dans Transactions.")) return;
+  pushUndo();
+  const so = S.uiPrefs.simOrdres || {};
+  S.uiPrefs.simOrdres = { ...so, historique: soHistorique().filter(h => h.id !== id) };
+  persist();
+  soRenderHist();
+}
+function soRenderHist() {
+  const el = document.getElementById("so-hist");
+  if (!el) return;
+  const H = soHistorique().slice().sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  if (!H.length) {
+    el.innerHTML = `<div class="so-scen-h"><span class="so-scen-t">Historique</span></div>
+      <div class="pac-dim">Rien pour l'instant : une fois les ordres d'un scénario exécutés, son bouton
+      <i class="ph ph-check-square-offset"></i> les saisit dans Transactions et les inscrit ici.</div>`;
+    return;
+  }
+  const signe = (v, f) => v == null ? "—" : `<span class="${v > 0.004 ? "c-g" : v < -0.004 ? "c-r" : ""}">${v > 0.004 ? "+" : v < -0.004 ? "−" : ""}${f(Math.abs(v))}</span>`;
+  let tFrais = 0, tEco = 0, tPv = 0, pvOk = true;
+  const rows = H.map(h => {
+    const vals = h.ordres.map(o => { const c = soCours(o.ticker); return c ? o.n * c : null; });
+    const valeur = vals.some(v => v == null) ? null : vals.reduce((x, v) => x + v, 0);
+    const pv = valeur == null ? null : valeur - h.investi - h.frais;
+    const eco = h.fraisLettre != null ? h.fraisLettre - h.frais : null;
+    tFrais += h.frais; if (eco != null) tEco += eco;
+    if (pv == null) pvOk = false; else tPv += pv;
+    const pct = pv == null ? "" : `<small>${pacPct(pv / (h.investi + h.frais) * 100, true)} %</small>`;
+    return `<tr>
+      <td style="text-align:left">${depDateFr(h.date)}</td>
+      <td style="text-align:left;font-weight:600" class="so-hist-l">${escHtml(h.nom)}</td>
+      <td style="text-align:left" class="so-hist-l">${h.ordres.map(o => escHtml(o.label) + " × " + o.n).join(", ")}</td>
+      <td>${pacEur(h.investi)}</td><td>${pacEur(h.frais)}</td>
+      <td title="Frais de « Stratégie à la lettre » au même budget, moins les frais payés">${signe(eco, pacEur)}</td>
+      <td>${h.ecartMax != null ? pacPct(h.ecartMax) + " pt" : "—"}</td>
+      <td>${valeur == null ? "—" : pacEur(valeur)}</td>
+      <td>${signe(pv, pacEur)}${pct}</td>
+      <td><button class="m-iconbtn danger" title="Retirer de l'historique" aria-label="Retirer ce passage de l'historique" onclick="soSupprHist('${h.id}')"><i class="ph ph-x"></i></button></td>
+    </tr>`;
+  }).join("");
+  el.innerHTML = `<div class="so-scen-h"><span class="so-scen-t">Historique</span>
+      <span class="pac-dim">scénarios passés ; la valeur suit les cours du jour</span></div>
+    <div class="tw so-hist"><table>
+      <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Scénario</th><th style="text-align:left">Ordres</th>
+        <th>Investi</th><th>Frais</th><th title="Frais économisés par rapport à « Stratégie à la lettre » au même budget">Économie</th>
+        <th title="Écart max à la cible juste après ces achats">Écart</th><th title="Valeur des parts achetées, au cours du jour">Valeur</th><th>Plus-value</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+      ${H.length > 1 ? `<tfoot><tr><td style="text-align:left" colspan="4">Total, ${H.length} passages</td><td>${pacEur(tFrais)}</td>
+        <td>${signe(tEco, pacEur)}</td><td></td><td></td><td>${pvOk ? signe(tPv, pacEur) : "—"}</td><td></td></tr></tfoot>` : ""}
+    </table></div>`;
 }
 
 function soComparaisonHtml(cols, meilleurFrais, meilleurEcart) {
@@ -13072,6 +13563,7 @@ async function _hydrateFromHttp() {
       positions:       d.positions       || [],
       transactions:    d.transactions    || [],
       depots:          d.depots          || [],
+      depotsPrevus:    d.depotsPrevus    || [],
       divHist:         [],
       divReceived:     d.divReceived     || [],
       divFuture:       d.divFuture       || [],
