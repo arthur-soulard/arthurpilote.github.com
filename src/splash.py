@@ -23,7 +23,9 @@ import base64
 import re
 from pathlib import Path
 
-SIZE = (340, 260)
+# 340 x 260 (maquette validee) agrandi de 35 % a la demande d'Arthur (4.3.19) :
+# .scene { zoom } grossit tout le contenu d'autant, les proportions restent
+SIZE = (460, 350)
 
 # Memes jetons que :root et html[data-theme="dark"] dans index.html
 _THEMES = {
@@ -73,6 +75,7 @@ body {
   border: 1px solid var(--brd); color: var(--txt);
   font-family: "Onest", system-ui, sans-serif;
 }
+.scene { display: flex; flex-direction: column; align-items: center; zoom: 1.35; }
 /* Logo : halo qui respire, deux ondes, tuile qui rebondit, P qui monte, reflet */
 .logo { position: relative; width: 72px; height: 72px; }
 .halo {
@@ -134,7 +137,7 @@ body {
   .piste i { animation-duration: 3s; animation-delay: 0s; }
 }
 </style></head>
-<body>
+<body><div class="scene">
   <div class="logo" aria-hidden="true">
     <div class="halo"></div><i class="onde"></i><i class="onde"></i>
     <div class="tuile"><span class="p">P</span><i class="reflet"></i></div>
@@ -142,4 +145,4 @@ body {
   <div class="nom" aria-hidden="true"><span>P</span><span>i</span><span>l</span><span>o</span><span>t</span><span>e</span></div>
   <div class="piste" aria-hidden="true"><i></i></div>
   <div class="txt" role="status">Chargement de tes donn&eacute;es&hellip;</div>
-</body></html>""" % {"faces": faces, "accent": accent, **t}
+</div></body></html>""" % {"faces": faces, "accent": accent, **t}

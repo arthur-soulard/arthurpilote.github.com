@@ -10,11 +10,21 @@ Ouverte au démarrage. `homeGreeting()` renvoie « Bonjour » avant 18 h, « Bon
 Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 60px)`),
 écrite par `homeRenderGreeting()` avec le prénom dans un `<em>` (italique, couleur
 d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arrive.
-Puis la date en italique, le rang des utilisateurs à gauche (`#home-users`, cliquable
-pour basculer + « Nouvel utilisateur ») et à droite les boutons Paramètres / Exporter /
-Importer / Téléverser vers clé USB avec l'état de la clé (`#home-usb-state`). Sous
-1150 px de large, tout s'empile. Enfin « Tableau de bord » (`.dash-title`), le crayon
-et les tuiles, chacune avec l'icône de son module (`DASH_ICONS`).
+Puis la date en italique. **À droite de la salutation** (4.3.19), l'un sous l'autre :
+les utilisateurs (`#home-users`, cliquables pour basculer + « Nouvel utilisateur »),
+les boutons Modifier les tuiles / Paramètres / Exporter / Importer / Téléverser vers
+clé USB, et l'état de la clé (`#home-usb-state`). Dessous, directement les tuiles,
+chacune avec l'icône de son module (`DASH_ICONS`). Sous 1150 px de large, tout s'empile.
+
+Pourquoi (03/10/2026) : en plein écran sur l'écran d'Arthur (1366 × 768, page de
+1366 × 720), la 2e rangée de tuiles était coupée et il fallait défiler, alors que la
+droite de la salutation restait vide. La salutation occupait toute une bande
+(209 px), suivie d'une ligne « Tableau de bord » + crayon (73 px avec ses marges).
+Désormais : bandeau de 109 px, ligne « Tableau de bord » supprimée (le crayon a
+rejoint les boutons), tuiles un peu moins hautes (marge intérieure 0,9 rem au lieu
+de 1,1). Mesuré avec ses vraies tuiles (PEA, Sport, Objectif, Poids, Dépenses) : la
+dernière finit à 704 px sur 720. La colonne de la salutation est en `auto` : en
+fenêtre plus étroite, ce sont les boutons qui passent à la ligne, pas « Bonjour Arthur ».
 
 `svPushToUsb()` sauve et restaure le libellé du bouton USB en `innerHTML`, pas en
 `textContent` : sinon l'icône disparaît après la première copie.
@@ -77,7 +87,8 @@ Aucun chiffre recalculé à part :
 
 ### Le crayon : on change les tuiles depuis l'accueil
 
-Bouton **✎ Modifier les tuiles** (`.dash-bar`, au-dessus de la grille) →
+Bouton **✎ Modifier les tuiles** (`#dash-edit-btn`, avec les boutons à droite de la
+salutation depuis la 4.3.19) →
 `dashToggleEdit()` bascule `_dashEdit` et pose `.dash-editing` sur `#home-cards`.
 En mode édition :
 
