@@ -27,16 +27,52 @@ from pathlib import Path
 # .scene { zoom } grossit tout le contenu d'autant, les proportions restent
 SIZE = (460, 350)
 
-# Memes jetons que :root et html[data-theme="dark"] dans index.html
+# Memes jetons que :root et html[data-theme="dark"] dans index.html.
+# Texture (4.3.20) : « haut » eclaire le centre du papier, « grain_rgb » et
+# « grain_op » font le grain (theme clair seulement : en sombre, Arthur a
+# trouve que le papier « rend moche ») ; « bord » = --brd rendu opaque sur
+# --bg, pour le liseré que Windows 11 trace autour des coins arrondis.
 _THEMES = {
-    "light": {"bg": "#f1ebe0", "txt": "#2a231b", "txt2": "#6a5e4d", "brd": "rgba(70,45,20,0.17)"},
-    "dark":  {"bg": "#191613", "txt": "#efe7d9", "txt2": "#b1a592", "brd": "rgba(255,230,200,0.13)"},
+    "light": {"bg": "#f1ebe0", "txt": "#2a231b", "txt2": "#6a5e4d", "brd": "rgba(70,45,20,0.17)",
+              "haut": "#f9f5ee", "grain_rgb": (90, 60, 30), "grain_op": ".2", "bord": (212, 203, 189)},
+    "dark":  {"bg": "#191613", "txt": "#efe7d9", "txt2": "#b1a592", "brd": "rgba(255,230,200,0.13)",
+              "haut": "#26211c", "grain_rgb": None, "bord": (55, 49, 43)},
 }
 _DEFAULT_ACCENT = "#9c4a7a"   # ACCENT_DEFAULT (index.html) / DEFAULT_COLOR (appicon.py)
 
 
 def background(theme: str) -> str:
     return _THEMES.get(theme, _THEMES["light"])["bg"]
+
+
+def _grain_uri(rgb) -> str:
+    """Grain de papier : bruit SVG (feTurbulence) en petits points de la couleur
+    donnee. Dessine une fois, il ne bouge pas : aucun cout pendant l'animation."""
+    r, g, b = (c / 255 for c in rgb)
+    svg = ("<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>"
+           "<filter id='g' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.9'"
+           " numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 %.3f"
+           "  0 0 0 0 %.3f  0 0 0 0 %.3f  2.2 0 0 0 -.9'/></filter>"
+           "<rect width='200' height='200' filter='url(#g)'/></svg>") % (r, g, b)
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("ascii")).decode("ascii")
+
+
+def arrondir_coins(hwnd: int, theme: str) -> bool:
+    """Coins arrondis par Windows 11 lui-meme (DWM) : lisses, ombre comprise,
+    rayon fixe de 8 px. Une fenetre transparente avec border-radius en CSS
+    passerait par la « couleur cle » de pywebview, qui laisse des franges.
+    Sous Windows 10 l'appel echoue sans rien casser : coins droits."""
+    try:
+        import ctypes
+        dwm = ctypes.windll.dwmapi
+        rond = ctypes.c_int(2)                                     # DWMWCP_ROUND
+        ok = dwm.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(rond), 4) == 0  # DWMWA_WINDOW_CORNER_PREFERENCE
+        r, g, b = _THEMES.get(theme, _THEMES["light"])["bord"]
+        couleur = ctypes.c_uint(r | (g << 8) | (b << 16))         # COLORREF : 0x00BBGGRR
+        dwm.DwmSetWindowAttribute(hwnd, 34, ctypes.byref(couleur), 4)  # DWMWA_BORDER_COLOR
+        return ok
+    except Exception:
+        return False
 
 
 def _font_uri(fonts_dir: Path, name: str) -> str:
@@ -62,6 +98,11 @@ def build_html(ui_dir: Path, accent: str, theme: str) -> str:
     if sans:
         faces += ("@font-face{font-family:'Onest';font-style:normal;"
                   "font-weight:400 600;src:url(%s) format('woff2')}" % sans)
+    # Grain de papier, fixe, par-dessus le fond (theme clair seulement)
+    grain_css = ""
+    if t["grain_rgb"]:
+        grain_css = ('body::before { content: ""; position: fixed; inset: 0; pointer-events: none;'
+                     ' background: url(%s); opacity: %s; }' % (_grain_uri(t["grain_rgb"]), t["grain_op"]))
 
     return """<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Pilote</title>
@@ -74,8 +115,11 @@ body {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   border: 1px solid var(--brd); color: var(--txt);
   font-family: "Onest", system-ui, sans-serif;
+  /* Papier : plus clair au centre, puis grain fixe par-dessus (theme clair) */
+  background: radial-gradient(ellipse 78%% 70%% at 50%% 44%%, %(haut)s, var(--bg));
 }
-.scene { display: flex; flex-direction: column; align-items: center; zoom: 1.35; }
+%(grain_css)s
+.scene { position: relative; display: flex; flex-direction: column; align-items: center; zoom: 1.35; }
 /* Logo : halo qui respire, deux ondes, tuile qui rebondit, P qui monte, reflet */
 .logo { position: relative; width: 72px; height: 72px; }
 .halo {
@@ -145,4 +189,4 @@ body {
   <div class="nom" aria-hidden="true"><span>P</span><span>i</span><span>l</span><span>o</span><span>t</span><span>e</span></div>
   <div class="piste" aria-hidden="true"><i></i></div>
   <div class="txt" role="status">Chargement de tes donn&eacute;es&hellip;</div>
-</div></body></html>""" % {"faces": faces, "accent": accent, **t}
+</div></body></html>""" % {"faces": faces, "accent": accent, "grain_css": grain_css, **t}
