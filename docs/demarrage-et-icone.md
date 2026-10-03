@@ -19,7 +19,7 @@ logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisa
   (effets d'animation de Windows coupés), tout s'affiche d'emblée et seule la barre
   glisse, plus lentement. Vérifié dans une vraie fenêtre pywebview (thèmes clair et
   sombre), pas encore dans l'exe compilé.
-* **Coins arrondis et papier texturé** (03/10/2026, demande d'Arthur). Les coins sont
+* **Coins arrondis** (03/10/2026, demande d'Arthur). Les coins sont
   arrondis par Windows 11 lui-même (`splash.arrondir_coins`, DWM :
   `DWMWA_WINDOW_CORNER_PREFERENCE` = arrondi, plus `DWMWA_BORDER_COLOR` = `--brd` rendu
   opaque), appelé sur l'événement `shown` de l'écran de chargement : à cet instant,
@@ -28,10 +28,10 @@ logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisa
   par Windows (8 px), lissé, avec l'ombre du système. Pas de fenêtre transparente avec
   `border-radius` en CSS : pywebview la fait par « couleur clé » (rouge pur rendu
   transparent), ce qui laisse des franges. Sous Windows 10, l'appel échoue sans rien
-  casser (coins droits). Le fond : centre plus clair (`haut`) et, **en thème clair
-  seulement**, grain de papier fixe (`_grain_uri`, bruit SVG `feTurbulence`, opacité
-  0,2 ; à 0,55, on aurait dit de la neige de télé et le texte se lisait mal). En
-  sombre, Arthur a trouvé que le papier « rend moche » : fond lisse.
+  casser (coins droits). Fond lisse, à peine plus clair au centre (`haut`).
+* **Pas de grain de papier.** Essayé en 4.3.20 (bruit SVG `feTurbulence` en
+  surimpression) : Arthur l'a trouvé laid en sombre (« le papier rend moche »), puis
+  en clair (« c'est nul »). Retiré en 4.3.21, ne pas le reproposer.
 
 * `boot()` appelle `_appReady()` → `Api.app_ready()` → `reveal_main_window()` (app.py) :
   montre la fenêtre, ferme l'écran de chargement, pose l'icône à l'accent. Une seule
