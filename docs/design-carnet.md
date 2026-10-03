@@ -64,6 +64,13 @@ plutôt qu'un logiciel de bureau.
   même base que la colonne de l'onglet Positions (valeur des titres, hors espèces).
   `perfSeriesAsync()` charge l'historique une seule fois pour les tuiles de l'accueil
   et partage `_perfHistory`/`_perfFullSeries` avec la courbe.
+* **Chiffres des cinq cartes du PEA (`.mc-val`), 4.3.16** : 30 px au plus, sinon
+  17,5 % de la largeur de la carte (`container-type: inline-size` sur `.mc`, unité
+  `cqw`). En fenêtre de 1 280 px (taille par défaut), 30 px coupaient tout montant
+  à 5 chiffres : « 10 700,0… » (156 px de texte pour 147 disponibles). Mesuré :
+  25,7 px à 1 280 px, 30 px à 960 px (les cartes passent sur deux lignes) et à
+  1 600 px, rien de coupé. Un `font-size: 30px` précède la règle en `cqw`, en
+  repli pour un moteur qui ne la connaîtrait pas.
 * **Carte « Valeur du PEA » = titres + espèces (4.2.6).** Elle affichait les titres
   seuls (1 464,15 €) quand la courbe, la tuile de l'accueil et le module Patrimoine
   affichaient titres + espèces (1 469,64 €) : 5,49 € d'écart, le solde espèces.

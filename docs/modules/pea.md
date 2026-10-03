@@ -266,6 +266,20 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   (`regularMarketPrice`) quand il date du même jour, sinon la courbe s'arrêtait la
   veille. Vérifié : dernier point identique à la carte « Valeur du PEA ».
 * Comparateur d'ETF (Simulateurs), plage « 15 ans » : `since` = 16 ans.
+* **Courbes de comparaison (CAC 40, S&P 500, ETF World), 4.3.16** : « et si
+  chaque versement avait acheté l'indice ». `_buildBenchSeries` prend pour flux
+  les versements et retraits (`S.depots`), comme `computePnl`. Jusqu'à la 4.3.15
+  elle prenait les achats et ventes. Or la courbe du portefeuille compte titres
+  **et espèces** : une vente suivie d'un rachat faisait plonger les trois
+  comparaisons entre les deux dates (vu par Arthur le 03/10/2026 ; reproduit :
+  CAC 40 de 9 629 € à 7 393 € après une vente de 2 231 €, retour au rachat).
+  Sans aucun versement saisi, les espèces valent 0 et la courbe baisse aussi à
+  une vente : on garde alors achats et ventes comme flux.
+* **Comparaisons cochées absentes à l'ouverture (4.3.16)** : `renderPerf()`
+  n'attend pas `_initBenchmarkUi()`, qui chargeait les indices cochés un par un.
+  La courbe était dessinée avant l'arrivée des derniers, et rien ne la redessinait :
+  CAC 40 seul sur trois cochés (reproduit sur un démarrage à froid). Les indices se
+  chargent désormais ensemble, puis `drawPerfChart()` est rappelée.
 * Yahoo garde quelques trous (WPEA : clôture vide le 22/12/2025 et du 29/12/2025
   au 02/01/2026) : `priceAt` reprend le dernier cours connu, comme un jour férié.
 
