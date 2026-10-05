@@ -1939,6 +1939,15 @@ label.fo-check {
 .vo-when.now { color: var(--accent); font-weight: 700; }
 .vo-word { font-weight: 700; overflow-wrap: anywhere; }
 .vo-rep { color: var(--txt2); overflow-wrap: anywhere; }
+/* Un mot ou une réponse longue passe à la ligne. Sans ça, la règle « nowrap »
+   des montants (.tw td:not(:first-child), plus bas) l'emportait : une seule
+   entrée de 100 caractères poussait les boutons Modifier et Supprimer hors du
+   cadre, qui coupe ce qui dépasse, pour TOUS les mots. */
+table.tw td.vo-word, table.tw td.vo-rep { white-space: normal; }
+/* Onglet Mots : la case à cocher prend la 1re colonne, « Liste » reste alignée à gauche */
+.vo-mots-tab .vo-sel { width: 22px; padding-right: 0; }
+.vo-mots-tab input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; vertical-align: middle; cursor: pointer; }
+.vo-mots-tab th:nth-child(2), .vo-mots-tab td:nth-child(2) { text-align: left; }
 
 /* Ajout en masse : une ligne = un mot */
 .vo-bulk {
@@ -3415,6 +3424,10 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
                placeholder="Chercher un mot, une réponse…" oninput="voRenderMots()">
         <select id="vo-f-liste" onchange="voRenderMots()"></select>
         <select id="vo-f-boite" onchange="voRenderMots()"></select>
+        <button class="btn btn-ghost btn-sm" id="vo-sel-inv" style="display:none"
+                onclick="voInverserSelection()" title="Échange le mot et la réponse des mots cochés, sans toucher à leur boîte"><i class="ph ph-arrows-left-right"></i> <span id="vo-sel-inv-lbl"></span></button>
+        <button class="btn btn-ghost btn-sm" id="vo-sel-del" style="display:none"
+                onclick="voDeleteSelection()"><i class="ph ph-trash"></i> <span id="vo-sel-lbl"></span></button>
       </div>
       <div id="vo-mots-body"></div>
     </div>
@@ -19999,6 +20012,7 @@ let _voBootstrapped = false;
 let _voCharts  = {};
 let _voEditMot = null;          // id du mot en cours d'édition (null = ajout)
 let _voBoiteVue = null;         // {listeId, boite} affiché dans ov-vo-boite
+let _voSel = new Set();         // ids cochés dans l'onglet Mots (seulement parmi les lignes affichées)
 
 /**
  * Session en cours, ou null quand on est sur l'écran de choix.
@@ -20582,6 +20596,12 @@ function voRenderMots() {
       : `${mots.length} sur ${voMots().length}`;
   }
 
+  // On ne supprime que ce qu'on voit : un mot coché puis masqué par la
+  // recherche ou un filtre sort de la sélection.
+  const visibles = new Set(mots.map(m => m.id));
+  _voSel.forEach(id => { if (!visibles.has(id)) _voSel.delete(id); });
+  voMajSelection();
+
   if (!voMots().length) {
     body.innerHTML = `<div class="m-empty">
       Aucun mot pour l'instant. <b>+ Mot</b> pour en saisir un,
@@ -20594,7 +20614,10 @@ function voRenderMots() {
     return;
   }
 
-  body.innerHTML = `<table class="tw"><thead><tr>
+  const tous = mots.every(m => _voSel.has(m.id));
+  body.innerHTML = `<table class="tw vo-mots-tab"><thead><tr>
+      <th class="vo-sel"><input type="checkbox" id="vo-sel-tous" ${tous ? "checked" : ""}
+        onchange="voCocherTous(this.checked)" title="Tout cocher" aria-label="Cocher tous les mots affichés"></th>
       <th>Liste</th><th>Mot</th><th>Réponse</th><th>Boîte</th>
       <th>Prochaine</th><th>Réussite</th><th></th>
     </tr></thead><tbody>${mots.map(m => {
@@ -20603,6 +20626,8 @@ function voRenderMots() {
       const du = voEstDu(m);
       const taux = m.nbVus ? Math.round((m.nbReussis / m.nbVus) * 100) + " %" : "—";
       return `<tr>
+        <td class="vo-sel"><input type="checkbox" data-id="${m.id}" ${_voSel.has(m.id) ? "checked" : ""}
+          onchange="voCocher('${m.id}', this.checked)" aria-label="Cocher « ${escHtml(m.mot)} »"></td>
         <td><span class="vo-pill" style="border-color:${l.color}55;color:${l.color}">${escHtml((l.icon || "") + " " + l.label)}</span></td>
         <td class="vo-word">${escHtml(m.mot)}</td>
         <td class="vo-rep">${escHtml(m.reponse)}</td>
@@ -20611,9 +20636,92 @@ function voRenderMots() {
         <td class="vo-when">${taux}${m.nbVus ? ` <span style="opacity:.6">(${m.nbVus})</span>` : ""}</td>
         <td><div class="m-acts">
           <button class="m-iconbtn" title="Modifier" onclick="voOpenMot('${m.id}')"><i class="ph ph-pencil-simple"></i></button>
+          <button class="m-iconbtn danger" title="Supprimer" aria-label="Supprimer « ${escHtml(m.mot)} »" onclick="voDeleteLigne('${m.id}')"><i class="ph ph-trash"></i></button>
         </div></td>
       </tr>`;
     }).join("")}</tbody></table>`;
+}
+
+/* ── Sélection et suppression depuis le tableau ────────────────────────── */
+
+/* Pas de nouveau rendu à chaque case cochée : on ne met à jour que les
+   boutons « Inverser » / « Supprimer » et la case « tout cocher ». */
+function voCocher(id, ok) {
+  if (ok) _voSel.add(id); else _voSel.delete(id);
+  voMajSelection();
+}
+
+function voCocherTous(ok) {
+  document.querySelectorAll("#vo-mots-body tbody input[type=checkbox]").forEach(cb => {
+    cb.checked = ok;
+    if (ok) _voSel.add(cb.dataset.id); else _voSel.delete(cb.dataset.id);
+  });
+  voMajSelection();
+}
+
+function voMajSelection() {
+  const n   = _voSel.size;
+  const mots = `${n} mot${n > 1 ? "s" : ""}`;
+  ["vo-sel-inv", "vo-sel-del"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.style.display = n ? "" : "none";
+  });
+  const inv = document.getElementById("vo-sel-inv-lbl");
+  const lbl = document.getElementById("vo-sel-lbl");
+  if (inv) inv.textContent = `Inverser ${mots}`;
+  if (lbl) lbl.textContent = `Supprimer ${mots}`;
+  const tous = document.getElementById("vo-sel-tous");
+  const nb = document.querySelectorAll("#vo-mots-body tbody input[type=checkbox]").length;
+  if (tous) tous.checked = nb > 0 && n === nb;
+}
+
+/* Si l'écriture échoue, la liste en mémoire revient telle qu'elle était :
+   l'écran ne doit pas montrer supprimé un mot qui est encore sur le disque. */
+async function voSupprimerMots(ids) {
+  const cibles = new Set(ids);
+  const avant = VO.mots;
+  VO.mots = VO.mots.filter(x => !cibles.has(x.id));
+  if (!(await voSave())) { VO.mots = avant; return false; }
+  ids.forEach(id => _voSel.delete(id));
+  return true;
+}
+
+async function voDeleteLigne(id) {
+  const m = voMotById(id);
+  if (!m) return;
+  if (!confirm(`Supprimer « ${m.mot} » ? Son historique part avec lui.`)) return;
+  if (await voSupprimerMots([id])) {
+    showToastModern("Mot supprimé", "ok");
+    voRenderAll();
+  }
+}
+
+async function voDeleteSelection() {
+  const ids = [..._voSel].filter(id => voMotById(id));
+  const n = ids.length;
+  if (!n) return;
+  if (!confirm(n > 1 ? `Supprimer ces ${n} mots ? Leur historique part avec eux.`
+                     : "Supprimer ce mot ? Son historique part avec lui.")) return;
+  if (await voSupprimerMots(ids)) {
+    showToastModern(`${n} mot${n > 1 ? "s" : ""} supprimé${n > 1 ? "s" : ""}`, "ok");
+    voRenderAll();
+  }
+}
+
+/* Échange mot et réponse sur place : boîte, échéance et compteurs restent.
+   Pour réparer un import à l'envers sans perdre la progression des mots
+   (les supprimer et les réimporter les renverrait en boîte 1). Pas de
+   confirmation : un second clic rend exactement l'état d'avant. */
+async function voInverserSelection() {
+  const mots = [..._voSel].map(voMotById).filter(Boolean);
+  const n = mots.length;
+  if (!n) return;
+  const echanger = () => mots.forEach(m => { [m.mot, m.reponse] = [m.reponse, m.mot]; });
+  echanger();
+  if (!(await voSave())) { echanger(); return; }
+  _voSel.clear();
+  showToastModern(`${n} mot${n > 1 ? "s" : ""} inversé${n > 1 ? "s" : ""}`, "ok");
+  voRenderAll();
 }
 
 /* ── Fiche d'un mot ────────────────────────────────────────────────────── */

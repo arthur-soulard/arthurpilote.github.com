@@ -56,6 +56,27 @@ Détails qui ont une raison :
   1 sem », « retombe en 1 j ») : on voit la conséquence avant de trancher.
 * Une liste qui contient des mots ne peut pas être supprimée, et il en reste
   toujours au moins une.
+* **Supprimer depuis l'onglet Mots (05/10/2026)** : une corbeille par ligne, et
+  une case à cocher par ligne (+ « tout cocher » en en-tête) avec un bouton
+  « Supprimer N mots » qui n'apparaît qu'une fois des cases cochées
+  (`_voSel`, `voCocher`, `voDeleteSelection`, `voSupprimerMots`). Demandé par
+  Arthur pour nettoyer un ajout en masse raté : jusque-là, la seule suppression
+  était dans la fenêtre du crayon, un mot à la fois. **On ne supprime que ce
+  qu'on voit** : un mot coché puis masqué par la recherche ou un filtre sort de
+  la sélection. Si l'écriture échoue, la liste en mémoire revient telle qu'elle
+  était.
+* **« Inverser N mots »** (`voInverserSelection`, même barre, demandé avec) :
+  échange mot et réponse des mots cochés **sur place** — boîte, échéance,
+  compteurs, exemple et note restent. C'est l'intérêt face à « supprimer puis
+  réimporter avec Inverser », qui renverrait chaque mot en boîte 1. Pas de
+  confirmation : un second clic rend exactement l'état d'avant.
+* **Mot et réponse passent à la ligne** dans les tableaux (`table.tw td.vo-word`,
+  `td.vo-rep` : `white-space: normal`). Panne constatée le 05/10/2026 : la règle
+  `nowrap` des montants (`.tw td:not(:first-child)`) l'emportait, et une seule
+  entrée longue tirée d'un ajout en masse (« First, firstly, first of all… »)
+  élargissait le tableau à 1 507 px dans un cadre de 1 092 px qui coupe ce qui
+  dépasse : Boîte, Prochaine et le crayon de **tous** les mots sortaient de
+  l'écran. Arthur en a conclu qu'on ne pouvait ni modifier ni supprimer un mot.
 * L'ajout en masse coupe au **premier** séparateur (tabulation ou `=`) : une
   définition peut donc en contenir d'autres ensuite. Un mot déjà présent dans
   la même liste n'est pas réimporté — sa boîte et son historique sauteraient.
