@@ -15,7 +15,7 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
     plus-value latente sur les parts restantes
   → **ces deux listes ne se remplissent plus** : voir ci-dessous. Elles restent lues
     pour un ordre qui y aurait été saisi avant.
-* av.contrats : `[{id, label, frais_versement, prelevements_sociaux, fidelite_fin, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
+* av.contrats : `[{id, label, frais_versement, prelevements_sociaux, ouverture, fidelite_fin, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
   → MULTI-CONTRATS, chacun avec ses propres taux
   → **Frais sur versements** (08/10/2026, 4.3.26) : `frais_versement` = % pris sur
     chaque dépôt avant placement, réglé dans la fenêtre du contrat (crayon).
@@ -51,6 +51,24 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
   → Contrats d'Arthur (08/10/2026) : « Afer Génération » (EuroGénération, 4,05 % en
     2025) et « Afer Multisupport » (Fonds Garanti, 2,65 % en 2025, premier versement
     le 05/07/2024), taux du communiqué Afer du 19/01/2026.
+  → **Prélèvements sociaux ≠ impôt au rachat** (décidé avec Arthur le 08/10/2026) :
+    il voulait d'abord les retirer des calculs, pensant que l'abattement de 4 600 €
+    les couvrait. Non : sur un fonds euros ils sont pris **chaque année**, sans choix
+    possible, et l'abattement ne réduit que l'**impôt sur le revenu**, après 8 ans.
+    On garde donc les intérêts nets de prélèvements sociaux (comme le relevé Afer),
+    et l'impôt sur le revenu, lui, n'entre dans aucun calcul : c'est un choix fait au
+    rachat, d'où le simulateur.
+  → **Simulateur de rachat** (4.3.28, bouton « Rachat » d'un contrat, `prRachatModal`,
+    `prRachatCalcul`, fenêtre `ov-pr-rachat`) : calcul affiché, rien d'enregistré.
+    Valeur à la date choisie (`prAvContratTotals(c, asOf)`, dernier taux connu pour
+    le futur), part d'intérêts = rachat × (valeur − versé) / valeur, âge depuis
+    `ouverture` (sinon le premier dépôt saisi), abattement (4 600 € par défaut,
+    modifiable) après 8 ans, impôt au prélèvement forfaitaire (12,8 % avant 8 ans,
+    7,5 % après) et au barème (taux marginal choisi), prélèvements sociaux « déjà
+    pris » si le contrat en a, sinon `PR_PS_AV` % au rachat. Notes : intérêts bloqués
+    perdus à proportion avant `fidelite_fin`, date des 8 ans, choix à la déclaration
+    et dispense de l'avance (revenu fiscal de référence < 25 000 € seul), calcul sur
+    l'argent du prêt seulement (l'assureur compte tout le contrat).
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
 * frais_recurrents : prélevés le MÊME JOUR chaque mois (jour pris sur `date_debut`,
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
