@@ -3701,6 +3701,25 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
   </form>
 </div>
 
+<!-- Prêt : simulateur de rachat d'assurance vie (calcul affiché, rien n'est enregistré) -->
+<div class="ov" id="ov-pr-rachat" onclick="if(event.target===this)closeOv('ov-pr-rachat')">
+  <div class="modal" style="max-width:560px">
+    <h2 id="pr-rachat-title">Simuler un rachat</h2>
+    <div class="fg-row">
+      <div class="fg"><label>Montant à retirer (€)</label><input id="pr-rachat-montant" type="number" step="0.01" min="0" oninput="prRachatCalcul()"></div>
+      <div class="fg"><label>Date du rachat</label><input id="pr-rachat-date" type="date" oninput="prRachatCalcul()"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Abattement disponible (€)</label><input id="pr-rachat-abat" type="number" step="1" min="0" value="4600" oninput="prRachatCalcul()"></div>
+      <div class="fg"><label>Taux marginal d'imposition</label><select id="pr-rachat-tmi" onchange="prRachatCalcul()">
+        <option value="0">0 % (non imposable)</option><option value="11" selected>11 %</option>
+        <option value="30">30 %</option><option value="41">41 %</option><option value="45">45 %</option></select></div>
+    </div>
+    <div id="pr-rachat-res"></div>
+    <div class="mact"><button type="button" class="btn btn-ghost" onclick="closeOv('ov-pr-rachat')">Fermer</button></div>
+  </div>
+</div>
+
 
 <!-- ════════════ MODALES MES COMPTES ════════════ -->
 
@@ -16464,9 +16483,11 @@ function prAvTauxNets(c) {
 function prAvBloque(c, asOf) { return !!(c.fidelite_fin && c.fidelite_fin > (asOf || prToday())); }
 
 /** Totaux d'un contrat d'assurance vie. `depose` = argent sorti du prêt (frais
-    compris), `investi` = ce qu'il en reste une fois les frais sur versement pris. */
-function prAvContratTotals(c) {
-  const asOf = prToday();
+    compris), `investi` = ce qu'il en reste une fois les frais sur versement pris.
+    `asOf` (aujourd'hui par défaut) : une date future sert au simulateur de rachat,
+    avec le dernier taux connu pour les années pas encore publiées. */
+function prAvContratTotals(c, asOf) {
+  asOf = asOf || prToday();
   const taux = prAvTauxNets(c);
   let depose = 0, frais = 0, interets = 0;
   for (const d of (c.depots || [])) {
@@ -17105,7 +17126,8 @@ function prRenderAV(o) {
     const head = `<div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-sm btn-ghost" onclick="prAvTauxModal('${c.id}', null)"><i class="ph ph-plus"></i> Taux</button>
       <button class="btn btn-sm btn-primary" onclick="prAvDepotModal('${c.id}', null)"><i class="ph ph-plus"></i> Dépôt</button>
-      <button class="m-iconbtn" title="Modifier (nom, frais, prélèvements sociaux, intérêts bloqués)" onclick="prAvContratModal('${c.id}')"><i class="ph ph-pencil-simple"></i></button>
+      <button class="btn btn-sm btn-ghost" onclick="prRachatModal('${c.id}')"><i class="ph ph-calculator"></i> Rachat</button>
+      <button class="m-iconbtn" title="Modifier (nom, frais, prélèvements sociaux, ouverture, intérêts bloqués)" onclick="prAvContratModal('${c.id}')"><i class="ph ph-pencil-simple"></i></button>
       <button class="m-iconbtn danger" title="Supprimer le contrat" onclick="prDeleteAvContrat('${c.id}')"><i class="ph ph-x"></i></button>
     </div>`;
 
@@ -17426,10 +17448,14 @@ function prAvContratModal(id) {
       ${prFg("Frais sur versements (%)", "frais_versement", "number", c && prN(c.frais_versement) ? c.frais_versement : "", 'step="0.01" min="0" max="99" placeholder="0"')}
       ${prFg("Prélèvements sociaux (%)", "prelevements_sociaux", "number", c && prN(c.prelevements_sociaux) ? c.prelevements_sociaux : "", 'step="0.1" min="0" max="99" placeholder="0"')}
     </div>
-    ${prFg("Intérêts bloqués jusqu'au", "fidelite_fin", "date", c ? c.fidelite_fin : "", "")}
+    <div class="fg-row">
+      ${prFg("Contrat ouvert le", "ouverture", "date", c ? c.ouverture : "", "")}
+      ${prFg("Intérêts bloqués jusqu'au", "fidelite_fin", "date", c ? c.fidelite_fin : "", "")}
+    </div>
     <div class="m-note" style="margin-bottom:0">Frais : pris sur chaque dépôt avant de placer l'argent (Afer : 0,5 % sur le
       fonds euros, 0 % en unités de compte). Prélèvements sociaux : 17,2 % des intérêts sur l'assurance vie en 2026,
-      les intérêts s'affichent alors nets. Intérêts bloqués : Afer EuroGénération, 1er mercredi de janvier de la
+      les intérêts s'affichent alors nets. Ouverture : date du premier versement, elle compte pour les 8 ans
+      du simulateur de rachat. Intérêts bloqués : Afer EuroGénération, 1er mercredi de janvier de la
       8e année après le premier versement sur ce fonds ; vide si rien n'est bloqué.${c ? "" : " Chaque contrat a ses propres taux annuels et ses propres dépôts."}</div>`,
     data => {
       const label = (data.label || "").trim();
@@ -17438,13 +17464,111 @@ function prAvContratModal(id) {
       if (frais < 0 || frais >= 100) { showToastModern("Frais sur versements invalides", "err"); return false; }
       const ps = prN(String(data.prelevements_sociaux || "").replace(",", "."));
       if (ps < 0 || ps >= 100) { showToastModern("Prélèvements sociaux invalides", "err"); return false; }
-      const champs = { label, frais_versement: frais, prelevements_sociaux: ps, fidelite_fin: data.fidelite_fin || "" };
+      const champs = { label, frais_versement: frais, prelevements_sociaux: ps,
+                       ouverture: data.ouverture || "", fidelite_fin: data.fidelite_fin || "" };
       if (c) Object.assign(c, champs);
       else {
         PR.av.contrats = prAvContrats().concat([Object.assign({ id: prNewId() }, champs, { taux_annuels: [], depots: [] })]);
       }
       prSave(c ? "Contrat modifié" : "Contrat ajouté");
     }, "Enregistrer");
+}
+
+/* ── Simulateur de rachat d'assurance vie ──────────────────────────────────
+   Calcul affiché seulement : rien n'est enregistré ni déduit des chiffres.
+   Règles (notice Afer Génération, régimes fiscal et social, vérifiées le
+   08/10/2026) :
+   - part d'intérêts du rachat = rachat × (valeur − versé) / valeur ;
+   - impôt sur le revenu, choisi à la déclaration : prélèvement forfaitaire de
+     12,8 % avant 8 ans, 7,5 % après (sous 150 000 € de versements, tous contrats),
+     ou barème sur option globale ; après 8 ans, abattement annuel de 4 600 €
+     (9 200 € à deux) sur les intérêts, dans les deux cas ;
+   - prélèvements sociaux : déjà pris chaque année sur un fonds euros (contrat
+     réglé avec `prelevements_sociaux`), sinon PR_PS_AV % des intérêts au rachat. */
+const PR_PS_AV = 17.2;   // prélèvements sociaux de l'assurance vie en 2026
+let _prRachatCid = null;
+
+function prRachatModal(cid) {
+  const c = prAvContrat(cid);
+  if (!c) return;
+  _prRachatCid = cid;
+  document.getElementById("pr-rachat-title").textContent = "Simuler un rachat — " + c.label;
+  document.getElementById("pr-rachat-montant").value = "";
+  document.getElementById("pr-rachat-date").value = prToday();
+  prRachatCalcul();
+  document.getElementById("ov-pr-rachat").classList.add("open");
+}
+
+function prRachatCalcul() {
+  const box = document.getElementById("pr-rachat-res");
+  const c = prAvContrat(_prRachatCid);
+  if (!box || !c) return;
+  const date = document.getElementById("pr-rachat-date").value || prToday();
+  const abat = Math.max(0, prN(document.getElementById("pr-rachat-abat").value));
+  const tmi  = prN(document.getElementById("pr-rachat-tmi").value);
+  const t = prAvContratTotals(c, date);
+  let R = Math.max(0, prN(document.getElementById("pr-rachat-montant").value));
+  const notes = [];
+  // Avant la fin de la fidélité, les intérêts bloqués ne se retirent pas
+  const bloque = prAvBloque(c, date) && t.bloques > 0;
+  const retirable = bloque ? t.valeur - t.bloques : t.valeur;
+  if (R > retirable + 0.005) {
+    notes.push(bloque
+      ? `Plus que ce qui peut être retiré avant le ${prDate(c.fidelite_fin)} (les intérêts bloqués restent sur le contrat) : calcul fait sur ${prEur(retirable)}.`
+      : `Plus que la valeur estimée du contrat : calcul fait sur ${prEur(retirable)}.`);
+    R = retirable;
+  }
+
+  // Âge fiscal : depuis l'ouverture du contrat (premier versement), sinon le
+  // premier dépôt saisi ici
+  const premier = (c.depots || []).map(d => d.date).filter(Boolean).sort()[0];
+  const ouv = c.ouverture || premier || "";
+  const huitAns = ouv ? prAddMonths(ouv, 96) : "";
+  const plus8 = !!huitAns && huitAns <= date;
+  let age = "—";
+  if (ouv) {
+    const a = ouv.split("-").map(Number), b = date.split("-").map(Number);
+    const mois = Math.max(0, (b[0] - a[0]) * 12 + (b[1] - a[1]) - (b[2] < a[2] ? 1 : 0));
+    age = `${Math.floor(mois / 12)} an${Math.floor(mois / 12) > 1 ? "s" : ""}${mois % 12 ? ` et ${mois % 12} mois` : ""}`
+        + (c.ouverture ? ` (ouvert le ${prDate(ouv)})` : ` (depuis le premier dépôt saisi, le ${prDate(ouv)})`);
+  }
+
+  // Les intérêts bloqués « ne sont pas dus » avant la fin de la fidélité (notice,
+  // art. 5.1.2) : ils n'entrent pas dans la valeur de rachat, ni donc dans la part
+  // d'intérêts imposable.
+  const G = retirable > t.depose && retirable > 0 ? R * (retirable - t.depose) / retirable : 0;
+  const psDejaPris = prN(c.prelevements_sociaux) > 0;
+  const ps = psDejaPris ? 0 : G * PR_PS_AV / 100;
+  const base = plus8 ? Math.max(0, G - abat) : G;
+  const tauxPf = plus8 ? 7.5 : 12.8;
+  const irPf  = base * tauxPf / 100;
+  const irBar = base * tmi / 100;
+
+  if (bloque && R > 0) {
+    notes.push(R >= retirable - 0.005
+      ? `Rachat avant le ${prDate(c.fidelite_fin)} : tout le fonds est retiré, les ${prEur(t.bloques)} d'intérêts bloqués sont perdus.`
+      : `Rachat avant le ${prDate(c.fidelite_fin)} : environ ${prEur(t.bloques * R / retirable)} d'intérêts bloqués perdus, à proportion de la somme retirée.`);
+  }
+  if (!plus8 && huitAns) notes.push(`8 ans le ${prDate(huitAns)} : ensuite, abattement et prélèvement forfaitaire à 7,5 %.`);
+  notes.push(`Le choix forfaitaire ou barème se fait à la déclaration de revenus, pour tous tes revenus de placement de
+    l'année. Au rachat, l'assureur retient ${tauxPf.toString().replace(".", ",")} % d'avance, sauf dispense demandée (revenu fiscal de
+    référence sous 25 000 € seul, 50 000 € à deux).`);
+  notes.push(`Estimation sur l'argent du prêt suivi ici : l'assureur calcule la part d'intérêts sur tout le contrat.`);
+
+  // Compact : « Tu reçois » doit se voir sans défiler sur 1366 × 720
+  box.innerHTML = `<div class="tw"><table><tbody>
+      <tr><td>Valeur estimée au ${prDate(date)}</td><td>${prEur(t.valeur)}<div class="tk2">versé ${prEur(t.depose)}${bloque ? ` · dont ${prEur(t.bloques)} d'intérêts bloqués` : ""}</div></td></tr>
+      <tr><td>Part d'intérêts dans ce rachat</td><td>${prEur(G)}</td></tr>
+      <tr><td>Âge du contrat</td><td style="white-space:normal;text-align:right">${age}<div class="tk2">${plus8 ? `plus de 8 ans : ${prEur(Math.min(G, abat))} d'abattement` : "moins de 8 ans : pas d'abattement"}</div></td></tr>
+      <tr><td>Prélèvements sociaux</td><td>${psDejaPris ? "déjà pris chaque année" : prEur(ps) + ` (${prNum(PR_PS_AV)} %)`}</td></tr>
+    </tbody></table></div>
+    <div class="tw" style="margin-top:6px"><table>
+      <thead><tr><th></th><th>Forfaitaire (${tauxPf.toString().replace(".", ",")} %)</th><th>Barème (${tmi} %)</th></tr></thead>
+      <tbody>
+        <tr><td>Impôt</td><td class="neg">${prEur(irPf)}</td><td class="neg">${prEur(irBar)}</td></tr>
+        <tr><td><b>Tu reçois</b></td><td><b>${prEur(R - ps - irPf)}</b></td><td><b>${prEur(R - ps - irBar)}</b></td></tr>
+      </tbody></table></div>
+    <div class="m-note" style="margin:8px 0 0">${notes.map((n, i) => `<div${i ? ' style="margin-top:4px"' : ""}>${n}</div>`).join("")}</div>`;
 }
 
 async function prDeleteAvContrat(id) {
