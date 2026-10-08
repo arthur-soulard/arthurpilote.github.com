@@ -45,10 +45,11 @@ Autres pistes :
   l'historique complet** (vérifié sur les 71 commits, pas seulement sur l'état
   courant). Si la question revient, le prérequis serait un second dépôt public dédié
   aux releases — surtout pas un jeton embarqué dans l'exe, il serait extractible.
-- **Frais, prélèvements sociaux et impôt dans l'assurance vie du prêt** : ajoutés en
-  4.3.26 à 4.3.28 (frais sur versements, intérêts nets, intérêts bloqués, simulateur
-  de rachat), retirés en 4.3.29 à la demande d'Arthur le 08/10/2026 : il veut
-  seulement le montant déposé et le taux annuel. Détail dans `docs/modules/pret.md`.
+- **Prélèvements sociaux et impôt dans l'assurance vie du prêt** : ajoutés en
+  4.3.27 et 4.3.28 (intérêts nets, intérêts bloqués, simulateur de rachat), retirés
+  en 4.3.29 à la demande d'Arthur le 08/10/2026 : il veut le montant déposé et le
+  taux annuel. Seuls les frais sur versements sont revenus (4.3.30). Détail dans
+  `docs/modules/pret.md`.
 
 **Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est

@@ -15,18 +15,35 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
     plus-value latente sur les parts restantes
   → **ces deux listes ne se remplissent plus** : voir ci-dessous. Elles restent lues
     pour un ordre qui y aurait été saisi avant.
-* av.contrats : `[{id, label, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
+* av.contrats : `[{id, label, frais_versement, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
   → MULTI-CONTRATS, chacun avec ses propres taux
-  → **Volontairement simple** (décidé avec Arthur le 08/10/2026, 4.3.29) : le montant
-    déposé et un taux annuel par année, rien d'autre. Intérêts = dépôt capitalisé au
-    taux saisi, valeur = déposé + intérêts. Les frais sur versements (4.3.26), les
-    prélèvements sociaux et les intérêts bloqués (4.3.27) et le simulateur de rachat
-    (4.3.28) ont été retirés à sa demande : « on s'est compliqué la tâche ». Ne pas
-    les reproposer (voir `docs/pistes.md`). Un `pret.json` saisi entre-temps peut
-    garder `frais_versement`, `prelevements_sociaux`, `fidelite_fin` et `ouverture`
-    sur ses contrats : le code les ignore.
+  → **Volontairement simple** (décidé avec Arthur le 08/10/2026, 4.3.29 et 4.3.30) :
+    le montant déposé, un taux annuel par année et les frais sur versements, rien
+    d'autre. Les prélèvements sociaux et les intérêts bloqués (4.3.27) et le
+    simulateur de rachat (4.3.28) ont été retirés à sa demande : « on s'est compliqué
+    la tâche ». Ne pas les reproposer (voir `docs/pistes.md`). Un `pret.json` saisi
+    entre-temps peut garder `prelevements_sociaux`, `fidelite_fin` et `ouverture` sur
+    ses contrats : le code les ignore. Les frais sur versements, retirés avec le reste
+    en 4.3.29, sont revenus en 4.3.30 à sa demande : ce n'est pas une taxe, c'est ce
+    qui fait coller le compte au relevé.
+  → **Frais sur versements** (4.3.26, remis en 4.3.30) : `frais_versement` = % pris sur
+    chaque dépôt avant placement, réglé dans la fenêtre du contrat (crayon).
+    `prAvFraisDepot` (arrondi au centime par dépôt), `prAvDepotInvesti` : les
+    intérêts courent sur l'**investi**, pas sur le versé. `depose` = argent sorti du
+    prêt (frais compris, c'est lui qui compte dans les liquidités), `investi` =
+    versé − frais, `valeur` = investi + intérêts. Les frais vont dans `frais_total`
+    (« Frais payés », « Gains nets »), comme les frais d'ordre du PEA ; la colonne
+    « Investi » de « Performance par enveloppe » est nette de frais, comme celle du PEA.
+    Afer (vérifié sur afer.fr/frais et la notice Afer Génération de janvier 2025,
+    tableau des frais Multisupport de juin 2025) : 0,5 % sur un versement en fonds
+    euros (EuroGénération, Fonds Garanti), 0 % en unités de compte ; 20 000 € versés
+    → 19 900 € investis. Droit d'adhésion de 20 € payé une seule fois par adhérent,
+    tous contrats Afer confondus : rien à compter pour Arthur, déjà adhérent. Les
+    frais de gestion annuels ne s'ajoutent pas : le taux publié par l'Afer, celui
+    qu'on saisit, en est déjà net.
   → Contrats d'Arthur (08/10/2026) : « Afer Génération » (4,05 % en 2025) et
-    « Afer Multisupport » (2,65 % en 2025), taux du communiqué Afer du 19/01/2026.
+    « Afer Multisupport » (2,65 % en 2025), taux du communiqué Afer du 19/01/2026,
+    0,5 % de frais sur versements sur les deux.
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
 * frais_recurrents : prélevés le MÊME JOUR chaque mois (jour pris sur `date_debut`,
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
