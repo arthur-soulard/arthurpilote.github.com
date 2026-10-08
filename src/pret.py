@@ -15,6 +15,8 @@ pea.ventes  : {id, date, ticker, quantite, cours_vente, montant} (montant = cred
 av.contrats : [{id, label, frais_versement, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]
               -> plusieurs contrats possibles, chacun avec ses propres taux
               -> frais_versement : % pris sur chaque depot (Afer : 0,5 sur le fonds euros)
+              -> prelevements_sociaux : % des interets (17,2 en 2026), interets affiches nets
+              -> fidelite_fin : "YYYY-MM-DD", interets bloques jusque-la (Afer EuroGeneration)
 liv         : {label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}
 frais_recurrents : {id, label, montant, date_debut, frequence, nb_occurrences, paliers}
               -> preleve le meme jour de chaque mois (jour pris sur date_debut)
