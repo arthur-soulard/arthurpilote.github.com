@@ -25,6 +25,16 @@ API Python : `load_patrimoine()` / `save_patrimoine()` — les deux renvoient
    pré-remplis par `paValeurAuto()` depuis `window._peaPv.total` et l'onglet Prêt.
    Pas de double saisie. `_peaPv.total` est posé par `renderMetrics()` — ne pas
    recalculer la valorisation du PEA en parallèle.
+   Sur le **mois en cours**, la valeur actuelle d'une ligne auto passe avant le
+   relevé déjà saisi ce mois-là (`paBuildSaisie`) : refaire le relevé suffit à la
+   remettre à jour, rien n'est réécrit sans lui. Corrigé le 08/10/2026 : le relevé
+   d'octobre, fait le 02/10 avant la tranche de 15 000 € reçue le 07/10, gardait
+   une dette à 0 € tout le mois. Un mois passé garde son relevé ; s'il n'en a
+   pas, la ligne auto prend la valeur de la **fin de ce mois-là**
+   (`paValeurAuto(compte, iso)`) : prêt via `prCapitalDu(fin du mois)`, PEA via
+   le dernier point du mois de la courbe du capital (`_perfFullSeries`), et rien
+   tant qu'elle n'est pas chargée (la ligne reprend alors son dernier relevé).
+   Jusqu'à la 4.3.24, rouvrir septembre proposait la dette et le PEA d'aujourd'hui.
 
 **Dette du prêt = versements reçus − remboursements** (`PR.versements` et
 `PR.remboursements` datés d'aujourd'hui ou avant), et non plus le montant emprunté

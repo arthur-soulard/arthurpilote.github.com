@@ -18908,8 +18908,25 @@ async function paDeleteCompte() {
 /**
  * Valeur proposée pour un compte auto : on va la chercher dans le module
  * concerné plutôt que de demander à Arthur de la recopier.
+ * @param {string} [iso] Mois du relevé. Mois passé : la valeur à la fin de ce
+ *   mois-là, pas celle d'aujourd'hui (rouvrir septembre proposait sinon la
+ *   dette d'octobre). Absent, mois en cours ou à venir : aujourd'hui.
  */
-function paValeurAuto(compte) {
+function paValeurAuto(compte, iso) {
+  let fin = null;
+  if (iso) {
+    const d = new Date(iso + "T00:00:00");
+    const f = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const finIso = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+    if (finIso < todayISO()) fin = finIso;
+  }
+  if (compte.auto === "pea" && fin) {
+    // Dernier point du mois sur la courbe du capital du PEA (titres + espèces,
+    // jour par jour). Pas encore chargée : rien, la ligne reprend son dernier relevé.
+    if (!_perfFullSeries && _perfHistory) _perfFullSeries = buildTwrSeries(_perfHistory);
+    const pts = (_perfFullSeries || []).filter(p => p.date <= fin);
+    return pts.length ? pts[pts.length - 1].val : null;
+  }
   if (compte.auto === "pea") {
     // Valorisation courante du PEA, celle qu'affiche la vue d'ensemble
     const pv = window._peaPv || {};
@@ -18927,7 +18944,7 @@ function paValeurAuto(compte) {
     // compte. Mêmes données que l'onglet Prêt, pas de second calcul.
     if (typeof PR !== "undefined" && PR && PR.pret) {
       if (!Number(PR.pret.montant)) return null;
-      return Math.round(prCapitalDu() * 100) / 100;
+      return Math.round(prCapitalDu(fin || undefined) * 100) / 100;
     }
     return null;
   }
@@ -18952,12 +18969,17 @@ function paBuildSaisie(iso) {
     box.innerHTML = `<div class="m-empty">Crée d'abord un compte.</div>`;
     return;
   }
+  // Priorité : relevé déjà saisi ce mois > valeur auto > dernier connu. Sauf une
+  // ligne auto sur le mois en cours : sa valeur actuelle passe avant le relevé
+  // déjà saisi. Un relevé fait le 2 octobre, avant la tranche du prêt reçue le
+  // 7, gardait sinon une dette à 0 € jusqu'à la fin du mois.
+  const moisEnCours = paMoisIso(iso + "T00:00:00") === paMoisIso();
   box.innerHTML = cs.map(c => {
     const t = paType(c.type);
-    // Priorité : relevé déjà saisi ce mois > valeur auto > dernier connu
     const dejaCeMois = paReleves().find(r => r.compteId === c.id && r.date === iso);
-    let val = dejaCeMois ? dejaCeMois.montant : null;
-    if (val === null && c.auto) val = paValeurAuto(c);
+    let val = null;
+    if (c.auto && (moisEnCours || !dejaCeMois)) val = paValeurAuto(c, iso);
+    if (val === null && dejaCeMois) val = dejaCeMois.montant;
     if (val === null) { const d = paDernier(c.id, iso); val = d ? d.montant : null; }
     return `<div class="pa-sai-line">
       <span class="pa-sai-lbl">
