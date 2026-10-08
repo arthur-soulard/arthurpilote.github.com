@@ -15,7 +15,7 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
     plus-value latente sur les parts restantes
   → **ces deux listes ne se remplissent plus** : voir ci-dessous. Elles restent lues
     pour un ordre qui y aurait été saisi avant.
-* av.contrats : `[{id, label, frais_versement, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
+* av.contrats : `[{id, label, frais_versement, prelevements_sociaux, fidelite_fin, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
   → MULTI-CONTRATS, chacun avec ses propres taux
   → **Frais sur versements** (08/10/2026, 4.3.26) : `frais_versement` = % pris sur
     chaque dépôt avant placement, réglé dans la fenêtre du contrat (crayon).
@@ -32,6 +32,25 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
     tous contrats Afer confondus : rien à compter pour Arthur, déjà adhérent. Les
     frais de gestion annuels ne s'ajoutent pas : le taux publié par l'Afer, celui
     qu'on saisit, en est déjà net.
+  → **Prélèvements sociaux** (08/10/2026, 4.3.27) : `prelevements_sociaux` = % des intérêts
+    (17,2 % sur l'assurance vie en 2026, la hausse de CSG de la LFSS 2026 l'exclut).
+    `prAvTauxNets` applique taux × (1 − ps) : les intérêts s'affichent nets, partout
+    (contrat, dépôts, vue d'ensemble). L'Afer les prend chaque année sur le Fonds
+    Garanti, et au terme de la fidélité sur EuroGénération (notice Afer Génération,
+    régime social des fonds euros et art. 5.1.2) : le net est ce qu'Arthur touche.
+  → **Intérêts bloqués** (08/10/2026, 4.3.27) : `fidelite_fin` (date). Tant qu'elle n'est pas
+    passée, `prAvBloque` : les intérêts du contrat sont « bloqués » (sous-titres,
+    note sur la carte, « dont … bloqués » dans la vue d'ensemble), mais restent dans
+    la valeur. Afer EuroGénération : les intérêts vont sur le support Afer Génération
+    Dynamisant jusqu'au 1er mercredi ouvré de janvier de la 8e année civile après le
+    **premier** versement sur ce fonds (pas un délai par dépôt), rendus avec au moins
+    10 % de bonus (non compté) ; un rachat partiel les réduit à proportion, un rachat
+    total les fait tous perdre. Arthur : premier versement le 19/02/2025 → 05/01/2033,
+    alors que ses remboursements commencent en 09/2031. La capitalisation annuelle
+    reste une approximation pour ce fonds (les intérêts n'y sont pas capitalisés).
+  → Contrats d'Arthur (08/10/2026) : « Afer Génération » (EuroGénération, 4,05 % en
+    2025) et « Afer Multisupport » (Fonds Garanti, 2,65 % en 2025, premier versement
+    le 05/07/2024), taux du communiqué Afer du 19/01/2026.
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
 * frais_recurrents : prélevés le MÊME JOUR chaque mois (jour pris sur `date_debut`,
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
