@@ -15,8 +15,23 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
     plus-value latente sur les parts restantes
   → **ces deux listes ne se remplissent plus** : voir ci-dessous. Elles restent lues
     pour un ordre qui y aurait été saisi avant.
-* av.contrats : `[{id, label, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
+* av.contrats : `[{id, label, frais_versement, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]`
   → MULTI-CONTRATS, chacun avec ses propres taux
+  → **Frais sur versements** (08/10/2026, 4.3.26) : `frais_versement` = % pris sur
+    chaque dépôt avant placement, réglé dans la fenêtre du contrat (crayon).
+    `prAvFraisDepot` (arrondi au centime par dépôt), `prAvDepotInvesti` : les
+    intérêts courent sur l'**investi**, pas sur le versé. `depose` = argent sorti du
+    prêt (frais compris, c'est lui qui compte dans les liquidités), `investi` =
+    versé − frais, `valeur` = investi + intérêts. Les frais vont dans `frais_total`
+    (« Frais payés », « Gains nets »), comme les frais d'ordre du PEA ; la colonne
+    « Investi » de « Performance par enveloppe » est nette de frais, comme celle du PEA.
+    Afer (vérifié sur afer.fr/frais et la notice Afer Génération de janvier 2025,
+    tableau des frais Multisupport de juin 2025) : 0,5 % sur un versement en fonds
+    euros (EuroGénération, Fonds Garanti), 0 % en unités de compte ; 20 000 € versés
+    → 19 900 € investis. Droit d'adhésion de 20 € payé une seule fois par adhérent,
+    tous contrats Afer confondus : rien à compter pour Arthur, déjà adhérent. Les
+    frais de gestion annuels ne s'ajoutent pas : le taux publié par l'Afer, celui
+    qu'on saisit, en est déjà net.
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
 * frais_recurrents : prélevés le MÊME JOUR chaque mois (jour pris sur `date_debut`,
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)

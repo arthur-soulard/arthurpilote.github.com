@@ -16436,17 +16436,33 @@ function prAVDepositInterest(depot, schedule, asOf) {
   return capital - initial;
 }
 
-/** Totaux d'un contrat d'assurance vie. */
+/** Frais sur versement d'un dépôt : `frais_versement` % du montant versé, pris
+    par l'assureur avant de placer l'argent (Afer : 0,5 % sur le fonds euros,
+    0 % en unités de compte ; 20 000 € versés → 19 900 € investis). Arrondis au
+    centime par dépôt, comme sur le relevé. */
+function prAvFraisDepot(c, d) {
+  return Math.round(Number((prN(d.montant) * prN(c.frais_versement)).toPrecision(12))) / 100;
+}
+
+/** Ce que le dépôt a réellement placé : c'est lui qui rapporte des intérêts. */
+function prAvDepotInvesti(c, d) {
+  return { date: d.date, montant: prN(d.montant) - prAvFraisDepot(c, d) };
+}
+
+/** Totaux d'un contrat d'assurance vie. `depose` = argent sorti du prêt (frais
+    compris), `investi` = ce qu'il en reste une fois les frais sur versement pris. */
 function prAvContratTotals(c) {
   const asOf = prToday();
-  let depose = 0, interets = 0;
+  let depose = 0, frais = 0, interets = 0;
   for (const d of (c.depots || [])) {
     if (!prPasse(d, asOf)) continue;   // un dépôt daté plus tard n'est pas encore versé
     depose   += prN(d.montant);
-    interets += prAVDepositInterest(d, c.taux_annuels, asOf);
+    frais    += prAvFraisDepot(c, d);
+    interets += prAVDepositInterest(prAvDepotInvesti(c, d), c.taux_annuels, asOf);
   }
-  return { depose, interets, valeur: depose + interets,
-           perf: depose > 0 ? (interets / depose) * 100 : null };
+  const investi = depose - frais;
+  return { depose, frais, investi, interets, valeur: investi + interets,
+           perf: investi > 0 ? (interets / investi) * 100 : null };
 }
 
 /* ── Calculs : Livret A (taux date, capitalisation au 1er janvier) ───────── */
@@ -16710,16 +16726,19 @@ function prOverview() {
   const pea_pv     = anyVal ? pvSum : null;
   const pea_pv_pct = (pea_pv != null && pea_invest > 0) ? (pea_pv / pea_invest) * 100 : null;
 
-  // Assurance vie : somme des contrats
-  let av_depose = 0, av_interets = 0;
+  // Assurance vie : somme des contrats. Les frais sur versement sont des frais
+  // payés (comme ceux d'un ordre du PEA) : hors de l'investi, dans frais_total.
+  let av_depose = 0, av_frais = 0, av_investi = 0, av_interets = 0;
   const av_details = prAvContrats().map(c => {
     const t = prAvContratTotals(c);
     av_depose   += t.depose;
+    av_frais    += t.frais;
+    av_investi  += t.investi;
     av_interets += t.interets;
     return Object.assign({ id: c.id, label: c.label }, t);
   });
-  const av_valeur   = av_depose + av_interets;
-  const av_perf_pct = av_depose > 0 ? (av_interets / av_depose) * 100 : null;
+  const av_valeur   = av_investi + av_interets;
+  const av_perf_pct = av_investi > 0 ? (av_interets / av_investi) * 100 : null;
 
   const liv = prLivretState(PR.liv.mouvements, PR.liv.taux_history, prToday());
   const liv_net = liv.depose - liv.retire;
@@ -16727,7 +16746,7 @@ function prOverview() {
 
   const capital_du      = prCapitalDu(auj);
   const capital_attente = versements + pea_credite - pea_debite - av_depose - liv_net - remb_total - frais_banque;
-  const frais_total     = frais_banque + pea_frais;
+  const frais_total     = frais_banque + pea_frais + av_frais;
   const valeur_portefeuille = (pea_valeur != null ? pea_valeur : 0) + av_valeur + liv.valeur;
   const benefice_net    = (pea_pv != null ? pea_pv : 0) + pea_realise + av_interets + liv.interets_total - frais_total;
   const mensualite      = prN(PR.pret.mensualite);
@@ -16736,7 +16755,7 @@ function prOverview() {
     versements, remb_total, frais_banque, frais_payes, frais_rembourses, allFrais,
     positions, pea_debite, pea_invest, pea_frais, pea_valeur, pea_pv, pea_pv_pct,
     pea_credite, pea_realise,
-    av_details, av_depose, av_interets, av_valeur, av_perf_pct,
+    av_details, av_depose, av_frais, av_investi, av_interets, av_valeur, av_perf_pct,
     liv_depose: liv.depose, liv_retire: liv.retire, liv_net,
     liv_capital: liv.capital, liv_interets_courus: liv.interets_courus,
     liv_interets: liv.interets_total, liv_valeur: liv.valeur, liv_perf_pct,
@@ -16932,7 +16951,7 @@ function prRenderOverview(o) {
           <td class="${prCls(o.pea_pv)}">${o.pea_pv != null ? prEur(o.pea_pv) : "—"}</td>
           <td class="${prCls(o.pea_realise)}">${prEur(o.pea_realise)}</td>
           <td class="${prCls(o.pea_pv_pct)}">${prPct(o.pea_pv_pct)}</td></tr>
-      <tr><td class="tk">Assurance vie</td><td>${prEur(o.av_depose)}</td><td>${prEur(o.av_valeur)}</td>
+      <tr><td class="tk">Assurance vie</td><td>${prEur(o.av_investi)}</td><td>${prEur(o.av_valeur)}</td>
           <td class="${prCls(o.av_interets)}">${prEur(o.av_interets)}</td><td>—</td>
           <td class="${prCls(o.av_perf_pct)}">${prPct(o.av_perf_pct)}</td></tr>
       <tr><td class="tk">${escHtml(PR.liv.label || "Livret A")}</td><td>${prEur(o.liv_net)}</td><td>${prEur(o.liv_valeur)}</td>
@@ -17043,7 +17062,7 @@ function prRenderAV(o) {
 
   let html = `<div class="mkpis">
     <div class="mkpi"><span class="mkpi-lbl">Déposé (tous contrats)</span><span class="mkpi-val">${prEur(o.av_depose)}</span>
-      <span class="mkpi-sub">${o.av_details.length} contrat${o.av_details.length > 1 ? "s" : ""}</span></div>
+      <span class="mkpi-sub">${o.av_details.length} contrat${o.av_details.length > 1 ? "s" : ""}${o.av_frais > 0 ? ` · dont ${prEur(o.av_frais)} de frais sur versements` : ""}</span></div>
     <div class="mkpi pos"><span class="mkpi-lbl">Intérêts acquis</span><span class="mkpi-val">${prEur(o.av_interets)}</span>
       <span class="mkpi-sub">${prPct(o.av_perf_pct)}</span></div>
     <div class="mkpi"><span class="mkpi-lbl">Valeur actuelle</span><span class="mkpi-val">${prEur(o.av_valeur)}</span>
@@ -17064,17 +17083,19 @@ function prRenderAV(o) {
     const t = prAvContratTotals(c);
     const taux = (c.taux_annuels || []).slice().sort((a, b) => prN(b.annee) - prN(a.annee));
     const depots = (c.depots || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const avecFrais = prN(c.frais_versement) > 0;
 
     const head = `<div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-sm btn-ghost" onclick="prAvTauxModal('${c.id}', null)"><i class="ph ph-plus"></i> Taux</button>
       <button class="btn btn-sm btn-primary" onclick="prAvDepotModal('${c.id}', null)"><i class="ph ph-plus"></i> Dépôt</button>
-      <button class="m-iconbtn" title="Renommer" onclick="prAvContratModal('${c.id}')"><i class="ph ph-pencil-simple"></i></button>
+      <button class="m-iconbtn" title="Modifier (nom, frais sur versements)" onclick="prAvContratModal('${c.id}')"><i class="ph ph-pencil-simple"></i></button>
       <button class="m-iconbtn danger" title="Supprimer le contrat" onclick="prDeleteAvContrat('${c.id}')"><i class="ph ph-x"></i></button>
     </div>`;
 
     const body = `
       <div class="mkpis" style="margin-bottom:1rem">
-        <div class="mkpi"><span class="mkpi-lbl">Déposé</span><span class="mkpi-val">${prEur(t.depose)}</span></div>
+        <div class="mkpi"><span class="mkpi-lbl">Déposé</span><span class="mkpi-val">${prEur(t.depose)}</span>
+          <span class="mkpi-sub">${prN(c.frais_versement) > 0 ? `dont ${prEur(t.frais)} de frais (${prNum(prN(c.frais_versement))} %)` : "sans frais sur versements"}</span></div>
         <div class="mkpi pos"><span class="mkpi-lbl">Intérêts</span><span class="mkpi-val">${prEur(t.interets)}</span>
           <span class="mkpi-sub">${prPct(t.perf)}</span></div>
         <div class="mkpi"><span class="mkpi-lbl">Valeur</span><span class="mkpi-val">${prEur(t.valeur)}</span></div>
@@ -17092,10 +17113,10 @@ function prRenderAV(o) {
         </div>
         <div>
           <div class="card-t" style="display:block;margin-bottom:8px">Dépôts</div>
-          ${depots.length ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th><th>Intérêts</th><th></th></tr></thead>
+          ${depots.length ? `<div class="tw"><table><thead><tr><th>Date</th><th>Montant</th>${avecFrais ? "<th>Frais</th>" : ""}<th>Intérêts</th><th></th></tr></thead>
             <tbody>${depots.map(d => {
-              const i = prAVDepositInterest(d, c.taux_annuels, prToday());
-              return `<tr><td>${prDate(d.date)}${prAVenir(d) ? ' <span class="m-tag">à venir</span>' : ""}</td><td>${prEur(prN(d.montant))}</td><td class="pos">${prEur(i)}</td>
+              const i = prAVDepositInterest(prAvDepotInvesti(c, d), c.taux_annuels, prToday());
+              return `<tr><td>${prDate(d.date)}${prAVenir(d) ? ' <span class="m-tag">à venir</span>' : ""}</td><td>${prEur(prN(d.montant))}</td>${avecFrais ? `<td class="neg">${prEur(prAvFraisDepot(c, d))}</td>` : ""}<td class="pos">${prEur(i)}</td>
                 <td><div class="m-acts">
                   <button class="m-iconbtn" title="Modifier" onclick="prAvDepotModal('${c.id}', '${d.id}')"><i class="ph ph-pencil-simple"></i></button>
                   <button class="m-iconbtn danger" title="Supprimer" onclick="prDeleteAvDepot('${c.id}', '${d.id}')"><i class="ph ph-x"></i></button>
@@ -17379,17 +17400,21 @@ function prVenteModal(id) {
 
 function prAvContratModal(id) {
   const c = id ? prAvContrat(id) : null;
-  prOpenForm(c ? "Renommer le contrat" : "Nouveau contrat d'assurance vie", `
+  prOpenForm(c ? "Modifier le contrat" : "Nouveau contrat d'assurance vie", `
     ${prFg("Nom du contrat", "label", "text", c ? c.label : "", 'placeholder="Ex. Linxea Spirit, AV Crédit Agricole…" required')}
-    ${c ? "" : `<div class="m-note" style="margin-bottom:0">Chaque contrat a ses propres taux annuels et ses propres dépôts.</div>`}`,
+    ${prFg("Frais sur versements (%)", "frais_versement", "number", c && prN(c.frais_versement) ? c.frais_versement : "", 'step="0.01" min="0" max="99" placeholder="0"')}
+    <div class="m-note" style="margin-bottom:0">Pris sur chaque dépôt avant de placer l'argent. Afer : 0,5 % sur le
+      fonds euros, 0 % en unités de compte.${c ? "" : " Chaque contrat a ses propres taux annuels et ses propres dépôts."}</div>`,
     data => {
       const label = (data.label || "").trim();
       if (!label) { showToastModern("Donne un nom au contrat", "err"); return false; }
-      if (c) c.label = label;
+      const frais = prN(String(data.frais_versement || "").replace(",", "."));
+      if (frais < 0 || frais >= 100) { showToastModern("Frais sur versements invalides", "err"); return false; }
+      if (c) Object.assign(c, { label, frais_versement: frais });
       else {
-        PR.av.contrats = prAvContrats().concat([{ id: prNewId(), label, taux_annuels: [], depots: [] }]);
+        PR.av.contrats = prAvContrats().concat([{ id: prNewId(), label, frais_versement: frais, taux_annuels: [], depots: [] }]);
       }
-      prSave(c ? "Contrat renommé" : "Contrat ajouté");
+      prSave(c ? "Contrat modifié" : "Contrat ajouté");
     }, "Enregistrer");
 }
 
