@@ -2,6 +2,25 @@
 
 Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
 
+## Espèces : chaque ordre arrondi au centime (08/10/2026)
+
+La banque arrondit le montant brut de **chaque** ordre (parts × cours) au
+centime, demi-centime vers le haut : 25 × 7,297 = 182,425 → 182,43 €. Pilote
+additionnait les montants exacts : les fractions de centime s'accumulaient,
+0,319 € d'espèces affichés 0,32 € pour 0,31 € chez Fortuneo. `brutOrdre(t)`
+fait l'arrondi (avec `toPrecision`, comme `pacR2` : 7,297 × 25 vaut
+182,42499999… en virgule flottante). Il sert partout où l'on compte de l'argent
+qui sort ou entre : `computeCash`, les espèces rejouées de la courbe
+(`buildTwrSeries`, pour finir sur le même solde), le montant d'une ligne de
+Transactions, le total de « Passer un scénario », le prêt (`prTotalOrdre`).
+Vérifié sur les 22 ordres saisis au 08/10/2026 : 0,31 €, le solde du relevé
+(0,319 € sans l'arrondi), et 382,72 / 183,07 / 7,23 € pour les achats du 07/10.
+
+* Seul cas observé : un achat. Pour une vente, demi-centime supposé vers le haut
+  aussi (arrondi commercial) ; à revoir si un relevé dit le contraire.
+* PRU, plus-values et `renderMetrics` gardent les montants exacts : écart de
+  quelques millièmes, invisible à l'affichage.
+
 ## Enregistrement du PEA (4.3.14)
 
 `persist()` → `_syncToPython()` (délai de 0,4 s) → `_syncToPythonNow()` : relit

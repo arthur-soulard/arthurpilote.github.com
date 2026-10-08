@@ -1346,6 +1346,16 @@ label.pr-check {
   text-transform: none; letter-spacing: normal; margin-bottom: 0; cursor: pointer;
 }
 .pr-check input { width: auto; margin: 0; }
+/* « dont … € pris sur le prêt » : ordre payé en partie avec le prêt. N'apparaît
+   que case cochée, sans JS (la case est aussi cochée par programme). */
+.pr-part { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 11.5px; color: var(--txt2); }
+.fg .pr-part { margin: 8px 0 0 22px; }
+.fg .pr-part input, .pr-part input {
+  width: 100px; padding: 5px 8px; border: 1px solid var(--brd2); border-radius: var(--rad);
+  background: var(--bg3); color: var(--txt); font-size: 12.5px; text-align: right;
+}
+.pr-part small { color: var(--txt3); font-size: 10.5px; }
+label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
 
 /* ══════════════════════════════════════════════════
    Page d'accueil
@@ -4805,6 +4815,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     <div class="fg">
       <label class="pr-check" title="L'achat apparaîtra aussi dans Prêt étudiant › PEA, sans y être saisi une seconde fois">
         <input type="checkbox" id="f-pret"> Payé avec l'argent du prêt étudiant</label>
+      <div class="pr-part">dont <input id="f-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Montant pris sur le prêt"> € pris sur le prêt
+        <small>vide : tout l'ordre</small></div>
     </div>
     <!-- Récapitulatif PRU calculé en direct -->
     <div id="pos-recap" style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.7rem .9rem;font-size:11px;font-family:var(--mono);color:var(--txt2);display:none">
@@ -4842,6 +4854,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     <div class="fg" id="t-pret-fg">
       <label class="pr-check" title="L'ordre apparaîtra aussi dans Prêt étudiant › PEA, sans y être saisi une seconde fois">
         <input type="checkbox" id="t-pret"> <span id="t-pret-lbl">Payé avec l'argent du prêt étudiant</span></label>
+      <div class="pr-part">dont <input id="t-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Part de l'ordre qui concerne le prêt"> € <span id="t-pret-mt-lbl">pris sur le prêt</span>
+        <small>vide : tout l'ordre</small></div>
     </div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-tx')">Annuler</button>
@@ -5566,6 +5580,15 @@ function renderPeaInfo() {
 }
 
 /* ─── Metrics ─── */
+/* Montant brut d'un ordre (parts × cours) arrondi au centime, comme sur le
+   relevé de la banque : 25 × 7,297 = 182,425 → 182,43 €. Sans cet arrondi, les
+   fractions de centime s'additionnaient : 0,32 € d'espèces affichés pour 0,31 €
+   à la banque (07/10/2026). toPrecision : 7,297 × 25 vaut 182,42499999… en
+   virgule flottante, comme pacR2. */
+function brutOrdre(t) {
+  return Math.round(Number(((t.qty || 0) * (t.cours || 0) * 100).toPrecision(12))) / 100;
+}
+
 function computeCash() {
   // cashSolde = depots - achats nets + ventes nettes (transactions passees uniquement)
   const cut = todayISO();
@@ -5573,8 +5596,8 @@ function computeCash() {
   let spent = 0, earned = 0;
   S.transactions.forEach(t => {
     if (normDate(t.date) > cut) return;
-    if (t.type === "Achat") spent  += t.qty * t.cours + (t.frais||0);
-    if (t.type === "Vente") earned += t.qty * t.cours - (t.frais||0);
+    if (t.type === "Achat") spent  += brutOrdre(t) + (t.frais||0);
+    if (t.type === "Vente") earned += brutOrdre(t) - (t.frais||0);
   });
   // Only count dividends actually received (date in the past)
   const now = new Date();
@@ -5889,7 +5912,7 @@ function buildTwrSeries(history) {
       cashEvents.push({date: normDate(d.date), delta: d.montant});
   });
   txs.forEach(t => {
-    const flow = t.qty * t.cours;
+    const flow = brutOrdre(t);   // comme computeCash : la courbe finit sur les mêmes espèces
     if (t.type === "Achat")      cashEvents.push({date: normDate(t.date), delta: -(flow + (t.frais || 0))});
     else if (t.type === "Vente") cashEvents.push({date: normDate(t.date), delta:  (flow - (t.frais || 0))});
   });
@@ -7227,9 +7250,9 @@ function renderTx() {
     const pos      = S.positions.find(p=>p.ticker===t.asset);
     const label    = pos ? pos.name+" \u00B7 "+t.asset : t.asset;
     const isSell   = t.type==="Vente";
-    const tot      = isSell
-      ? (t.cours||0)*(t.qty||0) - (t.frais||0)
-      : (t.cours||0)*(t.qty||0) + (t.frais||0);
+    const tot      = isSell   // montant net du relevé : brut arrondi au centime (brutOrdre)
+      ? brutOrdre(t) - (t.frais||0)
+      : brutOrdre(t) + (t.frais||0);
     const isFuture = normDate(t.date) > cut;
     const futureBadge = isFuture
       ? `<span class="badge bw" title="Ordre programme">FUTUR</span> `
@@ -7247,9 +7270,10 @@ function renderTx() {
     const typeBadge = isSell
       ? `<span class="badge" style="background:var(--r2);color:var(--r)">${t.type}</span>`
       : `<span class="badge be">${t.type}</span>`;
-    const pretBadge = t.pret
-      ? `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Payé avec l'argent du prêt étudiant">Prêt</span>`
-      : "";
+    const pretBadge = !t.pret ? ""
+      : t.pretMontant
+      ? `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Dont ${eur(t.pretMontant)} ${isSell ? "rendus au" : "payés avec le"} prêt étudiant">Prêt ${eur(t.pretMontant)}</span>`
+      : `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Payé avec l'argent du prêt étudiant">Prêt</span>`;
     const txSectorId   = sectorOf(t.asset);
     const txSectorHtml = txSectorId ? sectorBadgeHtml(txSectorId) : "";
     return `<div class="txr" style="${isFuture ? "opacity:.6;border-left:3px solid var(--a);padding-left:9px" : ""}">
@@ -9166,6 +9190,7 @@ function openAddPos() {
   document.getElementById("f-type").value="action";
   document.getElementById("f-date").value=new Date().toISOString().slice(0,10);
   document.getElementById("f-pret").checked=false;
+  document.getElementById("f-pret-mt").value="";
   document.getElementById("pos-recap").style.display="none";
   document.querySelector("#ov-pos h2").textContent = "Ajouter une position";
   const btn = document.querySelector("#ov-pos .btn-primary");
@@ -9211,6 +9236,9 @@ function savePos() {
   if (isNaN(prix)||prix<=0) return alert("Prix d’achat requis.");
   if (isNaN(qty)||qty<=0)   return alert("Quantité requise.");
   if (!date) return alert("Date requise.");
+  const pret = document.getElementById("f-pret").checked;
+  const pretMt = pret ? prLireMontantPret("f-pret-mt", brutOrdre({qty, cours: prix}) + frais) : undefined;
+  if (pretMt === null) return;
 
   // Snapshot AVANT toute mutation
   pushUndo();
@@ -9241,8 +9269,10 @@ function savePos() {
     qty,
     frais
   };
-  // Payé avec le prêt : le module Prêt étudiant lit ce drapeau (prPeaOrdres)
-  if (document.getElementById("f-pret").checked) tx.pret = true;
+  // Payé avec le prêt : le module Prêt étudiant lit ce drapeau (prPeaOrdres),
+  // et pretMontant quand le prêt n'en a payé qu'une partie
+  if (pret) tx.pret = true;
+  if (pretMt !== undefined) tx.pretMontant = pretMt;
   S.transactions.push(tx);
 
   persist();
@@ -9314,15 +9344,23 @@ function _txPretSync() {
   document.getElementById("t-pret-lbl").textContent = type === "Vente"
     ? "Vente de parts achetées avec le prêt étudiant"
     : "Payé avec l'argent du prêt étudiant";
+  document.getElementById("t-pret-mt-lbl").textContent = type === "Vente" ? "rendus au prêt" : "pris sur le prêt";
 }
-/* Drapeau `pret` de la transaction saisie, ou null si la saisie est refusée
-   (vente de plus de parts que le prêt n'en détient). */
+/* Part du prêt dans la transaction saisie : false (pas le prêt), {} (tout
+   l'ordre), {pretMontant} (une partie), ou null si la saisie est refusée
+   (montant hors de l'ordre, vente de plus de parts que le prêt n'en détient). */
 function _txPretInput(asset, excludeId) {
   const type = document.getElementById("t-type").value;
   if (type === "Dividende" || !document.getElementById("t-pret").checked) return false;
-  const qty = parseFloat(document.getElementById("t-qty").value)||0;
-  if (type === "Vente" && !prVentePretOk(asset, qty, excludeId)) return null;
-  return true;
+  const t = { type,
+    qty:   parseFloat(document.getElementById("t-qty").value)||0,
+    cours: parseFloat(document.getElementById("t-cours").value)||0,
+    frais: parseFloat(document.getElementById("t-frais").value)||0 };
+  const m = prLireMontantPret("t-pret-mt", prTotalOrdre(t));
+  if (m === null) return null;
+  if (m !== undefined) t.pretMontant = m;
+  if (type === "Vente" && !prVentePretOk(asset, t.qty * prPartOrdre(t), excludeId)) return null;
+  return m !== undefined ? { pretMontant: m } : {};
 }
 
 /* Modal Transaction */
@@ -9331,6 +9369,7 @@ function openAddTx() {
   ["t-cours","t-qty","t-frais"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("t-type").value="Achat";
   document.getElementById("t-pret").checked=false;
+  document.getElementById("t-pret-mt").value="";
   _txPretSync();
   // Populate ticker select
   const sel = document.getElementById("t-asset");
@@ -9352,7 +9391,7 @@ function saveTx() {
     qty:   parseFloat(document.getElementById("t-qty").value)||0,
     frais: parseFloat(document.getElementById("t-frais").value)||0
   };
-  if (pret) tx.pret = true;
+  if (pret) Object.assign(tx, { pret: true }, pret);
   S.transactions.push(tx);
   persist(); closeOv("ov-tx"); renderPositions(); renderTx();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
@@ -9371,6 +9410,7 @@ function editTx(id) {
   document.getElementById("t-qty").value   = t.qty!=null?t.qty:"";
   document.getElementById("t-frais").value = t.frais!=null?t.frais:"";
   document.getElementById("t-pret").checked = !!t.pret;
+  document.getElementById("t-pret-mt").value = t.pret && t.pretMontant ? t.pretMontant : "";
   _txPretSync();
   document.querySelector("#ov-tx h2").textContent = "Modifier la transaction";
   const btn = document.querySelector("#ov-tx .btn-primary");
@@ -9391,7 +9431,8 @@ function saveEditTx(id) {
     qty:   parseFloat(document.getElementById("t-qty").value)||0,
     frais: parseFloat(document.getElementById("t-frais").value)||0
   };
-  if (pret) S.transactions[idx].pret = true; else delete S.transactions[idx].pret;
+  delete S.transactions[idx].pret; delete S.transactions[idx].pretMontant;
+  if (pret) Object.assign(S.transactions[idx], { pret: true }, pret);
   persist(); closeOv("ov-tx"); renderPositions(); renderTx();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
 }
@@ -12771,6 +12812,8 @@ function soPasser(id) {
     <div class="sop-opts">
       <label class="pac-check">Date d'exécution <input id="sop-date" type="date" value="${todayISO()}"></label>
       <label class="pac-check"><input type="checkbox" id="sop-pret"> Payé avec le prêt étudiant</label>
+      <span class="pr-part">dont <input id="sop-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Montant pris sur le prêt"> € pris sur le prêt
+        <small>vide : tout · sinon réparti entre les ordres au prorata</small></span>
     </div>
     <div class="tw"><table class="so-table sop-table">
       <thead><tr><th></th><th style="text-align:left">Titre</th><th>Parts</th><th>Cours exécuté</th><th>Frais</th><th>Montant</th></tr></thead>
@@ -12804,7 +12847,7 @@ function soPasserTotal() {
   if (!_soPasser) return;
   let inv = 0, fr = 0;
   soPasserLignes().forEach((l, i) => {
-    const m = (l.n || 0) * (l.c || 0);
+    const m = brutOrdre({ qty: l.n, cours: l.c });   // au centime, comme le relevé
     document.getElementById("sop-m-" + i).textContent = l.on && m > 0 ? pacEur(m) : "—";
     if (l.on) { inv += m; fr += l.f || 0; }
   });
@@ -12823,9 +12866,21 @@ function soPasserValider() {
   // Écart à la cible après ces achats, mesuré avant de les écrire
   const rep = soRepartition(L.map(l => ({ key: l.o.key, n: l.n })), pacCfg());
   const pret = document.getElementById("sop-pret").checked;
+  // Prêt en partie : le montant saisi se répartit entre les ordres au prorata,
+  // le dernier prend le reste pour que la somme tombe juste au centime
+  const totaux = L.map(l => prTotalOrdre({ type: "Achat", qty: l.n, cours: l.c, frais: pacR2(l.f) }));
+  const somme = totaux.reduce((x, y) => x + y, 0);
+  const pretMt = pret ? prLireMontantPret("sop-pret-mt", somme) : undefined;
+  if (pretMt === null) return;
+  let reste = pretMt;
+  const parts = pretMt === undefined ? null : totaux.map((t, i) => {
+    const p = i === totaux.length - 1 ? pacR2(reste) : pacR2(pretMt * t / somme);
+    reste -= p;
+    return p;
+  });
   pushUndo();
   const txIds = [];
-  L.forEach(l => {
+  L.forEach((l, i) => {
     if (!S.positions.some(x => x.ticker === l.o.key)) {
       const w = (S.wishlist || []).find(x => x.ticker === l.o.key);
       S.positions.push({ id: NID.pos++, ticker: l.o.key, name: w ? w.name : l.o.label,
@@ -12833,7 +12888,10 @@ function soPasserValider() {
         cours: null, dividende: 0, exdiv: null });
     }
     const tx = { id: NID.tx++, date, asset: l.o.key, type: "Achat", cours: l.c, qty: l.n, frais: pacR2(l.f) };
-    if (pret) tx.pret = true;
+    if (pret && (!parts || parts[i] > 0.005)) {
+      tx.pret = true;
+      if (parts && parts[i] < totaux[i] - 0.005) tx.pretMontant = parts[i];
+    }
     S.transactions.push(tx);
     txIds.push(tx.id);
   });
@@ -16516,14 +16574,46 @@ function prPeaOrdres() {
   const txs = (typeof S !== "undefined" && S && S.transactions) || [];
   for (const t of txs) {
     if (!t.pret || (t.type !== "Achat" && t.type !== "Vente")) continue;
-    const brut = prN(t.qty) * prN(t.cours), frais = prN(t.frais);
+    const total = prTotalOrdre(t), part = prPartOrdre(t);
+    // Ordre payé en partie avec le prêt : le prêt en détient la même part
+    // (117,28 € sur un achat de 183,07 € → 64,06 % des parts et des frais)
     const o = { id: "pea-" + t.id, peaTxId: t.id, date: normDate(t.date),
-                ticker: prYahoo(t.asset), quantite: prN(t.qty) };
-    // Mêmes montants que la trésorerie du PEA (computeCash) : frais compris
-    if (t.type === "Achat") achats.push(Object.assign(o, { cours_achat: prN(t.cours), montant: brut + frais }));
-    else                    ventes.push(Object.assign(o, { cours_vente: prN(t.cours), montant: brut - frais }));
+                ticker: prYahoo(t.asset), quantite: prN(t.qty) * part,
+                montant: part < 1 ? prN(t.pretMontant) : total };
+    if (part < 1) o.ordre = { montant: total, quantite: prN(t.qty) };
+    if (t.type === "Achat") achats.push(Object.assign(o, { cours_achat: prN(t.cours) }));
+    else                    ventes.push(Object.assign(o, { cours_vente: prN(t.cours) }));
   }
   return { achats, ventes };
+}
+
+/** Ce qu'un ordre du PEA débite (achat) ou crédite (vente), frais compris :
+    mêmes montants que la trésorerie du PEA (computeCash), brut arrondi au centime. */
+function prTotalOrdre(t) {
+  const brut = brutOrdre(t), frais = prN(t.frais);
+  return t.type === "Vente" ? brut - frais : brut + frais;
+}
+
+/** Part d'un ordre coché « prêt » qui concerne le prêt, de 0 à 1. `pretMontant`
+    (€ pris sur le prêt, ou rendus au prêt pour une vente) n'existe que pour un
+    ordre payé en partie avec le prêt : absent, c'est l'ordre entier. */
+function prPartOrdre(t) {
+  const m = prN(t.pretMontant), total = prTotalOrdre(t);
+  return m > 0 && total > 0 && m < total ? m / total : 1;
+}
+
+/** Lit le champ « dont … € pris sur le prêt » d'une fenêtre d'ordre. Rend
+    undefined (vide ou égal à l'ordre : l'ordre entier), le montant, ou null
+    si la saisie est refusée. */
+function prLireMontantPret(id, total) {
+  const s = document.getElementById(id).value.trim();
+  if (!s) return undefined;
+  const m = Math.round(parseFloat(s) * 100) / 100;
+  if (!(m > 0) || m > total + 0.005) {
+    showToastModern(`Part du prêt : un montant entre 0 et ${prEur(total)}, le montant de l'ordre`, "err");
+    return null;
+  }
+  return m >= total - 0.005 ? undefined : m;
 }
 
 /** Vente cochée « prêt » dans le PEA : pas plus de parts que le prêt n'en a
@@ -16895,7 +16985,8 @@ function prRenderPEA(o) {
 
   let html = `<div class="m-note">Seuls les ordres du PEA faits avec l'argent du prêt comptent ici : ceux où la case
     « Payé avec l'argent du prêt étudiant » est cochée. Ils ne sont saisis qu'une fois, dans le PEA :
-    « + Achat » et « Vente » ouvrent sa fenêtre, case déjà cochée.</div>`;
+    « + Achat » et « Vente » ouvrent sa fenêtre, case déjà cochée. Un ordre payé en partie avec le prêt
+    (« dont … € pris sur le prêt ») ne compte ici que pour cette part, avec la même part des parts et des frais.</div>`;
 
   html += prCard("", "Positions", rows
     ? `<div class="tw"><table>
@@ -16930,9 +17021,9 @@ function prRenderPEA(o) {
             <td>${prDate(r.date)}</td>
             <td><span class="m-tag ${achat ? "" : "accent"}">${achat ? "Achat" : "Vente"}</span></td>
             <td>${escHtml((r.ticker || "").toUpperCase())}</td>
-            <td>${prNum(prN(r.quantite), 4)}</td>
+            <td>${prNum(prN(r.quantite), 4)}${r.ordre ? `<div class="tk2">sur ${prNum(r.ordre.quantite, 4)}</div>` : ""}</td>
             <td>${prEur(prN(achat ? r.cours_achat : r.cours_vente))}</td>
-            <td class="${achat ? "" : "pos"}">${prEur(prN(r.montant))}</td>
+            <td class="${achat ? "" : "pos"}">${prEur(prN(r.montant))}${r.ordre ? `<div class="tk2">sur ${prEur(r.ordre.montant)}</div>` : ""}</td>
             <td class="${frais > 0.005 ? "neg" : ""}">${prEur(frais)}</td>
             <td><div class="m-acts">${r.peaTxId != null
               // Ordre du PEA : il se modifie (ou se décoche) là-bas, pas ici

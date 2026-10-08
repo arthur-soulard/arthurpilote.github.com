@@ -74,10 +74,23 @@ absente pour un dividende). `prPeaOrdres()` lit ces transactions et les converti
 modification, un décochage, une suppression ou le bouton Retour se voient partout.
 
 * Les ordres non cochés n'entrent jamais dans les calculs du prêt.
+* **Ordre payé en partie avec le prêt** (08/10/2026) : sous la case, « dont … €
+  pris sur le prêt » (« rendus au prêt » pour une vente), champs `f-pret-mt` /
+  `t-pret-mt`, enregistré dans `pretMontant`. Vide ou égal à l'ordre : l'ordre
+  entier, pas de `pretMontant`. Le prêt détient alors la même part des parts et
+  des frais (`prPartOrdre` = `pretMontant` / montant de l'ordre, `prTotalOrdre`) :
+  117,28 € d'un achat de 183,07 € → 16,0157 parts sur 25. Cas d'origine : le
+  07/10, 573,02 € d'ETF achetés avec 500 € du prêt et 73,02 € déjà en espèces ;
+  tout coché, le prêt comptait 15 073,02 € placés pour 15 000 € reçus.
+  Fenêtre « Passer un scénario » : un seul montant (`sop-pret-mt`), réparti entre
+  les ordres au prorata, le dernier prend le reste (somme juste au centime).
+  Le champ n'apparaît que case cochée, en CSS (`label:has(…:not(:checked)) + .pr-part`),
+  parce que la case est aussi cochée par programme (`prAchatViaPea`, `editTx`).
 * « + Achat » / « Vente » de l'onglet Prêt ouvrent les fenêtres du PEA, case cochée
   (`prAchatViaPea`, `prVenteViaPea`) ; le crayon d'un ordre ouvre `editTx`. Pas de
   corbeille côté Prêt : supprimer un ordre du PEA depuis là surprendrait.
-* Vente cochée : refusée au-delà des parts achetées avec le prêt (`prVentePretOk`).
+* Vente cochée : refusée au-delà des parts achetées avec le prêt (`prVentePretOk`,
+  qui compte la part du prêt d'une vente partielle).
 * `persist()` appelle `prRefreshIfVisible()` : l'onglet Prêt ouvert suit le PEA.
 * Étiquette « Prêt » sur la ligne dans PEA › Transactions.
 * Patrimoine : rien ne change et rien ne doit changer. La ligne PEA vaut le PEA
