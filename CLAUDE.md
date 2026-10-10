@@ -3,6 +3,9 @@
 Application desktop Windows de suivi personnel : bourse (PEA), budget, prêt étudiant,
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
+**Version Mac en chantier** (décidé le 11/10/2026) : une seule app pour les deux
+systèmes, pas de copie séparée. Avant de toucher à ce qui dépend du système, lire
+`docs/mac.md`.
 
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
@@ -38,12 +41,14 @@ Pilote/
 │   ├── splash.py       # Petite fenêtre de chargement affichée au lancement
 │   ├── updater.py      # Auto-updater (check + download + install)
 │   ├── notifications.py
+│   ├── plateforme.py   # Ce qui diffère entre Windows et Mac (docs/mac.md)
 │   └── ui/
 │       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~20 900 lignes)
 │       └── vendor/     # Chart.js, polices woff2 (drapeaux compris), icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
 │   ├── pilote.spec     # Spec PyInstaller → dist/Pilote/ (Pilote.exe + _internal/)
+│   ├── pilote-mac.spec # Spec PyInstaller Mac → dist/Pilote.app (fabriqué par build-mac.yml)
 │   └── build.bat       # build local
 ├── assets/             # icon.ico + make_icon.py (générateur d'icône)
 ├── docs/               # Fiches détaillées par module (voir « Documentation détaillée »)
@@ -168,6 +173,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/vocabulaire.md` | Vocabulaire, lecture d'images et de PDF | `vocabulaire.py`, `ocr_win.ps1`, `vo*` |
+| `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
 
 Rappelés ici parce qu'une erreur ne se voit qu'une fois l'exe installé (détail

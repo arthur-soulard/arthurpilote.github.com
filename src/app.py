@@ -43,6 +43,7 @@ import expositions
 import sauvegarde
 import notifications
 import splash
+import plateforme
 
 
 APP_NAME    = "Pilote"
@@ -398,11 +399,7 @@ class Api:
             dest = sauvegarde.resolve_destination()
             if not dest.get("ready"):
                 return {"ok": False, "error": dest.get("message") or "Destination absente."}
-            if sys.platform == "win32":
-                os.startfile(dest["path"])
-            else:
-                import subprocess
-                subprocess.Popen(["xdg-open", dest["path"]])
+            plateforme.ouvrir(dest["path"])
             return {"ok": True, "path": dest["path"]}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -411,11 +408,7 @@ class Api:
         """Ouvre le dossier de donnees de l'utilisateur actif."""
         try:
             path = str(storage.get_user_dir())
-            if sys.platform == "win32":
-                os.startfile(path)
-            else:
-                import subprocess
-                subprocess.Popen(["xdg-open", path])
+            plateforme.ouvrir(path)
             return {"ok": True, "path": path}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -546,7 +539,7 @@ class Api:
     def open_app_folder(self) -> dict:
         path = str(storage.get_app_dir())
         try:
-            os.startfile(path)
+            plateforme.ouvrir(path)
             return {"ok": True, "path": path}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -554,7 +547,7 @@ class Api:
     def app_ready(self) -> dict:
         """Appele par boot() (index.html) quand l'accueil est pret : ouvre
         la fenetre principale et ferme l'ecran de chargement."""
-        reveal_main_window()
+        reveal_main_window("page")
         return {"ok": True}
 
     def minimize(self):
@@ -924,12 +917,16 @@ def _paint_accent_icon() -> None:
         print(f"[app] icone accent KO : {e}", flush=True)
 
 
-def reveal_main_window() -> None:
+def reveal_main_window(origine: str = "delai") -> None:
+    """origine : "page" quand boot() a fini, "delai" pour le filet de securite.
+    Ecrit dans la sortie : le test du build Mac (build-mac.yml) la lit pour
+    savoir si l'interface a vraiment demarre."""
     global _revealed
     with _reveal_lock:
         if _revealed or _main_window is None:
             return
         _revealed = True
+    print(f"[app] fenetre ouverte ({origine})", flush=True)
     try:
         _main_window.show()
     except Exception as e:

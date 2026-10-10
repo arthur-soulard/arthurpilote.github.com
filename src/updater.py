@@ -48,8 +48,13 @@ _progress: dict = {"step": "idle", "pct": 0, "error": None}
 # ── Logs ──────────────────────────────────────────────────────────────────────
 
 def _log_path() -> Path:
-    base = os.environ.get("APPDATA") or os.path.expanduser("~")
-    p = Path(base) / "Pilote"
+    if sys.platform == "darwin":
+        # Pas d'APPDATA sur Mac : sans ce cas, un dossier ~/Pilote serait cree
+        # a la racine du compte
+        p = Path.home() / "Library" / "Logs" / "Pilote"
+    else:
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+        p = Path(base) / "Pilote"
     try:
         p.mkdir(parents=True, exist_ok=True)
     except Exception:
@@ -181,6 +186,11 @@ def _fetch(current: str) -> None:
             _log(f"CHECK API KO ({e}) -> page publique des releases")
             latest, html_url, download_url = _latest_from_page()
             _log(f"CHECK via page publique : latest={latest}")
+
+        # Le Setup est un installeur Windows : un Mac ne doit jamais se le voir
+        # proposer. Sa propre mise a jour viendra (docs/mac.md, etape 6).
+        if sys.platform != "win32":
+            download_url = None
 
         # Sans installeur telechargeable, proposer la mise a jour ne menerait
         # qu'a un echec au moment d'installer : on attend le prochain lancement.

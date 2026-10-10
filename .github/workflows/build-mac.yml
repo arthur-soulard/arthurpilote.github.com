@@ -1,0 +1,94 @@
+name: Build Mac (test)
+
+# Fabrique Pilote.app sur une machine Mac de GitHub, la lance et verifie
+# qu'elle demarre (docs/mac.md). Rien n'est publie dans les releases : le
+# resultat (capture d'ecran, journal, app zippee) reste attache a l'execution,
+# et les constats principaux sortent en annotations, lisibles sans compte.
+# Ne se declenche que sur la branche mac : release.yml (tags v*) n'est pas
+# concerne, un echec ici ne peut pas bloquer le Setup Windows.
+
+on:
+  push:
+    branches: [mac]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-mac:
+    runs-on: macos-15          # puce Apple
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build app (PyInstaller)
+        run: python -m PyInstaller build/pilote-mac.spec --clean --noconfirm
+
+      - name: Check bundle
+        run: |
+          test -x dist/Pilote.app/Contents/MacOS/Pilote
+          ls dist/Pilote.app/Contents/Resources/ui/
+          ls dist/Pilote.app/Contents/Resources/ui/vendor/
+          echo "::notice title=Bundle::$(du -sh dist/Pilote.app | cut -f1) - ui et vendor presents"
+
+      - name: Launch and check
+        run: |
+          DONNEES="$HOME/Library/Application Support/Pilote/Donnees"
+          dist/Pilote.app/Contents/MacOS/Pilote > pilote.log 2>&1 &
+          PID=$!
+
+          # 1. Le serveur local repond
+          UP=""
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:7438/ping > /dev/null 2>&1; then UP="$i"; break; fi
+            sleep 1
+          done
+          # 2. L'interface a fini de demarrer (ligne ecrite par reveal_main_window)
+          for i in $(seq 1 40); do
+            grep -q "fenetre ouverte" pilote.log && break
+            sleep 1
+          done
+          sleep 5
+          screencapture -x capture.png || echo "capture impossible"
+
+          VENDOR=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7438/vendor/chart.umd.js || true)
+          OUVERTE=$(grep -o "fenetre ouverte ([a-z]*)" pilote.log || echo "pas de ligne")
+          echo "::notice title=Serveur::ping ${UP:-KO} s - /vendor/chart.umd.js HTTP $VENDOR"
+          echo "::notice title=Interface::$OUVERTE"
+          echo "::notice title=Donnees::$(ls "$DONNEES" 2>/dev/null | tr '\n' ' ' || echo absent)"
+          echo "::notice title=Journal::$(tail -c 900 pilote.log | tr '\n' ' ' | tr -d '\r')"
+
+          kill $PID 2>/dev/null || true
+          sleep 2
+
+          # Echecs bloquants : serveur muet, donnees au mauvais endroit
+          test -n "$UP"
+          test -d "$DONNEES"
+          test ! -e dist/Pilote.app/Contents/MacOS/Donnees
+
+      - name: Zip app
+        if: always()
+        run: ditto -c -k --keepParent dist/Pilote.app Pilote-mac.zip || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilote-mac
+          path: |
+            Pilote-mac.zip
+            capture.png
+            pilote.log
+          if-no-files-found: ignore

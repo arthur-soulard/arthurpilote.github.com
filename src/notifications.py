@@ -1,9 +1,10 @@
 """
 notifications.py — Notifications Windows toast natives.
 
-Utilise win10toast si dispo (pip install win10toast). Si l'import echoue
-(autre OS, lib non installee), les fonctions deviennent des no-ops silencieux,
-pour ne jamais faire crasher l'app.
+Utilise win10toast si dispo (pip install win10toast). Sur Mac, osascript
+(fourni avec macOS) fait l'equivalent sans dependance. Ailleurs, ou si la lib
+manque, les fonctions deviennent des no-ops silencieux, pour ne jamais faire
+crasher l'app.
 
 Les preferences sont lues depuis storage.load_data()['notifs'] :
   - bigMove   : alerte cours qui bouge > +/- 5%
@@ -12,6 +13,8 @@ Les preferences sont lues depuis storage.load_data()['notifs'] :
 """
 from __future__ import annotations
 
+import sys
+import subprocess
 import threading
 from pathlib import Path
 from typing import Optional
@@ -22,7 +25,7 @@ try:
     _AVAILABLE = True
 except Exception:
     _toaster = None
-    _AVAILABLE = False
+    _AVAILABLE = sys.platform == "darwin"
 
 
 def _icon_path() -> Optional[str]:
@@ -34,7 +37,21 @@ def _icon_path() -> Optional[str]:
     return None
 
 
+def _show_mac(title: str, msg: str) -> None:
+    def chaine(s) -> str:   # chaine AppleScript : \ et " echappes
+        return '"' + str(s).replace("\\", "\\\\").replace('"', '\\"') + '"'
+    try:
+        subprocess.run(["osascript", "-e",
+                        f"display notification {chaine(msg)} with title {chaine(title)}"],
+                       capture_output=True, timeout=10)
+    except Exception as e:
+        print(f"[notif] Echec osascript : {e}", flush=True)
+
+
 def _show(title: str, msg: str, duration: int = 6) -> None:
+    if sys.platform == "darwin":
+        _show_mac(title, msg)
+        return
     if not _AVAILABLE or _toaster is None:
         return
     icon = _icon_path()

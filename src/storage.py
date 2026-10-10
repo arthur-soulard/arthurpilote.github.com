@@ -41,8 +41,18 @@ def _exe_dir() -> Path:
 def get_app_dir() -> Path:
     """
     Retourne le dossier racine de donnees (Donnees/ a cote de l'exe).
+
+    Sauf dans l'app Mac compilee : a cote de l'exe, c'est DANS Pilote.app, que
+    la mise a jour remplace en entier (les donnees partiraient avec), et que
+    macOS lance depuis une copie en lecture seule tant qu'elle n'a pas quitte
+    Telechargements. Les donnees vont donc la ou Apple les attend. Le dossier
+    Donnees/ est garde pour que app_dir.parent reste a Pilote (archive de
+    securite de sauvegarde.restore_from).
     """
-    base = _exe_dir() / "Donnees"
+    if sys.platform == "darwin" and getattr(sys, "frozen", False):
+        base = Path.home() / "Library" / "Application Support" / APP_NAME / "Donnees"
+    else:
+        base = _exe_dir() / "Donnees"
     try:
         base.mkdir(parents=True, exist_ok=True)
         return base
@@ -339,6 +349,11 @@ def scan_orphan_data() -> list:
     sans son dossier Donnees). Retourne une liste de candidats tries du
     plus interessant au moins.
     """
+    # Sur Mac, les donnees ne suivent jamais l'app (voir get_app_dir) : rien a
+    # recuperer. Et lire Bureau, Documents ou Telechargements y declenche une
+    # demande d'autorisation du systeme pour chacun, des le premier lancement.
+    if sys.platform == "darwin":
+        return []
     home = Path.home()
     candidates = []
     # Tout ce qui vit dans le dossier de donnees courant appartient a
