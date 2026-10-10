@@ -1,11 +1,12 @@
 # Pilote
 
-Application Windows de suivi personnel — bourse, budget, sport et prêt étudiant réunis
-dans une seule app entièrement locale. Cours actualisés automatiquement via Yahoo Finance.
+Application Windows de suivi personnel — bourse, budget, prêt étudiant, sport,
+patrimoine, santé et vocabulaire réunis dans une seule app entièrement locale. Cours
+actualisés automatiquement via Yahoo Finance.
 
 ![icon](assets/icon_512.png)
 
-## ✨ Les quatre univers
+## ✨ Les sept modules
 
 **PEA** — positions, transactions, dépôts, dividendes, wishlist, expositions sectorielle
 et géographique, performance TWR comparée au CAC 40 / S&P 500 / ETF World, simulateurs
@@ -24,6 +25,17 @@ ponctuels et récurrents.
 **Sports** — agenda mensuel des séances (course, vélo, natation, muscu, foot, randonnée…),
 sports personnalisés dont tu choisis les informations à saisir, objectifs de performance
 et événements datés, statistiques d'heures et carte de régularité.
+
+**Patrimoine** — tous tes comptes relevés une fois par mois (le PEA et le prêt se
+remplissent seuls), valeur nette et son évolution.
+
+**Santé** — pesées et mesures saisies à la main ou lues sur des captures de l'app
+FitDays, objectifs.
+
+**Vocabulaire** — listes de mots révisées par répétition espacée (quatre boîtes : 1 jour,
+1 semaine, 1 mois, 6 mois), ajout en masse depuis une photo, une capture ou un PDF.
+
+Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 
 ## ⚙ Transverse
 
@@ -65,8 +77,8 @@ et événements datés, statistiques d'heures et carte de régularité.
 ### Setup
 
 ```bash
-git clone https://github.com/<votre-user>/suivi-pea.git
-cd suivi-pea
+git clone https://github.com/arthur-soulard/arthurpilote.github.com.git
+cd arthurpilote.github.com
 pip install -r requirements.txt
 python src/app.py
 ```

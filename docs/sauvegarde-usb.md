@@ -63,9 +63,13 @@ seule une ligne grise « dernier envoi 24 sept. » le disait. Désormais :
 * `svDerniereCopie(s)` = la plus récente des deux dates, envoi (`lastPushAt`) ou
   archive (`lastBackupAt`, ajoutée à `usb_state()` pour ça) : l'une comme l'autre
   met les données sur la clé.
-* À partir de `SV_ALERTE_JOURS` (7) jours pleins, ou si aucune copie n'a jamais été
-  faite, la ligne sous les boutons de l'accueil (`#home-usb-state.vieux`, couleur
-  `--a`) écrit « Dernière sauvegarde sur clé il y a N jours » et quoi faire :
-  « branche ta clé USB », ou « clique sur Téléverser » si une clé est branchée.
+* À partir de `SV_ALERTE_JOURS` (7) jours pleins, la ligne sous les boutons de
+  l'accueil (`#home-usb-state.vieux`, couleur `--a`) écrit « Dernière sauvegarde
+  sur clé il y a N jours » et quoi faire : « branche ta clé USB », ou « clique sur
+  Téléverser » si une clé est branchée.
+* Aucune copie jamais faite : en gris, sans alerte (« aucune sauvegarde sur clé
+  pour l'instant »), et la tuile écrit « Jamais » sans orange (11/10/2026). Jusque-là
+  c'était l'alerte orange : tout nouvel utilisateur la voyait dès le premier
+  lancement, et pour toujours s'il n'avait pas de clé.
 * La tuile « Sauvegarde USB » lit la **même** date (`svDerniereCopie`) et passe en
   orange au même seuil : les deux ne peuvent pas se contredire.

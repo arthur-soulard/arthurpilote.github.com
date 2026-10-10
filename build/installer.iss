@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define AppName       "Pilote"
-#define AppVersion    "4.3.30"
+#define AppVersion    "4.3.31"
 #define AppPublisher  "Arthur"
 #define AppExeName    "Pilote.exe"
 

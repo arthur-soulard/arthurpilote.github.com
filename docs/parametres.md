@@ -10,12 +10,11 @@ Modale unique à colonne de sections (`setGoSection(id)`), plus « paramètres d
 |------------|--------------------------------------------------------------------|
 | general    | thème, couleur d'accent, icône de l'app, code PIN de l'utilisateur  |
 | users      | liste des utilisateurs, création / édition                          |
-| nav        | onglets et blocs masqués (restauration)                             |
+| nav        | « Masqué » : onglets et blocs masqués (restauration)                |
 | pea        | prénom, banque, date d'ouverture, récap fiscal, rapport annuel      |
 | comptes    | catégories & emoji, sources, récurrents                             |
 | pret       | renvoi vers l'onglet `pr-params`                                    |
 | sport      | mes sports, types de séance, routines                               |
-| formation  | domaines, dossier des certificats, nettoyage des orphelins          |
 | vocabulaire| mes listes, ajout en masse, rappel des quatre boîtes                |
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | sauvegarde | destination USB, sauvegarde auto, rotation, restauration            |
