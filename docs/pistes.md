@@ -29,6 +29,11 @@ Autres pistes :
 
 **Écartées, ne pas y revenir sans raison nouvelle :**
 
+- **Module Formation** (formations, certificats, export CV) : retiré à la demande
+  d'Arthur le 11/10/2026, il en avait masqué les quatre onglets. `formation.json` et
+  `certificats/` restent sur le disque (et dans les sauvegardes USB), plus lus par
+  l'app. Le code et sa fiche vivent dans l'historique git (commit `845a705` et avant).
+
 - **Version mobile / PWA** : écartée par Arthur en 4.1.4 pour la sécurité des données.
   Les JSON sont en clair et le PIN ne chiffre rien ; exposer le serveur local, même
   derrière un VPN, sortait les données du PC. Si la question revient, le prérequis

@@ -182,10 +182,14 @@ restent en bas.
 
 ## Prochain achat (onglet Stratégie, `#card-pac`)
 
-Chaque mois, les ordres à passer pour atteindre puis garder l'allocation cible
-(défaut 70 % WPEA / 20 % PEMS / 10 % PNAS), **sans jamais vendre**, au moindre
-courtage (Fortuneo : 1er ordre du mois ≤ 500 € gratuit, sinon 0,35 % sans
-minimum, plafonné à 0,5 %, le maximum légal en ligne pour un PEA). Algorithme
+Chaque mois, les ordres à passer pour atteindre puis garder l'allocation cible,
+**sans jamais vendre**, au moindre courtage (chez Arthur, Fortuneo : 1er ordre du
+mois ≤ 500 € gratuit, sinon 0,35 % sans minimum ; toujours plafonné à 0,5 %, le
+maximum légal en ligne pour un PEA). Un nouvel utilisateur part de `PAC_DEFAUT` :
+aucune cible, pas d'ordre gratuit (la case « Ordre gratuit » se masque quand le
+seuil vaut 0 €), courtage à 0,5 %. Jusqu'au 11/10/2026, c'était l'allocation et
+les frais d'Arthur (70/20/10, 500 €, 0,35 %) : quiconque installait l'app les
+recevait. Les siens sont enregistrés dans `S.uiPrefs.prochainAchat`. Algorithme
 en 8 étapes écrit par Arthur, appliqué à la lettre dans `pacCalcul()` (pur : ni
 écran ni `S`). **`testsProchainAchat()`** (console) vérifie ses six cas chiffrés :
 ne jamais modifier le calcul sans les relancer.

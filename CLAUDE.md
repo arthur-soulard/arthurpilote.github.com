@@ -7,7 +7,7 @@ Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de t
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.30**
+**Version actuelle : 4.3.31**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -29,7 +29,6 @@ Pilote/
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
 │   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
-│   ├── formation.py    # Module « Formation »     (formation.json) + certificats
 │   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
@@ -40,7 +39,7 @@ Pilote/
 │   ├── updater.py      # Auto-updater (check + download + install)
 │   ├── notifications.py
 │   └── ui/
-│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~21 400 lignes)
+│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~20 900 lignes)
 │       └── vendor/     # Chart.js, polices woff2 (drapeaux compris), icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
@@ -72,9 +71,9 @@ Donnees/
 │   ├── pret.json             # Prêt étudiant    (+ backups_pret/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
-│   ├── formation.json        # Formation        (+ backups_formation/)
 │   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
-│   ├── certificats/          # PDF et images des formations validées
+│   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
+│   │                         #   laissés sur le disque, plus lus par l'app
 │   └── pin.hash              # code PIN de CET utilisateur (si configuré)
 ├── icones/                   # .ico générés à la couleur d'accent
 └── crash.log
@@ -168,7 +167,6 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
-| `docs/modules/formation.md` | Formation | `formation.py`, `fo*` |
 | `docs/modules/vocabulaire.md` | Vocabulaire, lecture d'images et de PDF | `vocabulaire.py`, `ocr_win.ps1`, `vo*` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
 
@@ -208,7 +206,7 @@ Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
 **d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
 suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
-Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
+Sidebar : un onglet **Accueil** seul en tête, puis 7 sections en accordéon
 (`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
@@ -223,7 +221,6 @@ Paramètres.
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
 | Patrimoine      | pa-vue, pa-comptes                                                 |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
-| Formation       | fo-todo, fo-done, fo-cv, fo-stats                                  |
 | Vocabulaire     | vo-reviser, vo-boites, vo-mots, vo-stats                            |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
@@ -293,10 +290,10 @@ Corollaires à ne pas défaire :
 
 ## Conventions de code
 
-* Tout l'UI vit dans `index.html` (~21 400 lignes). Les modules annexes sont des blocs
+* Tout l'UI vit dans `index.html` (~20 900 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`,
   `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Formation → Vocabulaire → Tableau de bord → `boot()`.** Les patches de `goTab`
+  Prêt → Santé → Patrimoine → Vocabulaire → Tableau de bord → `boot()`.** Les patches de `goTab`
   s'enchaînent, ne pas casser l'ordre.
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,
@@ -313,7 +310,7 @@ Corollaires à ne pas défaire :
   sinon l'ordre du DOM décide qui est devant.
 * Attention à la spécificité : `.fg label` (0-1-1) imposait MAJUSCULES + interlettrage
   avant l'identité « Carnet », qui l'a remis en casse normale. Les règles
-  `label.sv-check`, `label.fo-check`, `label.vo-check` restent : elles règlent aussi la
+  `label.sv-check`, `label.vo-check` restent : elles règlent aussi la
   taille et l'alignement. Un libellé de texte courant dans un `.fg` se cible toujours
   en `label.ma-classe`.
 * Couleurs uniquement via les variables CSS (`--bg2`, `--brd`, `--accent`, `--g`, `--r`,
