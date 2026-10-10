@@ -1,4 +1,9 @@
-pywebview==4.4.1
+# Une ligne marquee sys_platform n'est installee que sur ce systeme (voir docs/mac.md).
+# Windows garde pywebview 4.4.1 : le filtre du crash.log repose sur son comportement.
+# Le Mac a besoin de la 6.2.1 : la 4.4.1 n'y gere pas prompt(), la 6.2 y corrige
+# un plantage sur puce Apple.
+pywebview==4.4.1; sys_platform == "win32"
+pywebview==6.2.1; sys_platform == "darwin"
 pyinstaller==6.11.1
-win10toast==0.9
+win10toast==0.9; sys_platform == "win32"
 pillow==10.4.0
