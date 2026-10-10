@@ -22,8 +22,9 @@ from pathlib import Path
 ROOT   = Path.cwd()
 SRC    = ROOT / "src"
 ASSETS = ROOT / "assets"
-# Une image : PyInstaller la convertit lui-meme en .icns (avec Pillow)
-ICON   = ASSETS / "icon_512.png"
+# La meme icone que Windows : PyInstaller la convertit lui-meme en .icns (avec
+# Pillow). Pas icon_512.png : .gitignore l'ecarte, elle n'existe pas sur GitHub.
+ICON   = ASSETS / "icon.ico"
 
 # Version lue dans app.py : un seul endroit a augmenter, comme sous Windows
 VERSION = re.search(r'^APP_VERSION\s*=\s*"([^"]+)"',
