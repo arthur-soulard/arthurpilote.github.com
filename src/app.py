@@ -1135,8 +1135,11 @@ def main() -> int:
         def _diag():
             import time as _t
             _t.sleep(30)
+            # run_js et non evaluate_js : pywebview 6 (Mac) passe evaluate_js
+            # par eval(), que la CSP de la page interdit. 4.4.1 n'a pas run_js.
+            lire = getattr(window, "run_js", None) or window.evaluate_js
             try:
-                res = window.evaluate_js(
+                res = lire(
                     "JSON.stringify({journal: window.__journal || 'absent',"
                     " fonctions: window.pywebview && window.pywebview.api"
                     " ? Object.keys(window.pywebview.api).length : -1,"
@@ -1144,7 +1147,7 @@ def main() -> int:
                     " coque: document.body.classList.contains('has-shell')})")
                 print(f"[diag] {res}", flush=True)
             except Exception as e:
-                print(f"[diag] evaluate_js KO : {e}", flush=True)
+                print(f"[diag] lecture KO : {e}", flush=True)
         threading.Thread(target=_diag, daemon=True).start()
 
     # Sauvegarde de la taille/position avant fermeture
