@@ -1128,6 +1128,25 @@ def main() -> int:
     _reveal_timer.daemon = True
     _reveal_timer.start()
 
+    # Test du build Mac (build-mac.yml) seulement : relit le journal de
+    # demarrage de la page (window.__journal, index.html) et l'ecrit dans la
+    # sortie, faute d'outils de developpement sur la machine de GitHub.
+    if os.environ.get("PILOTE_DIAG"):
+        def _diag():
+            import time as _t
+            _t.sleep(30)
+            try:
+                res = window.evaluate_js(
+                    "JSON.stringify({journal: window.__journal || 'absent',"
+                    " fonctions: window.pywebview && window.pywebview.api"
+                    " ? Object.keys(window.pywebview.api).length : -1,"
+                    " prete: !!window._appShown,"
+                    " coque: document.body.classList.contains('has-shell')})")
+                print(f"[diag] {res}", flush=True)
+            except Exception as e:
+                print(f"[diag] evaluate_js KO : {e}", flush=True)
+        threading.Thread(target=_diag, daemon=True).start()
+
     # Sauvegarde de la taille/position avant fermeture
     def _on_closing():
         try:
