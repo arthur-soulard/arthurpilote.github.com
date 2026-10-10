@@ -56,7 +56,8 @@ jobs:
       - name: Launch and check
         run: |
           DONNEES="$HOME/Library/Application Support/Pilote/Donnees"
-          dist/Pilote.app/Contents/MacOS/Pilote > pilote.log 2>&1 &
+          # PILOTE_DIAG : app.py ecrit le journal de demarrage de la page (« [diag] »)
+          PILOTE_DIAG=1 dist/Pilote.app/Contents/MacOS/Pilote > pilote.log 2>&1 &
           PID=$!
 
           # 1. Le serveur local repond
@@ -78,6 +79,12 @@ jobs:
           echo "::notice title=Serveur::ping ${UP:-KO} s - /vendor/chart.umd.js HTTP $VENDOR"
           echo "::notice title=Interface::$OUVERTE"
           echo "::notice title=Donnees::$(ls "$DONNEES" 2>/dev/null | tr '\n' ' ' || echo absent)"
+          # 3. Le journal de demarrage de la page, ecrit 30 s apres le lancement
+          for i in $(seq 1 40); do
+            grep -q "\[diag\]" pilote.log && break
+            sleep 1
+          done
+          echo "::notice title=Diag::$(grep "\[diag\]" pilote.log | head -c 3000 || echo absent)"
           echo "::notice title=Journal::$(tail -c 900 pilote.log | tr '\n' ' ' | tr -d '\r')"
 
           kill $PID 2>/dev/null || true

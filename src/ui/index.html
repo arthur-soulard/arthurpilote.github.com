@@ -4623,6 +4623,15 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 <script>
 "use strict";
 
+/* Journal du démarrage : étapes de boot() et erreurs JavaScript, avec leur
+   instant (ms depuis l'ouverture de la page). Le test du build Mac le relit
+   (PILOTE_DIAG dans app.py) : sans outils de développement sur la machine de
+   GitHub, c'est le seul moyen de savoir où la page s'arrête. */
+window.__journal = [];
+function _jn(m) { try { window.__journal.push(Math.round(performance.now()) + " " + m); } catch (e) {} }
+window.addEventListener("error", e => _jn("ERREUR " + e.message + " (ligne " + e.lineno + ")"));
+window.addEventListener("unhandledrejection", e => _jn("REJET " + ((e.reason && e.reason.message) || e.reason)));
+
 /* ─── Graphiques : la police et le gris du texte courant (identité « Carnet ») ───
    Les graphiques sont dessinés dans un <canvas> : ils n'héritent pas du CSS.
    #8b8072 reste lisible sur le fond clair comme sur le fond sombre. */
@@ -13199,9 +13208,14 @@ function installShellEnhancements() {
 }
 
 /* ─── Boot : attendre pywebview, hydrater depuis Python, puis demarrer ─── */
+/* Prêt = les fonctions sont là, pas seulement l'objet. pywebview 6 (Mac) crée
+   pywebview.api VIDE, puis le remplit dans un second temps : vu comme prêt trop
+   tôt, les modules appelaient des fonctions absentes et _surveillerEcritures()
+   se posait sur un objet vide. pywebview 4.4.1 (Windows) le livre déjà rempli. */
 async function _waitForPywebview(timeoutMs) {
   const t0 = Date.now();
-  while (!(window.pywebview && window.pywebview.api)) {
+  while (!(window.pywebview && window.pywebview.api
+           && typeof window.pywebview.api.app_ready === "function")) {
     if (Date.now() - t0 > timeoutMs) return false;
     await new Promise(r => setTimeout(r, 50));
   }
@@ -20857,6 +20871,7 @@ function dashWireDnd(box) {
 function _appReady() {
   if (window._appShown) return;
   window._appShown = true;
+  _jn("app prete, pont " + !!(window.pywebview && pywebview.api && pywebview.api.app_ready));
   try {
     if (window.pywebview && pywebview.api && pywebview.api.app_ready) pywebview.api.app_ready();
   } catch (e) {}
@@ -20866,8 +20881,10 @@ function _appReady() {
   try {
     // 1. Hydratation HTTP en parallele (rapide, pas besoin d'attendre pywebview)
     const httpOk = await _hydrateFromHttp();
+    _jn("donnees HTTP " + httpOk);
     // 2. On attend pywebview pour les API ecriture (export, save, notifs)
     const hasPy  = await _waitForPywebview(10000);
+    _jn("pont Python " + hasPy);
     if (hasPy) _surveillerEcritures();
     if (hasPy && !httpOk) {
       // Si l'HTTP avait echoue, on tente via le bridge pywebview
@@ -20919,7 +20936,10 @@ function _appReady() {
         ["usb",        svRenderUsbState()],
       ];
       await Promise.all(boots.map(([nom, pr]) =>
-        Promise.resolve(pr).catch(e => console.warn("[" + nom + "] bootstrap KO:", e))));
+        Promise.resolve(pr).then(() => _jn(nom + " ok"),
+                                 e => { console.warn("[" + nom + "] bootstrap KO:", e);
+                                        _jn(nom + " KO : " + ((e && e.message) || e)); })));
+      _jn("modules charges");
       if (typeof homeRender === "function") homeRender();
     }
     // Les cours du jour et l'historique ont 5 s pour arriver : sans réseau, on
@@ -20930,6 +20950,7 @@ function _appReady() {
   } catch(e) {
     const box=document.getElementById("errbox");
     if (box) { box.style.display="block"; box.textContent="Erreur JS : "+e.message+" — Cliquez sur Reset."; }
+    _jn("boot KO : " + e.message);
     console.error(e);
   }
   _appReady();
