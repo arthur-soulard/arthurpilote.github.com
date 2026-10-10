@@ -1100,6 +1100,10 @@ def main() -> int:
 
     # Creee la premiere : webview.windows[0] reste la fenetre principale
     window = webview.create_window(**window_kwargs)
+    # Mac : le pont JS <-> Python ne doit pas evaluer de texte, la CSP de la
+    # page l'interdit (voir plateforme.adapter_pont_mac)
+    if sys.platform == "darwin":
+        plateforme.adapter_pont_mac(window)
 
     global _main_window, _splash_window
     _main_window = window
