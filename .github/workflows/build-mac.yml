@@ -34,7 +34,17 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build app (PyInstaller)
-        run: python -m PyInstaller build/pilote-mac.spec --clean --noconfirm
+        # Les journaux ne se lisent qu'avec un compte : en cas d'echec, la fin
+        # du journal sort en annotation, lisible par l'API publique
+        run: |
+          set +e
+          python -m PyInstaller build/pilote-mac.spec --clean --noconfirm > build.log 2>&1
+          CODE=$?
+          if [ $CODE -ne 0 ]; then
+            MSG=$(tail -n 40 build.log | python -c "import sys; print(sys.stdin.read().replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A'))")
+            echo "::error title=PyInstaller::$MSG"
+          fi
+          exit $CODE
 
       - name: Check bundle
         run: |
@@ -91,4 +101,5 @@ jobs:
             Pilote-mac.zip
             capture.png
             pilote.log
+            build.log
           if-no-files-found: ignore
