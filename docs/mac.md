@@ -60,7 +60,7 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 * `build/pilote-mac.spec` : à part de `pilote.spec` pour que le build Windows ne
   bouge pas. Même piège : `ui/vendor` doit rester dans les `datas`. L'icône est
-  `assets/icon_512.png`, convertie en `.icns` par PyInstaller.
+  `assets/icon.ico` (la même que Windows ; `icon_512.png` est exclue de git), convertie en `.icns` par PyInstaller.
 * **`BUNDLE_ID = "io.github.arthur-soulard.pilote"`** : l'identité de l'app pour
   macOS (autorisations, préférences). Comme l'`AppId` de `installer.iss`, ne
   JAMAIS la changer une fois l'app distribuée.
