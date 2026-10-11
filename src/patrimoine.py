@@ -11,7 +11,7 @@ bout de deux ans.
 
 Ce qui n'est PAS saisi a la main
 ────────────────────────────────
-Le PEA et le pret etudiant vivent deja dans l'app. Leurs lignes sont marquees
+Le PEA et le pret vivent deja dans l'app. Leurs lignes sont marquees
 `auto` et l'UI les pre-remplit depuis les modules existants — pas de double
 saisie, pas de risque d'incoherence.
 
@@ -55,7 +55,7 @@ TYPES = [
      "dette": False},
     {"id": "autre",     "label": "Autre actif",           "icon": "📦", "color": "#71717a",
      "dette": False},
-    {"id": "dette",     "label": "Dette / Emprunt",       "icon": "🎓", "color": "#dc2626",
+    {"id": "dette",     "label": "Dette / Emprunt",       "icon": "💸", "color": "#dc2626",
      "dette": True},
 ]
 
@@ -72,14 +72,16 @@ def is_dette(tid: str) -> bool:
 
 # ─── Comptes crees d'office ───────────────────────────────────────────────────
 # Ils sont alimentes par les autres modules : l'UI les pre-remplit, l'utilisateur
-# confirme. On ne les cree qu'une fois (marqueur _seeded).
+# confirme. On ne les cree qu'une fois (marqueur _seeded). La ligne du pret
+# reste masquee dans l'UI tant qu'aucun pret n'est parametre (paCompteVisible),
+# et s'affiche sous le nom donne au pret (paLabel) : ce label-ci n'est qu'un repli.
 
 def _comptes_auto() -> list:
     return [
         {"id": "cpt_pea",  "label": "PEA",            "type": "pea",   "auto": "pea",
          "icon": "📈", "color": "#16a34a", "archived": False, "note": ""},
-        {"id": "cpt_pret", "label": "Prêt étudiant",  "type": "dette", "auto": "pret",
-         "icon": "🎓", "color": "#dc2626", "archived": False, "note": ""},
+        {"id": "cpt_pret", "label": "Prêt",           "type": "dette", "auto": "pret",
+         "icon": "💸", "color": "#dc2626", "archived": False, "note": ""},
     ]
 
 
