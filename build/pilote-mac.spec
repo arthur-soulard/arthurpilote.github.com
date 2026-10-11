@@ -42,6 +42,8 @@ a = Analysis(
     datas=[
         (str(SRC / "ui" / "index.html"), "ui"),
         (str(SRC / "ui" / "vendor"),     "ui/vendor"),
+        # Fiches des versions, lues par updater.historique() : meme piege
+        (str(SRC / "nouveautes.json"),   "."),
     ],
     hiddenimports=[
         "webview.platforms.cocoa",
