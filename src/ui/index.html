@@ -2448,6 +2448,111 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .expo-ed-tot.err { color: var(--r); }
 .expo-ed-aide { font-size: 12.5px; color: var(--txt2); margin: -4px 0 14px; }
 
+/* ── Premiers pas (assistant du premier lancement) et Paramètres → Modules ── */
+.modal.pp { max-width: 740px; padding: 1.6rem 2rem 1.4rem; }
+.pp-prog { display: flex; gap: 6px; margin-bottom: 1.1rem; }
+.pp-prog span { flex: 1; height: 4px; border-radius: 99px; background: var(--bg4); transition: background .25s; }
+.pp-prog span.on { background: var(--accent); }
+.pp-step { animation: ppEntre .22s ease-out; }
+@keyframes ppEntre { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.pp-kick { font-size: 12px; color: var(--txt3); margin-bottom: .3rem; }
+.modal h2.pp-h { font-size: 30px; line-height: 1.15; margin-bottom: .55rem; }
+.pp-h em { font-style: italic; color: var(--accent-text); }
+.pp-lead { color: var(--txt2); font-size: 13.5px; line-height: 1.6; margin-bottom: 1rem; max-width: 64ch; }
+.pp-points { list-style: none; display: grid; gap: 9px; margin-bottom: 1rem; }
+.pp-points li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.55; color: var(--txt2); }
+.pp-points li b { color: var(--txt); font-weight: 600; }
+.pp-points li > .ph { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-text); font-size: 17px; }
+.pp-who { display: flex; align-items: center; gap: 10px; background: var(--bg3); border-radius: 99px;
+  padding: 6px 16px 6px 8px; font-size: 12px; color: var(--txt2); margin-bottom: .9rem; }
+.pp-recup { background: var(--g2); border-radius: var(--radl); padding: .75rem 1rem; margin-bottom: .9rem; }
+.pp-recup-t { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--g); margin-bottom: .2rem; }
+.pp-recup p { font-size: 12px; color: var(--txt2); margin-bottom: .5rem; }
+.pp-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+.pp-sp { flex: 1; }
+.pp-compte { font-size: 12px; color: var(--txt3); margin-right: 4px; }
+.pp-mods { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .pp-mods { grid-template-columns: 1fr; } }
+label.pp-mod { position: relative; display: flex; align-items: flex-start; gap: 11px; margin: 0;
+  padding: 10px 38px 10px 10px; border-radius: var(--radl); background: var(--bg3);
+  border: 1.5px solid transparent; cursor: pointer; transition: border-color .15s, background .15s; }
+label.pp-mod:hover { border-color: var(--brd3); }
+label.pp-mod:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+label.pp-mod:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+label.pp-mod input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.pp-mod-ico { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--bg2); color: var(--txt2); font-size: 18px; transition: background .15s, color .15s; }
+label.pp-mod:has(input:checked) .pp-mod-ico { background: var(--accent); color: #fff; }
+.pp-mod-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pp-mod-txt b { font-size: 13.5px; font-weight: 600; color: var(--txt); }
+.pp-mod-txt small { font-size: 11.5px; line-height: 1.45; color: var(--txt2); }
+.pp-mod-ok { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--brd3); display: grid; place-items: center; font-size: 12px; color: transparent;
+  transition: background .15s, border-color .15s, color .15s, transform .15s; }
+label.pp-mod:has(input:checked) .pp-mod-ok { background: var(--accent); border-color: var(--accent); color: #fff; transform: scale(1.08); }
+.pp-firsts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .pp-firsts { grid-template-columns: 1fr; } }
+button.pp-first { position: relative; display: flex; align-items: flex-start; gap: 11px; text-align: left;
+  padding: 10px 34px 10px 10px; border-radius: var(--radl); background: var(--bg3);
+  border: 1.5px solid transparent; color: inherit; transition: border-color .15s; }
+button.pp-first:hover { border-color: var(--accent); }
+button.pp-first:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pp-first .pp-mod-ico { background: var(--accent-soft); color: var(--accent-text); }
+.pp-first-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;
+  font-size: 12.5px; line-height: 1.45; color: var(--txt2); }
+.pp-first-txt b { font-size: 13.5px; font-weight: 600; color: var(--txt); }
+.pp-first-go { position: absolute; top: 12px; right: 12px; color: var(--txt3); font-size: 15px;
+  transition: color .15s, transform .15s; }
+button.pp-first:hover .pp-first-go { color: var(--accent-text); transform: translate(2px, -2px); }
+.pp-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); margin-top: 1rem; }
+
+/* ── Fiche des nouveautés : avant la mise à jour, après, et l'historique ── */
+.maj-fiche + .maj-fiche { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--brd); }
+.maj-fiche-h { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+.maj-fiche-h span { color: var(--txt3); font-size: 12px; }
+.maj-fiche-t { font-family: var(--serif); font-size: 18px; line-height: 1.3; color: var(--txt); margin: .15rem 0 .5rem; }
+.maj-grp { margin-top: .75rem; }
+.maj-grp:first-child { margin-top: 0; }
+.maj-grp-t { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
+  padding: 2px 10px 2px 8px; border-radius: 99px; margin-bottom: .45rem; background: var(--bg4); color: var(--txt2); }
+.maj-nouveau .maj-grp-t { background: var(--accent-soft); color: var(--accent-text); }
+.maj-grp ul { padding-left: 1.15rem; display: grid; gap: 5px; }
+.maj-grp li { font-size: 13px; line-height: 1.55; color: var(--txt); }
+.maj-grp li::marker { color: var(--txt3); }
+.maj-scroll { max-height: 46vh; overflow-y: auto; padding-right: 6px; }
+.modal.maj-modal { max-width: 560px; }
+.maj-modal h2 { margin-bottom: .9rem; }
+.maj-kick { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent-text); margin-bottom: .3rem; }
+.maj-installee { font-size: 13px; font-weight: 600; margin-right: 4px; }
+.maj-dispo { border: 1.5px solid var(--accent); border-radius: var(--radl); padding: .9rem 1rem; margin-bottom: .4rem; }
+.maj-dispo-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; margin-bottom: .6rem; }
+.maj-dispo-h .ph { color: var(--accent-text); font-size: 18px; }
+.maj-dispo-h .btn { margin-left: auto; }
+.maj-vide { font-size: 12px; color: var(--txt2); }
+.maj-histo { display: grid; gap: 6px; }
+details.maj-item { background: var(--bg3); border-radius: var(--radl); padding: 0 1rem; }
+details.maj-item[open] { padding-bottom: .9rem; }
+details.maj-item > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px;
+  padding: .7rem 0; font-size: 13px; }
+details.maj-item > summary::-webkit-details-marker { display: none; }
+details.maj-item > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.maj-chev { color: var(--txt3); font-size: 12px; transition: transform .15s; align-self: center; }
+details.maj-item[open] .maj-chev { transform: rotate(90deg); }
+.maj-item-v { flex: none; font-weight: 600; }
+.maj-item-t { flex: 1; min-width: 0; color: var(--txt2); }
+.maj-item-d { flex: none; color: var(--txt3); font-size: 12px; }
+#update-modal.avec-fiche { max-width: 540px; }
+#update-modal .upd-fiche { text-align: left; background: var(--bg3); border-radius: var(--radl);
+  padding: .9rem 1rem; margin: -.4rem 0 1.3rem; }
+#update-modal .upd-fiche-t { font-size: 12px; color: var(--txt3); margin-bottom: .4rem; }
+#update-modal .upd-fiche .maj-scroll { max-height: 42vh; }
+#update-modal .upd-nofiche { font-size: 12px; color: var(--txt2); margin: -.6rem 0 1.3rem; }
+@media (prefers-reduced-motion: reduce) {
+  .pp-step { animation: none; }
+  .pp-prog span, label.pp-mod, .pp-mod-ico, .pp-mod-ok, .maj-chev, button.pp-first, .pp-first-go { transition: none; }
+}
+
 </style>
 </head>
 <body>
@@ -3985,7 +4090,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
         <button type="button" class="set-nav-btn" data-set="accueil"
                 onclick="setGoSection('accueil')"><span class="set-nav-ico"><i class="ph ph-house"></i></span>Accueil</button>
         <button type="button" class="set-nav-btn" data-set="nav"
-                onclick="setGoSection('nav')"><span class="set-nav-ico"><i class="ph ph-eye-slash"></i></span>Masqué</button>
+                onclick="setGoSection('nav')"><span class="set-nav-ico"><i class="ph ph-squares-four"></i></span>Modules</button>
         <button type="button" class="set-nav-btn" data-set="pea"
                 onclick="setGoSection('pea')"><span class="set-nav-ico"><i class="ph ph-chart-line-up"></i></span>PEA</button>
         <button type="button" class="set-nav-btn" data-set="comptes"
@@ -4000,6 +4105,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
                 onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-usb"></i></span>Sauvegarde USB</button>
         <button type="button" class="set-nav-btn" data-set="donnees"
                 onclick="setGoSection('donnees')"><span class="set-nav-ico"><i class="ph ph-database"></i></span>Données &amp; app</button>
+        <button type="button" class="set-nav-btn" data-set="maj"
+                onclick="setGoSection('maj')"><span class="set-nav-ico"><i class="ph ph-arrow-circle-up"></i></span>Mises à jour</button>
       </div>
 
       <div class="set-body">
@@ -4065,9 +4172,15 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
                   style="margin-top:10px;font-size:11px"><i class="ph ph-plus"></i> Nouvel utilisateur</button>
         </div>
 
-        <!-- ──── MASQUÉ ──── -->
+        <!-- ──── MODULES ET MASQUÉ ──── -->
         <div class="set-sec" data-sec="nav">
-          <h3>Masqué</h3>
+          <h3>Modules</h3>
+          <p class="set-lead">Coche les modules à garder dans la barre de gauche. Un module
+            décoché est masqué avec ses tuiles de l'accueil, pas effacé : ses données
+            restent sur ce PC et reviennent quand tu le recoches.</p>
+          <div class="pp-mods" id="cfg-modules"></div>
+
+          <h3 style="margin-top:22px">Masqué</h3>
           <p class="set-lead">Ce que tu as masqué avec l'icône <i class="ph ph-eye-slash"></i> se restaure ici.</p>
           <div class="fg" id="cfg-hidden-section">
             <label>Onglets masqués <span style="color:var(--txt3);font-weight:400">(icône œil sur la barre latérale)</span></label>
@@ -4246,18 +4359,29 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
             </div>
           </div>
           <div class="fg">
-            <label>Mise à jour</label>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" id="btn-check-update" onclick="manualCheckUpdate()" style="font-size:11px"><i class="ph ph-arrows-clockwise"></i> Vérifier les mises à jour</button>
-              <span id="cfg-update-status" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
-            </div>
-          </div>
-          <div class="fg">
             <label style="color:var(--r)">Zone sensible</label>
             <button type="button" class="btn btn-ghost btn-sm" style="color:var(--r);border-color:var(--r);font-size:11px"
                     onclick="resetFromConfig()"><i class="ph ph-trash"></i> Réinitialiser les données PEA</button>
           </div>
           <div id="cfg-version" style="font-size:10px;color:var(--txt3);font-family:var(--mono);margin-top:.9rem"></div>
+        </div>
+
+        <!-- ──── MISES À JOUR ──── -->
+        <div class="set-sec" data-sec="maj">
+          <h3>Mises à jour</h3>
+          <p class="set-lead">Pilote cherche une nouvelle version à chaque démarrage. Avant de
+            l'installer, tu lis sa fiche ; elle reste ensuite dans l'historique ci-dessous.</p>
+          <div class="fg">
+            <label>Version installée</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <span class="maj-installee" id="maj-installee">…</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-check-update" onclick="manualCheckUpdate()" style="font-size:11px"><i class="ph ph-arrows-clockwise"></i> Vérifier les mises à jour</button>
+              <span id="cfg-update-status" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
+            </div>
+          </div>
+          <div id="maj-dispo"></div>
+          <h3 style="margin-top:22px">Historique</h3>
+          <div class="maj-histo" id="maj-histo"></div>
         </div>
 
       </div>
@@ -9947,13 +10071,112 @@ async function _checkPinLock() {
   });
 }
 
-/* ─── Welcome screen — s'affiche tant que le PEA est vide ─── */
+/* ─── Premiers pas : l'assistant du premier lancement (4.3.37) ───
+   Trois étapes : ce qu'est Pilote, les modules à cocher, par où commencer.
+   Une seule fois par utilisateur (S.uiPrefs.premiersPas), et seulement si son
+   PEA est vide : un utilisateur déjà installé ne le voit pas. Jusqu'à la
+   4.3.36, l'écran de bienvenue revenait à CHAQUE lancement tant que le PEA
+   restait vide, même pour qui ne s'en sert pas.
+   Un module non coché est masqué (S.uiPrefs.hiddenSidebar, tous ses onglets),
+   pas supprimé : Paramètres → Modules le remet. */
+
+/* Ce que l'assistant et Paramètres → Modules disent de chaque section :
+   description, premier geste, onglet où le faire, tuiles de l'accueil */
+const NAV_MODULES = {
+  "sec-pea": {
+    desc: "Positions, dividendes, performance comparée aux indices, simulateurs.",
+    pas:  "Saisis tes dépôts, puis tes positions : les cours suivent tout seuls.",
+    tab: "dep", tuiles: ["pea"] },
+  "sec-comptes": {
+    desc: "Budget mois par mois, catégories, prélèvements récurrents, récap de l'année.",
+    pas:  "Ajoute les dépenses et les revenus du mois, chacun dans sa catégorie.",
+    tab: "fin-month", tuiles: ["depense"] },
+  "sec-pret": {
+    desc: "Étudiant ou autre : remboursements, argent placé (PEA, assurance vie, livret A), frais.",
+    pas:  "Renseigne le montant, les dates et la mensualité, et donne-lui un nom.",
+    tab: "pr-params", tuiles: ["pret"] },
+  "sec-sport": {
+    desc: "Agenda des séances, tes propres sports, objectifs datés, heures cumulées.",
+    pas:  "Note ta première séance dans l'agenda : les heures se cumulent seules.",
+    tab: "sp-agenda", tuiles: ["sport", "sport-goal"] },
+  "sec-patri": {
+    desc: "Tous tes comptes relevés une fois par mois, valeur nette et son évolution.",
+    pas:  "Crée tes comptes (livret, assurance vie…), puis fais le relevé du mois.",
+    tab: "pa-comptes", tuiles: ["patrimoine", "patri-rappel"] },
+  "sec-sante": {
+    desc: "Pesées et mesures, saisies à la main ou lues sur des captures de l'app FitDays.",
+    pas:  "Ajoute une pesée, à la main ou depuis des captures de FitDays.",
+    tab: "sa-suivi", tuiles: ["poids"] },
+  "sec-voc": {
+    desc: "Tes listes de mots, révisées par répétition espacée, ajout depuis une photo ou un PDF.",
+    pas:  "Ajoute tes premiers mots, un par un ou depuis une photo.",
+    tab: "vo-mots", tuiles: ["voc-jour"] },
+  "sec-actus": {
+    desc: "La boîte Gmail qui reçoit tes newsletters, lue dans Pilote.",
+    pas:  "Connecte ta boîte Gmail : l'onglet Connexion explique comment.",
+    tab: "ac-connexion", tuiles: [] },
+};
+
+/** Sections dont au moins un onglet est affiché dans la barre latérale. */
+function _modulesVisibles() {
+  const hid = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
+  return new Set(NAV_SECTIONS
+    .filter(s => s.children.some(c => !hid.includes(c.id)))
+    .map(s => s.id));
+}
+
+/** Affiche ou masque TOUS les onglets d'une section (en mémoire seulement). */
+function _afficherModule(secId, on) {
+  const sec = NAV_SECTIONS.find(s => s.id === secId);
+  if (!sec) return;
+  S.uiPrefs = S.uiPrefs || {};
+  const hid = new Set(S.uiPrefs.hiddenSidebar || []);
+  sec.children.forEach(c => on ? hid.delete(c.id) : hid.add(c.id));
+  S.uiPrefs.hiddenSidebar = [...hid];
+}
+
+/** Écrit S.uiPrefs. Comme _syncToPython : rien tant que la lecture du
+    fichier n'a pas réussi, sinon on écraserait des réglages qu'on n'a pas lus. */
+function _enregistrerUiPrefs() {
+  if (!_hydrationDone) return;
+  if (!(window.pywebview && pywebview.api && pywebview.api.save_ui_prefs)) return;
+  try { pywebview.api.save_ui_prefs(S.uiPrefs); } catch (e) {}
+}
+
+/** Redessine la barre latérale (après un changement de modules). */
+function _reconstruireSidebar() {
+  const old = document.getElementById("app-sidebar");
+  if (old) old.remove();
+  _injectSidebar();
+  if (typeof acRenderBadge === "function") acRenderBadge();
+  const actif = document.querySelector(".pane.active");
+  const id = actif ? actif.id.replace("pane-", "") : "home";
+  const sec = _navSectionOf(id);
+  // L'onglet ouvert vient d'être masqué avec son module : retour à l'accueil
+  if (sec && !_modulesVisibles().has(sec.id)) { goTab("home"); _setActiveSidebar("home"); }
+  else _setActiveSidebar(id);
+}
+
+/** Carte d'un module à cocher (assistant et Paramètres → Modules). */
+function _modCarteHtml(sec, coche) {
+  const m = NAV_MODULES[sec.id] || {};
+  return `<label class="pp-mod">
+      <input type="checkbox" value="${sec.id}"${coche ? " checked" : ""}>
+      <span class="pp-mod-ico"><i class="ph ph-${NAV_ICONS[sec.id] || "circle"}"></i></span>
+      <span class="pp-mod-txt"><b>${escHtml(sec.label)}</b><small>${escHtml(m.desc || "")}</small></span>
+      <span class="pp-mod-ok"><i class="ph ph-check"></i></span>
+    </label>`;
+}
+
+/* Renvoie true si l'assistant s'affiche (boot() attend alors pour la fiche
+   des nouveautés : un nouvel utilisateur n'a rien de « nouveau » à lire). */
 async function _showWelcomeIfFirstRun() {
   const isEmpty = (!S.positions || S.positions.length === 0)
                && (!S.transactions || S.transactions.length === 0)
                && (!S.depots || S.depots.length === 0);
-  if (!isEmpty) return;
-  if (document.getElementById("ov-welcome")) return;
+  if (!isEmpty) return false;
+  if (S.uiPrefs && S.uiPrefs.premiersPas) return false;
+  if (document.getElementById("ov-welcome")) return true;
 
   // Identite : sur une installation multi-utilisateurs, on rappelle de quel
   // espace il s'agit — les donnees des autres utilisateurs ne sont jamais
@@ -9964,12 +10187,9 @@ async function _showWelcomeIfFirstRun() {
     if (st && st.users.length > 1) {
       const me = st.users.find(u => u.slug === st.active) || st.users[0];
       identitySection = `
-        <div style="display:flex;align-items:center;gap:10px;justify-content:center;
-                    background:var(--bg3);border:1px solid var(--brd);border-radius:999px;
-                    padding:7px 16px;margin-bottom:1.2rem;font-size:12px">
-          ${userAvatarHtml(me)}
-          <span>Espace de <strong>${escHtml(me.label)}</strong> \u2014 vierge.
-          Les donn\u00e9es des autres utilisateurs restent chez eux.</span>
+        <div class="pp-who">${userAvatarHtml(me)}
+          <span>Espace de <strong>${escHtml(me.label)}</strong>, vierge.
+          Les données des autres utilisateurs restent chez eux.</span>
         </div>`;
     }
   } catch (e) {}
@@ -9985,30 +10205,30 @@ async function _showWelcomeIfFirstRun() {
     }
   } catch(e) {}
 
+  // Version installée : un nouvel utilisateur n'a pas à lire la fiche des
+  // nouveautés de la version qu'il découvre
+  const hist = await _majCharger();
+  if (document.getElementById("ov-welcome")) return true;
+
   // Section "recuperation auto" si on detecte une ancienne installation
   let recoverySection = "";
   if (candidates.length > 0) {
     const fmtDate = ts => new Date(ts * 1000).toLocaleDateString("fr-FR", {day:"2-digit", month:"long", year:"numeric"});
     recoverySection = `
-      <div style="background:linear-gradient(135deg, rgba(22,163,74,0.10), rgba(22,163,74,0.04));border:2px solid var(--g);
-                  border-radius:var(--rad);padding:1rem 1.1rem;margin-bottom:1rem;text-align:left">
-        <div style="font-weight:700;font-size:13px;color:var(--g);margin-bottom:.4rem">
-          ✨ Ancienne installation détectée
-        </div>
-        <div style="font-size:11px;color:var(--txt2);margin-bottom:.7rem">
-          Un fichier Pilote a été trouvé <strong>hors de cette installation</strong>
-          (ancien dossier, exe déplacé…). L'importer dans cet espace ?
-        </div>
+      <div class="pp-recup">
+        <div class="pp-recup-t"><i class="ph ph-clock-counter-clockwise"></i> Ancienne installation détectée</div>
+        <p>Un fichier Pilote a été trouvé <strong>hors de cette installation</strong>
+          (ancien dossier, exe déplacé…). L'importer dans cet espace ?</p>
         <div style="display:flex;flex-direction:column;gap:6px">
           ${candidates.map((c, i) => `
             <button class="btn btn-ghost btn-sm" data-recover-idx="${i}"
               style="text-align:left;padding:8px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:2px">
               <div style="font-weight:700;font-size:12px">
-                ${c.prenom ? c.prenom + " — " : ""}${c.positions} position${c.positions>1?"s":""},
+                ${c.prenom ? escHtml(c.prenom) + " — " : ""}${c.positions} position${c.positions>1?"s":""},
                 ${c.transactions} tx, ${c.depots} dépôt${c.depots>1?"s":""}
               </div>
               <div style="font-size:10px;color:var(--txt2);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%">
-                ${c.path}
+                ${escHtml(c.path)}
               </div>
               <div style="font-size:10px;color:var(--txt3)">Modifié le ${fmtDate(c.mtime)}</div>
             </button>
@@ -10017,101 +10237,129 @@ async function _showWelcomeIfFirstRun() {
       </div>`;
   }
 
-  const welcomeTitle = (typeof homeDisplayName === "function" && homeDisplayName())
-    ? "Bienvenue, " + escHtml(homeDisplayName())
-    : "Bienvenue sur Pilote";
+  const nom = (typeof homeDisplayName === "function") ? homeDisplayName() : "";
+  const welcomeTitle = nom ? "Bienvenue, <em>" + escHtml(nom) + "</em>" : "Bienvenue sur Pilote";
 
   const ov = document.createElement("div");
   ov.id = "ov-welcome";
-  ov.style.cssText = "position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto";
+  ov.className = "ov open";
   ov.innerHTML = `
-    <div style="max-width:620px;width:100%;background:var(--bg2);border-radius:var(--radxl);box-shadow:var(--sh-md);padding:2.2rem 2.4rem;text-align:center;margin:auto">
-      <div style="font-size:56px;line-height:1;margin-bottom:.6rem">👋</div>
-      <h2 style="font-size:24px;font-weight:800;margin-bottom:.4rem">${welcomeTitle}</h2>
-      <p style="color:var(--txt2);font-size:13px;margin-bottom:1.4rem">
-        Sept suivis dans une seule application, enti\u00e8rement sur ton ordinateur.
-      </p>
-      ${identitySection}
-      ${recoverySection}
+    <div class="modal pp" role="dialog" aria-modal="true" aria-labelledby="pp-t1">
+      <div class="pp-prog" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-bottom:1.2rem">
-        <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u2197\ufe0f PEA</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            Positions, transactions, dividendes, performance compar\u00e9e aux indices, simulateurs.
-          </div>
+      <section class="pp-step" data-pp="1">
+        <div class="pp-kick">Premiers pas · 1 sur 3</div>
+        <h2 class="pp-h" id="pp-t1">${welcomeTitle}</h2>
+        <p class="pp-lead">Pilote rassemble tes suivis personnels (bourse, budget, prêt,
+          sport, santé…) dans une seule application, qui tourne entièrement sur ton ordinateur.</p>
+        ${identitySection}
+        <ul class="pp-points">
+          <li><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ce PC.</b>
+            Pas de compte, pas de serveur : tes données vivent dans le dossier Données,
+            avec une sauvegarde chaque jour.</span></li>
+          <li><i class="ph ph-squares-four"></i><span><b>Tu choisis tes modules.</b>
+            Chacun est indépendant, et ceux que tu ne prends pas restent masqués.</span></li>
+          <li><i class="ph ph-users"></i><span><b>Un espace par personne.</b>
+            Plusieurs utilisateurs peuvent cohabiter, chacun avec ses données et,
+            s'il le veut, son code PIN.</span></li>
+          <li><i class="ph ph-arrow-circle-up"></i><span><b>Mises à jour automatiques.</b>
+            Avant chacune, une fiche te dit ce qui change.</span></li>
+        </ul>
+        ${recoverySection}
+        <div class="pp-acts">
+          <button class="btn btn-ghost" data-pp-import><i class="ph ph-upload-simple"></i> Importer un fichier</button>
+          <span class="pp-sp"></span>
+          <button class="btn btn-primary" data-pp-go="2">Continuer <i class="ph ph-arrow-right"></i></button>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F4B3} Mes comptes</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            Budget mois par mois, cat\u00e9gories \u00e0 emoji, pr\u00e9l\u00e8vements r\u00e9currents, r\u00e9cap annuel.
-          </div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F4B8} Pr\u00eat</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            \u00c9tudiant ou autre : remboursements, argent plac\u00e9 (PEA, assurance vie, livret A), frais.
-          </div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F3C3} Sports</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            Agenda des s\u00e9ances, tes propres sports, objectifs dat\u00e9s, heures cumul\u00e9es.
-          </div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F3E6} Patrimoine</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            Tous tes comptes relev\u00e9s une fois par mois, valeur nette et son \u00e9volution.
-          </div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u2696\ufe0f Sant\u00e9</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            Pes\u00e9es et mesures, saisies \u00e0 la main ou lues sur des captures de l'app FitDays, objectifs.
-          </div>
-        </div>
-        <div style="grid-column:1/-1;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F4DA} Vocabulaire</div>
-          <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            Tes listes de mots, r\u00e9vis\u00e9es par r\u00e9p\u00e9tition espac\u00e9e (quatre bo\u00eetes), ajout depuis une photo ou un PDF.
-          </div>
-        </div>
-      </div>
+      </section>
 
-      <div style="text-align:left;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:1.1rem 1.2rem;margin-bottom:1rem;font-size:12px;line-height:1.9">
-        <strong style="font-size:13px">Pour d\u00e9marrer :</strong><br>
-        <span style="font-family:var(--mono);color:var(--accent);font-weight:700">\u2460</span>
-          Ouvre <strong>\u2699 Param\u00e8tres</strong> depuis l'accueil : th\u00e8me, couleur, code PIN, et les r\u00e9glages de chaque onglet<br>
-        <span style="font-family:var(--mono);color:var(--accent);font-weight:700">\u2461</span>
-          Choisis une section dans la barre de gauche et commence par ce qui t'int\u00e9resse \u2014
-          rien n'est obligatoire, chaque module est ind\u00e9pendant<br>
-        <span style="font-family:var(--mono);color:var(--accent);font-weight:700">\u2462</span>
-          Pour le PEA : saisis tes <strong>d\u00e9p\u00f4ts</strong>, puis tes <strong>positions</strong> ;
-          les cours se mettent \u00e0 jour tout seuls toutes les 3 min
-      </div>
+      <section class="pp-step" data-pp="2" hidden>
+        <div class="pp-kick">Premiers pas · 2 sur 3</div>
+        <h2 class="pp-h">Qu'est-ce que tu veux suivre&#8239;?</h2>
+        <p class="pp-lead">Coche les modules à afficher. Les autres seront masqués, pas
+          supprimés : Paramètres → Modules les remet quand tu veux.</p>
+        <div class="pp-mods">${NAV_SECTIONS.map(s => _modCarteHtml(s, false)).join("")}</div>
+        <div class="pp-acts">
+          <button class="btn btn-ghost" data-pp-go="1"><i class="ph ph-arrow-left"></i> Retour</button>
+          <span class="pp-sp"></span>
+          <span class="pp-compte" id="pp-compte">Aucun module choisi</span>
+          <button class="btn btn-primary" data-pp-go="3" id="pp-suite" disabled>Continuer <i class="ph ph-arrow-right"></i></button>
+        </div>
+      </section>
 
-      <div style="text-align:left;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:1rem;margin-bottom:1.2rem;font-size:11px;line-height:1.8;color:var(--txt2)">
-        <strong style="color:var(--txt)">Bon \u00e0 savoir :</strong><br>
-        \u{1F465} Plusieurs <strong>utilisateurs</strong> peuvent cohabiter : chacun a ses propres donn\u00e9es, rien n'est partag\u00e9<br>
-        \u{1F512} Chaque utilisateur peut poser son <strong>code PIN \u00e0 4 chiffres</strong>, demand\u00e9 \u00e0 l'ouverture de son espace<br>
-        \u{1F4BE} Tout reste <strong>sur ce PC</strong>, en clair dans le dossier Donnees, avec une sauvegarde par jour sur 7 jours<br>
-        \u{1F5A5}\ufe0f L'ic\u00f4ne de l'app prend la <strong>couleur d'accent</strong> que tu choisis<br>
-        \u2b07\ufe0f Tu peux <strong>importer</strong> un fichier JSON existant, et les mises \u00e0 jour arrivent toutes seules
-      </div>
-
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" id="welcome-config"><i class="ph ph-gear-six"></i> Ouvrir les param\u00e8tres</button>
-        <button class="btn btn-ghost"   id="welcome-import"><i class="ph ph-upload-simple"></i> Importer un fichier</button>
-        <button class="btn btn-ghost"   id="welcome-skip">Commencer</button>
-      </div>
+      <section class="pp-step" data-pp="3" hidden>
+        <div class="pp-kick">Premiers pas · 3 sur 3</div>
+        <h2 class="pp-h">Par où commencer</h2>
+        <p class="pp-lead">Un premier geste par module. Clique sur l'un d'eux pour y aller
+          tout de suite, ou commence par l'accueil.</p>
+        <div class="pp-firsts" id="pp-firsts"></div>
+        <p class="pp-note"><i class="ph ph-gear-six"></i> Thème, couleur d'accent et code PIN :
+          Paramètres, en bas de la barre de gauche.</p>
+        <div class="pp-acts">
+          <button class="btn btn-ghost" data-pp-go="2"><i class="ph ph-arrow-left"></i> Retour</button>
+          <span class="pp-sp"></span>
+          <button class="btn btn-primary" data-pp-fin>Commencer</button>
+        </div>
+      </section>
     </div>`;
   document.body.appendChild(ov);
-  const close = () => ov.remove();
-  ov.querySelector("#welcome-skip").onclick   = close;
-  ov.querySelector("#welcome-config").onclick = () => { close(); openSettings("general"); };
-  ov.querySelector("#welcome-import").onclick = () => {
-    close();
+
+  const choix = () => [...ov.querySelectorAll(".pp-mods input:checked")].map(i => i.value);
+
+  const aller = n => {
+    if (n === 3) remplirPremiersPas();
+    ov.querySelectorAll(".pp-step").forEach(s => { s.hidden = s.dataset.pp !== String(n); });
+    ov.querySelectorAll(".pp-prog span").forEach((b, i) => b.classList.toggle("on", i < n));
+    ov.querySelector(".pp").scrollTop = 0;
+    const st = ov.querySelector(`.pp-step[data-pp="${n}"]`);
+    const cible = st && st.querySelector(n === 2 ? ".pp-mods input" : ".btn-primary");
+    if (cible) cible.focus();
+  };
+  ov.querySelectorAll("[data-pp-go]").forEach(b => { b.onclick = () => aller(+b.dataset.ppGo); });
+
+  const majCompte = () => {
+    const n = choix().length;
+    ov.querySelector("#pp-suite").disabled = !n;
+    ov.querySelector("#pp-compte").textContent =
+      n ? n + (n > 1 ? " modules choisis" : " module choisi") : "Aucun module choisi";
+  };
+  ov.querySelectorAll(".pp-mods input").forEach(i => { i.onchange = majCompte; });
+
+  function remplirPremiersPas() {
+    const box = ov.querySelector("#pp-firsts");
+    const pris = choix();
+    box.innerHTML = NAV_SECTIONS.filter(s => pris.includes(s.id)).map(s => {
+      const m = NAV_MODULES[s.id] || {};
+      return `<button type="button" class="pp-first" data-pp-ouvrir="${m.tab || "home"}"
+                title="Ouvrir ${escHtml(s.label)}">
+          <span class="pp-mod-ico"><i class="ph ph-${NAV_ICONS[s.id] || "circle"}"></i></span>
+          <span class="pp-first-txt"><b>${escHtml(s.label)}</b><span>${escHtml(m.pas || "")}</span></span>
+          <i class="ph ph-arrow-up-right pp-first-go"></i>
+        </button>`;
+    }).join("");
+    box.querySelectorAll("[data-pp-ouvrir]").forEach(b => { b.onclick = () => terminer(b.dataset.ppOuvrir); });
+  }
+
+  // Modules non cochés masqués, tuiles de l'accueil prises dans les modules
+  // choisis, puis on part sur l'onglet demandé (ou on reste à l'accueil)
+  function terminer(tab) {
+    const pris = choix();
+    NAV_SECTIONS.forEach(s => _afficherModule(s.id, pris.includes(s.id)));
+    const tuiles = new Set(pris.flatMap(id => (NAV_MODULES[id] || {}).tuiles || []));
+    S.uiPrefs.dash = DASH_WIDGETS.map(w => ({ id: w.id, on: tuiles.has(w.id) }));
+    S.uiPrefs.premiersPas = true;
+    if (hist && hist.version) S.uiPrefs.nouveautesVues = hist.version;
+    _enregistrerUiPrefs();
+    ov.remove();
+    _reconstruireSidebar();
+    if (typeof dashRender === "function") dashRender();
+    if (tab) { goTab(tab); _setActiveSidebar(tab); }
+  }
+  ov.querySelector("[data-pp-fin]").onclick = () => terminer(null);
+
+  // L'import recharge l'app : l'assistant ne revient pas si le PEA est rempli
+  ov.querySelector("[data-pp-import]").onclick = () => {
+    ov.remove();
     const inp = document.getElementById("import-file");
     if (inp) inp.click();
   };
@@ -10142,6 +10390,7 @@ async function _showWelcomeIfFirstRun() {
       }
     };
   });
+  return true;
 }
 
 /* ─── Theme clair / sombre ─── */
@@ -10296,6 +10545,59 @@ function setGoSection(id) {
   if (id === "sauvegarde") svRefresh();
   if (id === "accueil" && typeof dashRenderConfig === "function") dashRenderConfig();
   if (id === "vocabulaire" && typeof voRenderSetBoites === "function") voRenderSetBoites();
+  if (id === "nav") { cfgRenderModules(); _cfgRenderMasques(); }
+  if (id === "maj") majRenderSection();
+}
+
+/* ─── Paramètres → Modules : un module coché = tous ses onglets affichés ─── */
+function cfgRenderModules() {
+  const box = document.getElementById("cfg-modules");
+  if (!box) return;
+  const vis = _modulesVisibles();
+  box.innerHTML = NAV_SECTIONS.map(s => _modCarteHtml(s, vis.has(s.id))).join("");
+  box.querySelectorAll("input").forEach(i => { i.onchange = () => cfgModule(i.value, i.checked); });
+}
+
+function cfgModule(secId, on) {
+  _afficherModule(secId, on);
+  _enregistrerUiPrefs();
+  _reconstruireSidebar();
+  if (typeof dashRender === "function") dashRender();
+  cfgRenderModules();
+  _cfgRenderMasques();
+}
+
+/* Onglets et blocs masqués avec l'œil, restaurables un par un */
+function _cfgRenderMasques() {
+  const hiddenList = document.getElementById("cfg-hidden-list");
+  if (hiddenList) {
+    // Un onglet retiré de l'app (ceux de Formation, 11/10/2026) reste dans les
+    // réglages de qui l'avait masqué : il n'a plus rien à restaurer.
+    // Ceux d'un module décoché se retrouvent dans la grille des modules.
+    const vis = _modulesVisibles();
+    const hidden = ((S.uiPrefs && S.uiPrefs.hiddenSidebar) || [])
+      .filter(id => SIDEBAR_ITEMS.some(x => x.id === id))
+      .filter(id => { const sec = _navSectionOf(id); return !sec || vis.has(sec.id); });
+    hiddenList.innerHTML = hidden.length === 0
+      ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Aucun onglet masqué</span>'
+      : hidden.map(id => {
+          const it = SIDEBAR_ITEMS.find(x => x.id === id);
+          const label = it ? it.label : id;
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showSidebarItem('${id}');_cfgRenderMasques()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
+        }).join("");
+  }
+  // Blocs masqués
+  const hiddenCardsList = document.getElementById("cfg-hidden-cards-list");
+  if (hiddenCardsList) {
+    const hidden = (S.uiPrefs && S.uiPrefs.hiddenCards) || [];
+    hiddenCardsList.innerHTML = hidden.length === 0
+      ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Aucun bloc masqué</span>'
+      : hidden.map(id => {
+          const it = CARD_ITEMS.find(x => x.id === id);
+          const label = it ? it.label : id;
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showCard('${id}');_cfgRenderMasques()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
+        }).join("");
+  }
 }
 
 /* ══════════ Sauvegarde externe (clé USB) ══════════ */
@@ -10515,33 +10817,9 @@ async function openConfig() {
   _renderAccentPicker();
   _wireThemeButtons();
   document.getElementById("cfg-ouverture").addEventListener("input", updateConfigRecap);
-  // Onglets masqués
-  const hiddenList = document.getElementById("cfg-hidden-list");
-  if (hiddenList) {
-    // Un onglet retiré de l'app (ceux de Formation, 11/10/2026) reste dans les
-    // réglages de qui l'avait masqué : il n'a plus rien à restaurer.
-    const hidden = ((S.uiPrefs && S.uiPrefs.hiddenSidebar) || [])
-      .filter(id => SIDEBAR_ITEMS.some(x => x.id === id));
-    hiddenList.innerHTML = hidden.length === 0
-      ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Aucun onglet masqué</span>'
-      : hidden.map(id => {
-          const it = SIDEBAR_ITEMS.find(x => x.id === id);
-          const label = it ? it.label : id;
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showSidebarItem('${id}');openConfig()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
-        }).join("");
-  }
-  // Blocs masqués
-  const hiddenCardsList = document.getElementById("cfg-hidden-cards-list");
-  if (hiddenCardsList) {
-    const hidden = (S.uiPrefs && S.uiPrefs.hiddenCards) || [];
-    hiddenCardsList.innerHTML = hidden.length === 0
-      ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Aucun bloc masqué</span>'
-      : hidden.map(id => {
-          const it = CARD_ITEMS.find(x => x.id === id);
-          const label = it ? it.label : id;
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showCard('${id}');openConfig()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
-        }).join("");
-  }
+  // Modules, onglets et blocs masqués
+  cfgRenderModules();
+  _cfgRenderMasques();
   // Affiche la version de l'app
   try {
     const vEl = document.getElementById("cfg-version");
@@ -13005,15 +13283,17 @@ function _injectTitlebar() {
   };
 }
 
+// Icones Phosphor (servies par /vendor/phosphor/) : une par section, reprises
+// par l'assistant des premiers pas et Paramètres → Modules
+const NAV_ICONS = {
+  "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "hand-coins",
+  "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
+  "sec-voc": "cards", "sec-actus": "newspaper",
+};
+
 function _injectSidebar() {
   const hidden = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
   const openId = _navOuverte;           // au lancement : toutes repliees
-  // Icones Phosphor (servies par /vendor/phosphor/) : une par section
-  const NAV_ICONS = {
-    "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "hand-coins",
-    "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
-    "sec-voc": "cards", "sec-actus": "newspaper",
-  };
   let html = `<aside class="sidebar" id="app-sidebar">
     <button class="sb-item sb-home" data-tab="home"><i class="ph ph-house sb-ico"></i><span>Accueil</span></button>`;
 
@@ -13544,22 +13824,166 @@ async function manualCheckUpdate() {
   }
 }
 
+/* ─── Fiche des nouveautés (4.3.37) ───
+   src/nouveautes.json : une fiche par version (nouveau, amélioré, corrigé).
+   Livrée avec l'app, lue par Api.nouveautes() pour l'historique de
+   Paramètres → Mises à jour ; celle de la version proposée vient de GitHub
+   (updater._notes_distantes) et s'affiche AVANT l'installation. Après une
+   mise à jour, la fiche de la version installée s'ouvre une fois
+   (S.uiPrefs.nouveautesVues, propre à chaque utilisateur). */
+
+let _majHist = null;   // { version, versions } de l'app installée
+
+async function _majCharger() {
+  if (_majHist) return _majHist;
+  const vide = { version: "", versions: [] };
+  if (!(window.pywebview && pywebview.api && pywebview.api.nouveautes)) return vide;
+  try {
+    const r = await pywebview.api.nouveautes();
+    if (r && r.ok) _majHist = r;
+    return r || vide;
+  } catch (e) { return vide; }
+}
+
+/** -1, 0 ou 1, comme une comparaison de versions « 4.3.37 ». */
+function _majCmp(a, b) {
+  const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
+function _majDate(iso) {
+  const d = new Date(String(iso) + "T12:00:00");
+  return isNaN(d) ? "" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+const MAJ_GROUPES = [
+  ["nouveau",  "Nouveau",  "sparkle"],
+  ["ameliore", "Amélioré", "trend-up"],
+  ["corrige",  "Corrigé",  "wrench"],
+];
+
+/** Fiche d'une ou plusieurs versions. opts.sansNumero : sans la ligne
+    « Version x · date » ; opts.sansTitre : sans le titre non plus. */
+function _majFicheHtml(versions, opts) {
+  opts = opts || {};
+  return versions.map(v => `<div class="maj-fiche">
+      ${opts.sansNumero || opts.sansTitre ? "" : `<div class="maj-fiche-h"><b>Version ${escHtml(v.version)}</b>
+        ${v.date ? `<span>${_majDate(v.date)}</span>` : ""}</div>`}
+      ${v.titre && !opts.sansTitre ? `<div class="maj-fiche-t">${escHtml(v.titre)}</div>` : ""}
+      ${MAJ_GROUPES.filter(([k]) => (v[k] || []).length).map(([k, lbl, ico]) => `
+        <div class="maj-grp maj-${k}">
+          <div class="maj-grp-t"><i class="ph ph-${ico}"></i> ${lbl}</div>
+          <ul>${v[k].map(p => `<li>${escHtml(p)}</li>`).join("")}</ul>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
+/** Au premier lancement d'une nouvelle version : sa fiche, une seule fois. */
+async function _majFicheApresMiseAJour() {
+  if (!_hydrationDone) return;   // rien ne pourrait être noté comme lu
+  const h = await _majCharger();
+  if (!h || !h.version) return;
+  S.uiPrefs = S.uiPrefs || {};
+  const vue = S.uiPrefs.nouveautesVues;
+  if (vue && _majCmp(vue, h.version) >= 0) return;
+  // Jamais rien lu : la fiche de cette version seulement, pas tout l'historique
+  const aLire = h.versions.filter(v => _majCmp(v.version, h.version) <= 0
+    && (vue ? _majCmp(v.version, vue) > 0 : v.version === h.version));
+  S.uiPrefs.nouveautesVues = h.version;
+  _enregistrerUiPrefs();
+  if (!aLire.length || document.getElementById("ov-maj-vue")) return;
+
+  const ov = document.createElement("div");
+  ov.id = "ov-maj-vue";
+  ov.className = "ov open";
+  ov.innerHTML = `
+    <div class="modal maj-modal" role="dialog" aria-modal="true" aria-labelledby="maj-vue-t">
+      <div class="maj-kick"><i class="ph ph-sparkle"></i> Mise à jour installée</div>
+      <h2 id="maj-vue-t">Quoi de neuf dans Pilote ${escHtml(h.version)}</h2>
+      <div class="maj-scroll">${_majFicheHtml(aLire, { sansNumero: aLire.length === 1 })}</div>
+      <div class="mact">
+        <button class="btn btn-ghost" data-maj-histo><i class="ph ph-clock-counter-clockwise"></i> Historique des mises à jour</button>
+        <button class="btn btn-primary" data-maj-ok>C'est noté</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target === ov) ov.remove(); };
+  ov.querySelector("[data-maj-ok]").onclick = () => ov.remove();
+  ov.querySelector("[data-maj-histo]").onclick = () => { ov.remove(); openSettings("maj"); };
+  ov.querySelector("[data-maj-ok]").focus();
+}
+
+/** Paramètres → Mises à jour : version installée, version proposée avec sa
+    fiche, puis l'historique (la plus récente dépliée). */
+async function majRenderSection() {
+  const h = await _majCharger();
+  const inst = document.getElementById("maj-installee");
+  if (inst) inst.textContent = h.version ? "Pilote " + h.version : "—";
+
+  const dispo = document.getElementById("maj-dispo");
+  let r = null;
+  try {
+    if (window.pywebview && pywebview.api) r = await pywebview.api.check_update();
+  } catch (e) {}
+  if (dispo) {
+    dispo.innerHTML = (r && r.hasUpdate) ? `
+      <div class="maj-dispo">
+        <div class="maj-dispo-h"><i class="ph ph-arrow-circle-up"></i>
+          <b>Pilote ${escHtml(r.version)} est disponible</b>
+          <button type="button" class="btn btn-primary btn-sm"
+                  onclick="closeOv('ov-config');_checkForUpdates()">Installer…</button></div>
+        ${(r.notes && r.notes.length)
+          ? _majFicheHtml(r.notes, { sansNumero: r.notes.length === 1 })
+          : `<p class="maj-vide">Sa fiche n'a pas pu être chargée.</p>`}
+      </div>` : "";
+  }
+
+  const box = document.getElementById("maj-histo");
+  if (!box) return;
+  box.innerHTML = h.versions.length
+    ? h.versions.map((v, i) => `
+        <details class="maj-item"${i === 0 ? " open" : ""}>
+          <summary><i class="ph ph-caret-right maj-chev"></i>
+            <span class="maj-item-v">${escHtml(v.version)}</span>
+            <span class="maj-item-t">${escHtml(v.titre)}</span>
+            <span class="maj-item-d">${_majDate(v.date)}</span></summary>
+          ${_majFicheHtml([v], { sansTitre: true })}
+        </details>`).join("")
+    : `<div class="m-empty">Aucune fiche n'est disponible pour cette version.</div>`;
+}
+
 async function _checkForUpdates() {
   try {
     if (!window.pywebview || !window.pywebview.api) return;
+    if (document.getElementById("update-overlay")) return;
     const r = await window.pywebview.api.check_update();
     if (!r) return;
     // Si la vérif GitHub n'est pas encore terminée, on réessaie dans 6s
     if (!r.checked) { setTimeout(_checkForUpdates, 2000); return; }
     if (!r.hasUpdate) return;
 
+    // La fiche de la version proposée (de toutes, si plusieurs ont été sautées)
+    const notes = (r.notes && r.notes.length) ? r.notes : null;
+    const fiche = notes
+      ? `<div class="upd-fiche" id="upd-fiche">
+           <div class="upd-fiche-t">Ce qui change</div>
+           <div class="maj-scroll">${_majFicheHtml(notes, { sansNumero: notes.length === 1 })}</div>
+         </div>`
+      : `<p class="upd-nofiche" id="upd-fiche">La fiche de cette version n'a pas pu être chargée.
+           Elle sera dans Paramètres → Mises à jour une fois la version installée.</p>`;
+
     const overlay = document.createElement("div");
     overlay.id = "update-overlay";
     overlay.innerHTML = `
-      <div id="update-modal">
+      <div id="update-modal"${notes ? ' class="avec-fiche"' : ""}>
         <div class="upd-icon">🚀</div>
         <div class="upd-title">Mise à jour disponible</div>
-        <div class="upd-sub">Version ${r.version} est prête à installer</div>
+        <div class="upd-sub">Version ${escHtml(r.version)} est prête à installer</div>
+        ${fiche}
         <div class="upd-btns">
           <button class="btn btn-ghost btn-sm" id="upd-later">Plus tard</button>
           <button class="btn btn-primary" id="upd-install">Installer maintenant</button>
@@ -13637,6 +14061,9 @@ async function _checkForUpdates() {
         if (progressDiv) progressDiv.style.display = "block";
         const warnDiv = $("upd-warn");
         if (warnDiv) warnDiv.style.display = "block";
+        // La fiche est lue : place à la progression, sans faire défiler
+        const ficheDiv = $("upd-fiche");
+        if (ficheDiv) ficheDiv.style.display = "none";
         const errorDiv = $("upd-error");
         if (errorDiv) errorDiv.style.display = "none";
 
@@ -21374,9 +21801,14 @@ function dashRender() {
   box.classList.toggle("dash-editing", _dashEdit);
   const cfg = dashConfig();
   const html = [];
-  cfg.filter(c => c.on).forEach(c => {
-    const w = DASH_WIDGETS.find(x => x.id === c.id);
-    if (!w) return;
+  // Un module décoché (Paramètres → Modules) emporte ses tuiles
+  const visibles = _modulesVisibles();
+  const actives = cfg.filter(c => c.on).map(c => DASH_WIDGETS.find(x => x.id === c.id))
+    .filter(w => {
+      const sec = w && w.tab ? _navSectionOf(w.tab) : null;
+      return w && (!sec || visibles.has(sec.id));
+    });
+  actives.forEach(w => {
     let d = null;
     try { d = w.render(); } catch (e) { d = null; }
     if (d) { html.push(dashCardHtml(w, d, false)); return; }
@@ -21393,7 +21825,12 @@ function dashRender() {
     html.push(`<button type="button" class="home-card dash-add" onclick="dashOpenPick(null)">
       <span class="dash-add-plus"><i class="ph ph-plus"></i></span><span>Ajouter une tuile</span></button>`);
   }
+  // Des tuiles actives mais toutes vides : c'est le cas d'un nouvel
+  // utilisateur, ses modules n'ont encore rien à montrer
   box.innerHTML = html.length ? html.join("")
+    : actives.length
+    ? `<div class="dash-empty" style="grid-column:1/-1">
+         Tes tuiles apparaîtront ici dès que tes modules auront leurs premières données.</div>`
     : `<div class="dash-empty" style="grid-column:1/-1">
          Aucune tuile active. Clique sur <b>✎ Modifier les tuiles</b> pour choisir
          ce que tu veux voir ici.</div>`;
@@ -21611,8 +22048,13 @@ function _appReady() {
     try { if (typeof _checkPinLock === "function") await _checkPinLock(); } catch(e) {}
     renderAll();
     if (typeof installShellEnhancements === "function") installShellEnhancements();
-    // Premier lancement : welcome screen si aucune data
-    try { if (typeof _showWelcomeIfFirstRun === "function") _showWelcomeIfFirstRun(); } catch(e) {}
+    // Premier lancement : l'assistant des premiers pas ; sinon, juste après
+    // une mise à jour, la fiche de ses nouveautés (une fois)
+    try {
+      Promise.resolve(_showWelcomeIfFirstRun())
+        .then(accueil => { if (!accueil) return _majFicheApresMiseAJour(); })
+        .catch(e => console.warn("[premiers pas / nouveautés]", e));
+    } catch(e) {}
     const coursPrets = startCoursRefresh();
     // Historique du PEA : la tuile de l'accueil en tire sa mini-courbe et ses
     // chiffres 1S, 1M, YTD. Demandé tout de suite, attendu avec les cours :

@@ -32,6 +32,15 @@ RELEASES_PAGE = "https://github.com/arthur-soulard/arthurpilote.github.com/relea
 SETUP_ASSET   = "Pilote_Setup.exe"
 _UA = "Suivi-PEA-Updater/2"
 
+# Fiche des nouveautes : src/nouveautes.json, livre avec l'app (historique de
+# Parametres -> Mises a jour) et relu au tag de la nouvelle version avant de
+# l'installer. raw.githubusercontent.com n'a pas le quota de l'API, et le tag
+# est connu par les deux chemins de _fetch (API ou page publique).
+NOTES_FILE = "nouveautes.json"
+NOTES_URL  = ("https://raw.githubusercontent.com/arthur-soulard/arthurpilote.github.com/"
+              "{tag}/src/" + NOTES_FILE)
+_NOTES_MAX = 512 * 1024   # octets lus au plus : la fiche n'est que du texte
+
 _lock = threading.Lock()
 
 _state: dict = {
@@ -40,6 +49,7 @@ _state: dict = {
     "version": None,
     "url": None,
     "downloadUrl": None,
+    "notes": None,          # versions entre l'installee et la nouvelle, ou None
 }
 
 _progress: dict = {"step": "idle", "pct": 0, "error": None}
@@ -197,6 +207,9 @@ def _fetch(current: str) -> None:
         has_update = (bool(latest) and bool(download_url)
                       and _parse_ver(latest) > _parse_ver(current))
 
+        # La fiche ne bloque rien : sans elle, la mise a jour reste proposee
+        notes = _notes_distantes(latest, current) if has_update else None
+
         with _lock:
             _state.update({
                 "checked": True,
@@ -204,12 +217,72 @@ def _fetch(current: str) -> None:
                 "version": latest,
                 "url": html_url,
                 "downloadUrl": download_url,
+                "notes": notes,
             })
-        _log(f"CHECK OK latest={latest} hasUpdate={has_update} downloadUrl={download_url}")
+        _log(f"CHECK OK latest={latest} hasUpdate={has_update} downloadUrl={download_url}"
+             f" notes={None if notes is None else len(notes)}")
     except Exception as e:
         _log(f"CHECK FAIL: {e}\n{traceback.format_exc()}")
         with _lock:
             _state["checked"] = True
+
+
+# ── Fiche des nouveautes ─────────────────────────────────────────────────────
+
+def _texte(v, n: int) -> str:
+    return v.strip()[:n] if isinstance(v, str) else ""
+
+
+def _valider_notes(data) -> list:
+    """Versions lisibles du fichier, de la plus recente a la plus ancienne.
+
+    La fiche distante est relue a chaque verification : on ne garde que du
+    texte court, dans la forme attendue, quoi que contienne le fichier."""
+    versions = data.get("versions") if isinstance(data, dict) else None
+    out = []
+    for v in versions if isinstance(versions, list) else []:
+        if not isinstance(v, dict):
+            continue
+        num = _texte(v.get("version"), 20).lstrip("v")
+        if _parse_ver(num) == (0, 0, 0):
+            continue
+        e = {"version": num,
+             "date":    _texte(v.get("date"), 10),
+             "titre":   _texte(v.get("titre"), 140)}
+        for k in ("nouveau", "ameliore", "corrige"):
+            pts = v.get(k)
+            pts = pts if isinstance(pts, list) else []
+            e[k] = [t for t in (_texte(p, 600) for p in pts) if t][:30]
+        out.append(e)
+    out.sort(key=lambda e: _parse_ver(e["version"]), reverse=True)
+    return out
+
+
+def historique() -> list:
+    """Fiches livrees avec l'app installee (vide si le fichier manque)."""
+    base = getattr(sys, "_MEIPASS", None) or Path(__file__).resolve().parent
+    try:
+        with open(Path(base) / NOTES_FILE, encoding="utf-8") as f:
+            return _valider_notes(json.load(f))
+    except Exception as e:
+        _log(f"NOTES: historique illisible ({e})")
+        return []
+
+
+def _notes_distantes(latest: str, current: str) -> list | None:
+    """Fiches des versions entre `current` (exclue) et `latest` (incluse),
+    lues dans le fichier du tag de `latest`. None si illisible."""
+    url = NOTES_URL.format(tag=urllib.parse.quote("v" + latest))
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": _UA})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read(_NOTES_MAX).decode("utf-8"))
+    except Exception as e:
+        _log(f"NOTES: fiche de la v{latest} illisible ({e})")
+        return None
+    cur, new = _parse_ver(current), _parse_ver(latest)
+    return [v for v in _valider_notes(data)
+            if cur < _parse_ver(v["version"]) <= new]
 
 
 def start_check(current_version: str) -> None:
