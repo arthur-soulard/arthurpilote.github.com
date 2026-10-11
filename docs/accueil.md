@@ -38,10 +38,32 @@ a plus de carte codée en dur.
 rafraîchit aussi l'état de la clé USB (`svRenderUsbState()`) et sort du mode
 édition des tuiles quand on quitte l'accueil.
 
-**Écran de bienvenue** (`_showWelcomeIfFirstRun()`) : s'affiche quand le PEA est vide,
-donc aussi pour chaque utilisateur nouvellement créé. Il présente les suivis,
-rappelle de quel espace il s'agit, et ne propose en récupération que des installations
-**extérieures** (voir `scan_orphan_data`).
+**Premiers pas** (`_showWelcomeIfFirstRun()`, 4.3.37) : un assistant en trois étapes,
+demandé par Arthur le 11/10/2026. 1) ce qu'est Pilote (avec, si besoin, de quel
+espace il s'agit et la récupération d'une installation **extérieure**, voir
+`scan_orphan_data`) ; 2) les modules à cocher, **aucun coché d'office** (au moins un
+pour continuer) ; 3) le premier geste de chaque module choisi, en cartes cliquables
+qui mènent à leur onglet. `NAV_MODULES` porte pour chaque section sa description, ce
+premier geste, l'onglet et les tuiles de l'accueil à allumer : **une nouvelle section
+de `NAV_SECTIONS` y ajoute son entrée** (sinon sa carte reste sans texte).
+
+* En fin d'assistant : les modules non cochés sont masqués (tous leurs onglets dans
+  `S.uiPrefs.hiddenSidebar`, le mécanisme de l'œil), `S.uiPrefs.dash` ne garde que
+  les tuiles des modules choisis, `S.uiPrefs.premiersPas = true` et
+  `nouveautesVues` = la version installée (un nouvel utilisateur n'a pas de
+  « nouveautés » à lire).
+* S'affiche si le PEA est vide **et** `premiersPas` absent : une seule fois par
+  utilisateur. Jusqu'à la 4.3.36, l'écran de bienvenue revenait à chaque lancement
+  tant que le PEA restait vide, même pour qui ne s'en sert pas. Un utilisateur déjà
+  installé (PEA rempli) ne le voit jamais. Importer ou récupérer un fichier ne pose
+  pas le drapeau : si l'import échoue, l'assistant revient.
+* Tient sans défiler à 1366 × 720 dans les deux cas les plus chargés, mesurés :
+  étape 1 avec l'espace d'un 2e utilisateur **et** une installation extérieure
+  (644 px pour 646), étape 3 avec les huit modules (620 px, deux colonnes).
+* Paramètres → Modules reprend les mêmes cartes (`_modCarteHtml`) : voir
+  `docs/parametres.md`. Une tuile dont l'onglet appartient à un module décoché ne
+  s'affiche plus (`dashRender`). Un accueil dont les tuiles actives sont toutes vides
+  le dit (« Tes tuiles apparaîtront ici… ») au lieu de « Aucune tuile active ».
 
 ## Accueil : tableau de bord modulaire
 
