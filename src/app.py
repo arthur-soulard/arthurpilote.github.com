@@ -39,6 +39,7 @@ import pret
 import patrimoine
 import sante
 import vocabulaire
+import actus
 import expositions
 import sauvegarde
 import notifications
@@ -46,7 +47,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.31"
+APP_VERSION = "4.3.32"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -483,6 +484,58 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e), "lignes": [],
                     "trace": traceback.format_exc()}
+
+    # -- Actus : boite Gmail des newsletters (propre a l'utilisateur actif) --
+    # Le mot de passe d'application entre par save_actus et ne ressort jamais.
+
+    def load_actus(self) -> dict:
+        try:
+            return {"ok": True, **actus.config()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_actus(self, adresse: str, mot_de_passe: str) -> dict:
+        """Connecte la boite : rien n'est enregistre tant que Gmail n'a pas accepte."""
+        try:
+            return {"ok": True, **actus.connecter(adresse, mot_de_passe)}
+        except actus.ErreurActus as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "imap", "error": str(e)}
+
+    def save_actus_deconnexion(self) -> dict:
+        try:
+            return {"ok": True, **actus.deconnecter()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def actus_lister(self) -> dict:
+        try:
+            return {"ok": True, **actus.lister()}
+        except actus.ErreurActus as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "imap", "error": "Gmail a répondu : " + str(e),
+                    "trace": traceback.format_exc()}
+
+    def actus_ouvrir(self, uid) -> dict:
+        """La page du mail est servie par le serveur local (iframe), sous ticket."""
+        try:
+            return {"ok": True, "ticket": server.publier_mail(actus.ouvrir(uid))}
+        except actus.ErreurActus as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "imap", "error": "Gmail a répondu : " + str(e),
+                    "trace": traceback.format_exc()}
+
+    def actus_marquer(self, uid, lu: bool) -> dict:
+        try:
+            actus.marquer(uid, bool(lu))
+            return {"ok": True}
+        except actus.ErreurActus as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "imap", "error": "Gmail a répondu : " + str(e)}
 
     # -- Expositions : composition des ETF (donnees publiques, niveau installation)
 
