@@ -53,6 +53,44 @@ Points critiques :
 * `start_update()` côté Python est non-bloquant (lance un thread)
 * Ne pas réduire le délai de 5 secondes du batch
 
+## Fiche des nouveautés (4.3.37)
+
+Demandée par Arthur le 11/10/2026 : savoir ce qui change **avant** d'installer, le
+retrouver **après**, et un historique. L'historique commence à la 4.3.37 (son choix :
+pas de fiches rédigées après coup pour les versions passées).
+
+* **Source unique : `src/nouveautes.json`**, une fiche par version en tête de fichier
+  (`version`, `date`, `titre`, listes `nouveau` / `ameliore` / `corrige`). À écrire à
+  chaque version, pour l'utilisateur (procédure de `CLAUDE.md`).
+* **Avant** : quand `_fetch()` trouve une version plus récente, `_notes_distantes()`
+  lit `raw.githubusercontent.com/<dépôt>/v<version>/src/nouveautes.json` (le fichier
+  du tag, pas de quota comme l'API, le tag est connu par les deux chemins) et garde
+  les fiches entre la version installée (exclue) et la nouvelle (incluse) : qui a
+  sauté des versions les lit toutes. Résultat dans `notes` de `check_update()`. Sans
+  fiche lisible (`None`), la mise à jour reste proposée, avec une phrase qui le dit.
+  La fiche se replie quand l'installation démarre, pour laisser voir la progression.
+  **Ne pas déplacer le fichier dans le dépôt** : les versions installées le
+  cherchent à ce chemin.
+* `_valider_notes()` ne garde que du texte court dans la forme attendue (fiche
+  distante relue à chaque vérification) : 140 caractères de titre, 30 points de 600
+  caractères par liste, 512 Ko lus au plus. Le JS échappe tout (`escHtml`).
+* **Après** : `Api.nouveautes()` renvoie l'historique livré dans l'exe
+  (`updater.historique()`, via `sys._MEIPASS`) : **ligne de `datas` dans
+  `build/pilote.spec`**, sans laquelle l'historique est vide dans l'exe et plein en
+  dev. Au démarrage, `_majFicheApresMiseAJour()` compare la version à
+  `S.uiPrefs.nouveautesVues` (propre à chaque utilisateur) : la fiche s'ouvre une
+  fois, puis la clé prend la version. Jamais rien lu (clé absente, cas de tout le
+  monde à la 4.3.37) : seulement la fiche de la version installée. Pas de fiche
+  quand l'assistant des premiers pas s'ouvre, ni si la lecture des données a échoué
+  (rien ne pourrait être noté comme lu).
+* **Historique** : Paramètres → Mises à jour (`docs/parametres.md`).
+* Essais du 11/10/2026 (copie isolée de l'app, données vierges puis inventées) :
+  fiche distante filtrée sur un faux serveur local (4.3.38 à 4.3.40 depuis une
+  4.3.37), 404 → `None` ; fenêtre de mise à jour avec deux fiches puis sans fiche ;
+  `nouveautesVues` à 4.3.36 → la fiche s'ouvre une fois et la clé passe à 4.3.37,
+  rien au lancement suivant. Le bouton Installer n'a pas été essayé avec une fausse
+  version (il installerait le vrai Setup par-dessus l'app d'Arthur).
+
 ## Désinstaller garde les données (4.3.14)
 
 `Donnees/` vit dans le dossier d'installation (`{app}`). Jusqu'à la 4.3.13,
