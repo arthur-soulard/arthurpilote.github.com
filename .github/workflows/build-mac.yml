@@ -10,6 +10,7 @@ name: Build Mac (test)
 on:
   push:
     branches: [mac]
+    paths-ignore: ['docs/**', '**.md']   # la documentation seule ne change pas l'app
   workflow_dispatch:
 
 permissions:
