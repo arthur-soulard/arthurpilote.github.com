@@ -20,6 +20,17 @@ import threading
 import traceback
 from pathlib import Path
 from typing import Optional
+import time as _time_lancement
+
+# Instant du lancement, avant les imports lourds (pywebview, modules) : base
+# des reperes du diagnostic de demarrage (PILOTE_DIAG, voir _repere)
+_T0 = _time_lancement.time()
+
+
+def _repere(etape: str) -> None:
+    """Diagnostic du demarrage (PILOTE_DIAG seulement) : secondes depuis le lancement."""
+    if os.environ.get("PILOTE_DIAG"):
+        print(f"[t] {_time_lancement.time() - _T0:6.2f} s  {etape}", flush=True)
 
 # Charge le codec idna AVANT que main() ne lance ses fils. Sinon, dans l'exe
 # compile, le serveur local (getfqdn) et la verification de mise a jour
@@ -600,6 +611,7 @@ class Api:
     def app_ready(self) -> dict:
         """Appele par boot() (index.html) quand l'accueil est pret : ouvre
         la fenetre principale et ferme l'ecran de chargement."""
+        _repere("page prete (app_ready)")
         reveal_main_window("page")
         return {"ok": True}
 
@@ -980,6 +992,7 @@ def reveal_main_window(origine: str = "delai") -> None:
             return
         _revealed = True
     print(f"[app] fenetre ouverte ({origine})", flush=True)
+    _repere("fenetre ouverte")
     try:
         _main_window.show()
     except Exception as e:
@@ -997,6 +1010,7 @@ def reveal_main_window(origine: str = "delai") -> None:
 
 
 def main() -> int:
+    _repere("imports termines")
     install_crash_handler()
 
     # Le PIN, global jusqu'a la v4.1.3, devient propre a chaque utilisateur
@@ -1119,6 +1133,8 @@ def main() -> int:
             pass
         _time.sleep(0.05)
 
+    _repere("serveur local pret")
+
     # L'UI est servie par le serveur local : pas de file://, pas de query string,
     # le port se lit naturellement via location.port.
     url = f"http://127.0.0.1:{port}/"
@@ -1203,6 +1219,22 @@ def main() -> int:
                     " prete: !!window._appShown,"
                     " coque: document.body.classList.contains('has-shell')})")
                 print(f"[diag] {res}", flush=True)
+                # Mesures du navigateur : debut de la navigation (ramene au
+                # lancement), HTML, et chaque requete (debut+duree en ms)
+                mes = json.loads(lire(
+                    "JSON.stringify((function () {"
+                    " var n = performance.getEntriesByType('navigation')[0] || {};"
+                    " return {origine: performance.timeOrigin,"
+                    "  html: [n.requestStart, n.responseStart, n.responseEnd].map(Math.round),"
+                    "  domInteractive: Math.round(n.domInteractive),"
+                    "  domContentLoaded: Math.round(n.domContentLoadedEventEnd),"
+                    "  ressources: performance.getEntriesByType('resource').map(function (e) {"
+                    "   return Math.round(e.startTime) + '+' + Math.round(e.duration) + ' '"
+                    "    + e.name.replace(location.origin, '').split('?')[0]; }).slice(0, 25)};"
+                    "})())"))
+                print(f"[t] {mes['origine'] / 1000 - _T0:6.2f} s  debut de la navigation"
+                      f" (les ms de la page partent d'ici)", flush=True)
+                print(f"[diag-nav] {json.dumps(mes, ensure_ascii=False)}", flush=True)
             except Exception as e:
                 print(f"[diag] lecture KO : {e}", flush=True)
         threading.Thread(target=_diag, daemon=True).start()
@@ -1278,6 +1310,11 @@ def main() -> int:
     # L'icone a la couleur d'accent est posee par reveal_main_window(), quand
     # la fenetre apparait vraiment (et sur l'ecran de chargement avant elle)
     window.events.closing += _on_closing
+    if os.environ.get("PILOTE_DIAG"):
+        window.events.loaded += lambda: _repere("page principale chargee (pywebview)")
+        if _splash_window is not None:
+            _splash_window.events.shown += lambda: _repere("ecran de chargement affiche")
+    _repere("fenetres creees, lancement de pywebview")
 
     try:
         # debug=False pour la prod ; True pour ouvrir les devtools
