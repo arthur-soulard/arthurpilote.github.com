@@ -15,7 +15,8 @@
       "ameliore": [
         "PEA et CTO : choisis ton courtier dans Stratégie → Réglages (Fortuneo, Bourse Direct, Trade Republic, Saxo…). Les frais s'y adaptent, avec la date du tarif ; ton réglage actuel reste tel quel tant que tu n'en changes pas.",
         "Un ordre dont les frais ne collent pas à la grille de ton courtier est signalé dans Transactions : ses tarifs ont peut-être changé.",
-        "Actus : si Google refuse d'activer la validation en deux étapes (« Impossible de valider votre identité »), la fiche de connexion explique pourquoi et quoi faire : réessayer depuis un téléphone déjà connecté au compte, ou une semaine plus tard."
+        "Actus : si Google refuse d'activer la validation en deux étapes (« Impossible de valider votre identité »), la fiche de connexion explique pourquoi et quoi faire : réessayer depuis un téléphone déjà connecté au compte, ou une semaine plus tard.",
+        "Le module Vocabulaire quitte Pilote. Ses données ne sont pas effacées : vocabulaire.json reste dans ton dossier Données."
       ]
     },
     {

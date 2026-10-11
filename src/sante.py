@@ -265,17 +265,16 @@ def ocr_available() -> dict:
     return {"ok": True}
 
 
-def _run_ocr(image_path: str, timeout: int = 90, extra: tuple = ()) -> dict:
+def _run_ocr(image_path: str, timeout: int = 90) -> dict:
     """
     Lance ocr_win.ps1 et retourne {ok, words:[{t,x,y,w,h}], ...}.
-    `extra` : parametres de plus pour le script (mode PDF de vocabulaire.py).
     """
     out_fd, out_path = tempfile.mkstemp(prefix="pilote_ocr_", suffix=".json")
     os.close(out_fd)
     try:
         cmd = ["powershell.exe", "-NoProfile", "-NonInteractive",
                "-ExecutionPolicy", "Bypass", "-File", _ocr_script_path(),
-               "-ImagePath", str(image_path), "-JsonPath", out_path] + list(extra)
+               "-ImagePath", str(image_path), "-JsonPath", out_path]
         flags = 0
         if sys.platform == "win32":
             flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -627,10 +626,9 @@ ZIP_IMAGES_MAX = 20
 ZIP_IMAGE_OCTETS_MAX = 25 * 1024 * 1024
 
 
-def _images_du_zip(chemin: str, dossier: str, exts: tuple = ZIP_EXTS):
+def _images_du_zip(chemin: str, dossier: str):
     """
     Extrait les images d'une archive dans `dossier` -> (chemins, erreur).
-    `exts` : extensions retenues (le Vocabulaire y ajoute ".pdf").
     """
     out = []
     try:
@@ -639,7 +637,7 @@ def _images_du_zip(chemin: str, dossier: str, exts: tuple = ZIP_EXTS):
                               if not i.is_dir()
                               and not i.filename.startswith("__MACOSX/")
                               and not os.path.basename(i.filename).startswith(".")
-                              and os.path.splitext(i.filename)[1].lower() in exts
+                              and os.path.splitext(i.filename)[1].lower() in ZIP_EXTS
                               and i.file_size <= ZIP_IMAGE_OCTETS_MAX),
                              key=lambda i: i.filename.lower())
             for n, info in enumerate(membres[:ZIP_IMAGES_MAX]):
@@ -657,8 +655,7 @@ def _images_du_zip(chemin: str, dossier: str, exts: tuple = ZIP_EXTS):
     except (zipfile.BadZipFile, OSError, ValueError):
         return [], "Fichier zip illisible."
     if not out:
-        quoi = "ni image ni PDF" if ".pdf" in exts else "aucune image (PNG ou JPG)"
-        return [], "Ce fichier zip ne contient %s." % quoi
+        return [], "Ce fichier zip ne contient aucune image (PNG ou JPG)."
     return out, ""
 
 

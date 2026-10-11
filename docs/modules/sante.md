@@ -42,8 +42,6 @@ Quatre pièges, tous traités — ne pas « simplifier » :
    sur 14 en gris (graisse viscérale et âge corporel manquants), **14 sur 14**
    avec `min`, aucune valeur fausse de plus, et plus vite (10 s au lieu de 15 s
    pour les trois). Les quatre anciennes passes restent derrière, en rattrapage.
-   Le Vocabulaire garde son mode `raw` : sur une photo de papier jauni, le canal
-   le plus sombre assombrirait le fond.
    **L'arrêt anticipé attend les libellés vus** : une passe qui n'apporte rien
    n'arrête plus la lecture si un libellé de la capture attend encore sa valeur
    (`vus`, rempli par `_extract_values`). L'âge corporel orange n'apparaissait
@@ -85,8 +83,6 @@ pour plusieurs captures choisies à la main : **toutes sont une seule pesée**.
   membre `../../x.png` ne sort pas du dossier temporaire (testé).
 * Vérifié le 30/09/2026 sur le vrai zip FitDays d'Arthur (3 captures) : exactement
   le même résultat qu'en choisissant les trois images une à une.
-* `_images_du_zip` sert aussi au Vocabulaire (4.3.9), qui y ajoute `.pdf` par
-  son paramètre `exts`.
 
 ### L'import ne valide jamais tout seul
 

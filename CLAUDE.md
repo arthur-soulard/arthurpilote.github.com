@@ -29,10 +29,8 @@ Pilote/
 │   ├── pret.py         # Module « Prêt », nom libre (pret.json)
 │   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
-│   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
-│   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
+│   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
-│   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
 │   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
@@ -77,10 +75,11 @@ Donnees/
 │   ├── cto.json              # CTO, tous les comptes-titres (+ backups_cto/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
-│   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
 │   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
 │   │                         #   laissés sur le disque, plus lus par l'app
+│   ├── vocabulaire.json      # module Vocabulaire retiré le 11/10/2026, idem
+│   │                         #   (devenu une page à part : docs/pistes.md)
 │   └── pin.hash              # code PIN de CET utilisateur (si configuré)
 ├── icones/                   # .ico générés à la couleur d'accent
 └── crash.log
@@ -140,7 +139,7 @@ de la page disparue, et l'app ne se terminerait plus.
    pouvoir enregistrer. Côté Python, un `pea_data.json` absent n'est **pas** une erreur
    de lecture (`storage.load_data()` laisse `error` à `None`).
 4. **`ocr_win.ps1` dans les `datas` de `build/pilote.spec`** → sans cette ligne, l'OCR
-   des modules Santé et Vocabulaire fonctionne parfaitement en dev et **échoue
+   du module Santé fonctionne parfaitement en dev et **échoue
    silencieusement dans l'exe compilé** : le script est introuvable, `ocr_available()`
    répond « Script OCR introuvable » et l'import de captures ne marche plus. Une panne invisible tant
    qu'on ne teste pas le binaire. Vérification : `dist/Pilote/_internal/ocr_win.ps1`
@@ -174,7 +173,6 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
-| `docs/modules/vocabulaire.md` | Vocabulaire, lecture d'images et de PDF | `vocabulaire.py`, `ocr_win.ps1`, `vo*` |
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
@@ -190,8 +188,8 @@ dans les fiches) :
   dans les `datas` de `build/pilote.spec` (sinon historique vide dans l'exe, même
   piège que `ocr_win.ps1`) et garder son chemin dans le dépôt (lu à cette adresse
   par les versions déjà installées).
-* **Une lecture OCR (Santé, Vocabulaire) ne fait que pré-remplir** : rien n'est
-  enregistré sans validation. Fiches des deux modules.
+* **Une lecture OCR (Santé) ne fait que pré-remplir** : rien n'est
+  enregistré sans validation. Fiche du module.
 
 ## Pour sortir une nouvelle version
 
@@ -222,7 +220,7 @@ Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
 **d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
 suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
-Sidebar : un onglet **Accueil** seul en tête, puis 9 sections en accordéon
+Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
 (`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
@@ -238,7 +236,6 @@ Paramètres.
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
 | Patrimoine      | pa-vue, pa-comptes                                                 |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
-| Vocabulaire     | vo-reviser, vo-boites, vo-mots, vo-stats                            |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
@@ -322,9 +319,9 @@ Corollaires à ne pas défaire :
 ## Conventions de code
 
 * Tout l'UI vit dans `index.html` (~20 900 lignes). Les modules annexes sont des blocs
-  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`, `ac*`,
+  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `ac*`,
   `cto*`, `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Vocabulaire → Actus → CTO → Tableau de bord → `boot()`.** Les patches de `goTab`
+  Prêt → Santé → Patrimoine → Actus → CTO → Tableau de bord → `boot()`.** Les patches de `goTab`
   s'enchaînent, ne pas casser l'ordre.
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,
@@ -341,7 +338,7 @@ Corollaires à ne pas défaire :
   sinon l'ordre du DOM décide qui est devant.
 * Attention à la spécificité : `.fg label` (0-1-1) imposait MAJUSCULES + interlettrage
   avant l'identité « Carnet », qui l'a remis en casse normale. Les règles
-  `label.sv-check`, `label.vo-check` restent : elles règlent aussi la
+  `label.sv-check` reste : elle règle aussi la
   taille et l'alignement. Un libellé de texte courant dans un `.fg` se cible toujours
   en `label.ma-classe`.
 * Couleurs uniquement via les variables CSS (`--bg2`, `--brd`, `--accent`, `--g`, `--r`,
