@@ -983,7 +983,10 @@ def cotations_euro(isin: str, nom: str = "") -> dict:
         c["prix"] = info.get("prix")
         c["devise"] = info.get("devise") or ""
         candidats.append(c)
-    resultat = {"ok": True, "principal": {"symbol": prin.get("symbol") or "", "nom": pnom},
+    # Secteur de Yahoo (actions seulement) : l'import en tire celui de la position
+    resultat = {"ok": True, "principal": {"symbol": prin.get("symbol") or "", "nom": pnom,
+                                          "secteur": prin.get("sector") or "",
+                                          "industrie": prin.get("industry") or ""},
                 "candidats": candidats}
     if candidats:   # un echec de Yahoo ne se garde pas une journee
         with _lock:

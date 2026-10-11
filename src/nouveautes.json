@@ -2,6 +2,22 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.0",
+      "date": "2026-10-11",
+      "titre": "Tes comptes-titres, suivis comme le PEA",
+      "nouveau": [
+        "Section CTO : positions, courbe du capital, dividendes, expositions, transactions, wishlist et stratégie pour chacun de tes comptes-titres. Plusieurs CTO possibles, chacun avec son courtier, choisi en haut de page.",
+        "Trade Republic : importe tout ton historique depuis l'export CSV de l'appli (achats, ventes, plans, Saveback, dividendes). Pilote montre tout avant d'enregistrer, et un même relevé importé deux fois ne compte rien en double.",
+        "Les titres achetés en euros chez Trade Republic sont suivis à leur cotation en euros (Apple à Xetra), avec parts à virgule et PRU calculé comme dans l'appli.",
+        "Stratégie selon le courtier : chez Trade Republic, les montants à mettre sur chaque plan d'investissement pour atteindre puis garder ta cible ; ailleurs, les ordres du mois.",
+        "Une tuile par CTO pour l'accueil (Modifier les tuiles), et une ligne par CTO dans le Patrimoine, remplie toute seule."
+      ],
+      "ameliore": [
+        "PEA et CTO : choisis ton courtier dans Stratégie → Réglages (Fortuneo, Bourse Direct, Trade Republic, Saxo…). Les frais s'y adaptent, avec la date du tarif ; ton réglage actuel reste tel quel tant que tu n'en changes pas.",
+        "Un ordre dont les frais ne collent pas à la grille de ton courtier est signalé dans Transactions : ses tarifs ont peut-être changé."
+      ]
+    },
+    {
       "version": "4.3.37",
       "date": "2026-10-11",
       "titre": "Des premiers pas guidés, et une fiche à chaque mise à jour",
