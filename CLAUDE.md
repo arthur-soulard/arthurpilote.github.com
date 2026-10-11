@@ -1,6 +1,6 @@
 # Pilote
 
-Application desktop Windows de suivi personnel : bourse (PEA), budget, prêt (étudiant ou autre),
+Application desktop Windows de suivi personnel : bourse (PEA, comptes-titres), budget, prêt (étudiant ou autre),
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
 Seule exception, voulue : le module Actus se connecte à la boîte Gmail de
@@ -9,7 +9,7 @@ l'utilisateur pour la lire (`docs/modules/actus.md`) ; il n'y envoie rien de Pil
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.36**
+**Version actuelle : 4.4.0**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -27,6 +27,7 @@ Pilote/
 │   ├── finances.py     # Module « Mes comptes »   (finances.json)
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
 │   ├── pret.py         # Module « Prêt », nom libre (pret.json)
+│   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
 │   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
@@ -73,6 +74,7 @@ Donnees/
 │   ├── finances.json         # Mes comptes      (+ backups_finances/)
 │   ├── sports.json           # Sports           (+ backups_sports/)
 │   ├── pret.json             # Prêt             (+ backups_pret/)
+│   ├── cto.json              # CTO, tous les comptes-titres (+ backups_cto/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
@@ -173,6 +175,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/vocabulaire.md` | Vocabulaire, lecture d'images et de PDF | `vocabulaire.py`, `ocr_win.ps1`, `vo*` |
+| `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
 
@@ -219,7 +222,7 @@ Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
 **d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
 suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
-Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
+Sidebar : un onglet **Accueil** seul en tête, puis 9 sections en accordéon
 (`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
@@ -229,6 +232,7 @@ Paramètres.
 |-----------------|--------------------------------------------------------------------|
 | Accueil         | home                                                               |
 | PEA             | dash, pos, sector, div, tx, wish, dep, strat, sim (plus de `perf`) |
+| CTO             | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
@@ -243,6 +247,11 @@ Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secI
 (demande d'Arthur, 4.3.18). L'ancienne clé `S.uiPrefs.navOpen` est ignorée.
 `SIDEBAR_ITEMS` reste dérivé à plat de `NAV_SECTIONS` pour l'API historique (onglets
 masquables via ⊘, Ctrl+1..7, écran Paramètres).
+
+Les onglets `cto-*` n'ont pas de pane : ils montrent ceux du PEA (`cto-pos` → `pane-pos`)
+sur le CTO choisi en haut de page, que `ctoAvantOnglet` met dans `S` (« compte actif »,
+`docs/modules/cto.md`). Tout autre onglet remet le PEA dans `S`. `cto-dash@c2` ouvre un
+CTO précis (tuile d'accueil) ; `_navSectionOf` et `_setActiveSidebar` ignorent le `@…`.
 
 Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
 (finances, sports, prêt, accueil) : ils s'enchaînent, ne pas casser l'ordre.
@@ -263,6 +272,8 @@ Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
   cet endpoint écrase le `pea_data.json` actif, il ne prend pas un chemin libre
 * `GET /vendor/<fichier>` → Chart.js, polices et icônes, liste blanche d'extensions
   (`.js`, `.css`, `.woff2`), confiné sous `ui/vendor/`
+* `GET /isin?isin=…&nom=…` → cotations en euros d'un ISIN, devise vérifiée, et secteur
+  (import du CTO : `docs/modules/cto.md`)
 * `GET /actus/mail/<ticket>` → la page d'un mail du module Actus, pour son iframe
   (ticket créé par `Api.actus_ouvrir`, 10 min) : voir `docs/modules/actus.md`
 * Cache serveur : 1 h pour l'historique, 60 s pour les cours
@@ -312,8 +323,8 @@ Corollaires à ne pas défaire :
 
 * Tout l'UI vit dans `index.html` (~20 900 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`, `ac*`,
-  `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Vocabulaire → Actus → Tableau de bord → `boot()`.** Les patches de `goTab`
+  `cto*`, `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
+  Prêt → Santé → Patrimoine → Vocabulaire → Actus → CTO → Tableau de bord → `boot()`.** Les patches de `goTab`
   s'enchaînent, ne pas casser l'ordre.
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,
@@ -355,7 +366,13 @@ Corollaires à ne pas défaire :
   persister. Exception : `load_patrimoine` / `save_patrimoine` renvoient `net`, `serie`
   et `moisSaisi` déjà calculés — l'UI ne refait pas ces calculs.
 * Ne jamais recalculer en parallèle un chiffre qu'un autre module produit déjà
-  (`window._peaPv` pour le PEA). Deux calculs = deux résultats divergents un jour.
+  (`window._peaPv` pour le PEA, `ctoResume(id)` pour un CTO). Deux calculs = deux
+  résultats divergents un jour.
+* **`S` peut contenir un CTO** (section CTO ouverte, `_estCto()`). Ce qui s'écrit
+  dans `pea_data.json` passe par `_etatPea()`, jamais par `S` ; un code qui lit le PEA
+  hors de sa section (accueil, Patrimoine, Prêt) s'exécute avec le PEA dans `S`, ou
+  vérifie `_estCto()`. Réglages propres à un compte : `_cptPrefs()`. Détail :
+  `docs/modules/cto.md`.
 
 ## Déploiement
 

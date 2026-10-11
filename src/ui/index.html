@@ -2448,6 +2448,46 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .expo-ed-tot.err { color: var(--r); }
 .expo-ed-aide { font-size: 12.5px; color: var(--txt2); margin: -4px 0 14px; }
 
+/* ── CTO (4.4.0) : les écrans du PEA sur un compte-titres (body.cpt-cto) ── */
+.cto-bar { display: none; }
+body.cpt-cto .cto-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--bg2); border: 1px solid var(--brd); border-radius: var(--radl);
+  padding: .55rem .8rem; margin-bottom: 14px;
+}
+.cto-bar select {
+  font: inherit; font-weight: 600; font-size: 14px; color: var(--txt); background: var(--bg3);
+  border: 1px solid var(--brd2); border-radius: var(--rad); padding: 6px 10px; max-width: 280px;
+}
+.cto-bar-courtier { font-size: 12px; color: var(--txt2); }
+.cto-bar-courtier b { color: var(--txt); font-weight: 600; }
+.cto-bar-alerte { font-size: 12px; color: var(--a); display: inline-flex; align-items: center; gap: 4px; }
+.cto-bar-sp { flex: 1; }
+body.cpt-cto .pea-seul, body.cpt-cto .pea-info { display: none !important; }
+.cto-vide { max-width: 640px; margin: 2rem auto; text-align: center; }
+.cto-vide .card-b { padding: 2.2rem 2rem 2rem; }
+.cto-vide-ico { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 14px; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-text); font-size: 26px; }
+.cto-vide-t { font-family: var(--serif); font-weight: 500; font-size: 24px; margin-bottom: .5rem; }
+.cto-vide-p { color: var(--txt2); font-size: 13.5px; line-height: 1.6; margin: 0 auto 1.2rem; max-width: 52ch; }
+.cto-vide-note { font-size: 12px; color: var(--txt3); margin-top: .8rem; }
+.cto-danger { color: var(--r); }
+.modal.cto-import { max-width: 980px; width: min(980px, 94vw); }
+.cto-imp-aide { margin: 0 0 1rem 1.2rem; font-size: 13px; line-height: 1.7; color: var(--txt2); }
+.cto-imp-aide b { color: var(--txt); }
+.cto-imp-fichier { cursor: pointer; }
+.cto-imp-resume { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--txt2); margin-bottom: 4px; }
+.cto-imp-resume b { color: var(--txt); font-weight: 600; }
+.cto-imp-h { font-size: 13.5px; font-weight: 600; margin: 1rem 0 .3rem; }
+.cto-imp-ops { max-height: 300px; overflow-y: auto; }
+.cto-imp-ops tr.cto-dup td { color: var(--txt3); }
+.cto-imp-titres-sel { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cto-imp-titres-sel select, .cto-imp-titres-sel input { font: inherit; font-size: 12px; padding: 4px 6px;
+  background: var(--bg3); border: 1px solid var(--brd2); border-radius: var(--rad); color: var(--txt); }
+.cto-ecart { color: var(--a); font-size: 11px; }
+.plans-tot { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--txt2); margin-top: 10px; }
+.plans-tot b { color: var(--txt); margin-left: 6px; }
+
 /* ── Premiers pas (assistant du premier lancement) et Paramètres → Modules ── */
 .modal.pp { max-width: 740px; padding: 1.6rem 2rem 1.4rem; }
 .pp-prog { display: flex; gap: 6px; margin-bottom: 1.1rem; }
@@ -2576,6 +2616,10 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- BARRE DU CTO (4.4.0) : le compte affiché, son courtier et ses actions.
+     Visible seulement quand un CTO est dans S (body.cpt-cto) ; ctoRenderBarre(). -->
+<div class="cto-bar" id="cto-bar"></div>
+
 <!-- PEA INFO BAR -->
 <div class="pea-info">
   <div>
@@ -2595,8 +2639,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
 <!-- METRICS -->
 <div class="mets">
-  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl">Total déposé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
-  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
+  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Total déposé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
+  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
   <div class="mc" id="mc-pv"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total</div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
@@ -2642,11 +2686,11 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div id="twr-summary" style="display:none;padding:.75rem 1.25rem .25rem;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:baseline">
     <div>
       <div id="twr-pnl-val" style="font-size:30px;font-weight:500;letter-spacing:-.01em;font-family:var(--serif)">—</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:2px">Valeur − versements cumulés</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:2px" data-cto="Valeur − investi net (achats − ventes − dividendes)">Valeur − versements cumulés</div>
     </div>
     <div>
       <div id="twr-pnl-pct" style="font-size:22px;font-weight:500;font-family:var(--serif)">—</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:2px">Rendement vs versements</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:2px" data-cto="Rendement vs investi net">Rendement vs versements</div>
     </div>
     <div id="twr-cache-lbl" style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--txt3);align-self:center;display:none"></div>
     <div id="twr-range-lbl" style="width:100%;font-size:10px;font-family:var(--mono);color:var(--txt3);padding-top:2px;display:none"></div>
@@ -2735,6 +2779,22 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       </tr></thead>
       <tbody id="pos-body"></tbody>
     </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CTO SANS COMPTE (4.4.0) ═══════════════════
+     Ce qu'ouvre un onglet de la section CTO tant qu'aucun CTO n'existe. -->
+<div class="pane" id="pane-cto-vide">
+  <div class="card cto-vide">
+    <div class="card-b">
+      <div class="cto-vide-ico"><i class="ph ph-briefcase"></i></div>
+      <h2 class="cto-vide-t">Ton compte-titres, comme le PEA</h2>
+      <p class="cto-vide-p">Positions, courbe du capital, dividendes, expositions et stratégie, pour chacun de
+        tes comptes-titres. Choisis ton courtier : les frais et la stratégie s'y adaptent. Chez Trade Republic,
+        tout ton historique s'importe depuis l'export CSV de l'appli.</p>
+      <button class="btn btn-primary" onclick="ctoOuvrirCompte(null)"><i class="ph ph-plus"></i> Créer mon CTO</button>
+      <p class="cto-vide-note" id="cto-vide-note"></p>
+    </div>
   </div>
 </div>
 
@@ -2914,6 +2974,27 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
 <!-- ═══════════════════ STRATÉGIE ═══════════════════ -->
 <div class="pane" id="pane-strat">
+  <!-- Réglage des plans (CTO d'un courtier à plans gratuits et parts
+       fractionnées, Trade Republic) : remplace Prochain achat. ctoPlansRender(). -->
+  <div class="card" id="card-plans" style="display:none">
+    <div class="card-h">
+      <span class="card-t">Réglage des plans d'investissement</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="plans-cours" style="font-size:10px;color:var(--txt2);font-family:var(--mono)"></span>
+        <button class="btn btn-sm btn-ghost" onclick="ctoPlansCopier()"><i class="ph ph-copy"></i> Copier les montants</button>
+        <button class="btn btn-sm btn-ghost" onclick="pacToggleCfg()"><i class="ph ph-sliders-horizontal"></i> Cibles et courtier</button>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="pac-ctrl">
+        <label class="pac-check">Versé chaque mois dans les plans
+          <input id="plans-budget" type="number" step="1" min="0" oninput="pacSetBudget(this.value)"> €</label>
+        <label class="pac-check">Plan minimum
+          <input id="plans-min" type="number" step="1" min="0" onchange="ctoPlansSetMin(this.value)"> €</label>
+      </div>
+      <div id="plans-res"></div>
+    </div>
+  </div>
   <div class="card" id="card-pac">
     <div class="card-h">
       <span class="card-t">Prochain achat</span>
@@ -2925,7 +3006,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="card-b">
       <div class="pac-ctrl">
-        <span class="so-tog" role="group" aria-label="Budget réel ou prévisionnel">
+        <span class="so-tog pea-seul" role="group" aria-label="Budget réel ou prévisionnel">
           <button type="button" id="pac-mode-reel" onclick="pacSetMode('reel')" title="Les espèces du PEA">Réel</button>
           <button type="button" id="pac-mode-prev" onclick="pacSetMode('prev')" title="Les espèces + les versements prévus (onglet Dépôts)">Prévisionnel</button></span>
         <label class="pac-check">Budget du mois
@@ -4718,7 +4799,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="fg-row">
       <div class="fg"><label>Prix d'achat (EUR / part)</label><input id="f-prix" type="number" step="0.0001" placeholder=""></div>
-      <div class="fg"><label>Quantité achetée</label><input id="f-qty" type="number" step="0.001" placeholder=""></div>
+      <div class="fg"><label>Quantité achetée</label><input id="f-qty" type="number" step="any" placeholder=""></div>
     </div>
     <div class="fg-row">
       <div class="fg"><label>Frais de courtage (EUR)</label><input id="f-frais" type="number" step="0.01" placeholder=""></div>
@@ -4727,7 +4808,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="fg-row">
       <div class="fg"><label>Date ex-dividende (optionnel)</label><input id="f-exdiv" placeholder="optionnel"></div>
     </div>
-    <div class="fg">
+    <div class="fg pea-seul">
       <label class="pr-check" title="L'achat apparaîtra aussi dans l'onglet PEA du prêt, sans y être saisi une seconde fois">
         <input type="checkbox" id="f-pret"> Payé avec l'argent du prêt</label>
       <div class="pr-part">dont <input id="f-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Montant pris sur le prêt"> € pris sur le prêt
@@ -4740,6 +4821,54 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-pos')">Annuler</button>
       <button class="btn btn-primary" onclick="savePos()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : créer ou régler un CTO (4.4.0) -->
+<div class="ov" id="ov-cto-compte" onclick="if(event.target===this)closeOv('ov-cto-compte')">
+  <div class="modal">
+    <h2 id="cto-cpt-titre">Nouveau CTO</h2>
+    <div class="fg"><label>Nom du compte</label>
+      <input id="cto-cpt-nom" maxlength="40" placeholder="ex : CTO Trade Republic"></div>
+    <div class="fg"><label>Courtier</label>
+      <select id="cto-cpt-courtier" onchange="ctoCompteResume()"></select></div>
+    <p class="pac-dim" id="cto-cpt-resume" style="margin:-4px 0 14px"></p>
+    <div class="mact">
+      <button class="btn btn-ghost cto-danger" id="cto-cpt-suppr" onclick="ctoSupprimerCompte()" style="margin-right:auto"><i class="ph ph-trash"></i> Supprimer ce CTO</button>
+      <button class="btn btn-ghost" onclick="closeOv('ov-cto-compte')">Annuler</button>
+      <button class="btn btn-primary" onclick="ctoEnregistrerCompte()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : import du relevé CSV de Trade Republic (4.4.0). Rien n'est
+     enregistré avant « Importer » : ctoImport*. -->
+<div class="ov" id="ov-cto-import" onclick="if(event.target===this)closeOv('ov-cto-import')">
+  <div class="modal cto-import">
+    <h2>Importer l'historique Trade Republic</h2>
+    <div id="cto-imp-etape1">
+      <ol class="cto-imp-aide">
+        <li>Dans l'appli Trade Republic : <b>Profil → Relevés → Export des transactions</b>, sur la période la plus longue.</li>
+        <li>Choisis le fichier CSV reçu ci-dessous. Pilote le lit et te montre tout avant d'enregistrer quoi que ce soit.</li>
+      </ol>
+      <label class="btn btn-primary cto-imp-fichier"><i class="ph ph-file-csv"></i> Choisir le fichier CSV
+        <input type="file" id="cto-imp-input" accept=".csv,text/csv" onchange="ctoImportLire(this)" hidden></label>
+      <p class="pac-dim" id="cto-imp-msg"></p>
+    </div>
+    <div id="cto-imp-etape2" style="display:none">
+      <div id="cto-imp-resume" class="cto-imp-resume"></div>
+      <h3 class="cto-imp-h">Titres : la cotation en euros suivie par Pilote</h3>
+      <p class="pac-dim">Trade Republic exécute en euros. Pilote propose la cotation en euros dont le cours colle au prix payé ; change-la si besoin.</p>
+      <div class="tw"><table><thead><tr><th style="text-align:left">Titre</th><th style="text-align:left">ISIN</th><th style="text-align:left">Cotation suivie</th><th>Dernier prix payé</th><th>Cours actuel</th></tr></thead>
+        <tbody id="cto-imp-titres"></tbody></table></div>
+      <h3 class="cto-imp-h">Opérations</h3>
+      <div class="tw cto-imp-ops"><table><thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Opération</th><th style="text-align:left">Titre</th><th>Quantité</th><th>Prix</th><th>Frais</th><th>Montant</th><th style="text-align:left">État</th></tr></thead>
+        <tbody id="cto-imp-ops"></tbody></table></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-cto-import')">Annuler</button>
+      <button class="btn btn-primary" id="cto-imp-ok" onclick="ctoImportValider()" style="display:none">Importer</button>
     </div>
   </div>
 </div>
@@ -4763,10 +4892,10 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div class="fg"><label>Cours (EUR)</label><input id="t-cours" type="number" step="0.0001" placeholder="93.88"></div>
     </div>
     <div class="fg-row">
-      <div class="fg"><label>Quantité</label><input id="t-qty" type="number" step="0.001" placeholder="2"></div>
+      <div class="fg"><label>Quantité</label><input id="t-qty" type="number" step="any" placeholder="2"></div>
       <div class="fg"><label>Frais (EUR)</label><input id="t-frais" type="number" step="0.01" placeholder="0.70"></div>
     </div>
-    <div class="fg" id="t-pret-fg">
+    <div class="fg pea-seul" id="t-pret-fg">
       <label class="pr-check" title="L'ordre apparaîtra aussi dans l'onglet PEA du prêt, sans y être saisi une seconde fois">
         <input type="checkbox" id="t-pret"> <span id="t-pret-lbl">Payé avec l'argent du prêt</span></label>
       <div class="pr-part">dont <input id="t-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Part de l'ordre qui concerne le prêt"> € <span id="t-pret-mt-lbl">pris sur le prêt</span>
@@ -5007,6 +5136,35 @@ let S   = {};
 let NID = {pos:1, tx:1, wish:1, dep:1, div:1, divf:1, rule:1};
 let _ch = {};
 
+/* ─── Compte actif (4.4.0) ───
+   Les écrans du PEA servent aussi aux comptes-titres (section CTO) : ouvrir un
+   onglet CTO range les données du PEA de côté et met celles du CTO affiché
+   dans S (mêmes clés, même forme), puis tout le code du PEA s'applique tel
+   quel. Revenir ailleurs remet le PEA. Bascule : _cptBasculer (bloc CTO).
+   * Ce que le PEA écrit sur le disque vient toujours de _etatPea(), jamais de
+     S directement : une écriture partie juste avant la bascule (0,4 s de
+     délai) ne peut pas déposer le CTO dans pea_data.json.
+   * persist() d'un CTO n'écrit que cto.json.
+   * _cptGen change à chaque bascule : une réponse attendue (historique Yahoo)
+     arrivée après la bascule est jetée au lieu d'être rangée dans l'autre compte.
+   * Réglages propres au compte (Prochain achat, simulateur d'ordres) : _cptPrefs(). */
+const CPT_CLES = ["positions", "transactions", "depots", "depotsPrevus", "divHist", "divReceived",
+                  "divFuture", "wishlist", "closedPositions", "strategies"];
+let _compteActif = "pea";    // "pea", ou l'id du CTO affiché
+let _cptGen = 0;
+let _peaHorsEcran = null;    // données du PEA mises de côté pendant qu'un CTO est affiché
+function _estCto() { return _compteActif !== "pea"; }
+function _etatPea() { return _estCto() ? _peaHorsEcran : S; }
+function _nidPea()  { return _estCto() ? _peaHorsEcran._nid : NID; }
+function _cptPrefs() {
+  if (_estCto() && typeof ctoCompte === "function") {
+    const c = ctoCompte(_compteActif);
+    if (c) { c.prefs = c.prefs || {}; return c.prefs; }
+  }
+  S.uiPrefs = S.uiPrefs || {};
+  return S.uiPrefs;
+}
+
 /* ─── Référentiel des secteurs ─── */
 const SECTORS = [
   { id: "tech",            label: "Technologie",          icon: "💻", color: "#2563eb" },
@@ -5050,7 +5208,8 @@ const _undoStack = [];
 const UNDO_MAX   = 20;
 
 function pushUndo() {
-  _undoStack.push(JSON.stringify({S: JSON.parse(JSON.stringify(S)), NID: {...NID}}));
+  // cpt en tête : _undoModule le lit sans tout analyser (« pea » ou l'id du CTO)
+  _undoStack.push(JSON.stringify({cpt: _compteActif, S: JSON.parse(JSON.stringify(S)), NID: {...NID}}));
   if (_undoStack.length > UNDO_MAX) _undoStack.shift();
   _majBoutonRetour();
 }
@@ -5061,15 +5220,22 @@ function pushUndo() {
    * section PEA : ses actions ;
    * section Prêt étudiant : les siennes et celles du PEA (elle affiche les
      ordres payés avec le prêt, saisis par les fenêtres du PEA) ;
+   * section CTO : les actions du CTO affiché, et de lui seul ;
    * ailleurs : rien à annuler, bouton grisé. */
 function _undoModulesOuverts() {
   const sec = _navSectionOf(document.body.dataset.activeTab || "");
   if (sec && sec.id === "sec-pea")  return ["pea"];
   if (sec && sec.id === "sec-pret") return ["pea", "pret"];
+  if (sec && sec.id === "sec-cto" && _estCto()) return ["cto:" + _compteActif];
   return [];
 }
-/* Instantané du prêt : JSON de {PR} (prPushUndo) ; du PEA : JSON de {S, NID} */
-function _undoModule(snapTxt) { return snapTxt.startsWith('{"PR"') ? "pret" : "pea"; }
+/* Instantané du prêt : JSON de {PR} (prPushUndo) ; du PEA ou d'un CTO : JSON
+   de {cpt, S, NID} (sans cpt avant la 4.4.0 : le PEA) */
+function _undoModule(snapTxt) {
+  if (snapTxt.startsWith('{"PR"')) return "pret";
+  const m = snapTxt.match(/^\{"cpt":"([^"]*)"/);
+  return (m && m[1] !== "pea") ? "cto:" + m[1] : "pea";
+}
 function _undoIndex() {
   const mods = _undoModulesOuverts();
   for (let i = _undoStack.length - 1; i >= 0; i--)
@@ -5099,12 +5265,15 @@ function undoLast() {
   }
   S   = snap.S;
   NID = snap.NID;
-  _peaVideVoulu = true;   // annuler la toute première saisie revient à un PEA vide : voulu
+  // Un CTO (le seul possible ici : voir _undoModulesOuverts) : ses versements
+  // se déduisent de ses ordres, l'instantané ne les contient pas
+  if (_estCto()) ctoInstallerDepots();
+  else _peaVideVoulu = true;   // annuler la toute première saisie revient à un PEA vide : voulu
   persist(false);
   renderAll();
   updateStatus();
   _majBoutonRetour();
-  showToast("\u21A9 Action du PEA annulée", "warn");
+  showToast("\u21A9 Action " + (_estCto() ? "du CTO" : "du PEA") + " annulée", "warn");
 }
 
 /* ─── Load / persist ─── */
@@ -5174,6 +5343,8 @@ function loadState() {
 }
 
 function persist(badge) {
+  // Un CTO est affiché : seul cto.json s'écrit (voir « Compte actif »)
+  if (_estCto()) { ctoPersist(badge !== false); return; }
   S._nid = NID;
   try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) {}
   try { localStorage.setItem(LS_VAR, JSON.stringify(_wsVar)); } catch(e) {}
@@ -5225,22 +5396,24 @@ async function _syncToPythonNow() {
     // les seules positions : vendre ou supprimer sa dernière ligne bloquait
     // alors tout enregistrement, sans rien dire (le badge affichait même
     // « Sauvegardé »). Une vente laisse des transactions : elle passe.
-    if (_peaContenu(S) === 0 && _peaContenu(d) > 0 && !_peaVideVoulu) {
+    // Les données du PEA, même si un CTO est affiché entre-temps (_etatPea)
+    const P = _etatPea();
+    if (_peaContenu(P) === 0 && _peaContenu(d) > 0 && !_peaVideVoulu) {
       console.warn("[sync] PEA vierge mais disque rempli, ecriture refusee");
       _alerteEnregistrement("PEA non enregistré : l'état en mémoire est vide alors que le fichier contient des données. Relance Pilote.");
       return;
     }
-    d.positions       = S.positions       || [];
-    d.transactions    = S.transactions    || [];
-    d.depots          = S.depots          || [];
-    d.depotsPrevus    = S.depotsPrevus    || [];
-    d.divReceived     = S.divReceived     || [];
-    d.divFuture       = S.divFuture       || [];
-    d.wishlist        = S.wishlist        || [];
-    d.strategies      = S.strategies      || [];
-    d.closedPositions = S.closedPositions || [];
+    d.positions       = P.positions       || [];
+    d.transactions    = P.transactions    || [];
+    d.depots          = P.depots          || [];
+    d.depotsPrevus    = P.depotsPrevus    || [];
+    d.divReceived     = P.divReceived     || [];
+    d.divFuture       = P.divFuture       || [];
+    d.wishlist        = P.wishlist        || [];
+    d.strategies      = P.strategies      || [];
+    d.closedPositions = P.closedPositions || [];
     d.cashSolde       = S.cashSolde || 0;
-    d._nid            = NID;
+    d._nid            = _nidPea();
     d.config = d.config || {};
     d.config.prenom    = S.prenom    || "";
     d.config.banque    = S.banque    || "";
@@ -5395,6 +5568,9 @@ function normalizeTicker(raw) {
   if (t.endsWith(".DE")) return "ETR:" + t.replace(".DE","");
   if (t.endsWith(".AS")) return "AMS:" + t.replace(".AS","");
   if (t.endsWith(".L"))  return "LON:" + t.replace(".L","");
+  // Autre place au format Yahoo (APC.F, CSSPX.MI : CTO) : telle quelle, le
+  // serveur la passe à Yahoo sans conversion. Elle devenait « EPA:APC.F ».
+  if (/^[A-Z0-9-]+\.[A-Z]{1,3}$/.test(t)) return t;
   // Bare ticker like "SGO" — assume EPA (PEA context, mostly French equities)
   return "EPA:" + t;
 }
@@ -5413,9 +5589,11 @@ const MNS  = ["Jan","Fév","Mar","Avr","Mai","Jun","Juil","Aoû","Sep","Oct","No
 const CLRS = ["#9c4a7a","#3a6a9a","#6b7d3a","#b8862b","#3f7f7a","#b5552e","#7a5c8f","#8f6b4a","#2f4a6b","#7f9a74","#a86a6a","#4f6b3a","#c07a4f","#5e5a8a"];
 
 /* ─── PRU auto ─── */
-function computePos(p) {
+/* toutes : les transactions du compte (celles de S par défaut). Un CTO qui
+   n'est pas affiché (tuile d'accueil, ligne du Patrimoine) passe les siennes. */
+function computePos(p, toutes) {
   const cut = todayISO();
-  const txs = S.transactions.filter(t => t.asset === p.ticker && (t.type === "Achat" || t.type === "Vente") && normDate(t.date) <= cut)
+  const txs = (toutes || S.transactions).filter(t => t.asset === p.ticker && (t.type === "Achat" || t.type === "Vente") && normDate(t.date) <= cut)
                              .sort((a,b) => normDate(a.date).localeCompare(normDate(b.date)));
   let qty = 0, cost = 0, realised = 0, totalCost = 0;
   txs.forEach(t => {
@@ -5529,6 +5707,9 @@ function computeCash() {
 }
 
 function renderMetrics() {
+  // CTO affiché : ses propres cartes (ctoRenderMetrics), rien vers l'accueil ni
+  // vers window._peaPv, qui ne parlent que du PEA
+  if (_estCto()) { ctoRenderMetrics(); return; }
   const cut = todayISO();
   let fees = 0, achats = 0;
   S.transactions.forEach(t => {
@@ -5589,6 +5770,14 @@ function renderMetrics() {
 }
 
 /* ─── Positions ─── */
+/* Quantité affichée : telle quelle si entière (le PEA), sinon à la française
+   avec au plus 6 décimales (parts fractionnées d'un CTO : 1,234568) */
+function fmtQte(q) {
+  if (q == null || isNaN(q)) return "—";
+  return Number.isInteger(q) ? String(q)
+    : q.toLocaleString("fr-FR", {maximumFractionDigits: 6});
+}
+
 /* Date du premier achat à venir (daté après aujourd'hui) d'une position, ou "".
    Un tel achat ne compte pas encore dans computePos : sans lui, une ligne créée
    avec un ordre pour demain passait parmi les positions clôturées à 0 € et
@@ -5643,7 +5832,7 @@ function renderPositions() {
         <span class="badge ${p.type==="etf"?"be":"ba"}">${p.type==="etf"?"ETF":"Action"}</span>
       </td>
       <td>${sectorBadgeHtml(p.sector)}</td>
-      <td>${e.qty}</td>
+      <td>${fmtQte(e.qty)}</td>
       <td>${e.pru>0 ? eur(e.pru) : "—"}</td>
       <td>${p.cours!=null ? eur(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
       <td>${_renderSparkline(_wsSpark[p.ticker])}</td>
@@ -5708,6 +5897,9 @@ async function loadPerfHistory() {
     ...(S.closedPositions || []).map(c => c.ticker),
   ].filter(Boolean))];
   if (!tickers.length) return null;
+  // Copie locale propre à chaque compte (le PEA garde sa clé historique)
+  const lsHist = _estCto() ? LS_HIST + "_" + _compteActif : LS_HIST;
+  const gen = _cptGen;   // compte changé pendant l'attente : la réponse est jetée
 
   try {
     const tkParam = tickers.map(encodeURIComponent).join(",");
@@ -5715,6 +5907,7 @@ async function loadPerfHistory() {
     const r       = await fetch(url, {cache: "no-store"});
     if (!r.ok) throw new Error("HTTP " + r.status);
     const data = await r.json();
+    if (gen !== _cptGen) return null;
     if (!data.ok || !data.history) throw new Error("Reponse invalide");
     /* Rien du tout (Yahoo injoignable et aucun historique en cache côté
        serveur) : on garde la copie locale au lieu de l'écraser par du vide. */
@@ -5724,7 +5917,7 @@ async function loadPerfHistory() {
 
     const ts      = new Date().toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
     const payload = {history: data.history, fetchedAt: ts};
-    try { localStorage.setItem(LS_HIST, JSON.stringify(payload)); } catch(e) {}
+    try { localStorage.setItem(lsHist, JSON.stringify(payload)); } catch(e) {}
 
     _perfHistory = data.history;
     if (perime) showCacheLabel(null);
@@ -5734,8 +5927,9 @@ async function loadPerfHistory() {
     console.warn("[history]", e.message);
   }
 
+  if (gen !== _cptGen) return null;
   try {
-    const raw = localStorage.getItem(LS_HIST);
+    const raw = localStorage.getItem(lsHist);
     if (raw) {
       const payload  = JSON.parse(raw);
       _perfHistory   = payload.history;
@@ -6246,8 +6440,11 @@ async function resetPerf() {
    Si aucun depot n'est saisi, tous les elements valent 0 (courbe plate).
 ───────────────────────────────────────────────────────────────────────── */
 function buildDepositSeries(dates) {
+  // CTO : ses « versements » sont déduits de ses ordres ; une vente ou un
+  // dividende en sort, la ligne descend (investi net). Le PEA ne trace que
+  // ses versements, comme avant.
   const sorted = [...(S.depots || [])]
-    .filter(d => d.date && d.amount > 0)
+    .filter(d => d.date && (_estCto() ? d.amount !== 0 : d.amount > 0))
     .map(d => ({date: normDate(d.date), amount: d.amount || 0}))
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -6390,7 +6587,7 @@ function drawPerfChart() {
       datasets: [
         {
           /* Dataset 0 — Versements cumules (escalier en pointille discret) */
-          label:            "Versements cumulés",
+          label:            _estCto() ? "Investi net" : "Versements cumulés",
           data:             depVals,
           borderColor:      col.txt2,
           backgroundColor:  "transparent",
@@ -6518,14 +6715,15 @@ function perfSeriesAsync() {
     return Promise.resolve(_perfFullSeries);
   }
   if (!(S.transactions || []).some(t => t.type === "Achat")) return Promise.resolve(null);
+  const gen = _cptGen;
   if (!_perfHistPromise) {
     _perfHistPromise = loadPerfHistory()
-      .then(h => { if (h) { _perfHistory = h; _perfFullSeries = null; } return h; })
+      .then(h => { if (h && gen === _cptGen) { _perfHistory = h; _perfFullSeries = null; } return h; })
       .catch(() => null)
       .finally(() => { _perfHistPromise = null; });
   }
   return _perfHistPromise.then(h => {
-    if (!h) return null;
+    if (!h || gen !== _cptGen) return null;
     if (!_perfFullSeries) _perfFullSeries = buildTwrSeries(_perfHistory);
     return _perfFullSeries;
   });
@@ -6598,7 +6796,9 @@ async function renderPerf() {
   if (loadEl)  loadEl.style.display  = "block";
   if (loadTxt) loadTxt.textContent   = "Chargement de l'historique Yahoo Finance…";
 
+  const gen = _cptGen;
   const history = await loadPerfHistory();
+  if (gen !== _cptGen) return;   // autre compte affiché entre-temps : il a lancé son propre rendu
   if (loadEl) loadEl.style.display = "none";
 
   _perfHistory    = history;
@@ -7194,8 +7394,8 @@ function renderTx() {
     return `<div class="txr" style="${isFuture ? "opacity:.6;border-left:3px solid var(--a);padding-left:9px" : ""}">
       <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;min-width:86px">${t.date}</span>
       ${futureBadge}<span style="font-weight:600;font-size:12px;min-width:80px">${label}</span>
-      ${typeBadge}${pretBadge}${txSectorHtml}
-      <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?t.qty+"\u00A0\u00D7\u00A0"+eur(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
+      ${typeBadge}${pretBadge}${txOrigineBadge(t)}${txFraisBadge(t)}${txSectorHtml}
+      <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?fmtQte(t.qty)+"\u00A0\u00D7\u00A0"+eur(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
       <span style="font-family:var(--mono);font-weight:700;font-size:12px;min-width:80px;text-align:right">${tot?eur(tot):""}${pvHtml}</span>
       ${ebtn("editTx",t.id)}${dbtn("delTx",t.id)}
     </div>`;
@@ -7302,6 +7502,23 @@ function expoPaysAction(ticker) {
   const m = t.match(/^([A-Z]+)\s*:/) || t.match(/\.([A-Z]{1,3})$/);
   return (m && EXPO_BOURSE[m[1]]) || "FR";
 }
+/* Pays d'une action d'après son ISIN (positions importées d'un CTO) : Apple,
+   suivie en euros à Xetra (APC.DE), compterait sinon pour l'Allemagne. */
+function expoPaysIsin(isin) {
+  const c = String(isin || "").slice(0, 2).toUpperCase();
+  return EXPO_PAYS[c] ? c : null;
+}
+/* ETF d'un CTO qui suivent le même indice qu'un ETF dont Pilote a la
+   composition : par ISIN, sinon par ticker. Mêmes sources que expositions.py :
+   WPEA y est décomposé avec les lignes d'iShares Core MSCI World (IWDA, SWDA,
+   EUNL : le même fonds), ESE avec celles de CSPX, PNAS avec celles de CNDX,
+   ETZ avec celles de MEUD. */
+const EXPO_MEME_INDICE = {
+  IE00B4L5Y983: "WPEA", IWDA: "WPEA", SWDA: "WPEA", EUNL: "WPEA",
+  IE00B5BMR087: "ESE",  CSPX: "ESE",  SXR8: "ESE",  CSSPX: "ESE",
+  IE00B53SZB19: "PNAS", CNDX: "PNAS", SXRV: "PNAS", CSNDX: "PNAS",
+  LU0908500753: "ETZ",  MEUD: "ETZ",
+};
 function expoNomPays(code) {
   if (code === "_nd") return "Non détaillé";
   if (code === "_inconnu") return "Composition inconnue";
@@ -7350,10 +7567,12 @@ function expoDate(iso) {
 function expoCompo(p) {
   const perso = S.uiPrefs && S.uiPrefs.expoPerso && S.uiPrefs.expoPerso[p.ticker];
   if (perso) return Object.assign({}, perso, { statut: "perso" });
-  const etf = EXPO && EXPO.etfs && EXPO.etfs[expoCle(p.ticker)];
+  const etfs = (EXPO && EXPO.etfs) || {};
+  const etf = etfs[expoCle(p.ticker)]
+           || etfs[EXPO_MEME_INDICE[p.isin] || EXPO_MEME_INDICE[expoCle(p.ticker)] || ""];
   if (etf) return Object.assign({}, etf, { statut: etf.origine || "integre" });
   if (p.type === "etf") return null;
-  const pays = expoPaysAction(p.ticker);
+  const pays = expoPaysIsin(p.isin) || expoPaysAction(p.ticker);
   const sect = EXPO_SECT_ACTION[p.sector] || null;
   return {
     statut: "action", pays: { [pays]: 100 }, secteurs: sect ? { [sect]: 100 } : {},
@@ -8114,6 +8333,9 @@ async function fetchLocalCours() {
   if (S.wishlist) S.wishlist.forEach(w => { if (w.ticker) tickers.push(w.ticker); });
   // Lignes cibles du « Prochain achat » : leur cours sert même sans position ni wishlist
   if (typeof pacCfg === "function") pacCfg().cibles.forEach(c => { if (c.ticker) tickers.push(c.ticker); });
+  // Les comptes non affichés (le PEA pendant un CTO, les autres CTO) : leurs
+  // tuiles d'accueil et leurs lignes du Patrimoine suivent les cours aussi
+  if (typeof ctoAutresTickers === "function") ctoAutresTickers().forEach(t => tickers.push(t));
   if (tickers.length === 0) return { prices: {}, variations: {}, frais: 0, demandes: 0 };
 
   const unique = [...new Set(tickers)];
@@ -8177,6 +8399,7 @@ async function applyCoursData() {
       const v = prices[p.ticker] || prices[dotKey] || prices[bare];
       if (v && v > 0) { p.cours = v; changed = true; }
     });
+    if (typeof ctoAppliquerCours === "function") ctoAppliquerCours(prices);
 
     if (Object.keys(variations).length > 0) {
       _wsVar = { ..._wsVar, ...variations };
@@ -8925,6 +9148,10 @@ function goTab(n) {
   // L'onglet Performance a été fusionné dans la vue d'ensemble (4.2.6) : une
   // tuile, un raccourci ou une préférence qui le vise encore y arrive.
   if (n === "perf") n = "dash";
+  // Section CTO : les écrans du PEA, sur le CTO affiché (« Compte actif ») :
+  // « cto-pos » ouvre pane-pos. Tout autre onglet remet le PEA dans S.
+  let onglet = n;
+  if (typeof ctoAvantOnglet === "function") [n, onglet] = ctoAvantOnglet(n);
   document.querySelectorAll(".tab,.pane").forEach(el=>el.classList.remove("active"));
   const tabBtn = document.querySelector(`.tab[onclick="goTab('${n}')"]`);
   if (tabBtn) tabBtn.classList.add("active");
@@ -8938,10 +9165,10 @@ function goTab(n) {
   if (n==="strat" && typeof pacRender === "function") pacRender();
   if (n==="dash" && typeof dashRenderOverview === "function") dashRenderOverview();
   // Memorise pour le prochain lancement
-  try { document.body.dataset.activeTab = n; } catch(e) {}
+  try { document.body.dataset.activeTab = onglet; } catch(e) {}
   // Ici et pas dans un patch de goTab : chaque patch appelle cette version
   // d'origine, le fil d'Ariane suit donc tous les chemins de navigation.
-  if (typeof _updateCrumb === "function") _updateCrumb(n);
+  if (typeof _updateCrumb === "function") _updateCrumb(onglet);
   // Même raison : Retour suit l'onglet ouvert, quel que soit le chemin
   if (typeof _majBoutonRetour === "function") _majBoutonRetour();
 }
@@ -10077,6 +10304,11 @@ const NAV_MODULES = {
     desc: "Positions, dividendes, performance comparée aux indices, simulateurs.",
     pas:  "Saisis tes dépôts, puis tes positions : les cours suivent tout seuls.",
     tab: "dep", tuiles: ["pea"] },
+  "sec-cto": {
+    desc: "Tes comptes-titres, chacun avec son courtier : positions, courbe, dividendes, import Trade Republic.",
+    pas:  "Crée ton CTO et choisis ton courtier, puis importe ton historique ou saisis tes positions.",
+    // Ses tuiles d'accueil (une par CTO) n'existent qu'une fois un CTO créé
+    tab: "cto-dash", tuiles: [] },
   "sec-comptes": {
     desc: "Budget mois par mois, catégories, prélèvements récurrents, récap de l'année.",
     pas:  "Ajoute les dépenses et les revenus du mois, chacun dans sa catégorie.",
@@ -10140,7 +10372,8 @@ function _reconstruireSidebar() {
   _injectSidebar();
   if (typeof acRenderBadge === "function") acRenderBadge();
   const actif = document.querySelector(".pane.active");
-  const id = actif ? actif.id.replace("pane-", "") : "home";
+  // L'onglet, pas le pane : un onglet CTO montre un pane du PEA (cto-pos → pane-pos)
+  const id = document.body.dataset.activeTab || (actif ? actif.id.replace("pane-", "") : "home");
   const sec = _navSectionOf(id);
   // L'onglet ouvert vient d'être masqué avec son module : retour à l'accueil
   if (sec && !_modulesVisibles().has(sec.id)) { goTab("home"); _setActiveSidebar("home"); }
@@ -11787,6 +12020,110 @@ function pacPct(x, sign) {
   return (sign ? (x >= 0.05 ? "+" : x <= -0.05 ? "−" : "") : "") + s;
 }
 
+/* ── Courtiers (4.4.0) ──
+   Choisir son courtier règle les frais d'un ordre (Prochain achat, simulateur
+   d'ordres) et ce que propose la Stratégie : un courtier à plans
+   d'investissement gratuits avec parts fractionnées (Trade Republic) reçoit le
+   réglage des plans, les autres les ordres du mois. Une grille par courtier,
+   pour un ordre sur Euronext ou Xetra :
+     paliers : [{max (€, null = au-delà), fixe (€), pct (%)}], le premier dont
+               le montant tient sous max s'applique ;
+     min, max : bornes des frais d'un ordre (€) ; gratuit : le 1er ordre du mois
+               jusqu'à ce montant est gratuit (0 = jamais) ; plan : frais d'une
+               exécution de plan programmé (null = pas de plans).
+   Sur un PEA, le plafond légal de 0,5 % s'applique toujours (PAC_TAUX_MAX).
+   Les tarifs changent : chaque grille est datée, modifiable (« Personnalisé »),
+   à revérifier à chaque version, et txFraisBadge signale dans Transactions un
+   ordre dont les frais réels ne collent pas. Relevés le 11/10/2026 sur les pages
+   des courtiers (Saxo : MoneyVox, sa page n'affichait pas ses chiffres). */
+const COURTIERS = [
+  { id: "trade-republic", nom: "Trade Republic", comptes: ["cto", "pea"], fractions: true,
+    resume: "1 € par ordre ponctuel, plans d'investissement sans frais",
+    source: "support.traderepublic.com", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 1, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: 0 } },
+  { id: "fortuneo-starter", nom: "Fortuneo · Starter", comptes: ["cto", "pea"],
+    resume: "1er ordre du mois jusqu'à 500 € gratuit, puis 0,35 %",
+    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.35 }], min: 0, max: 0, gratuit: 500, plan: null } },
+  { id: "fortuneo-progress", nom: "Fortuneo · Progress", comptes: ["cto", "pea"],
+    resume: "4,90 € jusqu'à 3 000 €, puis 0,15 %",
+    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: 3000, fixe: 4.9, pct: 0 }, { max: null, fixe: 0, pct: 0.15 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "fortuneo-trader", nom: "Fortuneo · Trader Pro", comptes: ["cto", "pea"],
+    resume: "9,50 € jusqu'à 10 000 €, puis 0,10 %",
+    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: 10000, fixe: 9.5, pct: 0 }, { max: null, fixe: 0, pct: 0.1 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "bourse-direct", nom: "Bourse Direct", comptes: ["cto", "pea"],
+    resume: "0,99 € jusqu'à 500 €, 1,90 € jusqu'à 1 000 €, 2,90 € jusqu'à 2 000 €, 3,80 € jusqu'à 4 400 €, puis 0,09 %",
+    source: "boursedirect.fr, conditions tarifaires du 06/01/2026", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: 500, fixe: 0.99, pct: 0 }, { max: 1000, fixe: 1.9, pct: 0 }, { max: 2000, fixe: 2.9, pct: 0 },
+                       { max: 4400, fixe: 3.8, pct: 0 }, { max: null, fixe: 0, pct: 0.09 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "boursobank-decouverte", nom: "BoursoBank · Découverte", comptes: ["cto"],
+    resume: "1,99 € jusqu'à 500 €, puis 0,60 %",
+    source: "tradingboard.boursobank.com", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: 500, fixe: 1.99, pct: 0 }, { max: null, fixe: 0, pct: 0.6 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "degiro", nom: "DEGIRO", comptes: ["cto"],
+    resume: "2 € par ordre sur Euronext Paris (1 € de courtage + 1 € de traitement)",
+    source: "degiro.fr/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 2, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "ibkr", nom: "Interactive Brokers · Tiered", comptes: ["cto"],
+    resume: "0,05 %, au moins 1,25 € et au plus 29 € (frais de bourse en plus)",
+    source: "interactivebrokers.ie", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.05 }], min: 1.25, max: 29, gratuit: 0, plan: null } },
+  { id: "saxo", nom: "Saxo · Classic", comptes: ["cto", "pea"],
+    resume: "0,08 %, au moins 2 €",
+    source: "moneyvox.fr", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.08 }], min: 2, max: 0, gratuit: 0, plan: null } },
+];
+const COURTIER_PERSO = "perso";   // grille saisie à la main
+
+function courtierDe(id) { return COURTIERS.find(c => c.id === id) || null; }
+function tarifCopie(t) { return JSON.parse(JSON.stringify(t)); }
+
+/* Frais d'un ordre de montant m (€), au centime, selon une grille. pea :
+   plafond légal de 0,5 %. L'ordre gratuit du mois se décide ailleurs
+   (pacFrais, soCalcul), ordre par ordre. */
+function courtageOrdre(m, tarif, pea) {
+  if (!(m > 0) || !tarif) return 0;
+  const P = tarif.paliers || [];
+  const p = P.find(x => x.max == null || m <= x.max + PAC_EPS) || P[P.length - 1] || {};
+  let f = (Number(p.fixe) || 0) + m * (Number(p.pct) || 0) / 100;
+  if (tarif.min > 0) f = Math.max(f, tarif.min);
+  if (tarif.max > 0) f = Math.min(f, tarif.max);
+  if (pea) f = Math.min(f, m * PAC_TAUX_MAX / 100);
+  return pacR2(f);
+}
+/* Frais d'un ordre pour pacFrais et soCalcul : la grille du courtier si le
+   compte en a une, sinon l'ancien réglage (taux seul, sans minimum). */
+function pacFraisOrdre(m, o) {
+  return o.tarif ? courtageOrdre(m, o.tarif, o.pea) : pacR2(m * o.taux);
+}
+
+/* Origine d'un ordre importé (plan, Saveback, arrondi, action offerte) */
+const TX_ORIGINES = { plan: "Plan", saveback: "Saveback", arrondi: "Arrondi", offert: "Offert" };
+function txOrigineBadge(t) {
+  const l = TX_ORIGINES[t.origine];
+  return l ? `<span class="badge" style="background:var(--bg3);color:var(--txt2)" title="Ordre ${l === "Plan" ? "d'un plan d'investissement programmé" : "automatique (" + l + ")"}">${l}</span>` : "";
+}
+/* Frais réels qui ne collent pas à la grille du courtier : la grille a peut-être
+   changé (les tarifs ne sont pas relus en ligne). Rien sans grille, ni sur un
+   ordre à venir. */
+function txFraisAttendus(t) {
+  const cfg = typeof pacCfg === "function" ? pacCfg() : null;
+  const tarif = cfg && cfg.tarif;
+  if (!tarif || (t.type !== "Achat" && t.type !== "Vente") || normDate(t.date) > todayISO()) return null;
+  if (t.origine && TX_ORIGINES[t.origine]) return tarif.plan == null ? null : tarif.plan;
+  const m = brutOrdre(t);
+  // L'ordre gratuit du mois : un ordre à 0 € sous le seuil est normal
+  if (!(t.frais > 0) && tarif.gratuit > 0 && m <= tarif.gratuit + PAC_EPS) return 0;
+  return courtageOrdre(m, tarif, !_estCto());
+}
+function txFraisBadge(t) {
+  const att = txFraisAttendus(t);
+  if (att == null || Math.abs((t.frais || 0) - att) < 0.011) return "";
+  return `<span class="badge" style="background:var(--a2);color:var(--a)" title="La grille du courtier donne ${eur(att)} pour cet ordre : ses tarifs ont peut-être changé (Stratégie → Réglages)"><i class="ph ph-warning"></i> frais ≠ grille</span>`;
+}
+
 /* Frais d'un jeu de parts (étape 5) : la moins chère de deux variantes.
    a. sans scission : l'ordre gratuit est le plus gros ordre sous le seuil ;
    b. le plus gros ordre, s'il dépasse le seuil, est coupé en une partie
@@ -11798,7 +12135,7 @@ function pacFrais(lignes, parts, o) {
     key: l.key, label: l.label, n: parts[l.key], pl: l.pl,
     montant: parts[l.key] * l.pl, frais: 0, gratuit: false, scinde: false,
   }));
-  const payant = od => { od.frais = pacR2(od.montant * o.taux); return od; };
+  const payant = od => { od.frais = pacFraisOrdre(od.montant, o); return od; };
   const somme  = l => l.reduce((s, od) => s + od.frais, 0);
   if (!ordres.length) return { frais: 0, ordres };
   if (o.gratuitUtilise) {
@@ -11941,15 +12278,24 @@ function testsProchainAchat() {
 
 /* ── Réglages ── */
 function pacCfg() {
-  const c = (typeof S !== "undefined" && S && S.uiPrefs && S.uiPrefs.prochainAchat) || {};
+  const c = (typeof S !== "undefined" && S && S.uiPrefs && _cptPrefs().prochainAchat) || {};
   const num = (v, d) => (typeof v === "number" && isFinite(v)) ? v : d;
+  // Grille de frais : celle du CTO affiché (choisie à sa création), ou celle du
+  // courtier choisi pour le PEA. null : l'ancien réglage, seuil + taux (un PEA
+  // dont le courtier n'a jamais été choisi garde exactement ses frais d'avant).
+  const cpt = (_estCto() && typeof ctoCompte === "function") ? ctoCompte(_compteActif) : null;
+  const tarif = cpt ? (cpt.tarif || null) : ((c.courtier && c.tarif) ? c.tarif : null);
   return {
     cibles: Array.isArray(c.cibles) ? c.cibles : PAC_DEFAUT.cibles.map(x => ({...x})),
-    seuilGratuit: num(c.seuilGratuit, PAC_DEFAUT.seuilGratuit),
+    seuilGratuit: tarif ? (Number(tarif.gratuit) || 0) : num(c.seuilGratuit, PAC_DEFAUT.seuilGratuit),
     taux:         num(c.taux,         PAC_DEFAUT.taux),
     marge:        num(c.marge,        PAC_DEFAUT.marge),
     gratuitForce: c.gratuitForce || null,
     budgetMode:   c.budgetMode === "reel" ? "reel" : "prev",
+    courtier:     cpt ? (cpt.courtier || COURTIER_PERSO) : (c.courtier || ""),
+    tarif,
+    // CTO : ses espèces ne sont pas suivies, le budget du mois est saisi et retenu
+    budget:       num(c.budget, 0),
   };
 }
 
@@ -11958,6 +12304,7 @@ function pacCfg() {
    versement prévu, les deux sont égaux). */
 function pacPrevusSomme() { return (S.depotsPrevus || []).reduce((s, d) => s + (d.amount || 0), 0); }
 function pacBudgetAuto(cfg) {
+  if (_estCto()) return pacR2((cfg || pacCfg()).budget || 0);   // pas d'espèces suivies
   const cash = pacR2(computeCash());
   return (cfg || pacCfg()).budgetMode === "reel" ? cash : pacR2(cash + pacPrevusSomme());
 }
@@ -11982,8 +12329,10 @@ function pacSetMode(m) {
   pacRender();
 }
 function pacSaveCfg(cfg) {
-  S.uiPrefs = S.uiPrefs || {};
-  S.uiPrefs.prochainAchat = cfg;
+  const x = {...cfg};
+  // Le courtier d'un CTO vit sur le compte lui-même (ctoCompte), pas ici
+  if (_estCto()) { delete x.courtier; delete x.tarif; }
+  _cptPrefs().prochainAchat = x;   // les réglages du compte affiché (PEA ou CTO)
   persist(false);
   if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
     window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
@@ -12066,10 +12415,11 @@ function pacPlanCourant(opts) {
   const plan = pacCalcul(cfg.cibles.map((c, i) => ({
     key: c.ticker, label: pacLabel(c), q: qte(c.ticker), p: cours[i].p, t: c.pct / 100,
   })), { budget, marge: cfg.marge / 100, seuil: cfg.seuilGratuit, taux: tauxPct / 100,
+         tarif: cfg.tarif, pea: !_estCto(),
          gratuitUtilise: opts.gratuitUtilise != null ? opts.gratuitUtilise : g.utilise });
 
   const A = base.alertes;
-  if (cfg.taux > PAC_TAUX_MAX)
+  if (!cfg.tarif && cfg.taux > PAC_TAUX_MAX)
     A.push(["warn", "Courtage ramené à 0,5 % : c'est le plafond légal pour un ordre passé en ligne sur un PEA."]);
   if (!plan.ordres.length) {
     const achetables = plan.lignes.filter(l => !l.surpoids);
@@ -12092,6 +12442,8 @@ function pacRender() {
   // Le simulateur d'ordres, juste dessous, lit les mêmes cours et réglages :
   // arrivée des cours, ouverture de l'onglet et réglages passent tous par ici.
   if (typeof soRender === "function") soRender();
+  // CTO à plans programmés : sa carte « Réglage des plans » suit les mêmes cours
+  if (typeof ctoModePlans === "function" && ctoModePlans()) ctoPlansRender();
   const r = pacPlanCourant();
   if (!r) return;
   _pacDernier = r;
@@ -12103,7 +12455,9 @@ function pacRender() {
   document.getElementById("pac-mode-reel").setAttribute("aria-pressed", String(!prev));
   document.getElementById("pac-mode-prev").setAttribute("aria-pressed", String(prev));
   const P = depPrevus();
-  document.getElementById("pac-especes").innerHTML = "Espèces du PEA : " + pacEur(r.especes)
+  if (_estCto()) document.getElementById("pac-especes").textContent =
+    "budget retenu pour ce CTO : ses espèces ne sont pas suivies";
+  else document.getElementById("pac-especes").innerHTML = "Espèces du PEA : " + pacEur(r.especes)
     + (P.length ? " · prévu : " + P.map(d => pacEur(d.amount) + " le " + depDateFr(d.date).slice(0, 5)).join(", ")
        : (prev ? " · aucun versement prévu (onglet Dépôts)" : ""))
     + (_pacBudget != null ? ` <button class="btn btn-sm btn-ghost" onclick="pacSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir au budget ${prev ? "prévisionnel" : "réel"}</button>` : "");
@@ -12172,6 +12526,15 @@ function pacRender() {
 }
 
 function pacSetBudget(v) {
+  if (_estCto()) {
+    // Pas d'espèces à reprendre sur un CTO : le budget tapé est retenu
+    const cfg = pacCfg();
+    cfg.budget = Math.max(0, pacNum(v) || 0);
+    pacSaveCfg(cfg);
+    pacRender();
+    if (typeof ctoPlansRender === "function") ctoPlansRender();
+    return;
+  }
   _pacBudget = (v === "" || v == null) ? null : Math.max(0, pacNum(v) || 0);
   pacRender();
 }
@@ -12207,14 +12570,112 @@ function pacRenderCfg() {
       <button class="btn btn-sm btn-ghost" onclick="pacAddCible()"><i class="ph ph-plus"></i> Ajouter une ligne</button>
       <span class="pac-dim">Total des cibles : <b id="pac-cfg-somme"></b></span>
     </div>
-    <div class="fg-row">
-      ${champ("seuilGratuit", "Ordre gratuit jusqu'à (€)", cfg.seuilGratuit, "1")}
-      ${champ("taux", "Courtage (%, plafonné à 0,5)", cfg.taux, "0.01")}
-    </div>
+    ${pacCourtierHtml(cfg)}
     <div class="fg-row">
       ${champ("marge", "Marge du prix limite (%)", cfg.marge, "0.1")}
     </div>`;
   pacMajSomme();
+}
+
+/* ── Courtier et grille de frais (réglages de la Stratégie) ──
+   PEA : le courtier vit dans S.uiPrefs.prochainAchat (courtier, tarif) ;
+   « Réglage libre » garde l'ancien couple seuil + taux, tel qu'avant la 4.4.0.
+   CTO : sur le compte lui-même (ctoCompte), choisi à sa création. */
+function pacCourtierHtml(cfg) {
+  const cto = _estCto();
+  const k = courtierDe(cfg.courtier);
+  const opts = COURTIERS.filter(x => x.comptes.includes(cto ? "cto" : "pea"))
+    .map(x => `<option value="${x.id}"${x.id === cfg.courtier ? " selected" : ""}>${escHtml(x.nom)}</option>`).join("");
+  const sel = `<div class="fg"><label>Courtier</label><select onchange="pacSetCourtier(this.value)">
+      ${cto ? "" : `<option value=""${cfg.courtier ? "" : " selected"}>Réglage libre : ordre gratuit et taux</option>`}
+      ${opts}<option value="${COURTIER_PERSO}"${cfg.courtier === COURTIER_PERSO ? " selected" : ""}>Personnalisé : grille à saisir</option>
+    </select></div>`;
+  const champ = (id, lbl, val, pas) => `<div class="fg"><label>${lbl}</label>
+    <input type="number" step="${pas}" min="0" value="${val}" onchange="pacSetParam('${id}', this)"></div>`;
+  if (!cfg.courtier) {   // PEA, réglage d'avant la 4.4.0
+    return sel + `<div class="fg-row">
+      ${champ("seuilGratuit", "Ordre gratuit jusqu'à (€)", cfg.seuilGratuit, "1")}
+      ${champ("taux", "Courtage (%, plafonné à 0,5)", cfg.taux, "0.01")}
+    </div>`;
+  }
+  if (k) {
+    const d = new Date(k.verifie + "T00:00:00").toLocaleDateString("fr-FR");
+    return sel + `<div class="pac-dim" style="margin:-4px 0 12px">${escHtml(k.resume)}${cto ? "" : " (plafonné à 0,5 % sur un PEA)"}.
+      Tarif relevé le ${d} (${escHtml(k.source)}). Il change ? Choisis « Personnalisé » : la grille reste modifiable.</div>`;
+  }
+  const t = cfg.tarif || TARIF_VIDE;
+  const num = (v) => (v == null ? "" : v);
+  return sel + `<div class="tw"><table>
+      <thead><tr><th style="text-align:left">Ordre jusqu'à (€)</th><th>Frais fixes (€)</th><th>Pourcentage (%)</th><th></th></tr></thead>
+      <tbody>${(t.paliers || []).map((p, i) => `<tr>
+        <td><input type="number" min="0" step="1" value="${num(p.max)}" placeholder="au-delà" onchange="pacSetPalier(${i}, 'max', this)"></td>
+        <td><input type="number" min="0" step="0.01" value="${num(p.fixe)}" onchange="pacSetPalier(${i}, 'fixe', this)"></td>
+        <td><input type="number" min="0" step="0.01" value="${num(p.pct)}" onchange="pacSetPalier(${i}, 'pct', this)"></td>
+        <td><button class="m-iconbtn danger" title="Supprimer ce palier" aria-label="Supprimer ce palier" onclick="pacDelPalier(${i})"><i class="ph ph-trash"></i></button></td>
+      </tr>`).join("")}</tbody></table></div>
+    <div style="margin:6px 0 10px"><button class="btn btn-sm btn-ghost" onclick="pacAddPalier()"><i class="ph ph-plus"></i> Ajouter un palier</button>
+      <span class="pac-dim">Le premier palier dont le montant tient sous « jusqu'à » s'applique ; laissé vide : au-delà.</span></div>
+    <div class="fg-row">
+      <div class="fg"><label>Frais minimum (€)</label><input type="number" min="0" step="0.01" value="${num(t.min)}" onchange="pacSetTarifChamp('min', this)"></div>
+      <div class="fg"><label>Frais maximum (€, 0 = aucun)</label><input type="number" min="0" step="0.01" value="${num(t.max)}" onchange="pacSetTarifChamp('max', this)"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>1er ordre du mois gratuit jusqu'à (€)</label><input type="number" min="0" step="1" value="${num(t.gratuit)}" onchange="pacSetTarifChamp('gratuit', this)"></div>
+      <div class="fg"><label>Frais d'un plan programmé (€, vide = pas de plans)</label><input type="number" min="0" step="0.01" value="${num(t.plan)}" onchange="pacSetTarifChamp('plan', this)"></div>
+    </div>`;
+}
+const TARIF_VIDE = { paliers: [{ max: null, fixe: 0, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: null };
+
+/* Change le courtier du compte affiché. Passer en « Personnalisé » part de la
+   grille en place, pour n'avoir qu'à corriger ce qui a changé. */
+function pacSetCourtier(id) {
+  const cfg = pacCfg();
+  const ancien = cfg.tarif || (cfg.courtier ? null
+    : { paliers: [{ max: null, fixe: 0, pct: cfg.taux }], min: 0, max: 0, gratuit: cfg.seuilGratuit, plan: null });
+  const k = courtierDe(id);
+  const tarif = k ? tarifCopie(k.tarif) : id === COURTIER_PERSO ? tarifCopie(ancien || TARIF_VIDE) : null;
+  if (_estCto()) ctoSetCourtier(_compteActif, id || COURTIER_PERSO, tarif);
+  else { cfg.courtier = id; cfg.tarif = tarif; pacSaveCfg(cfg); }
+  pacRenderCfg();
+  pacRender();
+  if (typeof renderTx === "function") renderTx();   // l'alerte « frais ≠ grille » suit
+  if (typeof ctoRenderBarre === "function") ctoRenderBarre();
+}
+/* Modifie la grille « Personnalisé » du compte affiché, puis l'enregistre */
+function pacModifierTarif(fn) {
+  const cfg = pacCfg();
+  const t = tarifCopie(cfg.tarif || TARIF_VIDE);
+  fn(t);
+  // Paliers dans l'ordre des montants (courtageOrdre prend le premier qui convient)
+  t.paliers.sort((a, b) => (a.max == null) - (b.max == null) || (a.max || 0) - (b.max || 0));
+  if (_estCto()) ctoSetCourtier(_compteActif, COURTIER_PERSO, t);
+  else { cfg.courtier = COURTIER_PERSO; cfg.tarif = t; pacSaveCfg(cfg); }
+  pacRender();
+  if (typeof renderTx === "function") renderTx();
+}
+function pacLireMontant(el, vide) {
+  if (el.value === "" && vide !== undefined) return vide;
+  const n = pacNum(el.value);
+  if (n == null || n < 0) { showToastModern("Valeur invalide : un nombre positif", "warn"); return undefined; }
+  return n;
+}
+function pacSetPalier(i, champ, el) {
+  const v = pacLireMontant(el, champ === "max" ? null : 0);
+  if (v === undefined) { pacRenderCfg(); return; }
+  pacModifierTarif(t => { if (t.paliers[i]) t.paliers[i][champ] = v; });
+}
+function pacAddPalier() {
+  pacModifierTarif(t => t.paliers.push({ max: null, fixe: 0, pct: 0 }));
+  pacRenderCfg();
+}
+function pacDelPalier(i) {
+  pacModifierTarif(t => { t.paliers.splice(i, 1); if (!t.paliers.length) t.paliers.push({ max: null, fixe: 0, pct: 0 }); });
+  pacRenderCfg();
+}
+function pacSetTarifChamp(champ, el) {
+  const v = pacLireMontant(el, champ === "plan" ? null : 0);
+  if (v === undefined) { pacRenderCfg(); return; }
+  pacModifierTarif(t => { t[champ] = v; });
 }
 /* Le total des cibles sous le tableau, sans redessiner les champs qu'on remplit */
 function pacMajSomme() {
@@ -12340,7 +12801,7 @@ function soCalcul(ordres, o) {
     const r = {...od, montant: od.n > 0 ? od.n * od.pl : 0, frais: 0, gratuit: false};
     if (!(od.n > 0)) return r;
     if (!pris && r.montant <= o.seuil + PAC_EPS) { r.gratuit = true; pris = true; }
-    else r.frais = pacR2(r.montant * o.taux);
+    else r.frais = pacFraisOrdre(r.montant, o);
     return r;
   });
   const B = Math.max(0, o.budget || 0);
@@ -12352,9 +12813,12 @@ function soCalcul(ordres, o) {
 }
 
 /* Parts entières d'une ligne : un montant en euros s'arrondit à la part inférieure. */
-function soParts(l, pl) {
+function soParts(l, pl, fractions) {
   const v = Number(l.val) || 0;
   if (!(pl > 0) || v <= 0) return 0;
+  // Parts fractionnées (CTO chez Trade Republic) : « pour 50 € » achète
+  // 50 / prix parts, tronquées au millionième
+  if (fractions) return Math.floor((l.mode === "eur" ? v / pl : v) * 1e6 + PAC_EPS) / 1e6;
   return Math.floor((l.mode === "eur" ? v / pl : v) + PAC_EPS);
 }
 
@@ -12395,7 +12859,15 @@ function testsSimulateurOrdres() {
 /* ── Données ── */
 function soTarif() {
   const cfg = pacCfg();
-  return { cfg, taux: Math.min(cfg.taux, PAC_TAUX_MAX) / 100, seuil: cfg.seuilGratuit, marge: cfg.marge / 100 };
+  return { cfg, taux: Math.min(cfg.taux, PAC_TAUX_MAX) / 100, seuil: cfg.seuilGratuit, marge: cfg.marge / 100,
+           tarif: cfg.tarif, pea: !_estCto() };
+}
+/* Parts fractionnées : seulement sur le CTO d'un courtier qui les permet
+   (Trade Republic). Un PEA n'en a jamais. */
+function soFractions() {
+  if (!_estCto() || typeof ctoCompte !== "function") return false;
+  const c = ctoCompte(_compteActif), k = c && courtierDe(c.courtier);
+  return !!(k && k.fractions);
 }
 function soBudget() { return _soBudget != null ? _soBudget : _pacBudget != null ? _pacBudget : pacBudgetAuto(); }
 function soGratuitDispo() { return _soGratuit != null ? _soGratuit : !pacGratuitEtat(pacCfg()).utilise; }
@@ -12446,20 +12918,21 @@ function soEvaluer(lignes, budget) {
   const t = soTarif();
   const ordres = lignes.map(l => {
     const pl = l.prix > 0 ? pacR3(l.prix) : soPrixAuto(l.ticker, t.marge);
-    return { key: l.ticker || "", label: soLabel(l.ticker), n: soParts(l, pl), pl: pl || 0, sansPrix: !!l.ticker && !pl };
+    return { key: l.ticker || "", label: soLabel(l.ticker), n: soParts(l, pl, soFractions()), pl: pl || 0, sansPrix: !!l.ticker && !pl };
   });
-  const r = soCalcul(ordres, { budget: budget != null ? budget : soBudget(), taux: t.taux, seuil: t.seuil, gratuitUtilise: !soGratuitDispo() });
+  const r = soCalcul(ordres, { budget: budget != null ? budget : soBudget(), taux: t.taux, seuil: t.seuil,
+                               tarif: t.tarif, pea: t.pea, gratuitUtilise: !soGratuitDispo() });
   r.repart = soRepartition(r.ordres, t.cfg);
   return r;
 }
 
 function soScenarios() {
-  const c = S.uiPrefs && S.uiPrefs.simOrdres;
+  const c = _cptPrefs().simOrdres;
   return (c && Array.isArray(c.scenarios)) ? c.scenarios : [];
 }
 function soSaveScenarios(liste) {
-  S.uiPrefs = S.uiPrefs || {};
-  S.uiPrefs.simOrdres = { ...(S.uiPrefs.simOrdres || {}), scenarios: liste };
+  const pr = _cptPrefs();
+  pr.simOrdres = { ...(pr.simOrdres || {}), scenarios: liste };
   persist(false);
   if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs)
     window.pywebview.api.save_ui_prefs(S.uiPrefs).catch(() => {});
@@ -12570,7 +13043,7 @@ function soSetMode(i, m) {
   const l = _soEd.lignes[i];
   if (!l || l.mode === m) return;
   const pl = l.prix > 0 ? pacR3(l.prix) : soPrixAuto(l.ticker, soTarif().marge);
-  const n = soParts(l, pl);
+  const n = soParts(l, pl, soFractions());
   l.mode = m;
   l.val = n > 0 ? (m === "eur" ? pacR2(n * pl) : n) : "";
   soRender(true);
@@ -12657,8 +13130,11 @@ function soRender(force) {
   if (nom && document.activeElement !== nom) nom.value = _soEd.nom || "";
   document.getElementById("so-especes").innerHTML = _soBudget != null
     ? `<button class="btn btn-sm btn-ghost" onclick="soSetBudget('')"><i class="ph ph-arrow-counter-clockwise"></i> Revenir au budget de Prochain achat</button>`
+    : _estCto() ? "le budget du mois de ce CTO"
     : "celui de Prochain achat (" + (_pacBudget != null ? "saisi à la main" : pacCfg().budgetMode === "reel" ? "réel" : "prévisionnel") + ")";
   document.getElementById("so-gratuit").checked = soGratuitDispo();
+  // Sans ordre gratuit chez le courtier (Trade Republic…), la case n'a rien à dire
+  document.getElementById("so-gratuit").closest("label").style.display = pacCfg().seuilGratuit > 0 ? "" : "none";
   // Les cours arrivent toutes les 3 minutes (pacRender) : pendant qu'on
   // tape dans un ordre, on recalcule sans redessiner les champs.
   const ed = document.getElementById("so-ed");
@@ -12989,9 +13465,9 @@ function soPasserValider() {
     txIds.push(tx.id);
   });
   const investi = L.reduce((x, l) => x + l.n * l.c, 0), frais = L.reduce((x, l) => x + l.f, 0);
-  S.uiPrefs = S.uiPrefs || {};
-  const so = S.uiPrefs.simOrdres || {};
-  S.uiPrefs.simOrdres = { ...so, historique: [...(so.historique || []), {
+  const pr = _cptPrefs();
+  const so = pr.simOrdres || {};
+  pr.simOrdres = { ...so, historique: [...(so.historique || []), {
     id: "h" + Date.now(), date, nom: _soPasser.nom, budget: _soPasser.budget,
     ordres: L.map(l => ({ ticker: l.o.key, label: l.o.label, n: l.n, cours: l.c, frais: pacR2(l.f) })),
     investi: pacR2(investi), frais: pacR2(frais), fraisLettre: _soPasser.fraisLettre,
@@ -13011,14 +13487,15 @@ function soPasserValider() {
    Ce que chaque passage a coûté (frais, et l'écart à « Stratégie à la lettre »
    au même budget, calculé le jour même) et ce que ses parts valent aujourd'hui. */
 function soHistorique() {
-  const c = S.uiPrefs && S.uiPrefs.simOrdres;
+  const c = _cptPrefs().simOrdres;
   return (c && Array.isArray(c.historique)) ? c.historique : [];
 }
 function soSupprHist(id) {
   if (!confirm("Retirer ce passage de l'historique ? Les achats restent dans Transactions.")) return;
   pushUndo();
-  const so = S.uiPrefs.simOrdres || {};
-  S.uiPrefs.simOrdres = { ...so, historique: soHistorique().filter(h => h.id !== id) };
+  const pr = _cptPrefs();
+  const so = pr.simOrdres || {};
+  pr.simOrdres = { ...so, historique: soHistorique().filter(h => h.id !== id) };
   persist();
   soRenderHist();
 }
@@ -13127,6 +13604,18 @@ const NAV_SECTIONS = [
     { id: "strat",  label: "Stratégie"      },
     { id: "sim",    label: "Simulateurs"    },
   ]},
+  // Comptes-titres (4.4.0) : les écrans du PEA, sur le CTO choisi en haut de
+  // page (bloc CTO, « Compte actif »). Pas de Dépôts : le CTO ne suit pas les
+  // espèces ; pas de Simulateurs : ils ne dépendent d'aucun compte.
+  { id: "sec-cto", label: "CTO", children: [
+    { id: "cto-dash",   label: "Vue d'ensemble" },
+    { id: "cto-pos",    label: "Positions"      },
+    { id: "cto-sector", label: "Expositions"    },
+    { id: "cto-div",    label: "Dividendes"     },
+    { id: "cto-tx",     label: "Transactions"   },
+    { id: "cto-wish",   label: "Wishlist"       },
+    { id: "cto-strat",  label: "Stratégie"      },
+  ]},
   { id: "sec-comptes", label: "Mes comptes", children: [
     { id: "fin-month", label: "Mois"   },
     { id: "fin-year",  label: "Année"  },
@@ -13171,6 +13660,8 @@ const SIDEBAR_ITEMS = NAV_SECTIONS.reduce(
 );
 
 function _navSectionOf(tabId) {
+  // « cto-dash@c2 » (tuile d'un CTO précis) : l'onglet cto-dash
+  tabId = String(tabId || "").split("@")[0];
   return NAV_SECTIONS.find(sec => sec.children.some(c => c.id === tabId)) || null;
 }
 
@@ -13216,6 +13707,7 @@ function _updateCrumb(id) {
 }
 
 function _setActiveSidebar(id) {
+  id = String(id || "").split("@")[0];   // « cto-dash@c2 » → cto-dash
   document.querySelectorAll(".sb-item[data-tab]").forEach(el => {
     el.classList.toggle("active", el.dataset.tab === id);
   });
@@ -13276,7 +13768,7 @@ function _injectTitlebar() {
 // Icones Phosphor (servies par /vendor/phosphor/) : une par section, reprises
 // par l'assistant des premiers pas et Paramètres → Modules
 const NAV_ICONS = {
-  "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "hand-coins",
+  "sec-pea": "chart-line-up", "sec-cto": "briefcase", "sec-comptes": "wallet", "sec-pret": "hand-coins",
   "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
   "sec-voc": "cards", "sec-actus": "newspaper",
 };
@@ -18897,6 +19389,10 @@ function paReleves() { return (PA && PA.releves) ? PA.releves : []; }
     sans prêt, elle ne fait qu'encombrer. Une ligne qui a déjà des relevés reste
     visible, puisqu'ils comptent dans le total calculé côté Python. */
 function paCompteVisible(c) {
+  // Ligne d'un CTO : tant qu'il existe, ou qu'elle a des relevés à montrer
+  if (String(c.auto || "").startsWith("cto:"))
+    return !!(typeof ctoCompte === "function" && ctoCompte(c.auto.slice(4)))
+        || paReleves().some(r => r.compteId === c.id);
   if (c.auto !== "pret") return true;
   if (typeof PR !== "undefined" && PR && PR.pret && Number(PR.pret.montant)) return true;
   return paReleves().some(r => r.compteId === c.id);
@@ -18905,6 +19401,10 @@ function paCompteVisible(c) {
 /** Nom affiché d'un compte : la ligne auto du prêt porte le nom donné au prêt
     (paramètres du prêt), pour qu'il n'y ait qu'un endroit où le changer. */
 function paLabel(c) {
+  if (String(c.auto || "").startsWith("cto:") && typeof ctoCompte === "function") {
+    const k = ctoCompte(c.auto.slice(4));
+    if (k) return k.nom;   // renommer le CTO renomme sa ligne
+  }
   return (c.auto === "pret" && typeof PR !== "undefined" && PR) ? prNom() : c.label;
 }
 
@@ -19173,9 +19673,10 @@ function paOpenCompte(id) {
   document.getElementById("pa-cpt-title").textContent = c ? "Modifier le compte" : "Nouveau compte";
   const lbl = document.getElementById("pa-cpt-label");
   lbl.value = c ? paLabel(c) : "";
-  // Le nom de la ligne du prêt se change dans les paramètres du prêt
-  lbl.readOnly = !!(c && c.auto === "pret");
-  lbl.title = lbl.readOnly ? "Se change dans les paramètres du prêt" : "";
+  // Le nom de la ligne du prêt (d'un CTO) se change dans les paramètres du prêt (du CTO)
+  const cto = !!(c && String(c.auto || "").startsWith("cto:"));
+  lbl.readOnly = !!(c && c.auto === "pret") || cto;
+  lbl.title = lbl.readOnly ? (cto ? "Se change dans les réglages du CTO" : "Se change dans les paramètres du prêt") : "";
   document.getElementById("pa-cpt-note").value  = c ? (c.note || "") : "";
   document.getElementById("pa-cpt-auto").style.display = (c && c.auto) ? "" : "none";
   // Un compte auto ne se supprime pas : il serait recréé au prochain chargement
@@ -19248,6 +19749,13 @@ function paValeurAuto(compte, iso) {
       try { const v = computeTotalValue(); if (v != null) return v; } catch (e) {}
     }
     return null;
+  }
+  if (String(compte.auto || "").startsWith("cto:")) {
+    // Un CTO : la valeur de ses titres, calculée par le module CTO (ctoResume,
+    // la même que sa vue d'ensemble). Mois passé : le dernier point du mois de
+    // sa courbe si elle a déjà été chargée, sinon rien (la ligne reprend son
+    // dernier relevé), comme le PEA.
+    return typeof ctoValeurAuto === "function" ? ctoValeurAuto(compte.auto.slice(4), fin) : null;
   }
   if (compte.auto === "pret") {
     // Capital dû aujourd'hui : ce que la banque a VERSÉ moins ce qui a été
@@ -21257,6 +21765,843 @@ async function acDeconnecter() {
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════
+   MODULE CTO (comptes-titres ordinaires, 4.4.0)
+   Plusieurs CTO par utilisateur, chacun avec son courtier (cto.py, cto.json).
+   Aucun écran propre : la section CTO montre les écrans du PEA sur le CTO
+   choisi dans la barre du haut (« Compte actif », près de S). Ce bloc :
+   * range et remet les données (_cptBasculer) quand on entre ou sort d'un
+     onglet CTO, avec ses caches (historique Yahoo) ;
+   * déduit les versements d'un CTO de ses ordres (ctoDepotsDeduits) : ses
+     espèces ne sont pas suivies (le compte espèces de Trade Republic sert de
+     compte courant), et le calcul du PEA (valeur, plus-value, courbe,
+     comparaisons) reste juste avec des espèces à zéro ;
+   * écrit cto.json (ctoPersist), jamais pea_data.json ;
+   * importe l'export CSV de Trade Republic (ctoImport*), règle les plans
+     d'investissement (ctoPlans*), alimente l'accueil et le Patrimoine.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+let CTO = null;               // {comptes, actif, _nid} lu dans cto.json
+let _ctoBootstrapped = false;
+let _ctoSyncTimer = null, _ctoSyncBadge = false;
+let _ctoVideVoulu = false;    // supprimer son dernier CTO : écriture d'un état vide voulue
+const _ctoCaches = {};        // historique Yahoo par compte, gardé d'une bascule à l'autre
+window._ctoPv = {};           // dernier résumé de chaque CTO affiché
+
+function ctoApi() { return (window.pywebview && pywebview.api && pywebview.api.load_cto) ? pywebview.api : null; }
+function ctoComptes() { return (CTO && CTO.comptes) || []; }
+function ctoCompte(id) { return ctoComptes().find(c => c.id === id) || null; }
+/* Le CTO que montre la section : le dernier choisi, sinon le premier */
+function ctoActifId() {
+  if (!CTO) return "";
+  if (CTO.actif && ctoCompte(CTO.actif)) return CTO.actif;
+  return ctoComptes().length ? ctoComptes()[0].id : "";
+}
+/* Les données d'un CTO : celles de S s'il est affiché, sinon celles rangées */
+function ctoEtat(id) { return (_estCto() && id === _compteActif) ? S : ctoCompte(id); }
+
+/* Un compte lu ou créé : toutes les clés du PEA, sans versements (déduits) */
+function ctoNormaliser(c) {
+  CPT_CLES.forEach(k => { if (k !== "depots" && !Array.isArray(c[k])) c[k] = []; });
+  delete c.depots;
+  c.depotsPrevus = [];
+  c.divHist = [];
+  c.prefs = c.prefs || {};
+  c._nid = Object.assign({ pos: 1, tx: 1, wish: 1, dep: 1, div: 1, divf: 1, rule: 1 }, c._nid || {});
+  return c;
+}
+
+async function ctoBootstrap() {
+  if (_ctoBootstrapped) return;
+  const api = ctoApi();
+  if (!api) return;
+  try {
+    const r = await api.load_cto();
+    if (!r || !r.ok || !r.data) throw new Error((r && r.error) || "lecture impossible");
+    CTO = r.data;
+    CTO.comptes = (CTO.comptes || []).map(ctoNormaliser);
+    CTO._nid = Object.assign({ compte: 1 }, CTO._nid || {});
+    _ctoBootstrapped = true;   // la lecture a réussi : l'écriture est permise
+    ctoSyncWidgets();
+  } catch (e) {
+    console.warn("[cto] lecture KO:", e);
+  }
+}
+
+/* ── Compte actif : bascule ─────────────────────────────────────────────── */
+
+/* Met dans S le compte id (« pea » ou un CTO) et range celui qui y était.
+   Synchrone : rien ne peut s'intercaler entre le rangement et l'installation. */
+function _cptBasculer(id) {
+  if (id === _compteActif) return;
+  if (id !== "pea" && !ctoCompte(id)) return;
+  _ctoCaches[_compteActif] = { h: _perfHistory };
+  // 1. Ranger le compte affiché
+  if (_estCto()) {
+    const c = ctoCompte(_compteActif);
+    if (c) { CPT_CLES.forEach(k => { if (k !== "depots") c[k] = S[k] || []; }); c._nid = { ...NID }; }
+    delete S.depots;   // l'accesseur des versements déduits
+  } else {
+    _peaHorsEcran = {};
+    CPT_CLES.forEach(k => { _peaHorsEcran[k] = S[k]; });
+    _peaHorsEcran._nid = NID;
+  }
+  // 2. Installer l'autre
+  if (id === "pea") {
+    const P = _peaHorsEcran;
+    CPT_CLES.forEach(k => { S[k] = P[k]; });
+    NID = P._nid;
+    _peaHorsEcran = null;
+  } else {
+    const c = ctoCompte(id);
+    CPT_CLES.forEach(k => { if (k !== "depots") S[k] = c[k] || []; });
+    S.depotsPrevus = [];
+    S.divHist = [];
+    NID = { ...c._nid };
+  }
+  _compteActif = id;
+  _cptGen++;
+  if (id !== "pea") ctoInstallerDepots();
+  // 3. Caches et brouillons propres au compte
+  _perfHistory = (_ctoCaches[id] && _ctoCaches[id].h) || null;
+  _perfFullSeries = null;
+  _perfHistPromise = null;
+  _dashPerfAsked = false; _dashPerfDone = false;
+  _pacBudget = null; _pacDernier = null;
+  _soBudget = null; _soGratuit = null; _soPasser = null;
+  _soEd = { id: null, nom: "", lignes: [] };
+  document.body.classList.toggle("cpt-cto", id !== "pea");
+  ctoLibelles();
+  ctoCartesStrategie();
+  // Tous les écrans du compte : plusieurs onglets (Positions, Transactions,
+  // Wishlist) ne se redessinent pas à l'ouverture et montreraient l'autre compte
+  renderAll();
+}
+
+/* S.depots d'un CTO affiché : déduits de ses ordres à chaque lecture, jamais
+   enregistrés (une écriture est sans effet). Non énumérable : pushUndo ne le
+   copie pas, undoLast le réinstalle. */
+function ctoInstallerDepots() {
+  Object.defineProperty(S, "depots", {
+    configurable: true, enumerable: false,
+    get: () => ctoDepotsDeduits(S), set: () => {},
+  });
+}
+/* Un achat est un apport de son montant (frais compris), une vente et un
+   dividende un retrait de ce qu'ils ont rapporté : les espèces du CTO restent à
+   zéro et sa plus-value vaut valeur − (achats − ventes − dividendes). Mêmes
+   montants que computeCash et buildTwrSeries (brutOrdre), dates passées. */
+function ctoDepotsDeduits(e) {
+  const cut = todayISO(), out = [];
+  (e.transactions || []).forEach(t => {
+    const d = normDate(t.date);
+    if (!d || d > cut) return;
+    if (t.type === "Achat") out.push({ id: "a" + t.id, date: d, amount: brutOrdre(t) + (t.frais || 0), note: "" });
+    else if (t.type === "Vente") out.push({ id: "v" + t.id, date: d, amount: -(brutOrdre(t) - (t.frais || 0)), note: "" });
+  });
+  [...(e.divReceived || []), ...(e.divFuture || [])].forEach(x => {
+    if (x.date && x.montant && normDate(x.date) <= cut)
+      out.push({ id: "d" + x.id, date: normDate(x.date), amount: -x.montant, note: "" });
+  });
+  return out;
+}
+
+/* Libellés écrits pour le PEA ([data-cto] : le texte pour un CTO) */
+function ctoLibelles() {
+  document.querySelectorAll("[data-cto]").forEach(el => {
+    if (_estCto()) {
+      if (el.dataset.pea == null) el.dataset.pea = el.textContent;
+      el.textContent = el.dataset.cto;
+    } else if (el.dataset.pea != null) {
+      el.textContent = el.dataset.pea;
+    }
+  });
+}
+
+/* Avant d'afficher un onglet (goTab d'origine) : [pane à montrer, onglet].
+   « cto-pos » (ou « cto-pos@c2 », tuile d'un CTO précis) met le CTO choisi
+   dans S et montre pane-pos ; tout autre onglet remet le PEA. */
+function ctoAvantOnglet(n) {
+  const [base, id] = String(n).split("@");
+  if (!base.startsWith("cto-")) { _cptBasculer("pea"); return [n, n]; }
+  if (id && CTO && ctoCompte(id)) CTO.actif = id;
+  const actif = ctoActifId();
+  if (!actif) {
+    _cptBasculer("pea");
+    const note = document.getElementById("cto-vide-note");
+    if (note) note.textContent = _ctoBootstrapped ? "" : "Fichier des CTO pas encore lu : réessaie dans un instant.";
+    return ["cto-vide", base];
+  }
+  _cptBasculer(actif);
+  return [base.slice(4), base];
+}
+
+/* ── Enregistrement ─────────────────────────────────────────────────────── */
+
+/* L'état complet à écrire : le CTO affiché vient de S */
+function ctoInstantane() {
+  const comptes = ctoComptes().map(c => {
+    if (!(_estCto() && c.id === _compteActif)) return c;
+    const x = { ...c };
+    CPT_CLES.forEach(k => { if (k !== "depots") x[k] = S[k] || []; });
+    x._nid = { ...NID };
+    return x;
+  }).map(c => { const x = { ...c }; delete x.depots; delete x.depotsPrevus; delete x.divHist; return x; });
+  return { ...CTO, comptes };
+}
+function ctoPersist(badge) {
+  if (!_ctoBootstrapped) {
+    _alerteEnregistrement("CTO non enregistré : son fichier n'a pas pu être lu au démarrage. Relance Pilote.");
+    return;
+  }
+  if (badge) _ctoSyncBadge = true;
+  clearTimeout(_ctoSyncTimer);
+  _ctoSyncTimer = setTimeout(ctoEcrire, 400);
+}
+async function ctoEcrire() {
+  clearTimeout(_ctoSyncTimer);
+  _ctoSyncTimer = null;
+  const badge = _ctoSyncBadge;
+  _ctoSyncBadge = false;
+  const api = ctoApi();
+  if (!api || !_ctoBootstrapped) return;
+  try {
+    const w = await api.save_cto(ctoInstantane(), _ctoVideVoulu);
+    if (!w || !w.ok) throw new Error((w && w.error) || "écriture refusée");
+    _ctoVideVoulu = false;
+    if (badge && !w.gele) flash();
+    // Réglages communs (corrections d'Expositions…) : dans le fichier du PEA
+    if (typeof _enregistrerUiPrefs === "function") _enregistrerUiPrefs();
+  } catch (e) {
+    _alerteEnregistrement("Enregistrement du CTO impossible : " + ((e && e.message) || e));
+  }
+}
+_vidangeurs.push(async () => { if (_ctoSyncTimer) await ctoEcrire(); });
+
+/* ── Cours des comptes non affichés ──────────────────────────────────────── */
+
+/* Tickers du PEA (s'il est rangé) et des CTO non affichés, pour fetchLocalCours */
+function ctoAutresTickers() {
+  const out = [];
+  const ajoute = e => {
+    (e.positions || []).forEach(p => p.ticker && out.push(p.ticker));
+    (e.wishlist || []).forEach(w => w.ticker && out.push(w.ticker));
+  };
+  if (_peaHorsEcran) ajoute(_peaHorsEcran);
+  ctoComptes().forEach(c => { if (!(_estCto() && c.id === _compteActif)) ajoute(c); });
+  return out;
+}
+/* Les cours reçus, recopiés sur les positions rangées (comme applyCoursData) */
+function ctoAppliquerCours(prices) {
+  const SUFFIXES = { "EPA:": ".PA", "ETR:": ".DE", "AMS:": ".AS", "LON:": ".L" };
+  const maj = e => (e.positions || []).forEach(p => {
+    const pre = Object.keys(SUFFIXES).find(x => p.ticker.startsWith(x));
+    const dot = pre ? p.ticker.slice(pre.length) + SUFFIXES[pre] : p.ticker;
+    const v = prices[p.ticker] || prices[dot] || prices[p.ticker.includes(":") ? p.ticker.split(":")[1] : p.ticker];
+    if (v > 0) p.cours = v;
+  });
+  if (_peaHorsEcran) maj(_peaHorsEcran);
+  ctoComptes().forEach(c => { if (!(_estCto() && c.id === _compteActif)) maj(c); });
+}
+
+/* ── Chiffres d'un CTO ──────────────────────────────────────────────────── */
+
+/* Le seul calcul des chiffres d'un CTO : ses cartes, sa tuile d'accueil et
+   sa ligne du Patrimoine le lisent. Mêmes fonctions que le PEA (computePos,
+   versements déduits). valeur : titres seuls ; null tant qu'un cours manque. */
+function ctoResume(id) {
+  const e = ctoEtat(id);
+  if (!e) return null;
+  const cut = todayISO();
+  let titres = 0, investi = 0, n = 0, complet = true;
+  (e.positions || []).forEach(p => {
+    const x = computePos(p, e.transactions || []);
+    if (x.qty <= 0.0001) return;
+    n++;
+    investi += x.inv;
+    if (x.val != null) titres += x.val; else complet = false;
+  });
+  let frais = 0, offert = 0;
+  (e.transactions || []).forEach(t => {
+    if (normDate(t.date) > cut) return;
+    frais += t.frais || 0;
+    if (t.type === "Achat" && (t.origine === "saveback" || t.origine === "offert")) offert += brutOrdre(t);
+  });
+  const dividendes = [...(e.divReceived || []), ...(e.divFuture || [])]
+    .filter(d => d.date && normDate(d.date) <= cut).reduce((s, d) => s + (d.montant || 0), 0);
+  const investiNet = Math.round(ctoDepotsDeduits(e).reduce((s, d) => s + d.amount, 0) * 100) / 100;
+  const valeur = complet ? Math.round(titres * 100) / 100 : null;
+  const pv = valeur != null ? Math.round((valeur - investiNet) * 100) / 100 : null;
+  return { valeur, titres, investi, investiNet, pv, n, frais, dividendes, offert,
+           pvPct: (pv != null && investiNet > 0) ? pv / investiNet * 100 : null };
+}
+
+/* Les cartes de la vue d'ensemble (renderMetrics, CTO affiché) */
+function ctoRenderMetrics() {
+  const r = ctoResume(_compteActif);
+  if (!r) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("m-dep", r.investiNet ? eur(r.investiNet) : "—");
+  set("m-dep-sub", "achats − ventes − dividendes");
+  set("m-val", r.n ? eur(r.valeur != null ? r.valeur : r.titres) : "—");
+  const sub = document.getElementById("m-val-sub");
+  if (sub) sub.innerHTML = r.n ? "Investi : " + eur(r.investi)
+    + (r.offert > 0 ? "<br>dont offert (Saveback) : " + eur(r.offert) : "") : "";
+  const pvEl = document.getElementById("m-pv");
+  if (pvEl) {
+    pvEl.textContent = r.pv != null ? eur(r.pv, true) : "—";
+    pvEl.className = "mc-val " + (r.pv == null ? "" : r.pv >= 0 ? "c-g" : "c-r");
+  }
+  set("m-pv-sub", r.pvPct != null ? pct(r.pvPct) : "");
+  const acc = document.getElementById("mc-pv-acc");
+  if (acc) acc.style.background = r.pv == null ? "transparent" : r.pv >= 0 ? "var(--g)" : "var(--r)";
+  set("m-fees", r.frais > 0 ? eur(r.frais) : "—");
+  set("m-div", r.dividendes > 0 ? eur(r.dividendes) : "—");
+  window._ctoPv[_compteActif] = r;
+  const paneDash = document.getElementById("pane-dash");
+  if (paneDash && paneDash.classList.contains("active") && typeof dashRenderOverview === "function")
+    dashRenderOverview();
+  ctoRenderBarre();
+}
+
+/* Ligne du Patrimoine (paValeurAuto) : la valeur d'aujourd'hui. Un mois passé
+   demande la courbe du CTO : connue seulement si c'est lui qui est affiché. */
+function ctoValeurAuto(id, fin) {
+  if (fin) {
+    if (!(_estCto() && id === _compteActif && _perfHistory)) return null;
+    if (!_perfFullSeries) _perfFullSeries = buildTwrSeries(_perfHistory);
+    const pts = (_perfFullSeries || []).filter(p => p.date <= fin);
+    return pts.length ? pts[pts.length - 1].val : null;
+  }
+  const r = ctoResume(id);
+  return r ? r.valeur : null;
+}
+
+/* ── Barre du CTO ───────────────────────────────────────────────────────── */
+
+function ctoRenderBarre() {
+  const bar = document.getElementById("cto-bar");
+  if (!bar || !_estCto()) return;
+  const c = ctoCompte(_compteActif);
+  if (!c) return;
+  const k = courtierDe(c.courtier);
+  const opts = ctoComptes().map(x =>
+    `<option value="${escHtml(x.id)}"${x.id === c.id ? " selected" : ""}>${escHtml(x.nom)}</option>`).join("")
+    + `<option value="__nouveau">+ Nouveau CTO…</option>`;
+  // Ordres dont les frais ne collent pas à la grille du courtier
+  const ecarts = (S.transactions || []).filter(t => {
+    const a = txFraisAttendus(t);
+    return a != null && Math.abs((t.frais || 0) - a) >= 0.011;
+  }).length;
+  bar.innerHTML = `<select aria-label="CTO affiché" onchange="ctoChoisir(this.value)">${opts}</select>
+    <span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
+    ${ecarts ? `<span class="cto-bar-alerte" title="Voir les ordres marqués dans Transactions"><i class="ph ph-warning"></i>
+      ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</span>` : ""}
+    <span class="cto-bar-sp"></span>
+    ${c.courtier === "trade-republic" ? `<button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()"><i class="ph ph-file-csv"></i> Importer le relevé CSV</button>` : ""}
+    <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirCompte('${escHtml(c.id)}')"><i class="ph ph-gear-six"></i> Réglages du compte</button>`;
+}
+
+/* Choix du CTO dans la barre : l'onglet ouvert se redessine sur lui */
+function ctoChoisir(id) {
+  if (id === "__nouveau") { ctoRenderBarre(); ctoOuvrirCompte(null); return; }
+  if (!ctoCompte(id) || id === _compteActif) return;
+  CTO.actif = id;
+  const onglet = document.body.dataset.activeTab || "cto-dash";
+  goTab(onglet);
+  _setActiveSidebar(onglet);
+  ctoPersist(false);
+}
+
+/* ── Créer, régler, supprimer un CTO ───────────────────────────────────── */
+
+let _ctoEdition = null;   // id du CTO réglé, null = création
+
+function ctoOuvrirCompte(id) {
+  if (!_ctoBootstrapped) { showToastModern("Le fichier des CTO n'est pas encore lu.", "warn"); return; }
+  _ctoEdition = id || null;
+  const c = id ? ctoCompte(id) : null;
+  document.getElementById("cto-cpt-titre").textContent = c ? "Réglages du compte" : "Nouveau CTO";
+  document.getElementById("cto-cpt-nom").value = c ? c.nom : "";
+  const sel = document.getElementById("cto-cpt-courtier");
+  sel.innerHTML = COURTIERS.filter(x => x.comptes.includes("cto"))
+    .map(x => `<option value="${x.id}">${escHtml(x.nom)}</option>`).join("")
+    + `<option value="${COURTIER_PERSO}">Autre : grille à saisir (Stratégie → Réglages)</option>`;
+  sel.value = c ? (c.courtier || COURTIER_PERSO) : "trade-republic";
+  document.getElementById("cto-cpt-suppr").style.display = c ? "" : "none";
+  ctoCompteResume();
+  openOvTop("ov-cto-compte");
+  setTimeout(() => document.getElementById("cto-cpt-nom").focus(), 50);
+}
+function ctoCompteResume() {
+  const k = courtierDe(document.getElementById("cto-cpt-courtier").value);
+  const d = k ? new Date(k.verifie + "T00:00:00").toLocaleDateString("fr-FR") : "";
+  document.getElementById("cto-cpt-resume").textContent = k
+    ? k.resume + (k.fractions ? ". Parts fractionnées et plans programmés : la Stratégie proposera le réglage des plans." : ".")
+      + " Tarif relevé le " + d + " (" + k.source + ")."
+    : "Tu saisiras la grille de frais dans Stratégie → Cibles et courtier.";
+}
+async function ctoEnregistrerCompte() {
+  const nom = document.getElementById("cto-cpt-nom").value.trim();
+  if (!nom) { showToastModern("Donne un nom au compte", "warn"); return; }
+  const courtier = document.getElementById("cto-cpt-courtier").value;
+  const k = courtierDe(courtier);
+  if (_ctoEdition) {
+    const c = ctoCompte(_ctoEdition);
+    if (!c) return;
+    c.nom = nom;
+    if (c.courtier !== courtier) ctoSetCourtier(c.id, courtier, k ? tarifCopie(k.tarif) : tarifCopie(c.tarif || TARIF_VIDE));
+  } else {
+    const id = "c" + (CTO._nid.compte++);
+    CTO.comptes.push(ctoNormaliser({
+      id, nom, courtier, tarif: tarifCopie(k ? k.tarif : TARIF_VIDE), cree: todayISO(),
+    }));
+    CTO.actif = id;
+  }
+  closeOv("ov-cto-compte");
+  ctoSyncWidgets();
+  await ctoLignesPatrimoine();
+  // Nouveau compte (ou nouveau nom) : on l'affiche
+  const onglet = (document.body.dataset.activeTab || "").startsWith("cto-") ? document.body.dataset.activeTab : "cto-pos";
+  _ctoAEcrire();
+  goTab(onglet);
+  _setActiveSidebar(onglet);
+  showToastModern(_ctoEdition ? "Compte enregistré" : "CTO créé : importe ton historique ou ajoute tes positions", "ok");
+}
+/* Écrit cto.json même si aucun CTO n'est affiché (création depuis l'écran vide) */
+function _ctoAEcrire() {
+  if (_estCto()) ctoPersist(false);
+  else { _ctoSyncBadge = false; clearTimeout(_ctoSyncTimer); _ctoSyncTimer = setTimeout(ctoEcrire, 50); }
+}
+function ctoSetCourtier(id, courtier, tarif) {
+  const c = ctoCompte(id);
+  if (!c) return;
+  c.courtier = courtier || COURTIER_PERSO;
+  c.tarif = tarif || tarifCopie(TARIF_VIDE);
+  _ctoAEcrire();
+  ctoCartesStrategie();
+  ctoRenderBarre();
+}
+async function ctoSupprimerCompte() {
+  const c = ctoCompte(_ctoEdition);
+  if (!c) return;
+  const n = (ctoEtat(c.id).transactions || []).length;
+  if (!confirm(`Supprimer le CTO « ${c.nom} » ?` + (n ? `\n\nSes ${n} opération(s) seront effacées de Pilote (la sauvegarde du jour les garde).` : ""))) return;
+  closeOv("ov-cto-compte");
+  // Le PEA d'abord dans S : on ne supprime pas le compte affiché sous ses pieds
+  _cptBasculer("pea");
+  CTO.comptes = CTO.comptes.filter(x => x.id !== c.id);
+  delete _ctoCaches[c.id];
+  if (CTO.actif === c.id) CTO.actif = ctoActifId();
+  if (!CTO.comptes.length) _ctoVideVoulu = true;
+  ctoSyncWidgets();
+  _ctoAEcrire();
+  goTab("cto-dash");
+  _setActiveSidebar("cto-dash");
+  showToastModern("CTO supprimé", "ok");
+}
+
+/* Une ligne automatique par CTO dans le Patrimoine (comme celle du PEA) */
+async function ctoLignesPatrimoine() {
+  if (typeof PA === "undefined" || !PA || !_paBootstrapped || typeof paSave !== "function") return;
+  let ajout = false;
+  ctoComptes().forEach(c => {
+    if ((PA.comptes || []).some(x => x.auto === "cto:" + c.id)) return;
+    PA.comptes.push({ id: paNextId("compte"), label: c.nom, type: "cto", note: "",
+                      auto: "cto:" + c.id, icon: "📊", color: "#0891b2", archived: false });
+    ajout = true;
+  });
+  if (ajout) await paSave();
+}
+
+/* Une tuile d'accueil par CTO, éteinte tant qu'on ne l'ajoute pas */
+function ctoSyncWidgets() {
+  for (let i = DASH_WIDGETS.length - 1; i >= 0; i--)
+    if (String(DASH_WIDGETS[i].id).startsWith("cto:")) DASH_WIDGETS.splice(i, 1);
+  ctoComptes().forEach(c => DASH_WIDGETS.push({
+    id: "cto:" + c.id, label: "Valeur du CTO « " + c.nom + " »", module: "CTO", tab: "cto-dash@" + c.id,
+    render() {
+      const k = ctoCompte(c.id), r = k && ctoResume(c.id);
+      if (!r || !r.n || r.valeur == null) return null;
+      return { lbl: k.nom, val: eur(r.valeur), go: "Voir le CTO",
+               cls: "", sub: r.pv != null ? eur(r.pv, true) + (r.pvPct != null ? " (" + pct(r.pvPct) + ")" : "") + " au total" : "" };
+    },
+  }));
+}
+
+/* ── Stratégie : plans d'investissement ou ordres du mois ────────────────── */
+
+/* Courtier à plans gratuits et parts fractionnées (Trade Republic) : la carte
+   « Réglage des plans » remplace Prochain achat. Le panneau des réglages
+   (cibles, courtier) suit la carte affichée. */
+function ctoModePlans() {
+  if (!_estCto()) return false;
+  const c = ctoCompte(_compteActif), k = c && courtierDe(c.courtier);
+  return !!(k && k.fractions && k.tarif.plan === 0);
+}
+function ctoCartesStrategie() {
+  const plans = ctoModePlans();
+  const cp = document.getElementById("card-plans"), ca = document.getElementById("card-pac");
+  if (!cp || !ca) return;
+  cp.style.display = plans ? "" : "none";
+  ca.style.display = plans ? "none" : "";
+  const cfgEl = document.getElementById("pac-cfg");
+  const hote = (plans ? cp : ca).querySelector(".card-b");
+  if (cfgEl && hote && cfgEl.parentNode !== hote) hote.appendChild(cfgEl);
+}
+
+/* Les montants à mettre sur chaque plan pour atteindre puis garder la cible,
+   sans jamais vendre. Mêmes étapes que Prochain achat (pacCalcul) sans parts
+   entières ni frais : le montant visé de chaque ligne est cible × (valeur +
+   budget) − sa valeur ; une ligne en surpoids ne reçoit rien et le budget va
+   aux autres au prorata de leur retard. Montants au centime, total = budget ;
+   un plan sous le minimum du courtier est reporté sur la ligne la plus en retard.
+   lignes : [{key, label, q (parts), p (cours), t (cible, fraction)}]
+   o      : {budget, min}. Pur : testsPlans() le vérifie. */
+function ctoPlansCalcul(lignes, o) {
+  const B = pacR2(Math.max(0, o.budget || 0));
+  const min = Math.max(0, o.min || 0);
+  const L = lignes.map(l => ({ ...l, v: l.q * l.p }));
+  const V = L.reduce((s, l) => s + l.v, 0);
+  L.forEach(l => { l.a = l.t * (V + B) - l.v; });
+  const retards = L.reduce((s, l) => s + Math.max(0, l.a), 0);
+  L.forEach(l => { l.vise = retards > 0 ? B * Math.max(0, l.a) / retards : 0; l.m = 0; });
+  // Au centime, en gardant le total : le reste des arrondis va aux plus gros restes
+  let reste = Math.round(B * 100);
+  L.forEach(l => { l.m = Math.floor(l.vise * 100 + 1e-6); reste -= l.m; });
+  L.slice().sort((x, y) => (y.vise * 100 - y.m) - (x.vise * 100 - x.m)).forEach(l => {
+    if (reste > 0 && l.vise > 0) { l.m++; reste--; }
+  });
+  // Plans trop petits pour le courtier : reportés sur la ligne la plus en retard
+  for (;;) {
+    const petit = L.filter(l => l.m > 0 && l.m < min * 100).sort((x, y) => x.m - y.m)[0];
+    if (!petit) break;
+    const cible = L.filter(l => l !== petit && l.m > 0).sort((x, y) => (y.a - y.m / 100) - (x.a - x.m / 100))[0];
+    if (!cible) break;
+    cible.m += petit.m;
+    petit.m = 0;
+  }
+  const total = L.reduce((s, l) => s + l.m, 0) / 100;
+  const apres = V + total;
+  return {
+    budget: B, total, reste: pacR2(B - total),
+    lignes: L.map(l => ({
+      key: l.key, label: l.label, cible: l.t * 100, montant: l.m / 100, croisiere: pacR2(l.t * B),
+      avant: V > 0 ? l.v / V * 100 : null, apres: apres > 0 ? (l.v + l.m / 100) / apres * 100 : null,
+      surpoids: l.a < -PAC_EPS,
+    })),
+  };
+}
+
+/* À lancer dans la console : testsPlans() */
+function testsPlans() {
+  const ecarts = [];
+  const verif = (nom, obtenu, attendu) => {
+    const ok = JSON.stringify(obtenu) === JSON.stringify(attendu);
+    console.log((ok ? "✓ " : "✗ ") + nom + (ok ? "" : "\n  attendu " + JSON.stringify(attendu) + ", obtenu " + JSON.stringify(obtenu)));
+    if (!ok) ecarts.push(nom);
+  };
+  const L = (q, p, t) => q.map((x, i) => ({ key: "L" + i, label: "L" + i, q: x, p: p[i], t: t[i] }));
+  let r = ctoPlansCalcul(L([0, 0, 0], [100, 50, 20], [0.7, 0.2, 0.1]), { budget: 100 });
+  verif("P1 Départ de zéro : la cible", r.lignes.map(l => l.montant), [70, 20, 10]);
+  r = ctoPlansCalcul(L([7, 0, 0], [100, 50, 20], [0.7, 0.2, 0.1]), { budget: 300 });
+  verif("P2 Rattrapage : le retard d'abord", [r.lignes.map(l => l.montant), r.total], [[0, 200, 100], 300]);
+  r = ctoPlansCalcul(L([10, 0, 0], [100, 50, 20], [0.5, 0.3, 0.2]), { budget: 100 });
+  verif("P3 Surpoids : rien pour lui", [r.lignes.map(l => l.montant), r.lignes[0].surpoids], [[0, 60, 40], true]);
+  r = ctoPlansCalcul(L([0, 0, 0], [10, 10, 10], [1 / 3, 1 / 3, 1 / 3]), { budget: 100 });
+  verif("P4 Arrondis : le total fait le budget", [r.total, r.reste], [100, 0]);
+  r = ctoPlansCalcul(L([0, 0], [10, 10], [0.99, 0.01]), { budget: 100, min: 2 });
+  verif("P5 Plan sous le minimum : reporté", r.lignes.map(l => l.montant), [100, 0]);
+  console.log(ecarts.length ? "Plans : " + ecarts.length + " cas en échec" : "Plans : 5 cas sur 5 conformes");
+  return { ok: !ecarts.length, ecarts };
+}
+
+function ctoPlansPrefs() { const p = _cptPrefs(); p.plans = p.plans || {}; return p.plans; }
+function ctoPlansSetMin(v) {
+  const n = pacNum(v);
+  ctoPlansPrefs().min = n != null && n >= 0 ? n : 0;
+  persist(false);
+  ctoPlansRender();
+}
+
+let _ctoPlansDernier = null;
+function ctoPlansRender() {
+  ctoCartesStrategie();
+  const res = document.getElementById("plans-res");
+  if (!res || !ctoModePlans()) return;
+  const cfg = pacCfg();
+  const min = Number(ctoPlansPrefs().min) || 0;
+  const b = document.getElementById("plans-budget");
+  if (b && document.activeElement !== b) b.value = cfg.budget || "";
+  const m = document.getElementById("plans-min");
+  if (m && document.activeElement !== m) m.value = min || "";
+  _ctoPlansDernier = null;
+  const alerte = t => `<div class="pac-alerts"><div class="pac-alert err"><i class="ph ph-warning-octagon"></i><span>${escHtml(t)}</span></div></div>`;
+  const somme = cfg.cibles.reduce((s, c) => s + (Number(c.pct) || 0), 0);
+  if (!cfg.cibles.length) { res.innerHTML = alerte("Aucune ligne cible : ajoute-en avec « Cibles et courtier »."); return; }
+  if (cfg.cibles.some(c => !c.ticker)) { res.innerHTML = alerte("Une ligne cible n'a pas de ticker : complète-la ou supprime-la."); return; }
+  if (Math.abs(somme - 100) > 1e-6) { res.innerHTML = alerte("Les cibles font " + pacPct(somme) + " % au lieu de 100 %."); return; }
+  if (!(cfg.budget > 0)) { res.innerHTML = `<p class="pac-dim">Indique ce que tu verses chaque mois dans tes plans : Pilote le répartit.</p>`; return; }
+  const cours = cfg.cibles.map(c => {
+    const v = getVar(c.ticker);
+    if (v && v.cours > 0) return { p: v.cours, t: v.t || null };
+    const pos = S.positions.find(x => x.ticker === c.ticker);
+    return (pos && pos.cours > 0) ? { p: pos.cours, t: null } : null;
+  });
+  const manquants = cfg.cibles.filter((c, i) => !cours[i]).map(pacLabel);
+  if (manquants.length) { res.innerHTML = alerte("Cours manquant pour " + manquants.join(", ") + " : vérifie le ticker ou la connexion."); return; }
+  const ts = cours.map(c => c.t).filter(Boolean);
+  const ci = pacCoursInfo(ts.length ? Math.min(...ts) : null);
+  const coursEl = document.getElementById("plans-cours");
+  if (coursEl) coursEl.textContent = ci.txt.charAt(0).toUpperCase() + ci.txt.slice(1);
+  const qte = tk => { const p = S.positions.find(x => x.ticker === tk); return p ? computePos(p).qty : 0; };
+  const r = ctoPlansCalcul(cfg.cibles.map((c, i) => ({ key: c.ticker, label: pacLabel(c), q: qte(c.ticker), p: cours[i].p, t: c.pct / 100 })),
+                           { budget: cfg.budget, min });
+  _ctoPlansDernier = r;
+  const rattrape = r.lignes.some(l => Math.abs(l.montant - l.croisiere) >= 0.01);
+  res.innerHTML = `<div class="tw"><table>
+      <thead><tr><th style="text-align:left">Ligne</th><th>Cible</th><th>Poids actuel → après</th>
+        <th title="Pour rattraper la cible ce mois-ci">Plan ce mois-ci</th><th title="Une fois la cible atteinte : cible × versement">Plan en croisière</th></tr></thead>
+      <tbody>${r.lignes.map(l => `<tr${l.montant > 0 ? "" : ' class="pac-muted"'}>
+        <td style="text-align:left;font-weight:600">${escHtml(l.label)}${l.surpoids ? ` <span class="m-tag neg">surpoids</span>` : ""}</td>
+        <td>${pacPct(l.cible)} %</td>
+        <td>${pacPct(l.avant)} → <b>${pacPct(l.apres)}</b> %</td>
+        <td><b>${pacEur(l.montant)}</b></td><td>${pacEur(l.croisiere)}</td>
+      </tr>`).join("")}</tbody></table></div>
+    <div class="plans-tot">
+      <span>Versé dans les plans<b>${pacEur(r.total)}</b></span>
+      <span>Frais<b>0,00 €</b></span>
+      ${r.reste >= 0.01 ? `<span>Non placé<b>${pacEur(r.reste)}</b></span>` : ""}
+    </div>
+    <p class="pac-dim" style="margin-top:8px">${rattrape
+      ? "Ce mois-ci, les plans rattrapent la cible ; une fois atteinte, garde les montants « en croisière »."
+      : "Tes lignes sont à leur cible : les montants « en croisière » la gardent."}
+      Les achats des plans arrivent dans Pilote avec l'import du relevé CSV.</p>`;
+}
+async function ctoPlansCopier() {
+  const r = _ctoPlansDernier;
+  if (!r) { showToastModern("Aucun montant à copier", "warn"); return; }
+  const txt = r.lignes.filter(l => l.montant > 0).map(l => l.label + " : " + pacEur(l.montant) + " par mois").join("\n");
+  try { await navigator.clipboard.writeText(txt); showToastModern("Montants copiés", "ok"); }
+  catch (e) { showToastModern("Copie refusée par le système", "warn"); }
+}
+
+/* ── Import du relevé CSV de Trade Republic ─────────────────────────────── */
+/* Python lit le fichier (cto.lire_csv_tr) ; ici : ce qui est déjà importé
+   (même transaction_id), la cotation en euros de chaque ISIN (/isin, le cours
+   le plus proche du dernier prix payé), puis l'aperçu. Rien n'est enregistré
+   avant « Importer ». */
+
+let _ctoImp = null;   // {ops, titres: {isin: {nom, classe, ticker, candidats, prixPaye, secteur}}, ignores, inconnues}
+
+/* Secteur Yahoo d'une action -> secteur de Pilote (SECTORS), que les
+   Expositions traduisent ensuite (EXPO_SECT_ACTION). Rien de reconnu : null,
+   le secteur reste à choisir dans la fiche de la position. */
+const CTO_SECTEURS_YAHOO = {
+  "Technology": "tech", "Healthcare": "sante", "Financial Services": "finance",
+  "Industrials": "industrie", "Consumer Cyclical": "luxe", "Consumer Defensive": "conso",
+  "Energy": "energie", "Basic Materials": "materiaux", "Communication Services": "telecom",
+  "Utilities": "utilities", "Real Estate": "immobilier",
+};
+function ctoSecteurYahoo(secteur, industrie) {
+  if (/semiconductor/i.test(industrie || "")) return "semico";
+  if (/^auto/i.test(industrie || "")) return "automobile";
+  return CTO_SECTEURS_YAHOO[secteur] || null;
+}
+
+function ctoOuvrirImport() {
+  if (!_estCto()) return;
+  _ctoImp = null;
+  document.getElementById("cto-imp-etape1").style.display = "";
+  document.getElementById("cto-imp-etape2").style.display = "none";
+  document.getElementById("cto-imp-ok").style.display = "none";
+  document.getElementById("cto-imp-msg").textContent = "";
+  document.getElementById("cto-imp-input").value = "";
+  openOvTop("ov-cto-import");
+}
+
+async function ctoImportLire(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const msg = document.getElementById("cto-imp-msg");
+  msg.textContent = "Lecture du fichier…";
+  let texte = "";
+  try { texte = await f.text(); }
+  catch (e) { msg.textContent = "Fichier illisible : " + e; return; }
+  let r = null;
+  try { r = await pywebview.api.cto_lire_csv(texte); }
+  catch (e) { r = { ok: false, erreur: String(e) }; }
+  if (!r || !r.ok) { msg.textContent = (r && r.erreur) || "Lecture impossible."; return; }
+  if (!r.operations.length) { msg.textContent = "Aucun achat, vente ni dividende dans ce fichier."; return; }
+  msg.textContent = "Recherche de la cotation en euros de chaque titre…";
+  await ctoImportAnalyser(r);
+  msg.textContent = "";
+  ctoImportRender();
+}
+
+/* Ce qui est déjà dans le CTO : même transaction_id, ou même ordre saisi à la
+   main (date, ISIN, sens, quantité et prix à l'identique) */
+function ctoImportDeja(op) {
+  if (op.trId && ((S.transactions || []).some(t => t.trId === op.trId)
+               || (S.divReceived || []).some(d => d.trId === op.trId))) return true;
+  const pos = (S.positions || []).find(p => p.isin === op.isin);
+  if (!pos) return false;
+  if (op.type === "Dividende")
+    return (S.divReceived || []).some(d => d.ticker === pos.ticker && normDate(d.date) === op.date && Math.abs((d.montant || 0) - op.montant) < 0.011);
+  return (S.transactions || []).some(t => t.asset === pos.ticker && t.type === op.type && normDate(t.date) === op.date
+    && Math.abs(t.qty - op.qty) < 1e-6 && Math.abs(t.cours - (op.cours || 0)) < 1e-4);
+}
+
+async function ctoImportAnalyser(r) {
+  const titres = {};
+  r.operations.forEach(op => {
+    const t = titres[op.isin] || (titres[op.isin] = { nom: op.nom, classe: op.classe, ticker: "", candidats: [], prixPaye: null, date: "" });
+    if (op.type !== "Dividende" && op.cours > 0 && op.date >= t.date) { t.prixPaye = op.cours; t.date = op.date; }
+  });
+  // Déjà suivi dans ce CTO : sa cotation ne change pas
+  Object.entries(titres).forEach(([isin, t]) => {
+    const p = (S.positions || []).find(x => x.isin === isin);
+    if (p) { t.ticker = p.ticker; t.connu = true; }
+  });
+  await Promise.all(Object.entries(titres).filter(([, t]) => !t.connu).map(async ([isin, t]) => {
+    try {
+      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin)}&nom=${encodeURIComponent(t.nom || "")}`;
+      const d = await (await fetch(url, { cache: "no-store" })).json();
+      t.candidats = (d && d.ok && d.candidats) || [];
+      if (d && d.principal) t.secteur = ctoSecteurYahoo(d.principal.secteur, d.principal.industrie);
+    } catch (e) { t.candidats = []; }
+    // Le cours le plus proche du dernier prix payé chez Trade Republic, à 20 % près ;
+    // sinon le premier proposé (Xetra d'abord)
+    const proches = t.candidats.filter(c => c.prix > 0 && t.prixPaye > 0)
+      .map(c => ({ c, e: Math.abs(c.prix / t.prixPaye - 1) })).sort((a, b) => a.e - b.e);
+    const choix = (proches.length && proches[0].e < 0.2) ? proches[0].c : t.candidats[0];
+    t.ticker = choix ? normalizeTicker(choix.symbol) : "";
+  }));
+  _ctoImp = {
+    titres,
+    ops: r.operations.map(op => ({ ...op, deja: ctoImportDeja(op) })),
+    ignores: r.ignores || {}, inconnues: r.inconnues || [],
+  };
+}
+
+function ctoImportRender() {
+  const I = _ctoImp;
+  if (!I) return;
+  document.getElementById("cto-imp-etape1").style.display = "none";
+  document.getElementById("cto-imp-etape2").style.display = "";
+  const nouvelles = I.ops.filter(o => !o.deja);
+  const btn = document.getElementById("cto-imp-ok");
+  btn.style.display = nouvelles.length ? "" : "none";
+  btn.textContent = "Importer " + nouvelles.length + " opération" + (nouvelles.length > 1 ? "s" : "");
+  const compte = (f, l) => I.ops.filter(f).length + " " + l;
+  const inc = I.inconnues.length
+    ? `<span title="${escHtml(I.inconnues.map(x => x.date + " " + x.type + " " + x.nom).join("\n"))}"><b>${I.inconnues.length}</b> ligne(s) d'un type que Pilote ne connaît pas, laissée(s) de côté (survole pour le détail)</span>` : "";
+  document.getElementById("cto-imp-resume").innerHTML = `
+    <span><b>${nouvelles.length}</b> nouvelle(s)</span>
+    <span>${compte(o => o.deja, "déjà dans Pilote")}</span>
+    <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}</span>
+    <span>${(I.ignores.especes || 0)} ligne(s) d'espèces ignorée(s) (carte, virements, intérêts)</span>
+    ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) hors actions et ETF ignorée(s)</span>` : ""}
+    ${inc}`;
+  document.getElementById("cto-imp-titres").innerHTML = Object.entries(I.titres).map(([isin, t]) => {
+    const cours = t.ticker ? (getVar(t.ticker) || {}).cours : null;
+    const c = t.candidats.find(x => normalizeTicker(x.symbol) === t.ticker);
+    const prixActuel = (c && c.prix) || cours || null;
+    const ecart = (prixActuel && t.prixPaye) ? prixActuel / t.prixPaye - 1 : null;
+    const sel = t.connu ? `<b>${escHtml(t.ticker)}</b> <span class="pac-dim">(déjà suivi)</span>`
+      : `<span class="cto-imp-titres-sel">
+          <select onchange="ctoImportTicker('${isin}', this.value)">
+            ${t.candidats.map(x => { const tk = normalizeTicker(x.symbol);
+              return `<option value="${escHtml(tk)}"${tk === t.ticker ? " selected" : ""}>${escHtml(x.symbol)} · ${escHtml(x.place)}${x.prix ? " · " + eur(x.prix) : ""}</option>`; }).join("")}
+            <option value=""${t.ticker && !t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? " selected" : ""}>Autre ticker…</option>
+          </select>
+          <input placeholder="ex : VWCE.DE" value="${t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? "" : escHtml(t.ticker)}"
+                 onchange="ctoImportTicker('${isin}', this.value)" style="width:110px">
+        </span>`;
+    return `<tr><td style="text-align:left;font-weight:600">${escHtml(t.nom)} <span class="badge ${t.classe === "etf" ? "be" : "ba"}">${t.classe === "etf" ? "ETF" : "Action"}</span></td>
+      <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(isin)}</td>
+      <td style="text-align:left">${sel}${!t.ticker ? ` <span class="cto-ecart">à choisir</span>` : ""}</td>
+      <td>${t.prixPaye ? eur(t.prixPaye) : "—"}</td>
+      <td>${prixActuel ? eur(prixActuel) : "—"}${ecart != null && Math.abs(ecart) > 0.2 ? ` <span class="cto-ecart" title="Loin du dernier prix payé : vérifie que c'est le bon titre">${ecart > 0 ? "+" : "−"}${Math.round(Math.abs(ecart) * 100)} %</span>` : ""}</td></tr>`;
+  }).join("");
+  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", dividende: "" };
+  document.getElementById("cto-imp-ops").innerHTML = I.ops.slice().reverse().map(o => `<tr class="${o.deja ? "cto-dup" : ""}">
+      <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(o.date)}</td>
+      <td style="text-align:left">${o.type}${ORIG[o.origine] ? " · " + ORIG[o.origine] : ""}</td>
+      <td style="text-align:left">${escHtml(o.nom)}</td>
+      <td>${o.qty ? fmtQte(o.qty) : "—"}</td>
+      <td>${o.cours ? eur(o.cours) : "—"}</td>
+      <td>${o.frais ? eur(o.frais) : "—"}</td>
+      <td>${o.montant ? eur(o.montant) : "—"}</td>
+      <td style="text-align:left">${o.deja ? "déjà dans Pilote" : o.alerte ? `<span class="cto-ecart" title="${escHtml(o.alerte)}"><i class="ph ph-warning"></i> ${escHtml(o.alerte)}</span>` : "nouvelle"}</td>
+    </tr>`).join("");
+}
+function ctoImportTicker(isin, v) {
+  const t = _ctoImp && _ctoImp.titres[isin];
+  if (!t) return;
+  t.ticker = normalizeTicker(String(v || "").trim());
+  ctoImportRender();
+}
+
+function ctoImportValider() {
+  const I = _ctoImp;
+  if (!I || !_estCto()) return;
+  const nouvelles = I.ops.filter(o => !o.deja);
+  const sansTicker = [...new Set(nouvelles.filter(o => !I.titres[o.isin].ticker).map(o => I.titres[o.isin].nom))];
+  if (sansTicker.length) { showToastModern("Choisis la cotation de : " + sansTicker.join(", "), "warn"); return; }
+  pushUndo();
+  const posDe = isin => {
+    const t = I.titres[isin];
+    let p = S.positions.find(x => x.isin === isin) || S.positions.find(x => x.ticker === t.ticker);
+    if (!p) {
+      const c = t.candidats.find(x => normalizeTicker(x.symbol) === t.ticker);
+      p = { id: NID.pos++, ticker: t.ticker, name: t.nom, type: t.classe === "etf" ? "etf" : "action",
+            sector: t.classe === "etf" ? "etf" : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, isin };
+      S.positions.push(p);
+    } else if (!p.isin) p.isin = isin;
+    return p;
+  };
+  let n = 0;
+  nouvelles.forEach(o => {
+    const p = posDe(o.isin);
+    if (o.type === "Dividende") {
+      if (!NID.div) NID.div = 1;
+      S.divReceived.push({ id: NID.div++, date: o.date, ticker: p.ticker, qty: o.qty || null,
+                           ppa: o.qty ? Math.round(o.montant / o.qty * 10000) / 10000 : null,
+                           montant: o.montant, note: "Import Trade Republic", trId: o.trId || undefined });
+    } else {
+      const tx = { id: NID.tx++, date: o.date, asset: p.ticker, type: o.type, cours: o.cours, qty: o.qty, frais: o.frais || 0 };
+      if (o.origine && o.origine !== "ordre") tx.origine = o.origine;
+      if (o.trId) tx.trId = o.trId;
+      S.transactions.push(tx);
+    }
+    n++;
+  });
+  persist();
+  closeOv("ov-cto-import");
+  _ctoImp = null;
+  renderAll();
+  if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
+  if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
+  applyCoursData();
+  fetchSparklines();
+  fetchKeystats();
+  showToastModern(n + " opération" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : "") + " (Retour pour annuler)", "ok");
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────── */
+
+(function patchGoTabCto() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    if (!String(n).startsWith("cto-") || !_estCto()) return;
+    ctoRenderBarre();
+    if (String(n).split("@")[0] === "cto-strat") ctoPlansRender();
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
    ACCUEIL : TABLEAU DE BORD MODULAIRE
    Chaque tuile est un widget déclaré dans DASH_WIDGETS. L'utilisateur choisit
    lesquels afficher et dans quel ordre (Paramètres → Accueil, glisser-déposer).
@@ -21505,6 +22850,7 @@ function dashModuleReady(mod) {
     case "Vocabulaire": return _voBootstrapped;
     case "Sauvegarde": return !!window._dashUsb;
     case "Comptes":    return _finBootstrapped;
+    case "CTO":        return _ctoBootstrapped;
   }
   return true;
 }
@@ -21764,7 +23110,7 @@ async function dashAddExpense() {
 const DASH_ICONS = {
   "PEA": "chart-line-up", "Patrimoine": "bank", "Sports": "person-simple-run",
   "Santé": "heartbeat", "Prêt": "hand-coins",
-  "Vocabulaire": "cards", "Sauvegarde": "usb", "Comptes": "wallet",
+  "Vocabulaire": "cards", "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -21782,6 +23128,9 @@ function dashSkeletonHtml(w) {
 function dashRender() {
   const box = document.getElementById("home-cards");
   if (!box) return;
+  // Un CTO est dans S (« Compte actif ») : les tuiles du PEA le liraient. L'accueil
+  // n'est pas affiché à ce moment-là ; y revenir remet le PEA et redessine tout.
+  if (_estCto()) return;
   dashRenderBar();
   box.classList.toggle("dash-editing", _dashEdit);
   const cfg = dashConfig();
@@ -22057,10 +23406,17 @@ function _appReady() {
         ["patrimoine", paBootstrap(true)],
         ["vocabulaire", voBootstrap(true)],
         ["actus",      acBootstrap()],
+        ["cto",        ctoBootstrap()],
         ["usb",        svRenderUsbState()],
       ];
       await Promise.all(boots.map(([nom, pr]) =>
         Promise.resolve(pr).catch(e => console.warn("[" + nom + "] bootstrap KO:", e))));
+      // CTO : une ligne par compte dans le Patrimoine (il faut les deux lus),
+      // et leurs cours tout de suite pour leurs tuiles d'accueil
+      if (_ctoBootstrapped && ctoComptes().length) {
+        ctoLignesPatrimoine().catch(e => console.warn("[cto] patrimoine:", e));
+        applyCoursData();
+      }
       if (typeof homeRender === "function") homeRender();
     }
     // Les cours du jour et l'historique ont 5 s pour arriver : sans réseau, on
