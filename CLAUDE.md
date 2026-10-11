@@ -39,7 +39,8 @@ Pilote/
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
 │   ├── splash.py       # Petite fenêtre de chargement affichée au lancement
-│   ├── updater.py      # Auto-updater (check + download + install)
+│   ├── updater.py      # Auto-updater (check + download + install) + fiches des versions
+│   ├── nouveautes.json # Fiche de chaque version : avant et après une mise à jour, historique
 │   ├── notifications.py
 │   └── ui/
 │       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~20 900 lignes)
@@ -161,7 +162,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/sauvegarde-usb.md` | clé USB : envoi en miroir, archives, restauration | `sauvegarde.py`, fonctions `sv*` |
 | `docs/utilisateurs-et-pin.md` | multi-utilisateurs, code PIN | utilisateurs dans `storage.py`, `/pin/*`, écran de verrouillage |
 | `docs/demarrage-et-icone.md` | écran de chargement, exe en dossier, idna, icône à l'accent | `splash.py`, `main()`, `appicon.py`, `build/pilote.spec` |
-| `docs/mise-a-jour.md` | auto-update, repli quand l'API refuse, lire le vrai journal | `updater.py`, section `[Run]` d'`installer.iss` |
+| `docs/mise-a-jour.md` | auto-update, repli quand l'API refuse, lire le vrai journal, fiche des nouveautés | `updater.py`, `nouveautes.json`, section `[Run]` d'`installer.iss` |
 | `docs/design-carnet.md` | polices, couleurs, formes, icônes, graphiques, vue d'ensemble du PEA | tout changement visuel, `Chart.defaults` |
 | `docs/accueil.md` | page d'accueil, tuiles du tableau de bord | `home*`, `dash*`, `DASH_WIDGETS` |
 | `docs/parametres.md` | sections de la fenêtre Paramètres | `openSettings`, `setGoSection` |
@@ -182,7 +183,10 @@ dans les fiches) :
   `import encodings.idna` en tête d'`app.py` ou des options
   `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` de `main()` : `docs/demarrage-et-icone.md`.
 * **Mise à jour** : ne pas réduire le délai de 5 s du batch, démarrer le polling JS
-  avant `start_update()` : `docs/mise-a-jour.md`.
+  avant `start_update()` : `docs/mise-a-jour.md`. `src/nouveautes.json` doit rester
+  dans les `datas` de `build/pilote.spec` (sinon historique vide dans l'exe, même
+  piège que `ocr_win.ps1`) et garder son chemin dans le dépôt (lu à cette adresse
+  par les versions déjà installées).
 * **Une lecture OCR (Santé, Vocabulaire) ne fait que pré-remplir** : rien n'est
   enregistré sans validation. Fiches des deux modules.
 
@@ -191,8 +195,12 @@ dans les fiches) :
 1. Modifier le code
 2. Bumper `APP_VERSION` dans `src/app.py`
 3. Bumper `AppVersion` dans `build/installer.iss`
-4. `git add … && git commit && git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`
-5. GitHub Actions build `dist/Pilote/` puis `Pilote_Setup.exe`, et crée la release
+4. Écrire la fiche de la version **en tête** de `src/nouveautes.json` (même numéro,
+   texte pour l'utilisateur : nouveau / amélioré / corrigé). Elle doit être dans le
+   commit du tag : c'est là que les installations existantes la lisent avant de
+   proposer la mise à jour (`docs/mise-a-jour.md`, « Fiche des nouveautés »)
+5. `git add … && git commit && git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`
+6. GitHub Actions build `dist/Pilote/` puis `Pilote_Setup.exe`, et crée la release
    avec le Setup pour seul fichier (un `Pilote.exe` seul ne tourne pas sans son
    `_internal/`)
 
