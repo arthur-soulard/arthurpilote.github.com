@@ -40,6 +40,10 @@ a = Analysis(
         (str(SRC / "ui" / "vendor"),      "ui/vendor"),
         # Script OCR (modules Sante et Vocabulaire) : lu a l'execution via sys._MEIPASS
         (str(SRC / "ocr_win.ps1"),      "."),
+        # Fiches des versions (Parametres -> Mises a jour, fiche apres une mise
+        # a jour), lues par updater.historique() : sans cette ligne l'historique
+        # est vide dans l'exe, alors qu'il s'affiche en dev
+        (str(SRC / "nouveautes.json"),  "."),
         (str(ICON),                       "."),
     ],
     hiddenimports=[

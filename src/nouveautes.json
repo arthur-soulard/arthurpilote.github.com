@@ -1,0 +1,22 @@
+{
+  "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
+  "versions": [
+    {
+      "version": "4.3.37",
+      "date": "2026-10-11",
+      "titre": "Des premiers pas guidés, et une fiche à chaque mise à jour",
+      "nouveau": [
+        "Premier lancement en trois étapes : ce qu'est Pilote, les modules que tu veux suivre (à cocher), puis le premier geste à faire dans chacun.",
+        "Paramètres → Modules : coche ou décoche un module entier. Un module décoché quitte la barre de gauche et l'accueil, sans perdre ses données.",
+        "Avant d'installer une mise à jour, sa fiche dit ce qui change. Après l'installation, elle s'affiche une fois au redémarrage.",
+        "Paramètres → Mises à jour : la version installée, la vérification d'une nouvelle version et l'historique des fiches."
+      ],
+      "ameliore": [
+        "Un accueil encore vide l'explique : tes tuiles apparaissent dès que tes modules ont leurs premières données."
+      ],
+      "corrige": [
+        "L'écran de bienvenue ne revient plus à chaque lancement pour qui n'utilise pas le PEA."
+      ]
+    }
+  ]
+}
