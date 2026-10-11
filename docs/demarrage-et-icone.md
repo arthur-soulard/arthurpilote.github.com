@@ -125,7 +125,7 @@ Les deux étapes du milieu sont du code natif (.NET, processus `msedgewebview2`)
 Python attend pendant ce temps (`[pile]`). Elles varient avec la charge du PC
 (23 % du processeur occupés sans Pilote ce jour-là). Total : 6 à 25 s.
 
-* **Corrigé : relecture des certificats à chaque requête HTTPS.** `urlopen` sans
+* **Corrigé en 4.3.35 : relecture des certificats à chaque requête HTTPS.** `urlopen` sans
   contexte en recrée un par connexion et relit tout le magasin de Windows (~60 ms
   de calcul, les fils l'un après l'autre sous le GIL). `server._SSL_CTX`, créé une
   fois, sert à toutes les requêtes Yahoo. Mesuré : `/cours` 1,6-2,1 s → 0,4 s,
