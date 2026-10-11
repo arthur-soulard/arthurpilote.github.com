@@ -1,6 +1,6 @@
 # Pilote
 
-Application desktop Windows de suivi personnel : bourse (PEA), budget, prêt (étudiant ou autre),
+Application desktop Windows de suivi personnel : bourse (PEA, comptes-titres), budget, prêt (étudiant ou autre),
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
 Seule exception, voulue : le module Actus se connecte à la boîte Gmail de
@@ -12,7 +12,7 @@ systèmes, pas de copie séparée. Avant de toucher à ce qui dépend du systèm
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.36**
+**Version actuelle : 4.4.0**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -30,11 +30,10 @@ Pilote/
 │   ├── finances.py     # Module « Mes comptes »   (finances.json)
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
 │   ├── pret.py         # Module « Prêt », nom libre (pret.json)
+│   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
-│   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
-│   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
+│   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
-│   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
 │   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
@@ -78,12 +77,14 @@ Donnees/
 │   ├── finances.json         # Mes comptes      (+ backups_finances/)
 │   ├── sports.json           # Sports           (+ backups_sports/)
 │   ├── pret.json             # Prêt             (+ backups_pret/)
+│   ├── cto.json              # CTO, tous les comptes-titres (+ backups_cto/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
-│   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
 │   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
 │   │                         #   laissés sur le disque, plus lus par l'app
+│   ├── vocabulaire.json      # module Vocabulaire retiré le 11/10/2026, idem
+│   │                         #   (devenu une page à part : docs/pistes.md)
 │   └── pin.hash              # code PIN de CET utilisateur (si configuré)
 ├── icones/                   # .ico générés à la couleur d'accent
 └── crash.log
@@ -143,7 +144,7 @@ de la page disparue, et l'app ne se terminerait plus.
    pouvoir enregistrer. Côté Python, un `pea_data.json` absent n'est **pas** une erreur
    de lecture (`storage.load_data()` laisse `error` à `None`).
 4. **`ocr_win.ps1` dans les `datas` de `build/pilote.spec`** → sans cette ligne, l'OCR
-   des modules Santé et Vocabulaire fonctionne parfaitement en dev et **échoue
+   du module Santé fonctionne parfaitement en dev et **échoue
    silencieusement dans l'exe compilé** : le script est introuvable, `ocr_available()`
    répond « Script OCR introuvable » et l'import de captures ne marche plus. Une panne invisible tant
    qu'on ne teste pas le binaire. Vérification : `dist/Pilote/_internal/ocr_win.ps1`
@@ -177,7 +178,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
-| `docs/modules/vocabulaire.md` | Vocabulaire, lecture d'images et de PDF | `vocabulaire.py`, `ocr_win.ps1`, `vo*` |
+| `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
@@ -193,8 +194,8 @@ dans les fiches) :
   dans les `datas` de `build/pilote.spec` (sinon historique vide dans l'exe, même
   piège que `ocr_win.ps1`) et garder son chemin dans le dépôt (lu à cette adresse
   par les versions déjà installées).
-* **Une lecture OCR (Santé, Vocabulaire) ne fait que pré-remplir** : rien n'est
-  enregistré sans validation. Fiches des deux modules.
+* **Une lecture OCR (Santé) ne fait que pré-remplir** : rien n'est
+  enregistré sans validation. Fiche du module.
 
 ## Pour sortir une nouvelle version
 
@@ -235,12 +236,12 @@ Paramètres.
 |-----------------|--------------------------------------------------------------------|
 | Accueil         | home                                                               |
 | PEA             | dash, pos, sector, div, tx, wish, dep, strat, sim (plus de `perf`) |
+| CTO             | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
 | Patrimoine      | pa-vue, pa-comptes                                                 |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
-| Vocabulaire     | vo-reviser, vo-boites, vo-mots, vo-stats                            |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
@@ -249,6 +250,11 @@ Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secI
 (demande d'Arthur, 4.3.18). L'ancienne clé `S.uiPrefs.navOpen` est ignorée.
 `SIDEBAR_ITEMS` reste dérivé à plat de `NAV_SECTIONS` pour l'API historique (onglets
 masquables via ⊘, Ctrl+1..7, écran Paramètres).
+
+Les onglets `cto-*` n'ont pas de pane : ils montrent ceux du PEA (`cto-pos` → `pane-pos`)
+sur le CTO choisi en haut de page, que `ctoAvantOnglet` met dans `S` (« compte actif »,
+`docs/modules/cto.md`). Tout autre onglet remet le PEA dans `S`. `cto-dash@c2` ouvre un
+CTO précis (tuile d'accueil) ; `_navSectionOf` et `_setActiveSidebar` ignorent le `@…`.
 
 Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
 (finances, sports, prêt, accueil) : ils s'enchaînent, ne pas casser l'ordre.
@@ -269,6 +275,8 @@ Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
   cet endpoint écrase le `pea_data.json` actif, il ne prend pas un chemin libre
 * `GET /vendor/<fichier>` → Chart.js, polices et icônes, liste blanche d'extensions
   (`.js`, `.css`, `.woff2`), confiné sous `ui/vendor/`
+* `GET /isin?isin=…&nom=…` → cotations en euros d'un ISIN, devise vérifiée, et secteur
+  (import du CTO : `docs/modules/cto.md`)
 * `GET /actus/mail/<ticket>` → la page d'un mail du module Actus, pour son iframe
   (ticket créé par `Api.actus_ouvrir`, 10 min) : voir `docs/modules/actus.md`
 * Cache serveur : 1 h pour l'historique, 60 s pour les cours
@@ -319,9 +327,9 @@ Corollaires à ne pas défaire :
 ## Conventions de code
 
 * Tout l'UI vit dans `index.html` (~20 900 lignes). Les modules annexes sont des blocs
-  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`, `ac*`,
-  `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Vocabulaire → Actus → Tableau de bord → `boot()`.** Les patches de `goTab`
+  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `ac*`,
+  `cto*`, `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
+  Prêt → Santé → Patrimoine → Actus → CTO → Tableau de bord → `boot()`.** Les patches de `goTab`
   s'enchaînent, ne pas casser l'ordre.
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,
@@ -338,7 +346,7 @@ Corollaires à ne pas défaire :
   sinon l'ordre du DOM décide qui est devant.
 * Attention à la spécificité : `.fg label` (0-1-1) imposait MAJUSCULES + interlettrage
   avant l'identité « Carnet », qui l'a remis en casse normale. Les règles
-  `label.sv-check`, `label.vo-check` restent : elles règlent aussi la
+  `label.sv-check` reste : elle règle aussi la
   taille et l'alignement. Un libellé de texte courant dans un `.fg` se cible toujours
   en `label.ma-classe`.
 * Couleurs uniquement via les variables CSS (`--bg2`, `--brd`, `--accent`, `--g`, `--r`,
@@ -363,7 +371,13 @@ Corollaires à ne pas défaire :
   persister. Exception : `load_patrimoine` / `save_patrimoine` renvoient `net`, `serie`
   et `moisSaisi` déjà calculés — l'UI ne refait pas ces calculs.
 * Ne jamais recalculer en parallèle un chiffre qu'un autre module produit déjà
-  (`window._peaPv` pour le PEA). Deux calculs = deux résultats divergents un jour.
+  (`window._peaPv` pour le PEA, `ctoResume(id)` pour un CTO). Deux calculs = deux
+  résultats divergents un jour.
+* **`S` peut contenir un CTO** (section CTO ouverte, `_estCto()`). Ce qui s'écrit
+  dans `pea_data.json` passe par `_etatPea()`, jamais par `S` ; un code qui lit le PEA
+  hors de sa section (accueil, Patrimoine, Prêt) s'exécute avec le PEA dans `S`, ou
+  vérifie `_estCto()`. Réglages propres à un compte : `_cptPrefs()`. Détail :
+  `docs/modules/cto.md`.
 
 ## Déploiement
 

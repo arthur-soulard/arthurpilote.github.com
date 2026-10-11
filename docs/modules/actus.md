@@ -36,6 +36,12 @@ obligatoire). Point de vigilance : Google a déjà supprimé ces codes pour les
 comptes Workspace en 2025 ; s'il les fermait aussi pour les comptes Gmail
 personnels, il faudrait passer à OAuth.
 
+Activer la validation en deux étapes est une « action sensible » pour Google.
+S'il ne reconnaît ni l'appareil ni le réseau, il répond « Impossible de valider
+votre identité » et bloque l'action jusqu'à 7 jours, puis la permet sans
+vérification (aide Google, article 7162782). Vu le 11/10/2026 sur la boîte
+d'Arthur : l'étape 1 de la fiche le signale depuis.
+
 ### Ce qu'il ne faut pas défaire
 
 1. **Le code ne repasse jamais par la page.** Le JS l'envoie une fois

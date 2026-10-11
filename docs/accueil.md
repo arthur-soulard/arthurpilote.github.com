@@ -141,3 +141,12 @@ les paramètres ne faisait visiblement rien. `saBootstrap(discret)` et
 
 De même, `svRenderUsbState()` publie désormais `window._dashUsb` — la tuile
 « Sauvegarde USB » lisait cette variable que personne n'écrivait.
+
+### Tuiles des CTO (4.4.0)
+
+Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de
+`cto.json` (`ctoSyncWidgets`), éteinte tant qu'on ne l'ajoute pas : valeur des
+titres et plus-value depuis le début, lues dans `ctoResume` (le même calcul que
+la vue d'ensemble du CTO). Son onglet `cto-dash@<id>` ouvre ce CTO-là.
+`dashRender()` ne fait rien pendant qu'un CTO est dans `S` : les tuiles du PEA
+le liraient (voir `docs/modules/cto.md`).

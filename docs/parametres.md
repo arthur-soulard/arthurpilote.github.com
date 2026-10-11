@@ -15,7 +15,6 @@ Modale unique à colonne de sections (`setGoSection(id)`), plus « paramètres d
 | comptes    | catégories & emoji, sources, récurrents                             |
 | pret       | renvoi vers l'onglet `pr-params`                                    |
 | sport      | mes sports, types de séance, routines                               |
-| vocabulaire| mes listes, ajout en masse, rappel des quatre boîtes                |
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | sauvegarde | destination USB, sauvegarde auto, rotation, restauration            |
 | donnees    | dossier, export/import, réinitialisation, version                   |
