@@ -38,7 +38,7 @@ a = Analysis(
         # systeme dans l'exe compile, alors que tout marche en dev : la meme
         # panne invisible que ocr_win.ps1 ci-dessous.
         (str(SRC / "ui" / "vendor"),      "ui/vendor"),
-        # Script OCR (modules Sante et Vocabulaire) : lu a l'execution via sys._MEIPASS
+        # Script OCR (module Sante) : lu a l'execution via sys._MEIPASS
         (str(SRC / "ocr_win.ps1"),      "."),
         # Fiches des versions (Parametres -> Mises a jour, fiche apres une mise
         # a jour), lues par updater.historique() : sans cette ligne l'historique

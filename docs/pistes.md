@@ -34,6 +34,14 @@ Autres pistes :
   `certificats/` restent sur le disque (et dans les sauvegardes USB), plus lus par
   l'app. Le code et sa fiche vivent dans l'historique git (commit `845a705` et avant).
 
+- **Module Vocabulaire** (listes de mots, quatre boîtes, lecture de photos et de
+  PDF) : retiré de Pilote à la demande d'Arthur le 11/10/2026. Il garde l'idée, mais
+  à part : une page autonome, `Vocabulaire.html` sur son bureau (mêmes boîtes, mêmes
+  règles, mots enregistrés dans le navigateur, export / import au format de
+  `vocabulaire.json`), sans la lecture d'images qui demandait l'OCR de Windows.
+  `vocabulaire.json` reste sur le disque, plus lu par l'app. Le code, sa fiche et le
+  mode PDF d'`ocr_win.ps1` vivent dans l'historique git (commit `bb71143` et avant).
+
 - **Version mobile / PWA** : écartée par Arthur en 4.1.4 pour la sécurité des données.
   Les JSON sont en clair et le PIN ne chiffre rien ; exposer le serveur local, même
   derrière un VPN, sortait les données du PC. Si la question revient, le prérequis
