@@ -1,6 +1,6 @@
 # Pilote
 
-Application Windows de suivi personnel — bourse, budget, prêt étudiant, sport,
+Application Windows de suivi personnel — bourse, budget, prêt, sport,
 patrimoine, santé, vocabulaire et newsletters réunis dans une seule app entièrement
 locale. Cours actualisés automatiquement via Yahoo Finance.
 
@@ -17,7 +17,7 @@ automatiquement, rapport annuel imprimable.
 catégorie et sous-catégorie porte son emoji), sources, échéances récurrentes à valider,
 récap annuel.
 
-**Prêt étudiant** — suivi d'un prêt à 0 % utilisé comme capital d'investissement :
+**Prêt** (nom libre) — suivi d'un prêt, par exemple un prêt étudiant à 0 % placé :
 versements et remboursements, PEA dédié (achats, ventes, PRU, plus-values latentes et
 réalisées), assurance vie multi-contrats à capitalisation annuelle, livret A, frais
 ponctuels et récurrents.
@@ -118,7 +118,7 @@ Pilote/
     │       ├── pea_data.json # PEA              (+ backups/)
     │       ├── finances.json # Mes comptes      (+ backups_finances/)
     │       ├── sports.json   # Sports           (+ backups_sports/)
-    │       ├── pret.json     # Prêt étudiant    (+ backups_pret/)
+    │       ├── pret.json     # Prêt             (+ backups_pret/)
     │       └── pin.hash      # hash du code PIN de cet utilisateur (si configuré)
     └── icones/               # icônes générées à la couleur d'accent
 ```
@@ -141,7 +141,7 @@ src/
 ├── appicon.py          # Icône recolorée selon l'accent (fenêtre + raccourcis)
 ├── finances.py         # Module Mes comptes
 ├── sports.py           # Module Sports (+ catalogue des sports)
-├── pret.py             # Module Prêt étudiant
+├── pret.py             # Module Prêt
 ├── jsonstore.py        # Socle commun : écriture atomique + backup quotidien
 ├── updater.py          # Mise à jour automatique
 ├── notifications.py    # Notifications Windows natives
