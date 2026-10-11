@@ -3,11 +3,13 @@
 Application desktop Windows de suivi personnel : bourse (PEA), budget, prêt étudiant,
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
+Seule exception, voulue : le module Actus se connecte à la boîte Gmail de
+l'utilisateur pour la lire (`docs/modules/actus.md`) ; il n'y envoie rien de Pilote.
 
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.31**
+**Version actuelle : 4.3.32**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -30,6 +32,7 @@ Pilote/
 │   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── vocabulaire.py  # Module « Vocabulaire »   (vocabulaire.json) + 4 boîtes + lecture d'images
+│   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
@@ -72,6 +75,7 @@ Donnees/
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
+│   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
 │   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
 │   │                         #   laissés sur le disque, plus lus par l'app
 │   └── pin.hash              # code PIN de CET utilisateur (si configuré)
@@ -168,6 +172,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/vocabulaire.md` | Vocabulaire, lecture d'images et de PDF | `vocabulaire.py`, `ocr_win.ps1`, `vo*` |
+| `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
 
 Rappelés ici parce qu'une erreur ne se voit qu'une fois l'exe installé (détail
@@ -206,7 +211,7 @@ Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
 **d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
 suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
-Sidebar : un onglet **Accueil** seul en tête, puis 7 sections en accordéon
+Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
 (`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
@@ -222,6 +227,7 @@ Paramètres.
 | Patrimoine      | pa-vue, pa-comptes                                                 |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
 | Vocabulaire     | vo-reviser, vo-boites, vo-mots, vo-stats                            |
+| Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
 `_navSectionOf(tabId)`. Section dépliée gardée en mémoire seulement (`_navOuverte`,
@@ -249,6 +255,8 @@ Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
   cet endpoint écrase le `pea_data.json` actif, il ne prend pas un chemin libre
 * `GET /vendor/<fichier>` → Chart.js, polices et icônes, liste blanche d'extensions
   (`.js`, `.css`, `.woff2`), confiné sous `ui/vendor/`
+* `GET /actus/mail/<ticket>` → la page d'un mail du module Actus, pour son iframe
+  (ticket créé par `Api.actus_ouvrir`, 10 min) : voir `docs/modules/actus.md`
 * Cache serveur : 1 h pour l'historique, 60 s pour les cours
 * Tickers : `EPA:XXX` → `XXX.PA` (`AMS:`→`.AS`, `ETR:`→`.DE`, `LON:`→`.L`) ; un ticker
   déjà au format Yahoo (`WPEA.PA`) passe tel quel
@@ -283,6 +291,10 @@ Corollaires à ne pas défaire :
   `<link href>` lui-même, ces requêtes ne passent pas par le wrapper `fetch`. Ces
   fichiers ne contiennent aucune donnée utilisateur, et les verrous Host et Origin
   s'appliquent toujours.
+* `/actus/mail/<ticket>` est joignable sans jeton pour la même raison (une iframe
+  se charge seule) : le ticket aléatoire du chemin le remplace. C'est la seule
+  réponse avec `X-Frame-Options: SAMEORIGIN` au lieu de `DENY`, et sa propre CSP
+  (aucun script, images distantes permises, `sandbox`).
 * `/pin/set` exige l'**ancien** code dès qu'un PIN existe. Poser un premier PIN
   reste libre : il n'y a rien à prouver.
 * `/pin/check` est ralenti (0,25 s) et bloqué 60 s après 10 échecs, **côté serveur**.
@@ -291,9 +303,9 @@ Corollaires à ne pas défaire :
 ## Conventions de code
 
 * Tout l'UI vit dans `index.html` (~20 900 lignes). Les modules annexes sont des blocs
-  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`,
+  JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `vo*`, `ac*`,
   `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Vocabulaire → Tableau de bord → `boot()`.** Les patches de `goTab`
+  Prêt → Santé → Patrimoine → Vocabulaire → Actus → Tableau de bord → `boot()`.** Les patches de `goTab`
   s'enchaînent, ne pas casser l'ordre.
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,

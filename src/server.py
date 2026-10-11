@@ -1057,6 +1057,49 @@ _TOKEN_SNIPPET = """<script>
 """
 
 
+# ─── Pages de mail (module Actus) ─────────────────────────────────────────────
+#
+# Un mail s'affiche dans une <iframe> de la page. Le navigateur charge l'iframe
+# lui-meme : la requete ne passe pas par le wrapper fetch et n'a donc pas le
+# jeton de session. Chaque mail ouvert recoit a la place un ticket aleatoire,
+# cree par l'Api au moment de l'ouverture et valable 10 minutes : sans lui,
+# /actus/mail/ ne rend rien. Les verrous Host et Origin s'appliquent toujours.
+#
+# La page a sa propre CSP : aucun script (default-src 'none'), mais les images
+# et les styles des newsletters, d'ou qu'ils viennent (choix d'Arthur). Le
+# « sandbox » lui donne une origine opaque : elle ne peut rien lire de Pilote,
+# et ses liens ne s'ouvrent qu'en nouvelle fenetre, que pywebview envoie au
+# navigateur du PC.
+
+_MAIL_TTL   = 600     # s
+_MAIL_MAX   = 20      # pages gardees en memoire, les plus recentes
+_mail_pages = {}      # ticket -> (expire_a, octets)
+_mail_lock  = threading.Lock()
+
+_CSP_MAIL = (
+    "default-src 'none'; "
+    "img-src https: http: data:; "
+    "style-src 'unsafe-inline' https: http:; "
+    "font-src https: http: data:; "
+    "form-action 'none'; "
+    "frame-ancestors 'self'; "
+    "sandbox allow-popups allow-popups-to-escape-sandbox"
+)
+
+
+def publier_mail(html: str) -> str:
+    """Range la page d'un mail et rend le ticket qui l'ouvre : /actus/mail/<ticket>."""
+    ticket = secrets.token_urlsafe(24)
+    now = time.time()
+    with _mail_lock:
+        for t in [t for t, (exp, _) in _mail_pages.items() if exp < now]:
+            del _mail_pages[t]
+        while len(_mail_pages) >= _MAIL_MAX:
+            del _mail_pages[min(_mail_pages, key=lambda t: _mail_pages[t][0])]
+        _mail_pages[ticket] = (now + _MAIL_TTL, html.encode("utf-8"))
+    return ticket
+
+
 def _inject_session_token(body: bytes) -> bytes:
     """Pose le bloc jeton juste apres <head>, avant tout autre script."""
     snippet = _TOKEN_SNIPPET.replace("%TOKEN%", _SESSION_TOKEN).encode("utf-8")
@@ -1102,6 +1145,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             # le jeton. Ces fichiers sont publics et ne contiennent aucune
             # donnee utilisateur ; les verrous Host et Origin s'appliquent
             # toujours.
+            return True
+        if path.startswith("/actus/mail/"):
+            # Chargee par une <iframe>, donc sans jeton : c'est le ticket du
+            # chemin qui la protege (voir publier_mail).
             return True
         return hmac.compare_digest(self.headers.get(TOKEN_HEADER) or "",
                                    _SESSION_TOKEN)
@@ -1273,6 +1320,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         if parsed.path.startswith("/vendor/"):
             return self._serve_vendor(parsed.path[len("/vendor/"):])
 
+        if parsed.path.startswith("/actus/mail/"):
+            return self._serve_mail(parsed.path[len("/actus/mail/"):])
+
         # Sert l'UI HTML embarquee (sans cache pour eviter les vieilles versions)
         if parsed.path in ("/", "/index.html") and _html_file_path:
             try:
@@ -1327,6 +1377,24 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         # Fige pour la duree de la session : ces fichiers ne bougent qu'au build
         self.send_header("Cache-Control", "public, max-age=86400")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_mail(self, ticket: str):
+        with _mail_lock:
+            entree = _mail_pages.get(ticket)
+        if not entree or entree[0] < time.time():
+            return self._json(404, {"error": "Not found"})
+        body = entree[1]
+        self.send_response(200)
+        # Pas _sec_headers() : son X-Frame-Options DENY interdirait l'iframe
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options",        "SAMEORIGIN")
+        self.send_header("Referrer-Policy",        "no-referrer")
+        self.send_header("Content-Security-Policy", _CSP_MAIL)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
