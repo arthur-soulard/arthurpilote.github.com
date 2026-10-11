@@ -36,6 +36,7 @@ import storage
 import finances
 import sports
 import pret
+import cto
 import patrimoine
 import sante
 import vocabulaire
@@ -238,6 +239,28 @@ class Api:
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
+
+    # -- CTO (propre a l'utilisateur actif) --------------------------------
+
+    def load_cto(self) -> dict:
+        try:
+            return {"ok": True, "data": cto.load_data()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
+
+    def save_cto(self, data: dict, vide_voulu: bool = False) -> dict:
+        try:
+            cto.save_data(data or {}, bool(vide_voulu))
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def cto_lire_csv(self, texte: str) -> dict:
+        """Export CSV de Trade Republic -> operations a valider (rien n'est ecrit)."""
+        try:
+            return cto.lire_csv_tr(texte or "")
+        except Exception as e:
+            return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
 
     # -- Patrimoine (propre a l'utilisateur actif) -------------------------
 
