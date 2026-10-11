@@ -223,6 +223,16 @@ ne jamais modifier le calcul sans les relancer.
 * Tuile d'accueil `prochain-achat` : le premier ordre, disparaît s'il n'y a
   rien à acheter.
 
+### Courtier (4.4.0)
+
+Réglages de Prochain achat : le courtier du PEA (`S.uiPrefs.prochainAchat.courtier`,
+`tarif`), grille de `COURTIERS` datée, ou « Personnalisé ». Le défaut reste « Réglage
+libre » (seuil + taux) : exactement le calcul d'avant. Fortuneo Starter redonne le même
+plan au centime. `pacFraisOrdre` remplace `montant × taux` dans `pacFrais` et `soCalcul` ;
+`testsProchainAchat()` et `testsSimulateurOrdres()` n'ont pas de grille et testent donc
+toujours l'ancien calcul. Un ordre dont les frais ne collent pas à la grille est marqué
+« frais ≠ grille » dans Transactions. Détail et tarifs : `docs/modules/cto.md`.
+
 ## Simulateur d'ordres (onglet Stratégie, `#card-sim-ordres`)
 
 Le pendant manuel de Prochain achat, juste sous sa carte (ajouté dans la Wishlist

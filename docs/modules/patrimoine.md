@@ -73,3 +73,13 @@ prêt (champ en lecture seule dans la fenêtre du compte).
 
 Seul le type `dette` compte négativement. Un compte `auto` ne peut pas être
 supprimé : il serait recréé au chargement suivant.
+
+## Lignes des CTO (4.4.0)
+
+Une ligne automatique par CTO (`auto: "cto:<id>"`, type `cto`), créée par
+`ctoLignesPatrimoine` au démarrage et à la création d'un CTO. Elle porte le nom
+du CTO (`paLabel`, à renommer dans ses réglages) et se pré-remplit avec la valeur
+de ses titres (`ctoValeurAuto` → `ctoResume`). Un mois passé n'est proposé que si
+la courbe de ce CTO est chargée ; sinon la ligne reprend son dernier relevé. Un
+CTO supprimé masque sa ligne, sauf si elle a des relevés. Détail :
+`docs/modules/cto.md`.

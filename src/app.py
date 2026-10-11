@@ -47,9 +47,9 @@ import storage
 import finances
 import sports
 import pret
+import cto
 import patrimoine
 import sante
-import vocabulaire
 import actus
 import expositions
 import sauvegarde
@@ -59,7 +59,7 @@ import plateforme
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.37"
+APP_VERSION = "4.4.0"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -251,6 +251,28 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    # -- CTO (propre a l'utilisateur actif) --------------------------------
+
+    def load_cto(self) -> dict:
+        try:
+            return {"ok": True, "data": cto.load_data()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
+
+    def save_cto(self, data: dict, vide_voulu: bool = False) -> dict:
+        try:
+            cto.save_data(data or {}, bool(vide_voulu))
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def cto_lire_csv(self, texte: str) -> dict:
+        """Export CSV de Trade Republic -> operations a valider (rien n'est ecrit)."""
+        try:
+            return cto.lire_csv_tr(texte or "")
+        except Exception as e:
+            return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
+
     # -- Patrimoine (propre a l'utilisateur actif) -------------------------
 
     def load_patrimoine(self) -> dict:
@@ -438,56 +460,6 @@ class Api:
             return {"ok": True, "history": server.get_history(tickers)}
         except Exception as e:
             return {"ok": False, "error": str(e)}
-
-    # -- Vocabulaire (propre a l'utilisateur actif) -----------------------
-
-    def load_vocabulaire(self) -> dict:
-        try:
-            return {"ok": True, "data": vocabulaire.load_data(),
-                    "boites": vocabulaire.BOITES,
-                    "modes":  vocabulaire.MODES}
-        except Exception as e:
-            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
-
-    def save_vocabulaire(self, data: dict) -> dict:
-        try:
-            vocabulaire.save_data(data or {})
-            return {"ok": True}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-
-    def vocabulaire_pick_images(self) -> dict:
-        """Images, PDF ou .zip (plusieurs a la fois) : le PDF est lu page par page."""
-        try:
-            win = webview.windows[0]
-            result = win.create_file_dialog(
-                webview.OPEN_DIALOG,
-                allow_multiple=True,
-                file_types=("Images PDF ou zip (*.png;*.jpg;*.jpeg;*.heic;*.pdf;*.zip)",
-                            "All files (*.*)"),
-            )
-            if not result:
-                return {"ok": False, "cancelled": True}
-            paths = list(result) if isinstance(result, (list, tuple)) else [result]
-            return {"ok": True, "paths": paths}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-
-    def vocabulaire_read_images(self, paths: list) -> dict:
-        """OCR de captures ou de photos : pre-remplit l'ajout en masse."""
-        try:
-            return vocabulaire.lire_images(list(paths or []))
-        except Exception as e:
-            return {"ok": False, "error": str(e), "lignes": [],
-                    "trace": traceback.format_exc()}
-
-    def vocabulaire_read_pasted(self, data_url: str) -> dict:
-        """Image collee (Ctrl+V), recue en data URL depuis le JS."""
-        try:
-            return vocabulaire.lire_image_collee(data_url or "")
-        except Exception as e:
-            return {"ok": False, "error": str(e), "lignes": [],
-                    "trace": traceback.format_exc()}
 
     # -- Actus : boite Gmail des newsletters (propre a l'utilisateur actif) --
     # Le mot de passe d'application entre par save_actus et ne ressort jamais.
