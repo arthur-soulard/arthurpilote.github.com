@@ -103,6 +103,43 @@ logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisa
   pouvait passer devant. Test à la main : Pilote ouvert derrière une autre
   fenêtre, double-clic sur son raccourci → il doit revenir devant.
 
+## Lenteur du démarrage : mesures du 11/10/2026
+
+**Outils** (rien ne s'active sans `PILOTE_DIAG=1`) :
+`PILOTE_DIAG=1 python src/app.py` écrit des repères `[t]` (secondes depuis le
+lancement : imports, serveur, fenêtres, écran de chargement, page chargée, page
+prête), le journal de la page `[diag]` (`window.__journal`), les mesures du
+navigateur `[diag-nav]` (début de la navigation, durée de chaque requête) et, toutes
+les 0,5 s pendant 15 s, ce que fait chaque fil Python `[pile]`.
+
+**Où passe le temps** (PC d'Arthur, Pentium Gold 7505, 2 cœurs ; 17 lancements) :
+
+| Étape | Rapide | Lent |
+|---|---|---|
+| Imports Python (pywebview, modules) | 1,0 s | 3,0 s |
+| .NET puis WebView2 jusqu'à l'écran de chargement | 0,6 s | 5,9 s |
+| Moteur Edge jusqu'à la page principale chargée | 1,5 s | 5,5 s |
+| Page, modules, attente de Yahoo | 1,7 s | 6,0 s |
+
+Les deux étapes du milieu sont du code natif (.NET, processus `msedgewebview2`) :
+Python attend pendant ce temps (`[pile]`). Elles varient avec la charge du PC
+(23 % du processeur occupés sans Pilote ce jour-là). Total : 6 à 25 s.
+
+* **Corrigé : relecture des certificats à chaque requête HTTPS.** `urlopen` sans
+  contexte en recrée un par connexion et relit tout le magasin de Windows (~60 ms
+  de calcul, les fils l'un après l'autre sous le GIL). `server._SSL_CTX`, créé une
+  fois, sert à toutes les requêtes Yahoo. Mesuré : `/cours` 1,6-2,1 s → 0,4 s,
+  `/history` 3,9-4,1 s → 1,3 s, `/keystats` 5,5-5,9 s → 2,0 s.
+* **Écran de chargement : sans effet mesurable.** 3 paires avec et sans : médianes
+  7,97 s et 8,37 s, dans le bruit. Le garder.
+* `/sparkline`, `/keystats`, `/analysts` ne servent pas l'accueil (positions,
+  liste d'envies, recommandations) mais partent au démarrage ; les différer n'a
+  rien montré de net dans le bruit (3 essais).
+* Piste non faite, à décider avec Arthur : ouvrir la fenêtre sans attendre les cours
+  et l'historique de Yahoo (0,5 à 2,4 s mesurés, jusqu'à 5 s sans réseau). C'est
+  un choix délibéré : sans cette attente, la tuile du PEA se remplissait après
+  l'ouverture.
+
 ## Icône à la couleur du thème (`appicon.py`)
 
 * Regénère un `.ico` multi-résolution (PNG embarqués, supersampling 4× + LANCZOS,
