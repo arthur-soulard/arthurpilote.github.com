@@ -80,3 +80,24 @@ données**, tous utilisateurs confondus.
   sans choisir de dossier → retour dans `Suivi PEA`, données retrouvées ;
   installation neuve sur un PC vierge → `Programs\Pilote`. Seule la mise à jour
   vers la 4.3.14 protège : désinstaller une 4.3.13 efface encore tout.
+
+## L'ancienne entrée « Suivi PEA 1.0.0 » (piège retiré par le Setup)
+
+Vu le 11/10/2026 sur le PC d'Arthur : les Paramètres de Windows listaient encore
+« Suivi PEA 1.0.0 » (installée en mai 2026, **autre AppId** :
+`{A7C5D4E2-PEA-4B1A-9F3D-Suivi2026PEA}}_is1`), qui vise **le même dossier** que
+Pilote (`Programs\Suivi PEA`). Son désinstalleur, `unins000.exe` (Pilote utilise
+`unins001`), et son journal dataient d'avant la 4.3.14 : la désinstaller aurait très
+probablement effacé tout le dossier, `Donnees` compris. Non essayé, évidemment.
+
+* `RetirerAncienneEntreeSuiviPEA()` (`[Code]`, appelée en `ssPostInstall`) retire
+  à chaque installation toute entrée HKCU dont la clé commence par
+  `{A7C5D4E2-PEA-` : son désinstalleur, son `.dat`, puis sa clé.
+* **Seulement si son désinstalleur est dans `{app}`.** Sur un PC sans cette vieille
+  installation, `unins000` est le désinstalleur de Pilote lui-même : ne jamais
+  supprimer `unins000.*` sans cette vérification.
+* Testé le 11/10/2026 avec un Setup de test reprenant le même code (préfixe de test) :
+  l'entrée qui visait le dossier installé est retirée avec ses deux fichiers,
+  `Donnees` intact ; une entrée visant un autre dossier est laissée ; la vraie
+  entrée d'Arthur n'a pas été touchée par l'essai. Le journal du Setup (`/LOG`)
+  écrit « Ancienne entree … retiree » ou « … laissee : elle vise … ».
