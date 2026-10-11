@@ -59,5 +59,14 @@ Jusqu'à la 4.3.13, la boucle s'arrêtait 37 points après le **premier** relev�
 au-delà de trois ans, la courbe se figeait (essayé sur 58 mois : arrêt en
 janvier 2025, tuile à 6 700 €, dernier point à 4 600 €).
 
+**La ligne « Prêt étudiant » n'apparaît qu'une fois le prêt paramétré** (montant
+emprunté saisi dans Prêt › Paramètres, même règle que la tuile d'accueil), ou si
+elle a déjà des relevés : `paCompteVisible`, appliquée par `paComptes()`, donc
+partout (comptes, tableau, relevé du mois). Demandé par Arthur le 11/10/2026 :
+quelqu'un qui installe Pilote sans prêt étudiant n'a pas à voir une dette à 0 €.
+Le compte existe toujours dans `patrimoine.json` : il réapparaît seul dès que le
+prêt est saisi. Un compte qui a des relevés reste visible pour que le tableau
+corresponde au total, calculé côté Python sur tous les comptes non archivés.
+
 Seul le type `dette` compte négativement. Un compte `auto` ne peut pas être
 supprimé : il serait recréé au chargement suivant.
