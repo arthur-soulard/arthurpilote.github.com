@@ -1,12 +1,12 @@
 # Pilote
 
 Application Windows de suivi personnel — bourse, budget, prêt étudiant, sport,
-patrimoine, santé et vocabulaire réunis dans une seule app entièrement locale. Cours
-actualisés automatiquement via Yahoo Finance.
+patrimoine, santé, vocabulaire et newsletters réunis dans une seule app entièrement
+locale. Cours actualisés automatiquement via Yahoo Finance.
 
 ![icon](assets/icon_512.png)
 
-## ✨ Les sept modules
+## ✨ Les huit modules
 
 **PEA** — positions, transactions, dépôts, dividendes, wishlist, expositions sectorielle
 et géographique, performance TWR comparée au CAC 40 / S&P 500 / ETF World, simulateurs
@@ -34,6 +34,11 @@ FitDays, objectifs.
 
 **Vocabulaire** — listes de mots révisées par répétition espacée (quatre boîtes : 1 jour,
 1 semaine, 1 mois, 6 mois), ajout en masse depuis une photo, une capture ou un PDF.
+
+**Actus** — la boîte Gmail qui reçoit tes newsletters, lue dans Pilote : relevée toutes
+les 3 min, filtres par libellé, mails affichés avec leurs images. Connexion par un mot de
+passe d'application Google (une fiche dans l'onglet explique comment le créer), gardé
+chiffré par Windows.
 
 Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 
