@@ -15,6 +15,7 @@ Endpoints (memes que avant) :
 from __future__ import annotations
 
 import os
+import re
 import http.server
 import http.cookiejar
 import hashlib
@@ -205,8 +206,10 @@ def fetch_yahoo(yahoo_ticker: str):
 
             # t : heure de la seance dont parle d1 (secondes Unix). Le week-end,
             # d1 est la variation de vendredi : l'accueil l'ecrit avec sa date.
+            # devise : un CTO peut suivre un titre coté hors euro par erreur
+            # (CSPX.AS cote en dollars à Amsterdam) ; l'UI le signale.
             return {"prix": round(prix, 4), "d1": d1, "w1": w1, "m1": m1, "y1": y1,
-                    "t": meta.get("regularMarketTime")}
+                    "t": meta.get("regularMarketTime"), "devise": meta.get("currency")}
         except Exception as e:
             print(f"[server] Yahoo/{host} KO {yahoo_ticker}: {e}", flush=True)
             continue
@@ -893,6 +896,101 @@ def fetch_yahoo_search(query: str, limit: int = 6):
         return local_fallback
 
 
+# ─── ISIN -> cotation en euros (import du CTO) ────────────────────────────────
+#
+# L'export de Trade Republic ne donne que l'ISIN. Chercher l'ISIN chez Yahoo ne
+# rend que la cotation principale : Apple -> AAPL (dollars), MSCI World ->
+# IWDA.L (dollars). Or Trade Republic execute en euros sur des places
+# europeennes : c'est un cours en euros qu'il faut suivre. On cherche donc
+# aussi par symbole et par nom, on garde les places europeennes, puis on
+# verifie la devise reelle de chaque candidat : le suffixe ne suffit pas
+# (CSPX.AS cote en dollars a Amsterdam). L'interface propose le premier, et
+# l'utilisateur valide (mesure le 11/10/2026 : APC.DE, IWDA.AS, NVD.DE, MSF.DE).
+
+# Places en euros, dans l'ordre de preference : Xetra d'abord (le marche
+# allemand de reference, proche des places ou Trade Republic execute)
+_PLACES_EUR = [".DE", ".PA", ".AS", ".MI", ".BR", ".MC", ".LS", ".IR", ".VI", ".HE",
+               ".F", ".MU", ".SG", ".HM", ".DU", ".BE", ".HA"]
+_MOTS_VIDES = {"inc", "corp", "corporation", "plc", "sa", "se", "ag", "nv", "the", "ucits",
+               "etf", "acc", "dist", "usd", "eur", "class", "shares", "ishares", "ishs",
+               "iii", "ii", "fund", "r"}
+_isin_cache = {}               # {isin: {resultat, ts}}
+ISIN_CACHE_TTL = 24 * 3600
+
+
+def _yahoo_search_brut(query: str) -> list:
+    url = ("https://query2.finance.yahoo.com/v1/finance/search?q=" + urllib.parse.quote(query)
+           + "&quotesCount=25&newsCount=0&lang=fr-FR&region=FR")
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=6, context=_SSL_CTX) as resp:
+        return json.loads(resp.read().decode()).get("quotes", []) or []
+
+
+def _mots(s: str) -> set:
+    return {t for t in re.split(r"[^a-z0-9]+", _normalize_search(s or ""))
+            if len(t) >= 3 and t not in _MOTS_VIDES}
+
+
+def cotations_euro(isin: str, nom: str = "") -> dict:
+    """{ok, principal: {symbol, nom}, candidats: [{symbol, nom, place, prix, devise}]}
+    candidats : cotations en euros verifiees, la plus probable en premier."""
+    isin = (isin or "").strip().upper()
+    if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", isin):
+        return {"ok": False, "error": "ISIN invalide"}
+    now = time.time()
+    with _lock:
+        c = _isin_cache.get(isin)
+        if c and now - c["ts"] < ISIN_CACHE_TTL:
+            return c["resultat"]
+    titres = ("EQUITY", "ETF", "MUTUALFUND")
+    try:
+        p = [q for q in _yahoo_search_brut(isin) if q.get("quoteType") in titres]
+    except Exception as e:
+        return {"ok": False, "error": "Yahoo injoignable : " + str(e)}
+    prin = p[0] if p else {}
+    base = (prin.get("symbol") or "").split(".")[0]
+    pnom = prin.get("shortname") or prin.get("longname") or ""
+    ref = _mots(pnom) | _mots(nom)
+    cands = {}
+    for q in (isin, base, nom, pnom):
+        if not q:
+            continue
+        try:
+            quotes = [x for x in p] if q == isin else _yahoo_search_brut(q)
+        except Exception:
+            continue
+        for x in quotes:
+            s = x.get("symbol") or ""
+            suf = "." + s.rsplit(".", 1)[-1] if "." in s else ""
+            if suf not in _PLACES_EUR or x.get("quoteType") not in titres:
+                continue
+            xnom = (x.get("shortname") or x.get("longname") or "").strip()
+            commun = len(ref & _mots(xnom)) + (2 if s.split(".")[0] == base else 0)
+            if commun == 0:
+                continue
+            cands[s] = {"symbol": s, "nom": " ".join(xnom.split()),
+                        "place": x.get("exchDisp") or x.get("exchange") or "",
+                        "_score": (commun, -_PLACES_EUR.index(suf))}
+    classes = sorted(cands.values(), key=lambda c: (-c["_score"][0], -c["_score"][1]))[:5]
+    # Devise et cours reels des meilleurs candidats (meme cache que /cours)
+    prix = get_prices([c["symbol"] for c in classes]) if classes else {}
+    candidats = []
+    for c in classes:
+        info = prix.get(c["symbol"]) or {}
+        if info.get("devise") and info["devise"] != "EUR":
+            continue
+        c.pop("_score", None)
+        c["prix"] = info.get("prix")
+        c["devise"] = info.get("devise") or ""
+        candidats.append(c)
+    resultat = {"ok": True, "principal": {"symbol": prin.get("symbol") or "", "nom": pnom},
+                "candidats": candidats}
+    if candidats:   # un echec de Yahoo ne se garde pas une journee
+        with _lock:
+            _isin_cache[isin] = {"resultat": resultat, "ts": now}
+    return resultat
+
+
 def fetch_yahoo_analysts(yahoo_ticker: str):
     """
     Recupere les avis analystes via le module quoteSummary de Yahoo.
@@ -1229,6 +1327,12 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             if params.get("local", ["0"])[0] == "1":
                 return self._json(200, {"ok": True, "results": _boost_local_etf(q)[:6]})
             return self._json(200, {"ok": True, "results": fetch_yahoo_search(q)})
+
+        if parsed.path == "/isin":
+            # Import du CTO : cotations en euros d'un ISIN (voir cotations_euro)
+            isin = params.get("isin", [""])[0].strip()
+            nom  = params.get("nom", [""])[0].strip()[:120]
+            return self._json(200, cotations_euro(isin, nom))
 
         if parsed.path == "/users":
             try:
