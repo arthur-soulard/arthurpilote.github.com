@@ -3991,7 +3991,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
         <button type="button" class="set-nav-btn" data-set="comptes"
                 onclick="setGoSection('comptes')"><span class="set-nav-ico"><i class="ph ph-wallet"></i></span>Mes comptes</button>
         <button type="button" class="set-nav-btn" data-set="pret"
-                onclick="setGoSection('pret')"><span class="set-nav-ico"><i class="ph ph-graduation-cap"></i></span>Prêt étudiant</button>
+                onclick="setGoSection('pret')"><span class="set-nav-ico"><i class="ph ph-hand-coins"></i></span><span class="pr-nom">Prêt</span></button>
         <button type="button" class="set-nav-btn" data-set="sport"
                 onclick="setGoSection('sport')"><span class="set-nav-ico"><i class="ph ph-person-simple-run"></i></span>Sports</button>
         <button type="button" class="set-nav-btn" data-set="vocabulaire"
@@ -4120,7 +4120,7 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 
         <!-- ──── PRÊT ÉTUDIANT ──── -->
         <div class="set-sec" data-sec="pret">
-          <h3>Prêt étudiant</h3>
+          <h3 class="pr-nom">Prêt</h3>
           <p class="set-lead">Montant, échéances, taux et frais se règlent dans l'onglet dédié.</p>
           <div class="set-links">
             <button type="button" class="btn btn-ghost btn-sm"
@@ -4604,8 +4604,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <div class="fg"><label>Date ex-dividende (optionnel)</label><input id="f-exdiv" placeholder="optionnel"></div>
     </div>
     <div class="fg">
-      <label class="pr-check" title="L'achat apparaîtra aussi dans Prêt étudiant › PEA, sans y être saisi une seconde fois">
-        <input type="checkbox" id="f-pret"> Payé avec l'argent du prêt étudiant</label>
+      <label class="pr-check" title="L'achat apparaîtra aussi dans l'onglet PEA du prêt, sans y être saisi une seconde fois">
+        <input type="checkbox" id="f-pret"> Payé avec l'argent du prêt</label>
       <div class="pr-part">dont <input id="f-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Montant pris sur le prêt"> € pris sur le prêt
         <small>vide : tout l'ordre</small></div>
     </div>
@@ -4643,8 +4643,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
       <div class="fg"><label>Frais (EUR)</label><input id="t-frais" type="number" step="0.01" placeholder="0.70"></div>
     </div>
     <div class="fg" id="t-pret-fg">
-      <label class="pr-check" title="L'ordre apparaîtra aussi dans Prêt étudiant › PEA, sans y être saisi une seconde fois">
-        <input type="checkbox" id="t-pret"> <span id="t-pret-lbl">Payé avec l'argent du prêt étudiant</span></label>
+      <label class="pr-check" title="L'ordre apparaîtra aussi dans l'onglet PEA du prêt, sans y être saisi une seconde fois">
+        <input type="checkbox" id="t-pret"> <span id="t-pret-lbl">Payé avec l'argent du prêt</span></label>
       <div class="pr-part">dont <input id="t-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Part de l'ordre qui concerne le prêt"> € <span id="t-pret-mt-lbl">pris sur le prêt</span>
         <small>vide : tout l'ordre</small></div>
     </div>
@@ -4958,7 +4958,7 @@ function _majBoutonRetour() {
   btn.disabled = _undoIndex() < 0;
   btn.title = _undoModulesOuverts().length
     ? "Annuler la dernière action"
-    : "Retour annule les actions du PEA et du Prêt étudiant, depuis leurs onglets";
+    : "Retour annule les actions du PEA et du prêt, depuis leurs onglets";
 }
 
 function undoLast() {
@@ -7063,8 +7063,8 @@ function renderTx() {
       : `<span class="badge be">${t.type}</span>`;
     const pretBadge = !t.pret ? ""
       : t.pretMontant
-      ? `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Dont ${eur(t.pretMontant)} ${isSell ? "rendus au" : "payés avec le"} prêt étudiant">Prêt ${eur(t.pretMontant)}</span>`
-      : `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Payé avec l'argent du prêt étudiant">Prêt</span>`;
+      ? `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Dont ${eur(t.pretMontant)} ${isSell ? "rendus au" : "payés avec le"} prêt">Prêt ${eur(t.pretMontant)}</span>`
+      : `<span class="badge" style="background:var(--accent-soft);color:var(--accent-text)" title="Payé avec l'argent du prêt">Prêt</span>`;
     const txSectorId   = sectorOf(t.asset);
     const txSectorHtml = txSectorId ? sectorBadgeHtml(txSectorId) : "";
     return `<div class="txr" style="${isFuture ? "opacity:.6;border-left:3px solid var(--a);padding-left:9px" : ""}">
@@ -9133,8 +9133,8 @@ function _txPretSync() {
   const type = document.getElementById("t-type").value;
   document.getElementById("t-pret-fg").style.display = type === "Dividende" ? "none" : "";
   document.getElementById("t-pret-lbl").textContent = type === "Vente"
-    ? "Vente de parts achetées avec le prêt étudiant"
-    : "Payé avec l'argent du prêt étudiant";
+    ? "Vente de parts achetées avec le prêt"
+    : "Payé avec l'argent du prêt";
   document.getElementById("t-pret-mt-lbl").textContent = type === "Vente" ? "rendus au prêt" : "pris sur le prêt";
 }
 /* Part du prêt dans la transaction saisie : false (pas le prêt), {} (tout
@@ -10038,9 +10038,9 @@ async function _showWelcomeIfFirstRun() {
           </div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
-          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F393} Pr\u00eat \u00e9tudiant</div>
+          <div style="font-size:12.5px;font-weight:800;margin-bottom:3px">\u{1F4B8} Pr\u00eat</div>
           <div style="font-size:11px;color:var(--txt2);line-height:1.5">
-            \u00c9ch\u00e9ances, PEA d\u00e9di\u00e9, assurance vie multi-contrats, livret A, frais.
+            \u00c9tudiant ou autre : remboursements, argent plac\u00e9 (PEA, assurance vie, livret A), frais.
           </div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.85rem .95rem">
@@ -12626,7 +12626,7 @@ function soPasser(id) {
       Si le versement est arrivé, confirme-le d'abord dans Dépôts (bouton Arrivé).</span></div></div>` : ""}
     <div class="sop-opts">
       <label class="pac-check">Date d'exécution <input id="sop-date" type="date" value="${todayISO()}"></label>
-      <label class="pac-check"><input type="checkbox" id="sop-pret"> Payé avec le prêt étudiant</label>
+      <label class="pac-check"><input type="checkbox" id="sop-pret"> Payé avec le prêt</label>
       <span class="pr-part">dont <input id="sop-pret-mt" type="number" step="0.01" min="0" placeholder="tout" aria-label="Montant pris sur le prêt"> € pris sur le prêt
         <small>vide : tout · sinon réparti entre les ordres au prorata</small></span>
     </div>
@@ -12853,7 +12853,7 @@ const NAV_SECTIONS = [
     { id: "fin-month", label: "Mois"   },
     { id: "fin-year",  label: "Année"  },
   ]},
-  { id: "sec-pret", label: "Prêt étudiant", children: [
+  { id: "sec-pret", label: "Prêt", children: [
     { id: "pr-overview", label: "Vue d'ensemble" },
     { id: "pr-pea",      label: "PEA"            },
     { id: "pr-av",       label: "Assurance Vie"  },
@@ -13000,7 +13000,7 @@ function _injectSidebar() {
   const openId = _navOuverte;           // au lancement : toutes repliees
   // Icones Phosphor (servies par /vendor/phosphor/) : une par section
   const NAV_ICONS = {
-    "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "graduation-cap",
+    "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "hand-coins",
     "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
     "sec-voc": "cards", "sec-actus": "newspaper",
   };
@@ -13014,7 +13014,7 @@ function _injectSidebar() {
     html += `<div class="sb-sec${isOpen ? " open" : ""}" data-sec="${sec.id}">
       <button class="sb-sec-btn" data-sec-btn="${sec.id}">
         <i class="ph ph-${NAV_ICONS[sec.id] || "circle"} sb-ico"></i>
-        <span>${sec.label}</span>
+        <span>${escHtml(sec.label)}</span>
         <i class="ph ph-caret-right sb-chev"></i>
         <span class="sb-dot"></span>
       </button>
@@ -16157,6 +16157,27 @@ function prPct(n) { return (n == null || isNaN(n)) ? "—" : (n >= 0 ? "+" : "")
 function prN(v) { const n = Number(v); return isFinite(n) ? n : 0; }
 function prCls(n) { return n == null ? "" : (n > 0 ? "pos" : (n < 0 ? "neg" : "")); }
 
+/** Nom du prêt, libre (Paramètres du prêt) : « Prêt » tant qu'il n'est pas
+    donné. Le module s'appelait « Prêt étudiant » jusqu'à la 4.3.33 ; pret.py
+    garde ce nom à un prêt déjà saisi. */
+function prNom() {
+  const n = (typeof PR !== "undefined" && PR && PR.pret) ? String(PR.pret.nom || "").trim() : "";
+  return n || "Prêt";
+}
+
+/** Reporte le nom du prêt là où il est écrit en dur : section de la barre
+    latérale, fil d'Ariane, fenêtre Paramètres (éléments .pr-nom). */
+function prMajNom() {
+  const nom = prNom();
+  const sec = NAV_SECTIONS.find(s => s.id === "sec-pret");
+  if (sec) sec.label = nom;
+  const lbl = document.querySelector('.sb-sec-btn[data-sec-btn="sec-pret"] > span:not(.sb-dot)');
+  if (lbl) lbl.textContent = nom;
+  document.querySelectorAll(".pr-nom").forEach(el => { el.textContent = nom; });
+  const actif = document.querySelector('[id^="pane-pr-"].active');
+  if (actif) _updateCrumb(actif.id.slice(5));
+}
+
 function prDate(iso) {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? m[3] + "/" + m[2] + "/" + m[1] : (iso || "—");
@@ -16669,6 +16690,7 @@ function prEmpty(msg) { return `<div class="m-empty">${msg}</div>`; }
 
 function prRenderAll() {
   if (!PR) return;
+  prMajNom();
   const o = prOverview();
   prRenderOverview(o);
   prRenderPEA(o);
@@ -16816,7 +16838,7 @@ function prRenderPEA(o) {
     </tr>`).join("");
 
   let html = `<div class="m-note">Seuls les ordres du PEA faits avec l'argent du prêt comptent ici : ceux où la case
-    « Payé avec l'argent du prêt étudiant » est cochée. Ils ne sont saisis qu'une fois, dans le PEA :
+    « Payé avec l'argent du prêt » est cochée. Ils ne sont saisis qu'une fois, dans le PEA :
     « + Achat » et « Vente » ouvrent sa fenêtre, case déjà cochée. Un ordre payé en partie avec le prêt
     (« dont … € pris sur le prêt ») ne compte ici que pour cette part, avec la même part des parts et des frais.</div>`;
 
@@ -16996,6 +17018,7 @@ function prRenderParams(o) {
   const p = PR.pret;
 
   let html = prCard("", "Configuration du prêt", `<div class="tw"><table><tbody>
+      <tr><td>Nom</td><td>${escHtml(prNom())}</td></tr>
       <tr><td>Montant emprunté</td><td>${prEur(prN(p.montant))}</td></tr>
       <tr><td>1er déblocage</td><td>${prDate(p.date_deblocage)}</td></tr>
       <tr><td>Versé par la banque</td><td style="white-space:normal;text-align:right">${prTranchesTxt(o)}</td></tr>
@@ -17108,6 +17131,7 @@ function prRenderParams(o) {
 function prConfigModal() {
   const p = PR.pret;
   prOpenForm("Configuration du prêt", `
+    ${prFg("Nom du prêt", "nom", "text", p.nom || "", 'maxlength="40" placeholder="Prêt étudiant, prêt auto…"')}
     ${prFg("Montant emprunté (€)", "montant", "number", p.montant || "", 'step="0.01" min="0" required')}
     <div class="fg-row">
       ${prFg("Date du 1er déblocage", "date_deblocage", "date", p.date_deblocage, "")}
@@ -17119,6 +17143,7 @@ function prConfigModal() {
     </div>`,
     data => {
       PR.pret = {
+        nom: String(data.nom || "").trim(),
         montant: prN(data.montant),
         date_deblocage: data.date_deblocage || "",
         date_premier_remboursement: data.date_premier_remboursement || "",
@@ -18450,6 +18475,12 @@ function paCompteVisible(c) {
   return paReleves().some(r => r.compteId === c.id);
 }
 
+/** Nom affiché d'un compte : la ligne auto du prêt porte le nom donné au prêt
+    (paramètres du prêt), pour qu'il n'y ait qu'un endroit où le changer. */
+function paLabel(c) {
+  return (c.auto === "pret" && typeof PR !== "undefined" && PR) ? prNom() : c.label;
+}
+
 function paEur(v) {
   if (v === null || v === undefined || isNaN(v)) return "—";
   return Math.round(v).toLocaleString("fr-FR") + " €";
@@ -18669,7 +18700,7 @@ function paRenderComptes() {
     return `<div class="pa-cpt${t.dette ? " dette" : ""}">
       <span class="pa-cpt-ico">${escHtml(c.icon || t.icon || "📦")}</span>
       <span>
-        <span class="pa-cpt-name">${escHtml(c.label)}</span>
+        <span class="pa-cpt-name">${escHtml(paLabel(c))}</span>
         ${c.auto ? `<span class="pa-cpt-auto">auto</span>` : ""}
         <div class="pa-cpt-type">${escHtml(t.label)}${last ? " · relevé " + escHtml(paMoisLabel(last.date)) : " · jamais relevé"}</div>
       </span>
@@ -18686,7 +18717,7 @@ function paRenderReleves() {
   if (!head || !body) return;
   const cs = paComptes();
   const mois = [...new Set(paReleves().map(r => r.date))].sort().reverse();
-  head.innerHTML = `<tr><th>Mois</th>${cs.map(c => `<th>${escHtml(c.label)}</th>`).join("")}<th>Net</th></tr>`;
+  head.innerHTML = `<tr><th>Mois</th>${cs.map(c => `<th>${escHtml(paLabel(c))}</th>`).join("")}<th>Net</th></tr>`;
   if (!mois.length) {
     body.innerHTML = `<tr><td colspan="${cs.length + 2}" class="m-empty">Aucun relevé.</td></tr>`;
     return;
@@ -18713,7 +18744,11 @@ function paOpenCompte(id) {
     `<option value="${escHtml(t.id)}">${escHtml(t.icon)} ${escHtml(t.label)}</option>`).join("");
   sel.value = c ? c.type : "livret";
   document.getElementById("pa-cpt-title").textContent = c ? "Modifier le compte" : "Nouveau compte";
-  document.getElementById("pa-cpt-label").value = c ? c.label : "";
+  const lbl = document.getElementById("pa-cpt-label");
+  lbl.value = c ? paLabel(c) : "";
+  // Le nom de la ligne du prêt se change dans les paramètres du prêt
+  lbl.readOnly = !!(c && c.auto === "pret");
+  lbl.title = lbl.readOnly ? "Se change dans les paramètres du prêt" : "";
   document.getElementById("pa-cpt-note").value  = c ? (c.note || "") : "";
   document.getElementById("pa-cpt-auto").style.display = (c && c.auto) ? "" : "none";
   // Un compte auto ne se supprime pas : il serait recréé au prochain chargement
@@ -18835,7 +18870,7 @@ function paBuildSaisie(iso) {
     return `<div class="pa-sai-line">
       <span class="pa-sai-lbl">
         <span>${escHtml(c.icon || t.icon || "📦")}</span>
-        <span>${escHtml(c.label)}${t.dette ? ` <span style="color:var(--r);font-size:10px">(dette)</span>` : ""}</span>
+        <span>${escHtml(paLabel(c))}${t.dette ? ` <span style="color:var(--r);font-size:10px">(dette)</span>` : ""}</span>
         ${c.auto ? `<span class="pa-cpt-auto">auto</span>` : ""}
       </span>
       <input type="number" step="0.01" id="pa-sai-${escHtml(c.id)}"
@@ -20923,12 +20958,12 @@ const DASH_WIDGETS = [
     },
   },
   {
-    id: "pret", label: "Prêt étudiant", module: "Prêt", tab: "pr-overview",
+    id: "pret", label: "Prêt", module: "Prêt", tab: "pr-overview",
     render() {
       if (typeof PR === "undefined" || !PR || !PR.pret || !PR.pret.montant) return null;
       const reste = paValeurAuto({ auto: "pret" });
       if (reste === null) return null;
-      return { lbl: "Prêt étudiant", val: paEur(reste),
+      return { lbl: prNom(), val: paEur(reste),
                sub: "capital restant dû", go: "Voir le prêt" };
     },
   },
@@ -21301,7 +21336,7 @@ async function dashAddExpense() {
 /** Icône du module d'une tuile, la même que dans la barre latérale. */
 const DASH_ICONS = {
   "PEA": "chart-line-up", "Patrimoine": "bank", "Sports": "person-simple-run",
-  "Santé": "heartbeat", "Prêt": "graduation-cap",
+  "Santé": "heartbeat", "Prêt": "hand-coins",
   "Vocabulaire": "cards", "Sauvegarde": "usb", "Comptes": "wallet",
 };
 function dashIcon(w) {
