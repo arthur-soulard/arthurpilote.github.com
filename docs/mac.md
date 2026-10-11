@@ -23,8 +23,8 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 | # | Étape | État |
 |---|---|---|
-| 1 | Socle : dépendances par système, dossier de données, « Ouvrir le dossier », notifications, mise à jour qui ne propose pas le Setup sur Mac, pas de fouille du Bureau sur Mac, build Mac de test | fait, en attente du premier passage sur GitHub |
-| 2 | Lire le résultat du build de test, corriger ce qui casse au lancement | |
+| 1 | Socle : dépendances par système, dossier de données, « Ouvrir le dossier », notifications, mise à jour qui ne propose pas le Setup sur Mac, pas de fouille du Bureau sur Mac, build Mac de test | fait (11/10/2026) |
+| 2 | Lire le résultat du build de test, corriger ce qui casse au lancement | fait (11/10/2026) : icône, pont JS ↔ Python (voir « Pont pywebview et CSP »). Build de test vert, page prête en 0,8 s |
 | 3 | Fenêtre et raccourcis : barre de titre déplaçable, boutons à gauche, Agrandir, taille d'écran, ⌘ au lieu de Ctrl, textes « Windows », ⌘Q qui vide les enregistrements en attente, `private_mode=False` (localStorage gardé, comme sous Windows) | |
 | 4 | Clé USB : réglages (les deux systèmes) + détection sur Mac (`/Volumes`, `diskutil info -plist`) | |
 | 5 | OCR Santé et Vocabulaire : Vision d'Apple (hors ligne, français en mode « accurate », boîtes par mot) et PDFKit pour les PDF, via pyobjc déjà tiré par pywebview | |
@@ -55,6 +55,41 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
   du système pour chacun, dès le premier lancement.
 * **`reveal_main_window(origine)`** écrit « fenêtre ouverte (page) » ou « (delai) » :
   le test du build Mac sait ainsi si l'interface a vraiment démarré.
+
+## Pont pywebview et CSP (étape 2, 11/10/2026)
+
+**Le piège.** pywebview fabrique les fonctions de `pywebview.api` avec
+`new Function(...)` et renvoie chaque réponse de Python par `evaluate_js`, qui
+passe par `eval()`. La CSP de la page (`server._CSP`) n'autorise pas
+`'unsafe-eval'`. Sous Windows, WebView2 exempte le script injecté ; WebKit (Mac)
+non. Constaté sur le build de test : « EvalError … 'unsafe-eval' », pont vide
+(0 fonction), aucun module chargé, fenêtre ouverte seulement par le délai de 20 s.
+
+**La correction** (`plateforme.adapter_pont_mac`, appelée par `main()` sur Mac) :
+fermeture à la place de `new Function` dans le script de pywebview, et
+`evaluate_js` de la fenêtre principale remplacé par `run_js` (pas d'`eval`).
+Vérifiée dans un navigateur sous la même CSP (script d'origine : EvalError ;
+adapté : fonctions créées, appel envoyé, réponse reçue), puis sur le build de
+test : 61 fonctions, 7 modules chargés, « fenêtre ouverte (page) ».
+
+* **Ne jamais « réparer » en ajoutant `'unsafe-eval'` à la CSP** : c'est
+  précisément ce que l'adaptation évite.
+* Elle vise le texte de pywebview **6.2.1** (épinglée). En changeant de version,
+  relancer le build de test : si le motif a changé, la sortie écrit « pont
+  pywebview non adapté » et le journal montre « pont Python false ».
+* `_waitForPywebview` attend une vraie fonction (`app_ready`) : pywebview 6 crée
+  `pywebview.api` vide puis le remplit. Le croire prêt trop tôt posait
+  `_surveillerEcritures()` sur un objet vide.
+
+**Journal de démarrage** (`window.__journal`, index.html) : étapes de `boot()`
+et erreurs JS, avec leur instant. `PILOTE_DIAG=1` (test Mac seulement) fait relire
+ce journal par `app.py` 30 s après le lancement, via `run_js` (pas
+`evaluate_js`, bloqué par la CSP). `build-mac.yml` le publie en annotation
+« Diag ». Sous Windows aussi, `PILOTE_DIAG=1 python src/app.py` l'affiche.
+
+Constat annexe sous Windows : sur le PC d'Arthur, la page est prête entre 13 et
+16 s, et une fois à 22 s (PC chargé) ; elle s'est alors ouverte par le délai de
+secours de 20 s. Rien de cassé, mais la marge est mince.
 
 ## Build Mac
 

@@ -283,7 +283,9 @@ Corollaires à ne pas défaire :
 
 * **Aucun en-tête CORS.** Tout est same-origin ; il n'y a rien à autoriser.
 * **CSP stricte** (`_CSP`) + `X-Frame-Options: DENY` + `nosniff` + `no-referrer`.
-  C'est elle qui interdit les CDN : d'où `ui/vendor/`. Ne pas rajouter de
+  C'est elle qui interdit les CDN : d'où `ui/vendor/`. Sur Mac, pywebview y évaluait du
+  texte (`new Function`, `eval`) : adapté par `plateforme.adapter_pont_mac`. Ne jamais
+  ajouter `'unsafe-eval'` pour « réparer » (`docs/mac.md`). Ne pas rajouter de
   `<script src="https://…>` dans index.html, il sera silencieusement bloqué.
 * `/vendor/` est joignable **sans** jeton : le navigateur charge `<script src>` et
   `<link href>` lui-même, ces requêtes ne passent pas par le wrapper `fetch`. Ces
