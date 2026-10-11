@@ -1927,6 +1927,129 @@ label.vo-check {
 .m-iconbtn:disabled { opacity: .28; cursor: default; }
 .m-iconbtn:disabled:hover { background: transparent; color: var(--txt3); }
 
+/* ══════════ Actus (boîte Gmail des newsletters) ══════════ */
+/* Liste à gauche, mail à droite : les deux tiennent dans la hauteur de la
+   fenêtre (acAjusterHauteur) et défilent chacun dans leur cadre. */
+#pane-ac-boite [hidden] { display: none !important; }
+.ac-maj { font-size: 12px; color: var(--txt3); }
+.ac-maj.err { color: var(--r); }
+.ac-maj-btn { font-size: 15px; margin-left: -6px; }
+.ac-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.ac-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--brd2); background: transparent; color: var(--txt2);
+  border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 500;
+  transition: background-color .15s, color .15s;
+}
+.ac-chip:hover { background: var(--hover); color: var(--txt); }
+.ac-chip.active { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; }
+.ac-chip small { font-size: 11px; opacity: .7; }
+.ac-layout {
+  display: grid; grid-template-columns: minmax(270px, 330px) minmax(0, 1fr); gap: 14px;
+  height: calc(100vh - 230px); min-height: 380px;
+}
+.ac-liste, .ac-lecteur, .ac-off {
+  background: var(--bg2); border-radius: var(--radl); box-shadow: var(--sh);
+  overflow: hidden; display: flex; flex-direction: column; min-height: 0;
+}
+.ac-off { min-height: 340px; }
+.ac-liste-in { flex: 1; overflow-y: auto; padding: 6px; }
+.ac-mail {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  color: var(--txt); padding: 9px 12px 10px 24px; border-radius: 12px; position: relative;
+  transition: background-color .12s;
+}
+.ac-mail + .ac-mail { margin-top: 1px; }
+.ac-mail:hover { background: var(--hover); }
+.ac-mail.sel { background: var(--accent-soft); }
+.ac-mail:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ac-mail-l1 { display: flex; align-items: baseline; gap: 8px; }
+.ac-mail-de {
+  flex: 1; min-width: 0; font-size: 12.5px; color: var(--txt2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ac-mail-date { font-size: 11.5px; color: var(--txt3); white-space: nowrap; }
+.ac-mail-objet {
+  font-size: 13px; line-height: 1.35; margin-top: 2px; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ac-mail.nonlu .ac-mail-de { color: var(--txt); font-weight: 600; }
+.ac-mail.nonlu .ac-mail-objet { font-weight: 600; }
+/* Le point d'accent marque un mail non lu */
+.ac-mail.nonlu::before {
+  content: ""; position: absolute; left: 10px; top: 16px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
+.ac-mail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.ac-mail-tags .m-tag { font-family: var(--font); font-size: 10.5px; font-weight: 500; }
+.ac-lect-h {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 18px 12px; border-bottom: 1px solid var(--brd);
+}
+.ac-lect-t { font-family: var(--serif); font-size: 20px; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
+.ac-lect-s { font-size: 12px; color: var(--txt2); margin-top: 4px; overflow-wrap: anywhere; }
+.ac-lect-acts { display: flex; gap: 6px; flex-shrink: 0; margin-left: auto; }
+/* Le mail garde son propre fond (blanc), comme dans Gmail */
+.ac-cadre { flex: 1; min-height: 0; background: #fff; }
+.ac-cadre iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+.ac-vide {
+  margin: auto; padding: 28px; max-width: 400px;
+  text-align: center; font-size: 13px; line-height: 1.55; color: var(--txt2);
+}
+.ac-vide > .ph { display: block; font-size: 34px; color: var(--txt3); margin-bottom: 10px; }
+.ac-vide b { display: block; margin-bottom: 6px; font-family: var(--serif); font-size: 19px; font-weight: 500; color: var(--txt); }
+.ac-vide .btn { margin-top: 14px; }
+.ac-vide .btn + .btn { margin-left: 6px; }
+.ac-sq { padding: 10px 14px; }
+.ac-sq i {
+  display: block; height: 9px; margin: 8px 0; border-radius: 5px;
+  background: var(--bg3); animation: dashPulse 1.4s ease-in-out infinite;
+}
+.ac-cadre .ac-sq i { background: #eee; }
+.ac-tourne { display: inline-block; animation: sa-spin .9s linear infinite; }
+/* Nombre de non lus, sur l'en-tête de la section dans la barre latérale */
+.ac-sb-n {
+  order: 1; margin-left: auto; padding: 0 7px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-text);
+  font-size: 11px; font-weight: 600; line-height: 18px;
+}
+.sb-sec-btn:has(.ac-sb-n:not([hidden])) .sb-chev { margin-left: 8px; }
+
+/* Onglet Connexion : la fiche à gauche, la boîte à droite */
+.ac-cnx { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ac-intro { font-size: 13px; color: var(--txt2); line-height: 1.55; margin-bottom: 16px; }
+.ac-etapes { list-style: none; counter-reset: etape; display: flex; flex-direction: column; gap: 15px; }
+.ac-etapes li {
+  counter-increment: etape; position: relative; padding-left: 38px;
+  font-size: 13px; line-height: 1.55;
+}
+.ac-etapes li::before {
+  content: counter(etape); position: absolute; left: 0; top: -2px;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent-text);
+  font-family: var(--serif); font-size: 14px; font-weight: 600;
+}
+.ac-etapes small { display: block; margin-top: 2px; font-size: 12px; color: var(--txt2); }
+.ac-etapes .btn { margin-top: 8px; }
+.ac-pied {
+  margin-top: 18px; padding-top: 13px; border-top: 1px solid var(--brd);
+  font-size: 12px; color: var(--txt2); line-height: 1.55;
+}
+.ac-pied p + p { margin-top: 6px; }
+.ac-etat { display: flex; align-items: center; gap: 10px; font-size: 13.5px; margin-bottom: 6px; }
+.ac-etat .ph { font-size: 22px; color: var(--g); }
+.ac-note { font-size: 12px; color: var(--txt2); line-height: 1.55; margin-bottom: 14px; }
+.ac-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ac-err { margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--r); }
+.ac-err:empty { display: none; }
+@media (max-width: 900px) {
+  .ac-cnx { grid-template-columns: 1fr; }
+  .ac-layout { grid-template-columns: 1fr; height: auto !important; }
+  .ac-liste-in { max-height: 320px; }
+  .ac-cadre { height: 70vh; flex: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    IDENTITÉ « CARNET »
    Un carnet de bord plutôt qu'un logiciel de bureau : titres et grands
@@ -3269,6 +3392,68 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
     <div class="card-h"><span class="card-t">Par liste</span>
       <span class="m-note" style="margin:0">Les listes ne se mélangent jamais</span></div>
     <div class="card-b"><div id="vo-stats-listes"></div></div>
+  </div>
+</div>
+
+<!-- ════════════════════ ACTUS ════════════════════ -->
+
+<!-- La boîte Gmail des newsletters, relevée par Python (actus.py) : liste à
+     gauche, mail à droite dans une iframe isolée. Rendu par acRenderBoite(). -->
+<div class="pane" id="pane-ac-boite">
+  <div class="m-head">
+    <span class="m-nav-lbl">Newsletters</span>
+    <span class="ac-maj" id="ac-maj"></span>
+    <button class="m-iconbtn ac-maj-btn" id="ac-btn-maj" onclick="acReleve()" title="Relever la boîte maintenant"><i class="ph ph-arrows-clockwise"></i></button>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="ac-off" id="ac-off" hidden></div>
+  <div class="ac-filtres" id="ac-filtres"></div>
+  <div class="ac-layout" id="ac-layout">
+    <div class="ac-liste"><div class="ac-liste-in" id="ac-liste"></div></div>
+    <div class="ac-lecteur" id="ac-lecteur"></div>
+  </div>
+</div>
+
+<div class="pane" id="pane-ac-connexion">
+  <div class="m-head">
+    <span class="m-nav-lbl">Connexion</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="ac-cnx">
+    <div class="card">
+      <div class="card-h"><span class="card-t">Créer le mot de passe</span></div>
+      <div class="card-b">
+        <p class="ac-intro">Pilote lit ta boîte avec un <b>mot de passe d'application</b>&nbsp;: un code que Google
+          crée pour une seule appli. Il ne permet pas de se connecter à ton compte sur le web, et tu peux
+          le supprimer à tout moment.</p>
+        <ol class="ac-etapes">
+          <li><b>Active la validation en deux étapes</b> sur le compte Google de ta boîte à newsletters,
+            si ce n'est pas déjà fait.
+            <small>Google l'exige pour créer le code.</small>
+            <button class="btn btn-ghost btn-sm" onclick="acLienGoogle('2sv')"><i class="ph ph-arrow-square-out"></i> Validation en deux étapes</button></li>
+          <li><b>Ouvre la page des mots de passe d'application</b> de ce compte.
+            <small>Si Google redemande ton mot de passe, c'est normal. Vérifie en haut à droite (photo du
+              profil) que c'est bien le compte de ta boîte à newsletters, et pas un autre.</small>
+            <button class="btn btn-ghost btn-sm" onclick="acLienGoogle('mdp')"><i class="ph ph-arrow-square-out"></i> Mots de passe d'application</button></li>
+          <li><b>Donne un nom au code</b>, par exemple «&nbsp;Pilote&nbsp;», puis clique sur <b>Créer</b>.</li>
+          <li><b>Copie le code</b> que Google affiche (16&nbsp;caractères, en quatre groupes) et colle-le
+            à droite, avec l'adresse de la boîte.
+            <small>Google ne le remontre plus. Si tu le perds, il suffit d'en créer un autre.</small></li>
+        </ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Ta boîte</span></div>
+      <div class="card-b">
+        <div id="ac-cnx-boite"></div>
+        <div class="ac-pied">
+          <p>Pilote garde le code chiffré par Windows sur ce PC, et ne l'envoie qu'à Gmail.</p>
+          <p><b>Pour le retirer</b>&nbsp;: sur la page des mots de passe d'application, clique sur
+            <b>Supprimer</b> à côté de «&nbsp;Pilote&nbsp;». Google l'annule aussi tout seul si tu
+            changes le mot de passe de ton compte&nbsp;: il faudra alors en créer un nouveau.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -12704,6 +12889,10 @@ const NAV_SECTIONS = [
     { id: "vo-mots",    label: "Mots"         },
     { id: "vo-stats",   label: "Statistiques" },
   ]},
+  { id: "sec-actus", label: "Actus", children: [
+    { id: "ac-boite",     label: "Newsletters" },
+    { id: "ac-connexion", label: "Connexion"          },
+  ]},
 ];
 
 // Liste plate : conserve l'API historique (onglets masques, Ctrl+1..7, config)
@@ -12822,7 +13011,7 @@ function _injectSidebar() {
   const NAV_ICONS = {
     "sec-pea": "chart-line-up", "sec-comptes": "wallet", "sec-pret": "graduation-cap",
     "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
-    "sec-voc": "cards",
+    "sec-voc": "cards", "sec-actus": "newspaper",
   };
   let html = `<aside class="sidebar" id="app-sidebar">
     <button class="sb-item sb-home" data-tab="home"><i class="ph ph-house sb-ico"></i><span>Accueil</span></button>`;
@@ -20146,6 +20335,470 @@ function voRenderSetBoites() {
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════
+   MODULE ACTUS
+   La boîte Gmail des newsletters, en lecture. Python fait le travail
+   (actus.py : IMAP, mot de passe chiffré par Windows) ; la page ne voit
+   jamais le mot de passe d'application, seulement l'adresse et les mails.
+
+   * La liste : les 60 derniers mails de la boîte de réception, relevés à
+     l'ouverture de l'onglet, au bouton Actualiser et toutes les 3 minutes
+     tant que Pilote est ouvert. Le nombre de non lus s'affiche sur la
+     section dans la barre latérale.
+   * Un mail s'ouvre dans une iframe servie par le serveur local sous ticket
+     (server.publier_mail) : aucun script, isolée de Pilote, images comprises.
+     L'ouvrir le marque comme lu dans Gmail, comme Gmail lui-même ; le bouton
+     « Non lu » le remet en gras, ici et dans Gmail.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const AC_RELEVE_MS = 3 * 60 * 1000;
+
+const AC = {
+  config:  null,      // {adresse, connecte} ; null tant que pas chargé
+  mails:   [],        // [{uid, de, adresseDe, objet, date, lu, libelles, fil}]
+  libelles: [],
+  etat:    "vide",    // vide | chargement | pret | erreur (erreur = aucune liste à montrer)
+  erreur:  "",        // dernier relevé raté ; la liste précédente reste affichée
+  code:    "",
+  majA:    null,      // Date du dernier relevé réussi
+  filtre:  "tout",    // tout | nonlus | l:<libellé>
+  lecture: null,      // {uid, etat: chargement|pret|erreur, ticket, erreur}
+  formMdp: false,     // formulaire rouvert alors que la boîte est connectée
+};
+let _acBootstrapped = false;
+let _acTimer = null;
+let _acReleveEnCours = null;
+
+function acApi() { return (window.pywebview && pywebview.api) ? pywebview.api : null; }
+function acConnecte() { return !!(AC.config && AC.config.connecte); }
+function acOngletOuvert(id) { const p = document.getElementById("pane-" + id); return !!(p && p.classList.contains("active")); }
+function acMail(uid) { return AC.mails.find(m => m.uid === uid) || null; }
+
+async function acBootstrap() {
+  if (_acBootstrapped) return;
+  const api = acApi();
+  if (!api) return;
+  try {
+    const r = await api.load_actus();
+    if (r && r.ok) AC.config = { adresse: r.adresse || "", connecte: !!r.connecte };
+  } catch (e) {}
+  if (!AC.config) return;
+  _acBootstrapped = true;
+  // Premier relevé un peu après le lancement : les cours passent d'abord
+  if (acConnecte()) { acDemarrerReleve(); setTimeout(acReleve, 3000); }
+}
+
+function acDemarrerReleve() {
+  clearInterval(_acTimer);
+  _acTimer = setInterval(acReleve, AC_RELEVE_MS);
+}
+function acArreterReleve() { clearInterval(_acTimer); _acTimer = null; }
+
+/* ── Relevé de la boîte ────────────────────────────────────────────────── */
+
+function acReleve() {
+  const api = acApi();
+  if (!api || !acConnecte()) return Promise.resolve();
+  if (_acReleveEnCours) return _acReleveEnCours;
+  if (!AC.mails.length) AC.etat = "chargement";
+  _acReleveEnCours = (async () => {
+    let r = null;
+    try { r = await api.actus_lister(); }
+    catch (e) { r = { ok: false, error: String(e) }; }
+    if (r && r.ok) {
+      AC.mails = r.mails || [];
+      AC.libelles = r.libelles || [];
+      AC.etat = "pret"; AC.erreur = ""; AC.code = "";
+      AC.majA = new Date();
+      if (AC.filtre.startsWith("l:") && !AC.libelles.includes(AC.filtre.slice(2))) AC.filtre = "tout";
+    } else {
+      AC.code   = (r && r.code) || "";
+      AC.erreur = (r && r.error) || "Relevé impossible.";
+      // Une liste déjà affichée reste à l'écran : seul le bandeau signale l'échec
+      AC.etat = AC.mails.length ? "pret" : "erreur";
+      // Plus de mot de passe lisible : inutile de relancer toutes les 3 minutes
+      if (AC.code === "config") { AC.config.connecte = false; acArreterReleve(); }
+    }
+  })();
+  acRenderSiOuvert();               // « Relevé… » sur le bouton, squelette si rien à montrer
+  return _acReleveEnCours.finally(() => {
+    _acReleveEnCours = null;
+    acRenderBadge();
+    acRenderSiOuvert();
+  });
+}
+
+function acRenderSiOuvert() {
+  if (acOngletOuvert("ac-boite")) acRenderBoite();
+  if (acOngletOuvert("ac-connexion")) acRenderConnexion();
+}
+
+/* Nombre de non lus sur l'en-tête de la section, dans la barre latérale */
+function acRenderBadge() {
+  const btn = document.querySelector('.sb-sec-btn[data-sec-btn="sec-actus"]');
+  if (!btn) return;
+  let b = btn.querySelector(".ac-sb-n");
+  if (!b) {
+    b = document.createElement("span");
+    b.className = "ac-sb-n";
+    btn.appendChild(b);
+  }
+  const n = acConnecte() ? AC.mails.filter(m => !m.lu).length : 0;
+  b.hidden = !n;
+  b.textContent = n;
+  b.title = n + (n > 1 ? " mails non lus" : " mail non lu");
+}
+
+/* ── Dates ─────────────────────────────────────────────────────────────── */
+
+function acDateCourte(iso) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return "";
+  const auj = new Date();
+  if (d.toDateString() === auj.toDateString())
+    return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const hier = new Date(auj); hier.setDate(auj.getDate() - 1);
+  if (d.toDateString() === hier.toDateString()) return "hier";
+  return d.toLocaleDateString("fr-FR", d.getFullYear() === auj.getFullYear()
+    ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+}
+
+function acDateLongue(iso) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return "";
+  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+       + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+/* ══ ONGLET NEWSLETTERS ═══════════════════════════════════════════ */
+
+function acRenderBoite() {
+  const off = document.getElementById("ac-off");
+  if (!off) return;
+  const on = acConnecte();
+  off.hidden = on;
+  document.getElementById("ac-filtres").hidden = !on;
+  document.getElementById("ac-layout").hidden = !on;
+  document.getElementById("ac-btn-maj").hidden = !on;
+  if (!on) {
+    document.getElementById("ac-maj").textContent = "";
+    off.innerHTML = `<div class="ac-vide">
+        <i class="ph ph-newspaper"></i>
+        <b>Connecte ta boîte à newsletters</b>
+        Pilote affichera ici les mails de ta boîte Gmail, relevés toutes les 3&nbsp;minutes.
+        Il faut d'abord un mot de passe d'application Google&nbsp;: la fiche de l'onglet Connexion
+        explique comment le créer.
+        ${AC.erreur && AC.code === "config" ? `<div class="ac-err">${escHtml(AC.erreur)}</div>` : ""}
+        <div><button class="btn btn-primary" onclick="acAller('ac-connexion')"><i class="ph ph-plug"></i> Connecter ma boîte</button></div>
+      </div>`;
+    return;
+  }
+  acRenderMaj();
+  acRenderFiltres();
+  acRenderListe();
+  if (!document.getElementById("ac-lecteur").dataset.rendu) acRenderLecteur();
+  acAjusterHauteur();
+}
+
+function acRenderMaj() {
+  const el = document.getElementById("ac-maj");
+  const btn = document.getElementById("ac-btn-maj");
+  if (!el) return;
+  const enCours = !!_acReleveEnCours;
+  if (btn) btn.innerHTML = `<i class="ph ph-arrows-clockwise${enCours ? " ac-tourne" : ""}"></i>`;
+  el.classList.toggle("err", !!(AC.erreur && AC.mails.length));
+  if (AC.erreur && AC.mails.length) el.textContent = AC.erreur;
+  else if (AC.majA) el.textContent = "À jour à " + AC.majA.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  else el.textContent = "";
+}
+
+function acMailsFiltres() {
+  if (AC.filtre === "nonlus") return AC.mails.filter(m => !m.lu);
+  if (AC.filtre.startsWith("l:")) {
+    const l = AC.filtre.slice(2);
+    return AC.mails.filter(m => (m.libelles || []).includes(l));
+  }
+  return AC.mails;
+}
+
+function acRenderFiltres() {
+  const box = document.getElementById("ac-filtres");
+  if (!box) return;
+  if (!AC.mails.length) { box.innerHTML = ""; return; }
+  const puces = [["tout", "Tout", AC.mails.length],
+                 ["nonlus", "Non lus", AC.mails.filter(m => !m.lu).length]]
+    .concat(AC.libelles.map(l => ["l:" + l, l, AC.mails.filter(m => (m.libelles || []).includes(l)).length]));
+  box.innerHTML = puces.map(([id, lbl, n]) =>
+    `<button class="ac-chip${AC.filtre === id ? " active" : ""}" data-f="${escHtml(id)}">${escHtml(lbl)} <small>${n}</small></button>`
+  ).join("");
+  box.onclick = e => {
+    const b = e.target.closest(".ac-chip");
+    if (!b) return;
+    AC.filtre = b.dataset.f;
+    acRenderFiltres();
+    acRenderListe();
+  };
+}
+
+function acRenderListe() {
+  const box = document.getElementById("ac-liste");
+  if (!box) return;
+  const haut = box.scrollTop;
+  if (AC.etat === "chargement" && !AC.mails.length) {
+    box.innerHTML = Array.from({ length: 7 }, () =>
+      `<div class="ac-sq"><i style="width:45%"></i><i style="width:88%"></i></div>`).join("");
+    return;
+  }
+  if (AC.etat === "erreur") {
+    box.innerHTML = `<div class="ac-vide">
+        <i class="ph ph-warning-circle"></i>
+        <b>Boîte injoignable</b>${escHtml(AC.erreur)}
+        <div><button class="btn btn-primary btn-sm" onclick="acReleve()"><i class="ph ph-arrows-clockwise"></i> Réessayer</button>${
+          AC.code === "auth" ? `<button class="btn btn-ghost btn-sm" onclick="acAller('ac-connexion')">Connexion</button>` : ""}</div>
+      </div>`;
+    return;
+  }
+  const mails = acMailsFiltres();
+  if (!mails.length) {
+    box.innerHTML = AC.mails.length
+      ? `<div class="ac-vide">${AC.filtre === "nonlus" ? "Aucun mail non lu." : "Aucun mail avec ce libellé."}
+           <div><button class="btn btn-ghost btn-sm" onclick="AC.filtre='tout';acRenderFiltres();acRenderListe()">Tout afficher</button></div></div>`
+      : `<div class="ac-vide"><i class="ph ph-tray"></i><b>Boîte vide</b>Aucun mail dans la boîte de réception.</div>`;
+    return;
+  }
+  const sel = AC.lecture && AC.lecture.uid;
+  box.innerHTML = mails.map(m => `
+    <button class="ac-mail${m.lu ? "" : " nonlu"}${m.uid === sel ? " sel" : ""}" data-uid="${m.uid}"
+            title="${escHtml(m.adresseDe || m.de)}">
+      <div class="ac-mail-l1"><span class="ac-mail-de">${escHtml(m.de)}</span><span class="ac-mail-date">${acDateCourte(m.date)}</span></div>
+      <div class="ac-mail-objet">${escHtml(m.objet)}</div>
+      ${(m.libelles || []).length ? `<div class="ac-mail-tags">${m.libelles.map(l => `<span class="m-tag">${escHtml(l)}</span>`).join("")}</div>` : ""}
+    </button>`).join("");
+  box.scrollTop = haut;
+  box.onclick = e => {
+    const b = e.target.closest(".ac-mail");
+    if (b) acOuvrir(Number(b.dataset.uid));
+  };
+}
+
+/* La liste et le mail occupent la hauteur de la fenêtre, sans faire défiler la page */
+function acAjusterHauteur() {
+  const el = document.getElementById("ac-layout");
+  if (!el || !el.offsetParent || window.innerWidth <= 900) return;
+  const haut = el.getBoundingClientRect().top + window.scrollY;
+  el.style.height = Math.max(380, window.innerHeight - haut - 36) + "px";
+}
+window.addEventListener("resize", () => { if (acOngletOuvert("ac-boite")) acAjusterHauteur(); });
+
+/* ── Lecture d'un mail ─────────────────────────────────────────────────── */
+
+async function acOuvrir(uid) {
+  const api = acApi();
+  const m = acMail(uid);
+  if (!api || !m) return;
+  AC.lecture = { uid, etat: "chargement" };
+  acRenderListe();
+  acRenderLecteur();
+  let r = null;
+  try { r = await api.actus_ouvrir(uid); }
+  catch (e) { r = { ok: false, error: String(e) }; }
+  if (!AC.lecture || AC.lecture.uid !== uid) return;   // un autre mail a été choisi entre-temps
+  if (r && r.ok) {
+    AC.lecture = { uid, etat: "pret", ticket: r.ticket };
+    const mm = acMail(uid);
+    if (mm && !mm.lu) { mm.lu = true; acRenderFiltres(); acRenderListe(); acRenderBadge(); }
+  } else {
+    AC.lecture = { uid, etat: "erreur", erreur: (r && r.error) || "Ce mail ne s'ouvre pas." };
+  }
+  acRenderLecteur();
+}
+
+function acRenderLecteur() {
+  const box = document.getElementById("ac-lecteur");
+  if (!box) return;
+  box.dataset.rendu = "1";
+  const L = AC.lecture;
+  const m = L && acMail(L.uid);
+  if (!m) {
+    box.innerHTML = `<div class="ac-vide"><i class="ph ph-envelope-open"></i><b>Choisis un mail</b>
+      Il s'ouvre ici, images comprises. Ses liens s'ouvrent dans ton navigateur.</div>`;
+    return;
+  }
+  let corps;
+  if (L.etat === "pret") {
+    corps = `<div class="ac-cadre"><iframe src="/actus/mail/${encodeURIComponent(L.ticket)}"
+      sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"
+      title="${escHtml(m.objet)}"></iframe></div>`;
+  } else if (L.etat === "erreur") {
+    corps = `<div class="ac-vide"><i class="ph ph-warning-circle"></i>${escHtml(L.erreur)}
+      <div><button class="btn btn-primary btn-sm" onclick="acOuvrir(${m.uid})">Réessayer</button></div></div>`;
+  } else {
+    corps = `<div class="ac-cadre"><div class="ac-sq">${["70%", "92%", "84%", "40%", "", "88%", "76%", "90%"]
+      .map(w => w ? `<i style="width:${w}"></i>` : "<br>").join("")}</div></div>`;
+  }
+  box.innerHTML = `<div class="ac-lect-h" id="ac-lect-h"></div>` + corps;
+  acRenderLecteurTete();
+}
+
+/* L'en-tête seul : le redessiner ne recharge pas le mail */
+function acRenderLecteurTete() {
+  const h = document.getElementById("ac-lect-h");
+  const m = AC.lecture && acMail(AC.lecture.uid);
+  if (!h || !m) return;
+  const adr = m.adresseDe && m.adresseDe !== m.de ? ` &lt;${escHtml(m.adresseDe)}&gt;` : "";
+  h.innerHTML = `
+    <div style="min-width:0">
+      <div class="ac-lect-t">${escHtml(m.objet)}</div>
+      <div class="ac-lect-s">${escHtml(m.de)}${adr} · ${acDateLongue(m.date)}</div>
+    </div>
+    <div class="ac-lect-acts">
+      <button class="btn btn-ghost btn-sm" onclick="acBasculerLu(${m.uid})"
+              title="${m.lu ? "Le remettre en gras, ici et dans Gmail" : "Le marquer comme lu, ici et dans Gmail"}">
+        <i class="ph ph-envelope${m.lu ? "-simple" : "-open"}"></i> ${m.lu ? "Non lu" : "Lu"}</button>
+      <button class="btn btn-ghost btn-sm" onclick="acOuvrirGmail(${m.uid})"><i class="ph ph-arrow-square-out"></i> Ouvrir dans Gmail</button>
+    </div>`;
+}
+
+async function acBasculerLu(uid) {
+  const api = acApi();
+  const m = acMail(uid);
+  if (!api || !m) return;
+  const lu = !m.lu;
+  const r = await api.actus_marquer(uid, lu);
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Gmail n'a pas pris le changement", "err"); return; }
+  const mm = acMail(uid);          // la liste a pu être relevée entre-temps
+  if (mm) mm.lu = lu;
+  acRenderFiltres(); acRenderListe(); acRenderBadge(); acRenderLecteurTete();
+}
+
+/* Le fil dans Gmail, sur le bon compte même si le navigateur en a plusieurs */
+function acOuvrirGmail(uid) {
+  const api = acApi();
+  const m = acMail(uid);
+  if (!api || !AC.config) return;
+  api.open_url("https://mail.google.com/mail/?authuser=" + encodeURIComponent(AC.config.adresse)
+             + (m && m.fil ? "#all/" + m.fil : "#inbox"));
+}
+
+function acAller(id) { goTab(id); _setActiveSidebar(id); }
+
+/* ══ ONGLET CONNEXION ════════════════════════════════════════════════════ */
+
+function acLienGoogle(quoi) {
+  const api = acApi();
+  if (!api) return;
+  // L'adresse saisie choisit le bon compte quand le navigateur en a plusieurs
+  const champ = document.getElementById("ac-adresse");
+  const adr = (champ && champ.value.trim()) || (AC.config && AC.config.adresse) || "";
+  const url = quoi === "2sv"
+    ? "https://myaccount.google.com/signinoptions/two-step-verification"
+    : "https://myaccount.google.com/apppasswords";
+  api.open_url(adr.includes("@") ? url + "?authuser=" + encodeURIComponent(adr) : url);
+}
+
+function acRenderConnexion() {
+  const box = document.getElementById("ac-cnx-boite");
+  if (!box) return;
+  const cfg = AC.config || { adresse: "", connecte: false };
+  if (cfg.connecte && !AC.formMdp) {
+    box.innerHTML = `
+      <div class="ac-etat"><i class="ph ph-check-circle"></i><span>Connectée à <b>${escHtml(cfg.adresse)}</b></span></div>
+      <p class="ac-note">Pilote relève la boîte toutes les 3&nbsp;minutes tant qu'il est ouvert.
+        Ouvrir un mail le marque comme lu, dans Gmail aussi.</p>
+      <div class="ac-btns">
+        <button class="btn btn-primary" onclick="acAller('ac-boite')"><i class="ph ph-tray"></i> Voir la boîte</button>
+        <button class="btn btn-ghost" onclick="AC.formMdp=true;acRenderConnexion()">Changer de code</button>
+        <button class="btn btn-ghost" onclick="acDeconnecter()">Déconnecter</button>
+      </div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="fg"><label for="ac-adresse">Adresse Gmail de la boîte</label>
+      <input id="ac-adresse" type="email" autocomplete="off" spellcheck="false"
+             placeholder="prenom.nom@gmail.com" value="${escHtml(cfg.adresse)}"></div>
+    <div class="fg"><label for="ac-mdp">Mot de passe d'application</label>
+      <input id="ac-mdp" type="password" autocomplete="off" spellcheck="false"
+             placeholder="xxxx xxxx xxxx xxxx"></div>
+    <p class="ac-note">Pilote vérifie le code auprès de Gmail avant de l'enregistrer.</p>
+    <div class="ac-btns">
+      <button class="btn btn-primary" id="ac-btn-cnx" onclick="acConnecter()"><i class="ph ph-plug"></i> Connecter</button>
+      ${cfg.connecte ? `<button class="btn btn-ghost" onclick="AC.formMdp=false;acRenderConnexion()">Annuler</button>` : ""}
+    </div>
+    <div class="ac-err" id="ac-cnx-err">${AC.code === "config" || AC.code === "auth" ? escHtml(AC.erreur) : ""}</div>`;
+  box.querySelectorAll("input").forEach(i => i.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); acConnecter(); }
+  }));
+}
+
+async function acConnecter() {
+  const api = acApi();
+  const btn = document.getElementById("ac-btn-cnx");
+  const err = document.getElementById("ac-cnx-err");
+  if (!api || !btn || btn.disabled) return;
+  const adresse = document.getElementById("ac-adresse").value.trim();
+  const mdp = document.getElementById("ac-mdp").value;
+  const lbl = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="ph ph-circle-notch ac-tourne"></i> Connexion à Gmail…`;
+  err.textContent = "";
+  let r = null;
+  try { r = await api.save_actus(adresse, mdp); }
+  catch (e) { r = { ok: false, error: String(e) }; }
+  btn.disabled = false;
+  btn.innerHTML = lbl;
+  if (r && r.gele) return;
+  if (!r || !r.ok) {
+    err.textContent = (r && r.error) || "Connexion impossible.";
+    const champ = document.getElementById(r && r.code === "saisie" && !adresse.includes("@") ? "ac-adresse" : "ac-mdp");
+    if (champ) champ.focus();
+    return;
+  }
+  AC.config = { adresse: r.adresse || adresse, connecte: !!r.connecte };
+  AC.formMdp = false;
+  AC.mails = []; AC.libelles = []; AC.etat = "vide"; AC.erreur = ""; AC.code = "";
+  AC.majA = null; AC.filtre = "tout"; AC.lecture = null;
+  const lect = document.getElementById("ac-lecteur");
+  if (lect) delete lect.dataset.rendu;
+  _acBootstrapped = true;
+  acDemarrerReleve();
+  showToastModern("Boîte connectée", "ok");
+  acAller("ac-boite");
+}
+
+async function acDeconnecter() {
+  const api = acApi();
+  if (!api) return;
+  const r = await api.save_actus_deconnexion();
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Déconnexion impossible", "err"); return; }
+  acArreterReleve();
+  AC.config = { adresse: r.adresse || "", connecte: false };
+  AC.mails = []; AC.libelles = []; AC.etat = "vide"; AC.erreur = ""; AC.code = "";
+  AC.majA = null; AC.lecture = null;
+  const lect = document.getElementById("ac-lecteur");
+  if (lect) { delete lect.dataset.rendu; lect.innerHTML = ""; }
+  acRenderBadge();
+  acRenderConnexion();
+  showToastModern("Boîte déconnectée : Pilote a oublié le code", "ok");
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────── */
+
+(function patchGoTabActus() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    if (n !== "ac-boite" && n !== "ac-connexion") return;
+    Promise.resolve(_acBootstrapped || acBootstrap()).then(() => {
+      if (n === "ac-connexion") { acRenderConnexion(); return; }
+      acRenderBoite();
+      // Rouvrir l'onglet relève la boîte, sauf relevé de moins d'une minute
+      if (acConnecte() && (!AC.majA || Date.now() - AC.majA > 60000)) acReleve();
+    });
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
    ACCUEIL : TABLEAU DE BORD MODULAIRE
    Chaque tuile est un widget déclaré dans DASH_WIDGETS. L'utilisateur choisit
    lesquels afficher et dans quel ordre (Paramètres → Accueil, glisser-déposer).
@@ -20933,6 +21586,7 @@ function _appReady() {
         ["sante",      saBootstrap(true)],
         ["patrimoine", paBootstrap(true)],
         ["vocabulaire", voBootstrap(true)],
+        ["actus",      acBootstrap()],
         ["usb",        svRenderUsbState()],
       ];
       await Promise.all(boots.map(([nom, pr]) =>
