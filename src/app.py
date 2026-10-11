@@ -47,7 +47,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.3.36"
+APP_VERSION = "4.3.37"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -809,6 +809,14 @@ class Api:
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
+
+    def nouveautes(self) -> dict:
+        """Fiches des versions livrees avec l'app (src/nouveautes.json)."""
+        try:
+            import updater
+            return {"ok": True, "version": APP_VERSION, "versions": updater.historique()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "version": APP_VERSION, "versions": []}
 
     def start_update(self) -> dict:
         try:
