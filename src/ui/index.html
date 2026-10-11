@@ -18437,8 +18437,18 @@ let _paMois = "";
 let _paEditCpt = null;
 
 function paType(id) { return PA_TYPES.find(t => t.id === id) || PA_TYPES[PA_TYPES.length - 1] || {}; }
-function paComptes() { return (PA && PA.comptes) ? PA.comptes.filter(c => !c.archived) : []; }
+function paComptes() { return (PA && PA.comptes) ? PA.comptes.filter(c => !c.archived && paCompteVisible(c)) : []; }
 function paReleves() { return (PA && PA.releves) ? PA.releves : []; }
+
+/** La ligne auto du prêt n'apparaît qu'une fois le prêt paramétré (montant
+    emprunté saisi dans Prêt › Paramètres, même règle que la tuile d'accueil) :
+    sans prêt, elle ne fait qu'encombrer. Une ligne qui a déjà des relevés reste
+    visible, puisqu'ils comptent dans le total calculé côté Python. */
+function paCompteVisible(c) {
+  if (c.auto !== "pret") return true;
+  if (typeof PR !== "undefined" && PR && PR.pret && Number(PR.pret.montant)) return true;
+  return paReleves().some(r => r.compteId === c.id);
+}
 
 function paEur(v) {
   if (v === null || v === undefined || isNaN(v)) return "—";

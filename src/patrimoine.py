@@ -72,7 +72,8 @@ def is_dette(tid: str) -> bool:
 
 # ─── Comptes crees d'office ───────────────────────────────────────────────────
 # Ils sont alimentes par les autres modules : l'UI les pre-remplit, l'utilisateur
-# confirme. On ne les cree qu'une fois (marqueur _seeded).
+# confirme. On ne les cree qu'une fois (marqueur _seeded). La ligne du pret
+# reste masquee dans l'UI tant qu'aucun pret n'est parametre (paCompteVisible).
 
 def _comptes_auto() -> list:
     return [
