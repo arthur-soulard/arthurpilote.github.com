@@ -1239,6 +1239,33 @@ def main() -> int:
                 print(f"[diag] lecture KO : {e}", flush=True)
         threading.Thread(target=_diag, daemon=True).start()
 
+        # Echantillonneur : toutes les 0,5 s pendant 15 s, ce que fait chaque fil
+        # Python (fonction en cours la plus profonde du code de Pilote ou de ses
+        # bibliotheques). Montre qui occupe Python quand le demarrage traine.
+        def _echantillons():
+            import time as _t
+            moi = threading.get_ident()
+            noms = {}
+            for _ in range(30):
+                _t.sleep(0.5)
+                noms.update({th.ident: th.name for th in threading.enumerate()})
+                vus = []
+                for ident, cadre in sys._current_frames().items():
+                    if ident == moi:
+                        continue
+                    pile = traceback.extract_stack(cadre)
+                    utiles = [f for f in pile if "threading.py" not in f.filename
+                              and "socketserver.py" not in f.filename
+                              and "selectors.py" not in f.filename]
+                    f = (utiles or pile)[-1]
+                    if f.name in ("wait", "acquire", "select", "accept", "_wait_for_tstate_lock",
+                                  "sleep", "serve_forever", "readinto", "recv_into", "get"):
+                        continue          # fil en attente : ne consomme rien
+                    vus.append(f"{noms.get(ident, ident)}:{Path(f.filename).name}:{f.name}:{f.lineno}")
+                if vus:
+                    print(f"[pile] {_time_lancement.time() - _T0:6.2f} s  " + " | ".join(vus), flush=True)
+        threading.Thread(target=_echantillons, daemon=True).start()
+
     # Sauvegarde de la taille/position avant fermeture
     def _on_closing():
         try:
