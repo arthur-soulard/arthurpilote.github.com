@@ -22,6 +22,7 @@ import hmac
 import json
 import secrets
 import socket
+import ssl
 import threading
 import time
 import datetime
@@ -42,6 +43,14 @@ TICKER_MAP = {
     "ETR:": ".DE",
     "LON:": ".L",
 }
+
+# Un seul contexte TLS pour toutes les requetes vers Yahoo. Sans lui, chaque
+# connexion (urlopen sans contexte) en recree un et relit tout le magasin de
+# certificats de Windows : ~60 ms de calcul a chaque fois sur le PC d'Arthur,
+# et les fils passent l'un apres l'autre (GIL). Vu le 11/10/2026 au demarrage :
+# plusieurs fils a la fois dans ssl._load_windows_store_certs, pendant que la
+# page attendait ses donnees. Verification identique (certificat, nom d'hote).
+_SSL_CTX = ssl.create_default_context()
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -159,7 +168,7 @@ def fetch_yahoo(yahoo_ticker: str):
                 "User-Agent": USER_AGENT,
                 "Accept": "application/json",
             })
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=8, context=_SSL_CTX) as resp:
                 data = json.loads(resp.read().decode())
 
             result = data.get("chart", {}).get("result")
@@ -277,7 +286,7 @@ def fetch_yahoo_history(yahoo_ticker: str, range_param: str = "max", interval: s
                 "User-Agent": USER_AGENT,
                 "Accept": "application/json",
             })
-            with urllib.request.urlopen(req, timeout=20) as resp:
+            with urllib.request.urlopen(req, timeout=20, context=_SSL_CTX) as resp:
                 data = json.loads(resp.read().decode())
 
             result = data.get("chart", {}).get("result")
@@ -376,7 +385,8 @@ def _ensure_yahoo_session():
             return _yahoo_opener, _yahoo_crumb
 
         cj = http.cookiejar.CookieJar()
-        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj),
+                                             urllib.request.HTTPSHandler(context=_SSL_CTX))
         opener.addheaders = [
             ("User-Agent", USER_AGENT),
             ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
@@ -501,7 +511,7 @@ def fetch_yahoo_sparkline(yahoo_ticker: str):
                 "User-Agent": USER_AGENT,
                 "Accept": "application/json",
             })
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=8, context=_SSL_CTX) as resp:
                 data = json.loads(resp.read().decode())
             result = data.get("chart", {}).get("result")
             if not result:
@@ -806,7 +816,7 @@ def fetch_yahoo_search(query: str, limit: int = 6):
             "User-Agent": USER_AGENT,
             "Accept": "application/json",
         })
-        with urllib.request.urlopen(req, timeout=6) as resp:
+        with urllib.request.urlopen(req, timeout=6, context=_SSL_CTX) as resp:
             data = json.loads(resp.read().decode())
 
         # Tableau de priorite par suffixe ticker (plus le score est haut, mieux c'est)

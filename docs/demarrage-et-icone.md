@@ -103,6 +103,20 @@ logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisa
   pouvait passer devant. Test à la main : Pilote ouvert derrière une autre
   fenêtre, double-clic sur son raccourci → il doit revenir devant.
 
+## Requêtes HTTPS : un seul contexte de certificats (4.3.35)
+
+`urlopen` sans contexte en recrée un à chaque connexion et relit tout le magasin
+de certificats de Windows (~60 ms de calcul sur le PC d'Arthur, les fils l'un
+après l'autre sous le GIL). Au démarrage, plusieurs requêtes Yahoo le faisaient en
+même temps (vu le 11/10/2026 en échantillonnant les fils Python). `server._SSL_CTX`,
+créé une fois, sert désormais à toutes les requêtes Yahoo, session à cookies
+comprise. Vérification identique (certificat, nom d'hôte). Mesuré : `/cours`
+1,6-2,1 s → 0,4 s, `/history` 3,9-4,1 s → 1,3 s, `/keystats` 5,5-5,9 s → 2,0 s.
+
+Le reste de la lenteur du démarrage vient surtout de .NET et du moteur Edge
+(WebView2), qui démarrent en 2 à 11 s selon la charge du PC (17 lancements
+mesurés ; détail et outils de mesure sur la branche `mac`, même fiche).
+
 ## Icône à la couleur du thème (`appicon.py`)
 
 * Regénère un `.ico` multi-résolution (PNG embarqués, supersampling 4× + LANCZOS,
