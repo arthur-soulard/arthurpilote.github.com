@@ -1,6 +1,6 @@
 # Pilote
 
-Application desktop Windows de suivi personnel : bourse (PEA), budget, prêt étudiant,
+Application desktop Windows de suivi personnel : bourse (PEA), budget, prêt (étudiant ou autre),
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
 Seule exception, voulue : le module Actus se connecte à la boîte Gmail de
@@ -12,7 +12,7 @@ systèmes, pas de copie séparée. Avant de toucher à ce qui dépend du systèm
 Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
 compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.3.32**
+**Version actuelle : 4.3.34**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -29,7 +29,7 @@ Pilote/
 │   ├── storage.py      # Données PEA + multi-utilisateurs + migrations
 │   ├── finances.py     # Module « Mes comptes »   (finances.json)
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
-│   ├── pret.py         # Module « Prêt étudiant » (pret.json)
+│   ├── pret.py         # Module « Prêt », nom libre (pret.json)
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py et vocabulaire.py
 │   │                   #   (+ rendu des pages d'un PDF en images, mode -PdfDir)
@@ -76,7 +76,7 @@ Donnees/
 │   ├── pea_data.json         # PEA              (+ backups/)
 │   ├── finances.json         # Mes comptes      (+ backups_finances/)
 │   ├── sports.json           # Sports           (+ backups_sports/)
-│   ├── pret.json             # Prêt étudiant    (+ backups_pret/)
+│   ├── pret.json             # Prêt             (+ backups_pret/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── vocabulaire.json      # Vocabulaire      (+ backups_vocabulaire/)
@@ -172,7 +172,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/parametres.md` | sections de la fenêtre Paramètres | `openSettings`, `setGoSection` |
 | `docs/modules/pea.md` | Expositions, frais des ETF, Prochain achat, simulateur d'ordres, courbe du capital | `expositions.py`, `pac*`, `so*`, `renderPerf` |
 | `docs/modules/comptes.md` | Mes comptes | `finances.py`, `fin*` |
-| `docs/modules/pret.md` | Prêt étudiant | `pret.py`, `pr*` |
+| `docs/modules/pret.md` | Prêt (nom libre, « Prêt étudiant » jusqu'à la 4.3.33) | `pret.py`, `pr*` |
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
@@ -228,7 +228,7 @@ Paramètres.
 | Accueil         | home                                                               |
 | PEA             | dash, pos, sector, div, tx, wish, dep, strat, sim (plus de `perf`) |
 | Mes comptes     | fin-month, fin-year                                                |
-| Prêt étudiant   | pr-overview, pr-pea, pr-av, pr-liv, pr-params                      |
+| Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
 | Patrimoine      | pa-vue, pa-comptes                                                 |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |

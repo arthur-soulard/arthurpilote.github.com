@@ -1,5 +1,5 @@
 """
-pret.py — Stockage du module "Pret etudiant".
+pret.py — Stockage du module "Pret" (nom libre, "Pret etudiant" jusqu'a la 4.3.33).
 
 Reprend le modele de l'ancienne application standalone Pret_Etudiant.exe
 (localStorage cle "pret_v1", schema 6), mais persiste sur disque comme le
@@ -10,6 +10,9 @@ Backup quotidien : <app_dir>/users/<slug>/backups_pret/pret_YYYY-MM-DD.json
 
 Modele
 ------
+pret        : {nom, montant, date_deblocage, date_premier_remboursement,
+               duree_remboursement, mensualite}
+              -> nom : libre (« Pret etudiant », « Pret auto »…), vide = « Pret »
 pea.achats  : {id, date, ticker, montant, quantite, cours_achat}
 pea.ventes  : {id, date, ticker, quantite, cours_vente, montant} (montant = credite)
 av.contrats : [{id, label, frais_versement, taux_annuels:[{annee,taux}], depots:[{id,date,montant,note}]}]
@@ -47,6 +50,7 @@ def default_data() -> dict:
         "schema": SCHEMA,
         "config_locked": False,
         "pret": {
+            "nom": "",
             "montant": 0,
             "date_deblocage": "",
             "date_premier_remboursement": "",
@@ -73,6 +77,13 @@ _store = jsonstore.JsonStore(
 
 def load_data() -> dict:
     data = _store.load()
+    # Le module s'appelait « Pret etudiant » jusqu'a la 4.3.33 : un pret deja
+    # saisi garde ce nom, un pret jamais saisi prend le nom generique. A lire
+    # AVANT la fusion avec les defauts, qui donnerait un nom vide a tous.
+    ancien = data.get("pret") or {}
+    if "nom" not in ancien:
+        deja_saisi = ancien.get("montant") or data.get("versements") or data.get("remboursements")
+        data["pret"] = dict(ancien, nom="Prêt étudiant" if deja_saisi else "")
     # Les sous-objets doivent toujours exister avec leurs cles (merge peu profond
     # du JsonStore : une cle "pea" sauvegardee ecrase entierement le defaut).
     defaults = default_data()

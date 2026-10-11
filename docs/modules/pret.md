@@ -1,14 +1,28 @@
-# Module Prêt étudiant
+# Module Prêt
 
 Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
 
-## Module Prêt étudiant (pret.json)
+## Module Prêt (pret.json)
 
 API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et moteur
 événementiel du Livret A repris à l'identique de l'ancienne app standalone (abandonnée).
 
-* pret        : `{montant, date_deblocage, date_premier_remboursement,
+* pret        : `{nom, montant, date_deblocage, date_premier_remboursement,
                 duree_remboursement, mensualite}`
+
+**Nom libre (4.3.34).** Le module s'appelait « Prêt étudiant » ; Arthur l'a voulu
+général le 11/10/2026, pour qui installe Pilote avec un autre prêt. `pret.nom` se
+saisit dans « Configuration du prêt » ; vide, le prêt s'appelle « Prêt » (`prNom()`).
+Ce nom s'affiche dans la barre latérale et le fil d'Ariane (`prMajNom()`, appelée
+par `prRenderAll`, donc aussi après le bouton Retour), dans la fenêtre Paramètres
+(éléments `.pr-nom`), sur la tuile d'accueil et sur la ligne Patrimoine (`paLabel`,
+nom de cette ligne en lecture seule dans sa fenêtre). Les textes communs disent
+« le prêt » (« Payé avec l'argent du prêt »). **Migration** (`pret.load_data`) :
+un `pret.json` sans clé `nom` reçoit « Prêt étudiant » s'il a déjà un montant, un
+versement ou un remboursement, sinon un nom vide. Elle lit le fichier **avant** la
+fusion avec les défauts, qui donnerait un nom vide à tout le monde. Un vide choisi
+ensuite reste vide (la clé existe). Rien d'autre n'est spécifique aux étudiants :
+le module suit les versements reçus, les remboursements et l'argent placé.
 * pea.achats  : `{id, date, ticker, montant, quantite, cours_achat}`
 * pea.ventes  : `{id, date, ticker, quantite, cours_vente, montant (crédité)}`
   → PRU pondéré sur les achats, plus-value réalisée = crédité − qté × PRU,
@@ -94,7 +108,7 @@ Les cours passent par le serveur local (`/cours`), pas de second proxy Yahoo.
 On n'a qu'un PEA : les achats faits avec le prêt en font partie. Avant, il fallait les
 saisir deux fois (onglet PEA et onglet Prêt). Désormais un ordre n'existe **qu'une
 fois**, dans `S.transactions`, avec `pret: true` quand la case « Payé avec l'argent du
-prêt étudiant » est cochée (fenêtres `ov-pos` et `ov-tx`, champs `f-pret` / `t-pret`,
+prêt » est cochée (fenêtres `ov-pos` et `ov-tx`, champs `f-pret` / `t-pret`,
 absente pour un dividende). `prPeaOrdres()` lit ces transactions et les convertit
 (`prYahoo` : `EPA:WPEA` → `WPEA.PA` ; montant = qté × cours ± frais, comme
 `computeCash`). **Aucune copie dans `pret.json`** : pas de doublon possible, et une

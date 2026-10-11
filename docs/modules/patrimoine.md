@@ -42,7 +42,7 @@ moins un échéancier calculé au calendrier. Changé le 28/09/2026 : le prêt d
 (30 000 €, en deux tranches de 15 000 €) comptait 30 000 € de dette dès sa
 configuration, avant tout versement, et le patrimoine baissait d'un argent qui
 n'était encore sur aucun compte. Une tranche non reçue n'est ni une dette ni un
-avoir. La tuile d'accueil « Prêt étudiant » (capital restant dû) lit la même valeur.
+avoir. La tuile d'accueil du prêt (capital restant dû) lit la même valeur.
 Depuis la 4.3.4, ce calcul n'existe qu'à un endroit, `prCapitalDu()` (onglet Prêt),
 que `paValeurAuto` appelle : le « Montant à rembourser » du module donne le même chiffre.
 
@@ -58,6 +58,18 @@ au mois en cours ; elle nourrit aussi la colonne « Net » du tableau des relev�
 Jusqu'à la 4.3.13, la boucle s'arrêtait 37 points après le **premier** relevé :
 au-delà de trois ans, la courbe se figeait (essayé sur 58 mois : arrêt en
 janvier 2025, tuile à 6 700 €, dernier point à 4 600 €).
+
+**La ligne du prêt n'apparaît qu'une fois le prêt paramétré** (montant
+emprunté saisi dans Prêt › Paramètres, même règle que la tuile d'accueil), ou si
+elle a déjà des relevés : `paCompteVisible`, appliquée par `paComptes()`, donc
+partout (comptes, tableau, relevé du mois). Demandé par Arthur le 11/10/2026 :
+quelqu'un qui installe Pilote sans prêt étudiant n'a pas à voir une dette à 0 €.
+Le compte existe toujours dans `patrimoine.json` : il réapparaît seul dès que le
+prêt est saisi. Un compte qui a des relevés reste visible pour que le tableau
+corresponde au total, calculé côté Python sur tous les comptes non archivés.
+Depuis la 4.3.34, elle **porte le nom donné au prêt** (`paLabel`) : son `label`
+enregistré ne sert plus que de repli, et son nom se change dans les paramètres du
+prêt (champ en lecture seule dans la fenêtre du compte).
 
 Seul le type `dette` compte négativement. Un compte `auto` ne peut pas être
 supprimé : il serait recréé au chargement suivant.
