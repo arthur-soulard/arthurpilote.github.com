@@ -4816,6 +4816,7 @@ window.__journal = [];
 function _jn(m) { try { window.__journal.push(Math.round(performance.now()) + " " + m); } catch (e) {} }
 window.addEventListener("error", e => _jn("ERREUR " + e.message + " (ligne " + e.lineno + ")"));
 window.addEventListener("unhandledrejection", e => _jn("REJET " + ((e.reason && e.reason.message) || e.reason)));
+_jn("script principal : debut");
 
 /* ─── Graphiques : la police et le gris du texte courant (identité « Carnet ») ───
    Les graphiques sont dessinés dans un <canvas> : ils n'héritent pas du CSS.
@@ -21531,6 +21532,7 @@ function _appReady() {
 }
 
 (async function boot() {
+  _jn("script principal : fin, boot()");
   try {
     // 1. Hydratation HTTP en parallele (rapide, pas besoin d'attendre pywebview)
     const httpOk = await _hydrateFromHttp();
