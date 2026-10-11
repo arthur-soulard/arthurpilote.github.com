@@ -118,6 +118,8 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 | Installation de la mise à jour (`.bat`, `cmd.exe`, Setup) | `updater.py` | jamais proposée (étape 1) |
 | Raccourcis Ctrl, textes « Windows », « Win+Maj+S » | `index.html` | Ctrl au lieu de ⌘ |
 | ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | à gérer côté Python |
+| Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | seulement encodé en base64 (« b64: »), donc lisible dans `actus.json` et dans les sauvegardes : passer au Trousseau de macOS |
+| Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | non vérifié : le test Mac n'appelle encore aucun site en HTTPS |
 
 ## Gatekeeper (app non signée)
 
