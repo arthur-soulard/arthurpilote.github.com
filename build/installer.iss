@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define AppName       "Pilote"
-#define AppVersion    "4.3.35"
+#define AppVersion    "4.3.36"
 #define AppPublisher  "Arthur"
 #define AppExeName    "Pilote.exe"
 
@@ -115,4 +115,50 @@ begin
            + 'R' + #$00E9 + 'installer Pilote les retrouve. '
            + 'Pour les effacer, supprime ce dossier.',
            mbInformation, MB_OK);
+end;
+
+// L'ancienne entree "Suivi PEA 1.0.0" (autre AppId, mai 2026) visait le meme
+// dossier que Pilote. Son desinstalleur (unins000 sur le PC d'Arthur) datait
+// d'avant la 4.3.13 : lance depuis les Parametres de Windows, il aurait efface
+// tout {app}, Donnees compris (vu le 11/10/2026). On la retire a chaque
+// installation : son desinstalleur et son journal (.exe et .dat), puis sa cle.
+// Seulement si elle vise CE dossier : ailleurs, unins000 peut etre le
+// desinstalleur de Pilote lui-meme, auquel on ne touche pas.
+const
+  CLE_DESINSTALLATION = 'Software\Microsoft\Windows\CurrentVersion\Uninstall';
+  ANCIEN_APPID        = '{A7C5D4E2-PEA-';
+
+procedure RetirerAncienneEntreeSuiviPEA();
+var
+  Noms: TArrayOfString;
+  I: Integer;
+  Cle, Desinstalleur, Dossier: String;
+begin
+  if not RegGetSubkeyNames(HKCU, CLE_DESINSTALLATION, Noms) then
+    Exit;
+  for I := 0 to GetArrayLength(Noms) - 1 do
+  begin
+    if Pos(ANCIEN_APPID, Noms[I]) <> 1 then
+      Continue;
+    Cle := CLE_DESINSTALLATION + '\' + Noms[I];
+    if not RegQueryStringValue(HKCU, Cle, 'UninstallString', Desinstalleur) then
+      Continue;
+    Desinstalleur := RemoveQuotes(Desinstalleur);
+    Dossier := ExtractFilePath(Desinstalleur);
+    if CompareText(AddBackslash(Dossier), AddBackslash(ExpandConstant('{app}'))) <> 0 then
+    begin
+      Log('Ancienne entree ' + Noms[I] + ' laissee : elle vise ' + Dossier);
+      Continue;
+    end;
+    DeleteFile(Desinstalleur);
+    DeleteFile(ChangeFileExt(Desinstalleur, '.dat'));
+    if RegDeleteKeyIncludingSubkeys(HKCU, Cle) then
+      Log('Ancienne entree ' + Noms[I] + ' retiree');
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    RetirerAncienneEntreeSuiviPEA();
 end;
