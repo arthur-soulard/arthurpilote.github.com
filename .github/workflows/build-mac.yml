@@ -164,14 +164,22 @@ jobs:
             if pgrep -f "/Applications/Pilote.app/Contents/MacOS/Pilote" > /dev/null; then RELANCE="relancee"; break; fi
             sleep 1
           done
-          # Premier lancement d'une app neuve : macOS la verifie, ca peut prendre
-          PING="000 apres 60 s"
+          # L'app relancee peut prendre 7439 : juste apres la fermeture de
+          # l'ancienne, 7438 garde des connexions en attente (TIME_WAIT)
+          PING="aucun port de 7438 a 7445 apres 60 s"
           for i in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:7438/ping > /dev/null 2>&1; then PING="200 en $i s"; break; fi
+            for P in 7438 7439 7440 7441 7442 7443 7444 7445; do
+              if curl -fsS http://127.0.0.1:$P/ping > /dev/null 2>&1; then PING="200 sur $P en $i s"; break 2; fi
+            done
             sleep 1
           done
           sleep 3
           screencapture -x capture-maj.png || true
+          # Relancee par le Finder (open), Pilote fait demander par macOS l'acces
+          # au reseau local : ses connexions, et ce que macOS en a note
+          NPID=$(pgrep -f "/Applications/Pilote.app/Contents/MacOS/Pilote" | head -1)
+          echo "::notice title=Sockets::$(lsof -nP -a -p "$NPID" -i 2>/dev/null | tail -n +2 | awk '{print $8, $9, $10}' | sort | uniq -c | tr '\n' ' ' | head -c 2500)"
+          echo "::notice title=Reseau local::$(log show --last 3m --style compact --predicate 'eventMessage CONTAINS[c] "local network" OR eventMessage CONTAINS[c] "LocalNetwork" OR process == "nehelper"' 2>/dev/null | grep -v '^Timestamp' | tail -n 30 | tr '\n' ' ' | head -c 3500)"
           TEMOIN=$(test -f /Applications/Pilote.app/Contents/Resources/temoin-maj.txt && echo "nouvelle version en place" || echo "ancienne version")
           RESTE=$(ls -d /Applications/Pilote.app.ancienne 2>/dev/null && echo "ancienne app restee" || echo "ancienne app retiree")
           echo "::notice title=Mise a jour::$FIN ; $RELANCE (ping $PING) ; $TEMOIN ; $RESTE ; $(grep "\[maj\]" maj.log | tr '\n' ' ' | head -c 1500)"
