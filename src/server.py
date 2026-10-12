@@ -26,6 +26,7 @@ import json
 import secrets
 import socket
 import ssl
+import sys
 import threading
 import time
 import datetime
@@ -1687,6 +1688,23 @@ def _find_free_port(start: int = DEFAULT_PORT, attempts: int = 50) -> int:
     raise RuntimeError(f"Aucun port libre entre {start} et {start + attempts}")
 
 
+class _ServeurMac(http.server.ThreadingHTTPServer):
+    """Mac : le meme serveur, sans socket.getfqdn() au demarrage.
+
+    HTTPServer.server_bind cherche le nom de la machine (getfqdn). Sur macOS 15,
+    cette recherche passe par le reseau local, et macOS demande alors
+    « Autoriser Pilote a trouver des appareils sur les reseaux locaux ? » (vu le
+    12/10/2026 sur le test Mac : meme question pour le serveur web de Python
+    lance par le test). Pilote ne sert que 127.0.0.1 : le nom ne sert a rien."""
+
+    def server_bind(self):
+        import socketserver
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host
+        self.server_port = port
+
+
 def start_server(html_path=None) -> int:
     """Demarre le serveur dans un thread daemon. Retourne le port utilise."""
     global _server_instance, _server_thread, _server_port, _html_file_path
@@ -1698,7 +1716,8 @@ def start_server(html_path=None) -> int:
         return _server_port  # deja demarre
 
     _server_port = _find_free_port(DEFAULT_PORT)
-    _server_instance = http.server.ThreadingHTTPServer((HOST, _server_port), _Handler)
+    classe = _ServeurMac if sys.platform == "darwin" else http.server.ThreadingHTTPServer
+    _server_instance = classe((HOST, _server_port), _Handler)
     _server_thread = threading.Thread(
         target=_server_instance.serve_forever,
         name="CoursServer",

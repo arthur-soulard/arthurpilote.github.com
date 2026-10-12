@@ -148,7 +148,14 @@ jobs:
           echo "version d'essai" > maj/Pilote.app/Contents/Resources/temoin-maj.txt
           codesign --force --deep -s - maj/Pilote.app > /dev/null 2>&1 || true
           (cd maj && ditto -c -k --keepParent Pilote.app ../Pilote_Mac.zip)
-          python -m http.server 8765 --bind 127.0.0.1 > http.log 2>&1 &
+          # Serveur de la fausse release : sans getfqdn, comme celui de Pilote sur
+          # Mac, pour que la question « reseau local » de la capture ne vienne
+          # pas du test lui-meme
+          python -c "import http.server as h, socketserver as s
+          class S(h.ThreadingHTTPServer):
+              def server_bind(self):
+                  s.TCPServer.server_bind(self); self.server_name, self.server_port = self.server_address[:2]
+          S(('127.0.0.1', 8765), h.SimpleHTTPRequestHandler).serve_forever()" > http.log 2>&1 &
           SRV=$!
           PILOTE_DIAG=1 PILOTE_MAJ_ESSAI="http://127.0.0.1:8765/Pilote_Mac.zip|99.0.0" \
             /Applications/Pilote.app/Contents/MacOS/Pilote > maj.log 2>&1 &

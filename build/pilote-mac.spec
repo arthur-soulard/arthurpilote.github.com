@@ -103,5 +103,9 @@ app = BUNDLE(
         "CFBundleVersion": VERSION,
         "NSHighResolutionCapable": True,
         "LSApplicationCategoryType": "public.app-category.finance",
+        # Si macOS demande un jour l'acces au reseau local (docs/mac.md, « Reseau
+        # local ») : refuser ne change rien, essaye le 12/10/2026
+        "NSLocalNetworkUsageDescription": "Pilote n'utilise pas le réseau local : "
+                                          "tu peux refuser, rien ne changera.",
     },
 )
