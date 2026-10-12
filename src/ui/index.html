@@ -5358,6 +5358,21 @@ function computeCash() {
   return Math.max(0, depSum - spent + earned + divRec + divFutPast);
 }
 
+/* Ligne « Prix de revient des lignes » de la carte Valeur (PEA et CTO) : ce
+   qu'ont coûté les lignes détenues, frais compris, et leur plus-value latente
+   (null tant qu'un cours manque). Elle s'appelait « Investi » jusqu'en 4.4.5,
+   lu comme l'argent versé : 1 942,67 € pour 1 975,22 € déposés sur le PEA
+   d'Arthur (12/10/2026), l'écart étant le réalisé des lignes vendues et les
+   dividendes, réinvestis. Montant et latent insécables : la carte fait
+   147 px de large dans la fenêtre par défaut (1280 px), la ligne y passe
+   sur trois lignes sans couper « (+51,06 € latents) ». */
+function ligneRevient(inv, latent) {
+  const nb = t => `<span style="white-space:nowrap">${t}</span>`;
+  return `<span title="Ce qu'ont coûté les lignes détenues aujourd'hui, frais compris. Ce n'est pas le total déposé : le gain ou la perte des lignes déjà vendues et les dividendes ont été réinvestis.">`
+    + "Prix de revient des lignes : " + nb(eur(inv))
+    + (latent != null ? " " + nb("(" + eur(Math.round(latent * 100) / 100, true) + " latents)") : "") + "</span>";
+}
+
 function renderMetrics() {
   // CTO affiché : ses propres cartes (ctoRenderMetrics), rien vers l'accueil ni
   // vers window._peaPv, qui ne parlent que du PEA
@@ -5402,7 +5417,7 @@ function renderMetrics() {
   document.getElementById("m-val").textContent  = nc>0 ? eur(Math.round((tv + cash) * 100) / 100) : "—";
   document.getElementById("m-val-sub").innerHTML =
     (nc>0 ? "Titres : " + eur(tv) + "<br>" : "") + "Espèces : " + eur(cash)
-    + (nc>0 ? "<br>Investi : " + eur(ti) : "");
+    + (nc>0 ? "<br>" + ligneRevient(ti, all ? tv - ti : null) : "");
   const pvEl = document.getElementById("m-pv");
   pvEl.textContent = pv!=null ? eur(pv,true) : "—";
   pvEl.className   = "mc-val " + (pv==null ? "" : pv>=0 ? "c-g" : "c-r");
@@ -20527,7 +20542,7 @@ function ctoRenderMetrics() {
   set("m-dep-sub", "achats − ventes − dividendes");
   set("m-val", r.n ? eur(r.valeur != null ? r.valeur : r.titres) : "—");
   const sub = document.getElementById("m-val-sub");
-  if (sub) sub.innerHTML = r.n ? "Investi : " + eur(r.investi)
+  if (sub) sub.innerHTML = r.n ? ligneRevient(r.investi, r.valeur != null ? r.titres - r.investi : null)
     + (r.offert > 0 ? "<br>dont offert (Saveback, actions offertes) : " + eur(r.offert) : "") : "";
   const pvEl = document.getElementById("m-pv");
   if (pvEl) {
