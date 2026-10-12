@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.1",
+      "date": "2026-10-12",
+      "titre": "L'import Trade Republic lit enfin ton vrai relevé",
+      "corrige": [
+        "Import du relevé CSV de Trade Republic : les achats de tes plans d'investissement sont reconnus comme tels (sans frais), au lieu d'être pris pour des ordres aux frais oubliés.",
+        "Saveback : le versement en espèces n'est plus compté comme un achat sans parts ; c'est l'achat qui le suit qui est marqué « Saveback ».",
+        "Un titre divisé (1 part devenue 10, avec un nouvel ISIN) s'importe : les nouvelles parts gardent le coût des anciennes, et la courbe ne fait pas de faux pic ce jour-là.",
+        "Un ordre exécuté en plusieurs morceaux à la même seconde ne compte plus qu'une fois ses frais."
+      ],
+      "ameliore": [
+        "Chaque titre importé est suivi à la bonne cotation en euros : Pilote compare les cotations possibles à tes prix payés et garde celle qui colle (marquée « vérifiée »). L'or physique iShares, introuvable jusqu'ici, est reconnu.",
+        "Les actions offertes par Trade Republic sont marquées « Offert », et la taxe sur les transactions financières des actions françaises compte dans leur coût."
+      ]
+    },
+    {
       "version": "4.4.0",
       "date": "2026-10-11",
       "titre": "Tes comptes-titres, suivis comme le PEA",

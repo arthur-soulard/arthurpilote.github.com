@@ -86,6 +86,23 @@ def save_data(data: dict, vide_voulu: bool = False) -> None:
 # `symbol` est l'ISIN. `shares` est negatif sur une vente, `amount` est le flux
 # d'especes (negatif a l'achat), `fee` est negatif. Prix en `currency` (EUR) :
 # Trade Republic execute en euros sur des places europeennes.
+#
+# Constate sur le premier vrai releve d'Arthur (11/10/2026, 732 lignes) :
+#   - un plan d'investissement est un `BUY` comme un autre : seule la
+#     description le distingue (« Savings plan execution <ISIN> <nom>,
+#     quantity: … » ; « Buy trade … » pour un ordre) ;
+#   - le Saveback est une ligne d'ESPECES (category CASH, BENEFITS_SAVEBACK,
+#     ISIN et montant) suivie de l'achat lui-meme ; une action offerte (« stock
+#     perk »), une ligne CASH `GIFT` du montant de l'ordre, frais compris,
+#     a la meme seconde que lui. Les lignes CASH ne sont donc jamais des achats :
+#     elles servent seulement a reconnaitre l'origine de l'achat ;
+#   - `amount` d'un ordre = parts × cours, sans les frais ni la taxe (TTF
+#     francaise de 0,4 %, colonne `tax`, sur les actions francaises) ;
+#   - une division (category CORPORATE_ACTION, type SPLIT) tient en deux
+#     lignes a la meme seconde : l'ancienne ligne sortie (parts negatives) et
+#     la nouvelle entree, ici avec un nouvel ISIN (ETP argent x3 de WisdomTree,
+#     1 part -> 10). Ni prix ni montant ;
+#   - aucun dividende sur la periode : leur ligne reste a voir.
 
 COLONNES_REQUISES = {"date", "category", "type", "symbol", "shares", "price", "amount"}
 
@@ -105,7 +122,8 @@ ACHATS = {
 }
 VENTES = {"SELL": "ordre", "SAVINGS_PLAN_SELL": "plan"}
 DIVIDENDES = {"DIVIDEND", "DIVIDEND_PAYMENT", "DISTRIBUTION"}
-# Lignes d'especes, ignorees en silence (comptees dans le resume)
+# Lignes d'especes, ignorees en silence (comptees dans le resume), comme toute
+# ligne de la categorie CASH
 ESPECES = {
     "CUSTOMER_INBOUND", "CUSTOMER_INPAYMENT", "TRANSFER_INSTANT_INBOUND",
     "CUSTOMER_OUTBOUND_REQUEST", "TRANSFER_INSTANT_OUTBOUND",
@@ -116,6 +134,10 @@ ESPECES = {
 CLASSES = {"STOCK": "action", "FUND": "etf", "ETF": "etf", "": None}
 
 _ISIN = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
+# Nom long du titre dans la description : la recherche de sa cotation en a
+# besoin (« iShares Physical Gold ETC » quand `name` dit « Physical Gold USD (Acc) »)
+_DESCRIPTION = re.compile(r"(?i)^(?:savings plan execution|buy trade|sell trade)\s+"
+                          r"[A-Z]{2}[A-Z0-9]{9}[0-9]\s+(.+?),\s*quantity:")
 
 
 def _nombre(txt: str):
@@ -141,15 +163,27 @@ def _date(txt: str) -> str:
     return f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else ""
 
 
+def _secondes(txt: str):
+    """« 2026-01-02T14:09:42.687815Z » -> secondes (UTC) ; sans heure -> None."""
+    m = re.match(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})", txt or "")
+    if not m:
+        return None
+    return datetime.datetime(*map(int, m.groups()), tzinfo=datetime.timezone.utc).timestamp()
+
+
 def lire_csv_tr(texte: str) -> dict:
     """Lit un export CSV de Trade Republic.
 
     Renvoie {ok, operations, ignores, inconnues, erreur} :
-      operations : [{trId, date, type ("Achat"|"Vente"|"Dividende"), origine,
-                     isin, nom, classe ("action"|"etf"), qty, cours, montant,
-                     frais, taxe, alerte}]
+      operations : [{trId, date, quand, type ("Achat"|"Vente"|"Dividende"|"Division"),
+                     origine, isin, nom, nomLong, classe ("action"|"etf"), qty,
+                     cours, montant, frais, taxe, alerte}], dans l'ordre ou elles
+                     ont eu lieu (`quand` : date et heure de la ligne)
         -> montant : le flux d'especes de la ligne, en valeur absolue
            (achat : debite ; vente et dividende : credite) ;
+        -> origine : ordre, plan, saveback, arrondi, offert, dividende, division ;
+        -> une Division porte aussi isinAvant, nomAvant, qtyAvant, trIdAvant :
+           qtyAvant parts de isinAvant deviennent qty parts de isin ;
         -> alerte : texte si les chiffres ne collent pas (montant ≠ qte × cours ± frais).
       ignores    : {"especes": n, "classe": n} lignes laissees de cote, par raison
       inconnues  : [{type, categorie, nom, date}] types que Pilote ne connait pas
@@ -167,7 +201,9 @@ def lire_csv_tr(texte: str) -> dict:
                 "erreur": "Ce fichier n'a pas les colonnes d'un export Trade Republic "
                           "(il manque : " + ", ".join(sorted(manque)) + ")."}
 
-    operations, inconnues = [], []
+    operations, inconnues, divisions = [], [], {}
+    # Lignes d'especes qui disent d'ou vient un achat (voir plus haut)
+    saveback, cadeaux = [], []
     ignores = {"especes": 0, "classe": 0}
     for brut in lecteur:
         row = {(k or "").strip().lower(): (v or "").strip() for k, v in brut.items()}
@@ -175,19 +211,26 @@ def lire_csv_tr(texte: str) -> dict:
         cat = row.get("category", "").upper()
         nom = row.get("name", "")
         date = _date(row.get("date") or row.get("datetime"))
-        if typ in ESPECES:
+        quand = row.get("datetime") or row.get("date") or ""
+        if typ in DIVIDENDES:
+            sens, origine = "Dividende", "dividende"
+        elif typ in ESPECES or cat == "CASH":
             ignores["especes"] += 1
+            if typ == "BENEFITS_SAVEBACK" and row.get("symbol"):
+                saveback.append((date, row["symbol"].upper(), abs(_nombre(row.get("amount")) or 0)))
+            elif typ == "GIFT":
+                cadeaux.append((_secondes(quand), abs(_nombre(row.get("amount")) or 0)))
             continue
-        if typ in ACHATS or typ in VENTES:
+        elif typ in ACHATS or typ in VENTES:
             sens = "Achat" if typ in ACHATS else "Vente"
             origine = ACHATS.get(typ) or VENTES.get(typ)
-        elif typ in DIVIDENDES:
-            sens, origine = "Dividende", "dividende"
+            if origine == "ordre" and row.get("description", "").lower().startswith("savings plan"):
+                origine = "plan"
+        elif cat == "CORPORATE_ACTION" and typ == "SPLIT":
+            divisions.setdefault(quand, []).append(row)
+            continue
         else:
-            if cat == "CASH" and not row.get("symbol"):
-                ignores["especes"] += 1
-            else:
-                inconnues.append({"type": typ, "categorie": cat, "nom": nom, "date": date})
+            inconnues.append({"type": typ, "categorie": cat, "nom": nom, "date": date})
             continue
 
         classe = CLASSES.get(row.get("asset_class", "").upper(), False)
@@ -202,8 +245,10 @@ def lire_csv_tr(texte: str) -> dict:
         taxe = abs(_nombre(row.get("tax")) or 0)
         devise = (row.get("currency") or "EUR").upper()
 
-        op = {"trId": row.get("transaction_id", ""), "date": date, "type": sens,
-              "origine": origine, "isin": isin, "nom": nom, "classe": classe or "etf",
+        m = _DESCRIPTION.match(row.get("description", ""))
+        op = {"trId": row.get("transaction_id", ""), "date": date, "quand": quand, "type": sens,
+              "origine": origine, "isin": isin, "nom": nom, "nomLong": m.group(1) if m else "",
+              "classe": classe or "etf",
               "qty": qty, "cours": cours, "montant": round(montant, 2),
               "frais": round(frais, 2), "taxe": round(taxe, 2), "alerte": ""}
         alertes = []
@@ -228,5 +273,65 @@ def lire_csv_tr(texte: str) -> dict:
         op["alerte"] = ", ".join(alertes)
         operations.append(op)
 
-    operations.sort(key=lambda o: (o["date"], o["trId"]))
+    # Un ordre execute en plusieurs morceaux (meme titre, meme sens, meme
+    # instant, meme cours) n'en fait qu'un : 5 + 0,94972 parts d'argent x3 le
+    # 13/05/2026, 1 € de frais sur le premier seulement. Separes, le second
+    # passait pour un ordre aux frais differents de la grille. Le plus petit
+    # transaction_id reste : un nouvel import du meme ordre le reconnait.
+    fusion = {}
+    for o in list(operations):
+        if o["type"] not in ("Achat", "Vente") or not o["quand"]:
+            continue
+        cle = (o["isin"], o["type"], o["quand"], o["cours"])
+        f = fusion.setdefault(cle, o)
+        if f is o:
+            continue
+        f["qty"] = round(f["qty"] + o["qty"], 10)
+        for k in ("montant", "frais", "taxe"):
+            f[k] = round(f[k] + o[k], 2)
+        f["trId"] = min(f["trId"], o["trId"])
+        operations.remove(o)
+
+    achats = [o for o in operations if o["type"] == "Achat"]
+    # Saveback : l'achat du meme titre, du meme montant, a trois jours au plus
+    for d, isin, m in saveback:
+        jour = datetime.date.fromisoformat(d) if d else None
+        o = next((o for o in achats if o["origine"] in ("plan", "ordre") and o["isin"] == isin
+                  and abs(o["montant"] - m) < 0.005 and jour and o["date"]
+                  and abs((datetime.date.fromisoformat(o["date"]) - jour).days) <= 3), None)
+        if o:
+            o["origine"] = "saveback"
+    # Action offerte : l'ordre passe dans les deux minutes, du montant du cadeau
+    # frais et taxe compris (21,00 € pour 19,99 € d'Amazon et 1 € de frais)
+    for t, m in cadeaux:
+        o = next((o for o in achats if o["origine"] == "ordre" and t is not None
+                  and _secondes(o["quand"]) is not None and abs(_secondes(o["quand"]) - t) <= 120
+                  and abs(o["montant"] + o["frais"] + o["taxe"] - m) <= 0.02), None)
+        if o:
+            o["origine"] = "offert"
+
+    # Division : l'ancienne ligne sortie et la nouvelle entree, a la meme seconde
+    for quand, lignes in divisions.items():
+        avant = [r for r in lignes if (_nombre(r.get("shares")) or 0) < 0]
+        apres = [r for r in lignes if (_nombre(r.get("shares")) or 0) > 0]
+        if len(avant) != 1 or len(apres) != 1:
+            inconnues += [{"type": "SPLIT", "categorie": "CORPORATE_ACTION", "nom": r.get("name", ""),
+                           "date": _date(r.get("date") or quand)} for r in lignes]
+            continue
+        a, b = avant[0], apres[0]
+        classe = CLASSES.get(b.get("asset_class", "").upper(), False)
+        if classe is False:
+            ignores["classe"] += len(lignes)
+            continue
+        operations.append({
+            "trId": b.get("transaction_id", ""), "trIdAvant": a.get("transaction_id", ""),
+            "date": _date(b.get("date") or quand), "quand": quand, "type": "Division",
+            "origine": "division", "isin": b.get("symbol", "").upper(), "nom": b.get("name", ""),
+            "nomLong": "", "isinAvant": a.get("symbol", "").upper(), "nomAvant": a.get("name", ""),
+            "classe": classe or "etf", "qty": abs(_nombre(b.get("shares"))),
+            "qtyAvant": abs(_nombre(a.get("shares"))), "cours": None, "montant": 0,
+            "frais": 0, "taxe": 0, "alerte": ""})
+
+    # Dans l'ordre ou elles ont eu lieu : une division avant la vente du meme jour
+    operations.sort(key=lambda o: (o["date"], o["quand"], o["trId"]))
     return {"ok": True, "operations": operations, "ignores": ignores, "inconnues": inconnues}
