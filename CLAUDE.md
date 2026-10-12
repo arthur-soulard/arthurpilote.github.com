@@ -31,6 +31,7 @@ Pilote/
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
 │   ├── pret.py         # Module « Prêt », nom libre (pret.json)
 │   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
+│   ├── releves.py      # Import des relevés de banque (PDF, CSV, Excel, XML) pour le PEA et les CTO
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
@@ -56,7 +57,7 @@ Pilote/
 ├── assets/             # icon.ico + make_icon.py (générateur d'icône)
 ├── docs/               # Fiches détaillées par module (voir « Documentation détaillée »)
 ├── .github/workflows/release.yml
-└── requirements.txt    # pywebview, pyinstaller, win10toast, pillow
+└── requirements.txt    # pywebview, pyinstaller, win10toast, pillow, pypdf (PDF des relevés)
 ```
 
 En dev, `Donnees` à la racine du dépôt est un lien symbolique vers le dossier de
@@ -179,6 +180,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
+| `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : formats, pièges par banque, exemples réels, pypdf | `releves.py`, `ctoImport*`, `/isin` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
