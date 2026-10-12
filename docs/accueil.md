@@ -12,8 +12,8 @@ Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 
 d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arrive.
 Puis la date en italique. **À droite de la salutation** (4.3.19), l'un sous l'autre :
 les utilisateurs (`#home-users`, cliquables pour basculer + « Nouvel utilisateur »),
-les boutons Modifier les tuiles / Paramètres / Exporter / Importer / Téléverser vers
-clé USB, et l'état de la clé (`#home-usb-state`). Dessous, directement les tuiles,
+les boutons Modifier les tuiles / Paramètres / Téléverser vers clé USB, puis
+« Suggérer une amélioration » et l'état de la clé (`#home-usb-state`). Dessous, directement les tuiles,
 chacune avec l'icône de son module (`DASH_ICONS`). Sous 1150 px de large, tout s'empile.
 
 Pourquoi (03/10/2026) : en plein écran sur l'écran d'Arthur (1366 × 768, page de
@@ -40,7 +40,13 @@ rédaction de Gmail dans le navigateur), objet « Suggestion pour Pilote » et
 version de Pilote déjà remplis, par `Api.open_url`. Rien ne part de Pilote :
 c'est la messagerie de l'utilisateur qui envoie. Le bouton Gmail existe parce
 qu'un `mailto:` sans messagerie installée n'ouvre rien d'utile (chez Arthur, le
-`mailto:` est confié à Brave).
+`mailto:` est confié à Brave). Place validée par Arthur : « garde-le comme ça ».
+
+**Exporter et Importer retirés de l'accueil** (4.4.12, demande d'Arthur) : ils
+faisaient doublon avec Paramètres → Données & application (`doExport`,
+`doImportDialog`), où ils restent, comme les raccourcis Ctrl+E / Ctrl+I (⌘ sur
+Mac) et « Importer un fichier » des Premiers pas. Gestes rares, et Importer
+remplace toutes les données : pas à un clic de l'accueil.
 
 Depuis la 4.1.4, `homeRender()` ne fait plus que la salutation et la date : **les tuiles
 sont déléguées à `dashRender()`** (voir « Accueil : tableau de bord modulaire »). Il n'y

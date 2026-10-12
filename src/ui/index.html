@@ -2686,13 +2686,13 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
               onclick="dashToggleEdit()"
               title="Choisir les tuiles affichees ici"><i class="ph ph-pencil-simple"></i> Modifier les tuiles</button>
       <button class="btn btn-ghost btn-sm" onclick="openSettings()" title="Paramètres de Pilote"><i class="ph ph-gear-six"></i> Paramètres</button>
-      <button class="btn btn-ghost btn-sm" onclick="doExport()"       title="Exporter mes données (Ctrl+E)"><i class="ph ph-download-simple"></i> Exporter</button>
-      <button class="btn btn-ghost btn-sm" onclick="doImportDialog()" title="Importer des données (Ctrl+I)"><i class="ph ph-upload-simple"></i> Importer</button>
+      <!-- Exporter et Importer : retirés de l'accueil en 4.4.12 (demande
+           d'Arthur), ils restent dans Paramètres → Données et sur Ctrl+E / Ctrl+I -->
       <button class="btn btn-ghost btn-sm" id="home-usb-btn" onclick="svPushToUsb()"
               title="Copier toutes les données sur la clé USB"><i class="ph ph-usb"></i> Téléverser vers clé USB</button>
     </div>
-    <!-- Sous les boutons : la ligne des boutons est pleine à 1366 px, un 6e
-         y passait à la ligne et la 2e rangée de tuiles sortait de l'écran -->
+    <!-- Sous les boutons, place validée par Arthur (4.4.10). En 6e bouton dans
+         la rangée, il passait à la ligne et la 2e rangée de tuiles sortait de l'écran -->
     <div class="home-row3">
       <button type="button" class="home-sug" onclick="homeSuggestion()"
               title="Proposer une amélioration à l'auteur de Pilote"><i class="ph ph-lightbulb"></i> Suggérer une amélioration</button>
