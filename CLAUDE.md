@@ -226,23 +226,36 @@ Le fil d'Ariane est écrit par `_updateCrumb(id)`, appelée à la fin du `goTab`
 **d'origine** et pas dans un patch : chaque patch rappelle la version d'origine, le fil
 suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
-Sidebar : un onglet **Accueil** seul en tête, puis 8 sections en accordéon
-(`NAV_SECTIONS` dans index.html). Une seule section dépliée à la fois, un second clic
+Sidebar : un onglet **Accueil** seul en tête, puis les sections en accordéon
+(`NAV_SECTIONS` dans index.html), réparties sous deux titres, « Bourse » et
+« Vie perso » (4.4.2). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
 Paramètres.
 
+* **Une section par CTO** (`_navBlocs`) : « CTO » suivi du nom du compte
+  (`ctoNomSection`, « CTO TR » reste « CTO TR »), onglets `cto-pos@c2`. Sans
+  aucun CTO, une seule section « CTO » mène à l'écran de création. Le « + » du
+  titre Bourse crée un CTO (absent si le module CTO est décoché).
+* **Ordre libre** : chaque section se glisse par son en-tête, d'un titre à
+  l'autre (`_navBrancherGlisser`). Ordre dans `S.uiPrefs.navOrdre` (clés des
+  sections et `@perso`), résolu par `_navOrdre` : un nouveau CTO se range après
+  le dernier, une section masquée garde son voisin. Défaut : `NAV_ORDRE_DEFAUT`.
+* Rebâtir la barre passe par `_reconstruireSidebar()` (pastille utilisateur et
+  non lus d'Actus compris) : après la lecture des CTO, leur création, leur
+  renommage ou leur suppression.
+
 | Entrée          | Onglets (ids des panes : `pane-<id>`)                              |
 |-----------------|--------------------------------------------------------------------|
 | Accueil         | home                                                               |
-| PEA             | dash, pos, sector, div, tx, wish, dep, strat, sim (plus de `perf`) |
-| CTO             | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
+| PEA             | dash, pos, sector, div, tx, wish, dep, strat (plus de `perf`)      |
+| CTO « nom » (un par CTO) | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
+| Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
-| Patrimoine      | pa-vue, pa-comptes                                                 |
+| Patrimoine      | pa-vue, pa-comptes, sim (Simulateurs, dans le PEA jusqu'à la 4.4.1) |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
-| Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
 `_navSectionOf(tabId)`. Section dépliée gardée en mémoire seulement (`_navOuverte`,
@@ -252,9 +265,11 @@ Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secI
 masquables via ⊘, Ctrl+1..7, écran Paramètres).
 
 Les onglets `cto-*` n'ont pas de pane : ils montrent ceux du PEA (`cto-pos` → `pane-pos`)
-sur le CTO choisi en haut de page, que `ctoAvantOnglet` met dans `S` (« compte actif »,
+sur le CTO de leur section, que `ctoAvantOnglet` met dans `S` (« compte actif »,
 `docs/modules/cto.md`). Tout autre onglet remet le PEA dans `S`. `cto-dash@c2` ouvre un
-CTO précis (tuile d'accueil) ; `_navSectionOf` et `_setActiveSidebar` ignorent le `@…`.
+CTO précis ; `_navSectionOf` ignore le `@…`, `_setActiveSidebar` complète un
+`cto-pos` sans `@` par le CTO affiché (`_ongletComplet`). `body.dataset.activeTab`
+garde l'onglet sans `@`.
 
 Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
 (finances, sports, prêt, accueil) : ils s'enchaînent, ne pas casser l'ordre.
@@ -275,7 +290,8 @@ Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
   cet endpoint écrase le `pea_data.json` actif, il ne prend pas un chemin libre
 * `GET /vendor/<fichier>` → Chart.js, polices et icônes, liste blanche d'extensions
   (`.js`, `.css`, `.woff2`), confiné sous `ui/vendor/`
-* `GET /isin?isin=…&nom=…` → cotations en euros d'un ISIN, devise vérifiée, et secteur
+* `GET /isin?isin=…&nom=…[&nom2=…&points=date:prix,…&depuis=…]` → cotations en euros
+  d'un ISIN, devise vérifiée (et historique comparé aux prix payés), et secteur
   (import du CTO : `docs/modules/cto.md`)
 * `GET /actus/mail/<ticket>` → la page d'un mail du module Actus, pour son iframe
   (ticket créé par `Api.actus_ouvrir`, 10 min) : voir `docs/modules/actus.md`
