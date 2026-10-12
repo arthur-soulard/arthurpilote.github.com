@@ -40,6 +40,10 @@ def _repere(etape: str) -> None:
 # 0 sur 10 avec. Ne pas retirer.
 import encodings.idna  # noqa: F401
 
+# Mac : certificats HTTPS avant tout contexte TLS (server en cree un a l'import)
+import plateforme
+plateforme.certificats_mac()
+
 import webview                        # pywebview
 
 import server
@@ -56,7 +60,6 @@ import expositions
 import sauvegarde
 import notifications
 import splash
-import plateforme
 
 
 APP_NAME    = "Pilote"
@@ -1259,7 +1262,7 @@ def main() -> int:
                         res.append(f"{nom} KO ({type(e).__name__} : {str(e)[:90]})")
                 return ", ".join(res)
 
-            print(f"[https] comme Pilote aujourd'hui : {essais(ssl.create_default_context())}",
+            print(f"[https] reglages de Pilote : {essais(ssl.create_default_context())}",
                   flush=True)
             if os.path.isfile("/etc/ssl/cert.pem"):
                 ctx_mac = ssl.create_default_context(cafile="/etc/ssl/cert.pem")

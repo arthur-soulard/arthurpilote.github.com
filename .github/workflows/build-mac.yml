@@ -57,6 +57,11 @@ jobs:
       - name: Launch and check
         run: |
           DONNEES="$HOME/Library/Application Support/Pilote/Donnees"
+          # Un Mac ordinaire n'a pas le Python de la machine de GitHub, ou l'app
+          # compilee cherche ses certificats : on les cache pendant le test, pour
+          # verifier le repli de plateforme.certificats_mac (docs/mac.md)
+          CERT=$(python -c "import ssl; print(ssl.get_default_verify_paths().openssl_cafile)")
+          sudo mv "$CERT" "$CERT.cache" && echo "::notice title=Certificats::$CERT cache pendant le test"
           # PILOTE_DIAG : app.py ecrit le journal de demarrage de la page (« [diag] »)
           PILOTE_DIAG=1 dist/Pilote.app/Contents/MacOS/Pilote > pilote.log 2>&1 &
           PID=$!
@@ -98,11 +103,28 @@ jobs:
 
           kill $PID 2>/dev/null || true
           sleep 2
+          sudo mv "$CERT.cache" "$CERT" 2>/dev/null || true
 
           # Echecs bloquants : serveur muet, donnees au mauvais endroit
           test -n "$UP"
           test -d "$DONNEES"
           test ! -e dist/Pilote.app/Contents/MacOS/Donnees
+
+      - name: Capture (annotations)
+        # Les artefacts ne se lisent qu'avec un compte : une petite copie JPEG de
+        # la capture sort en annotations, en base64 decoupe en morceaux
+        if: always()
+        run: |
+          test -f capture.png || exit 0
+          sips -s format jpeg -s formatOptions 25 -Z 720 capture.png --out cap.jpg > /dev/null
+          { base64 -i cap.jpg | tr -d '\n' | fold -w 3800; echo; } > cap.b64
+          N=$(wc -l < cap.b64 | tr -d ' ')
+          echo "::notice title=Capture::$(wc -c < cap.jpg | tr -d ' ') octets, $N morceaux"
+          i=0
+          while read -r ligne; do
+            i=$((i+1))
+            echo "::notice title=Capture $i/$N::$ligne"
+          done < cap.b64
 
       - name: Zip app
         if: always()
