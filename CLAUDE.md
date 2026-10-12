@@ -222,7 +222,7 @@ suit donc tous les chemins de navigation (barre latérale, tuiles, Ctrl+1..7).
 
 Sidebar : un onglet **Accueil** seul en tête, puis les sections en accordéon
 (`NAV_SECTIONS` dans index.html), réparties sous deux titres, « Bourse » et
-« Vie perso » (4.4.1). Une seule section dépliée à la fois, un second clic
+« Vie perso » (4.4.2). Une seule section dépliée à la fois, un second clic
 sur l'en-tête la referme, aucune section n'est obligatoirement ouverte. Une pastille
 marque la section contenant l'onglet actif. En bas : pastille utilisateur, thème,
 Paramètres.
@@ -248,7 +248,7 @@ Paramètres.
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
-| Patrimoine      | pa-vue, pa-comptes, sim (Simulateurs, dans le PEA jusqu'à la 4.4.0) |
+| Patrimoine      | pa-vue, pa-comptes, sim (Simulateurs, dans le PEA jusqu'à la 4.4.1) |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
 
 Fonctions : `_injectSidebar()`, `_setActiveSidebar(id)`, `_navToggleSection(secId)`,
