@@ -86,6 +86,14 @@ jobs:
             sleep 1
           done
           echo "::notice title=Diag::$(grep "\[diag\]" pilote.log | head -c 3000 || echo absent)"
+          # 4. Certificats HTTPS (Yahoo, Gmail, GitHub), essayes par app.py
+          #    16 s apres le lancement ; jusqu'a 60 s si le reseau traine
+          for i in $(seq 1 60); do
+            grep -q "\[https\] cours" pilote.log && break
+            sleep 1
+          done
+          echo "::notice title=HTTPS::$(grep -E "\[https\]|Yahoo/query" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
+          echo "::notice title=Modules::$(grep "\[module\]" pilote.log | tr '\n' ' ' || echo absent)"
           echo "::notice title=Journal::$(tail -c 900 pilote.log | tr '\n' ' ' | tr -d '\r')"
 
           kill $PID 2>/dev/null || true
