@@ -44,6 +44,42 @@ Sa config vit donc dans `Donnees/sauvegarde.json`, à côté de `users.json`.
   section — elle interroge le disque.
 * Rien n'est chiffré : le zip est aussi lisible que les JSON d'origine.
 
+## Les quatre réglages de la clé (12/10/2026, Windows et Mac)
+
+Demandés par Arthur le 11/10 avec le chantier Mac (`docs/mac.md`). Tous dans
+`sauvegarde.json`, validés par `appliquer_reglages()` (seule porte d'écriture
+depuis l'UI : `Api.sauvegarde_set_config`). Paramètres → Sauvegarde USB.
+
+| Réglage | Clés de `sauvegarde.json` | Effet |
+|---|---|---|
+| Mes clés autorisées | `clesAutorisees` : `[{serial, label}]` | Vide (défaut) : toute clé branchée convient, comme avant. Sinon le bouton Téléverser et l'accueil ne voient que ces clés (par numéro de série / UUID ; une clé sans numéro, par son nom). `status()` marque chaque clé branchée `autorisee`. Les archives vont toujours à la destination choisie |
+| Dossier et contenu | `dossierCle` (« Pilote »), `avecBackups` (oui) | Dossier du miroir à la racine de la clé, nettoyé (`_dossier_cle` : un seul nom, ni `/` ni `..`) ; `avecBackups=False` écarte les `backups*` des modules du miroir **et** des archives. L'archive de sécurité d'une restauration garde tout |
+| Moment et alerte | `moment` (`demarrage` / `branchement` / `fermeture`), `alerteJours` (7, 0 = jamais) | `app.py` : un fil relit `moment` toutes les 20 s ; « dès que la clé est branchée » tente `auto_backup_if_due()` à chaque tour (10 min après un échec d'écriture), « à la fermeture » la lance en fin de `main()`. Clé absente : le statut n'est réécrit que s'il change (pas une écriture toutes les 20 s). L'accueil et la tuile lisent `alerteJours` par `svAlerteJours()` |
+| Éjecter après copie | `ejecter` (non) | Après un téléversement ou une archive sur une clé détectée (`_cle_de`) : `ejecter(root)`. Windows : verbe `Eject` de l'Explorateur par PowerShell, puis vérifie que la clé a disparu ; Mac : `diskutil eject`. Le résultat (`ejection`) donne un message « Clé éjectée : tu peux la retirer », ou la raison |
+
+Essais du 12/10/2026 : 16 vérifications sous Windows sur une copie, un dossier
+temporaire jouant la clé (autorisées, nom de la clé sans numéro, dossier nettoyé,
+miroir sans backups, rien sur la clé non autorisée, éjection demandée, archive
+avec backups, valeurs refusées, pas de réécriture quand la clé manque), et
+l'écran dans un banc navigateur (enregistrement de chaque réglage, Autoriser /
+Retirer avec un nom à apostrophe). **L'éjection sous Windows n'a pas été
+essayée avec une vraie clé.**
+
+Corrigé au passage : les boutons « Restaurer » et des clés détectées mettaient le
+chemin dans le code du `onclick` ; un nom avec une apostrophe (« Clé d'Arthur »,
+courant sur Mac) cassait le clic. Chemin désormais en `data-path` / `data-root`.
+
+## Sur Mac (`_mac_cles`)
+
+Pas de lettre : la clé est son point de montage (`/Volumes/CLE`, `letter` vide,
+le nom dans `label`), retrouvée par l'UUID de son volume (`diskutil info -plist`,
+`VolumeUUID`) au lieu du numéro de série de Windows. Écartés : le disque du Mac
+(lien vers `/`), les images disque (`BusProtocol` « Disk Image ») et les partages
+réseau (inconnus de diskutil). Retenu : ce qui n'est pas interne, ou interne mais
+amovible (lecteur de carte SD). `set_destination` reconnaît un dossier choisi
+sous `/Volumes/<clé>/…`. Une config faite sous Windows ne suit pas sur Mac
+(`sauvegarde.json` n'est jamais restauré, et l'UUID n'est pas le numéro de série).
+
 **Deux mécanismes distincts, volontairement :**
 
 | | Bouton « 🔑 Téléverser » (accueil) | Archives (Paramètres) |
@@ -63,7 +99,8 @@ seule une ligne grise « dernier envoi 24 sept. » le disait. Désormais :
 * `svDerniereCopie(s)` = la plus récente des deux dates, envoi (`lastPushAt`) ou
   archive (`lastBackupAt`, ajoutée à `usb_state()` pour ça) : l'une comme l'autre
   met les données sur la clé.
-* À partir de `SV_ALERTE_JOURS` (7) jours pleins, la ligne sous les boutons de
+* À partir de `svAlerteJours()` jours pleins (réglage `alerteJours`, 7 par
+  défaut, 0 = jamais ; c'était la constante `SV_ALERTE_JOURS`), la ligne sous les boutons de
   l'accueil (`#home-usb-state.vieux`, couleur `--a`) écrit « Dernière sauvegarde
   sur clé il y a N jours » et quoi faire : « branche ta clé USB », ou « clique sur
   Téléverser » si une clé est branchée.

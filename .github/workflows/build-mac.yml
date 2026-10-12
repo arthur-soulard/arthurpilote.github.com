@@ -62,6 +62,9 @@ jobs:
           # verifier le repli de plateforme.certificats_mac (docs/mac.md)
           CERT=$(python -c "import ssl; print(ssl.get_default_verify_paths().openssl_cafile)")
           sudo mv "$CERT" "$CERT.cache" && echo "::notice title=Certificats::$CERT cache pendant le test"
+          # Une « cle » pour l'essai USB d'app.py (_diag_usb) : image disque FAT
+          hdiutil create -size 20m -fs MS-DOS -volname CLETEST -o cle.dmg > /dev/null
+          hdiutil attach cle.dmg > /dev/null || echo "image disque non montee"
           # PILOTE_DIAG : app.py ecrit le journal de demarrage de la page (« [diag] »)
           PILOTE_DIAG=1 dist/Pilote.app/Contents/MacOS/Pilote > pilote.log 2>&1 &
           PID=$!
@@ -115,6 +118,8 @@ jobs:
           MAXI=$(grep -ho '"windowMaximized": *[a-z]*' "$DONNEES"/users/*/pea_data.json 2>/dev/null | head -1)
           echo "::notice title=Fenetre::$(grep -E "\[fenetre\]|\[app\] fermeture" pilote.log | tr '\n' ' ' | head -c 3000)"
           echo "::notice title=Fermeture::$FIN ; ecriture en attente retrouvee dans $ECRIT pea_data.json ; $MAXI"
+          # Essai USB d'app.py (_diag_usb, 25 s apres le lancement) : fini a ce stade
+          echo "::notice title=USB::$(grep "\[usb\]" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
           echo "::notice title=Journal::$(tail -c 900 pilote.log | tr '\n' ' ' | tr -d '\r')"
 
           kill $PID 2>/dev/null || true

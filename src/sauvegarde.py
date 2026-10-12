@@ -21,6 +21,7 @@ Rien n'est chiffre : le zip est aussi lisible que les JSON d'origine.
 from __future__ import annotations
 
 import os
+import re
 import sys
 import json
 import shutil
@@ -61,6 +62,13 @@ def default_config() -> dict:
         "auto":           True,     # sauvegarder tout seul quand la cle est la
         "frequence":      "daily",  # daily | weekly | manual
         "keep":           10,       # nombre d'archives conservees (rotation)
+        "moment":         "demarrage",  # demarrage | branchement | fermeture
+        # Reglages de la cle (docs/sauvegarde-usb.md, « Les quatre reglages »)
+        "clesAutorisees": [],       # [{serial, label}] ; vide : toute cle branchee
+        "dossierCle":     "Pilote", # dossier du miroir sur la cle (bouton Televerser)
+        "avecBackups":    True,     # inclure les backups_* quotidiens des modules
+        "alerteJours":    7,        # alerte de l'accueil apres N jours ; 0 : jamais
+        "ejecter":        False,    # ejecter la cle une fois la copie finie
         # Dernier resultat
         "lastBackupAt":   "",
         "lastBackupPath": "",
@@ -147,9 +155,63 @@ def _disk_space(root: str) -> Tuple[int, int]:
         return 0, 0
 
 
+def _mac_disque(point: str) -> dict:
+    """Mac : ce que diskutil dit d'un volume monte ({} si illisible)."""
+    import plistlib
+    import subprocess
+    try:
+        r = subprocess.run(["diskutil", "info", "-plist", point],
+                           capture_output=True, timeout=10)
+        return plistlib.loads(r.stdout) if r.returncode == 0 and r.stdout else {}
+    except Exception:
+        return {}
+
+
+def _mac_cles() -> list:
+    """Mac : cles USB, cartes SD et disques externes montes sous /Volumes.
+
+    Pas de lettre : la cle est la par son point de montage (/Volumes/CLE) et
+    retrouvee par l'UUID de son volume, l'equivalent du numero de serie de
+    Windows. Le disque du Mac (lien vers /), les images disque (.dmg) et les
+    partages reseau (diskutil ne les connait pas) sont ecartes."""
+    cles = []
+    try:
+        points = sorted(Path("/Volumes").iterdir())
+    except Exception:
+        return cles
+    for p in points:
+        try:
+            if p.is_symlink() or not p.is_dir() or os.path.realpath(str(p)) == "/":
+                continue
+        except Exception:
+            continue
+        info = _mac_disque(str(p))
+        if not info or info.get("BusProtocol") == "Disk Image":
+            continue
+        amovible = (info.get("RemovableMediaOrExternalDevice") or info.get("Ejectable")
+                    or info.get("RemovableMedia") or info.get("Removable"))
+        if info.get("Internal", True) and not amovible:
+            continue
+        free, total = _disk_space(str(p))
+        if not total:
+            continue
+        cles.append({
+            "root":   str(p),
+            "letter": "",
+            "label":  info.get("VolumeName") or p.name,
+            "serial": info.get("VolumeUUID") or info.get("DiskUUID") or "",
+            "fs":     info.get("FilesystemName") or info.get("FilesystemType") or "",
+            "free":   free,
+            "total":  total,
+        })
+    return cles
+
+
 def list_removable_drives() -> list:
     """Cles USB et disques externes actuellement branches."""
     drives = []
+    if sys.platform == "darwin":
+        return _mac_cles()
     if sys.platform != "win32":
         return drives
     try:
@@ -278,6 +340,16 @@ def set_destination(path: str) -> dict:
                 cfg["relativePath"] = rel.strip("\\/")
         except Exception:
             pass
+    elif sys.platform == "darwin":
+        # /Volumes/CLE/... : la cle est retenue par l'UUID de son volume
+        parts = p.resolve().parts
+        if len(parts) >= 3 and parts[1] == "Volumes":
+            point = os.path.join("/", "Volumes", parts[2])
+            cle = next((d for d in _mac_cles() if d["root"] == point), None)
+            if cle:
+                cfg["volumeSerial"] = cle["serial"]
+                cfg["volumeLabel"]  = cle["label"]
+                cfg["relativePath"] = "/".join(parts[3:])
 
     save_config(cfg)
     return {"ok": True, "config": cfg, "destination": resolve_destination(cfg)}
@@ -285,13 +357,16 @@ def set_destination(path: str) -> dict:
 
 # ─── Fabrication de l'archive ─────────────────────────────────────────────────
 
-def _iter_files(app_dir: Path):
-    """Tous les fichiers a sauvegarder, en ignorant le regenerable."""
+def _iter_files(app_dir: Path, avec_backups: bool = True):
+    """Tous les fichiers a sauvegarder, en ignorant le regenerable.
+    avec_backups=False ecarte aussi les backups quotidiens des modules
+    (users/<slug>/backups*), reglage « Dossier et contenu »."""
     for root, dirs, files in os.walk(app_dir):
         rel_root = Path(root).relative_to(app_dir)
         # Elague les dossiers exclus (comparaison sur le premier segment)
         dirs[:] = [d for d in dirs
-                   if not (rel_root == Path(".") and d in EXCLUDED_DIRS)]
+                   if not (rel_root == Path(".") and d in EXCLUDED_DIRS)
+                   and (avec_backups or not d.startswith("backups"))]
         for name in files:
             if name.endswith(".tmp") or name.startswith(".sauvegarde_"):
                 continue
@@ -330,7 +405,7 @@ def run_backup(reason: str = "manuel") -> dict:
     count = 0
     try:
         with zipfile.ZipFile(tmp_target, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-            for full, arc in _iter_files(app_dir):
+            for full, arc in _iter_files(app_dir, bool(cfg.get("avecBackups", True))):
                 try:
                     z.write(full, arcname=str(Path("Donnees") / arc))
                     count += 1
@@ -358,8 +433,13 @@ def run_backup(reason: str = "manuel") -> dict:
     cfg["lastError"]      = ""
     save_config(cfg)
 
-    return {"ok": True, "path": str(target), "files": count,
-            "size": size, "removed": removed, "reason": reason}
+    res = {"ok": True, "path": str(target), "files": count,
+           "size": size, "removed": removed, "reason": reason}
+    if cfg.get("ejecter"):
+        cle = _cle_de(str(out_dir))
+        if cle:
+            res["ejection"] = ejecter(cle["root"])
+    return res
 
 
 def _manifest(count: int, reason: str) -> str:
@@ -398,14 +478,88 @@ def _rotate(out_dir: Path, keep: int) -> int:
     return removed
 
 
+# ─── Reglages de la cle : cles autorisees, dossier, ejection ─────────────────
+
+def _dans_liste(d: dict, autorisees: list) -> bool:
+    """La cle `d` figure-t-elle dans « Mes cles autorisees » ? Par son numero
+    de serie (UUID sur Mac) ; une cle sans numero, par son nom."""
+    for a in autorisees or []:
+        s = (a.get("serial") or "").strip()
+        if s:
+            if d.get("serial") and s == d["serial"]:
+                return True
+        elif a.get("label") and (d.get("label") or "").lower() == a["label"].lower():
+            return True
+    return False
+
+
+def _est_autorisee(d: dict, cfg: dict) -> bool:
+    """Liste vide (reglage par defaut) : toute cle branchee convient."""
+    autorisees = cfg.get("clesAutorisees") or []
+    return not autorisees or _dans_liste(d, autorisees)
+
+
+def _dossier_cle(cfg: dict) -> str:
+    """Dossier du miroir sur la cle (« Dossier et contenu »), Pilote par defaut.
+    Un seul nom, sans separateur ni caractere interdit : il reste a la racine
+    de la cle."""
+    nom = re.sub(r'[\\/:*?"<>|]', "", str(cfg.get("dossierCle") or "")).strip().strip(".").strip()
+    return nom[:60] or "Pilote"
+
+
+def _cle_de(chemin: str) -> Optional[dict]:
+    """La cle branchee qui porte ce chemin, None pour un dossier du disque."""
+    try:
+        c = os.path.normcase(os.path.abspath(chemin))
+    except Exception:
+        return None
+    for d in list_removable_drives():
+        r = os.path.normcase(os.path.abspath(d["root"])).rstrip("\\/")
+        if c == r or c.startswith(r + os.sep):
+            return d
+    return None
+
+
+def ejecter(root: str) -> dict:
+    """Ejecte une cle detectee (reglage « Ejecter apres copie »).
+    Windows : verbe Ejecter de l'Explorateur ; Mac : diskutil eject."""
+    import subprocess
+    try:
+        if sys.platform == "darwin":
+            r = subprocess.run(["diskutil", "eject", root],
+                               capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                return {"ok": True}
+            return {"ok": False, "error": (r.stderr or r.stdout or "").strip()[:200]
+                                          or "Éjection impossible"}
+        if sys.platform == "win32":
+            lecteur = os.path.splitdrive(root)[0].upper()
+            if not re.fullmatch(r"[A-Z]:", lecteur):
+                return {"ok": False, "error": "Lecteur inconnu"}
+            ps = ("(New-Object -ComObject Shell.Application).Namespace(17)"
+                  f".ParseName('{lecteur}').InvokeVerb('Eject')")
+            subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
+                           capture_output=True, timeout=30,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            # Le verbe ne rend rien : la cle a-t-elle disparu de la liste ?
+            import time
+            for _ in range(10):
+                if not any(d["root"].upper().startswith(lecteur) for d in list_removable_drives()):
+                    return {"ok": True}
+                time.sleep(0.5)
+            return {"ok": False, "error": "La clé est encore utilisée : retire-la après "
+                                          "l'avoir éjectée depuis l'Explorateur."}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+    return {"ok": False, "error": "Éjection non prise en charge"}
+
+
 # ─── Televersement direct (bouton de l'accueil) ───────────────────────────────
 # Different des archives : ici on ecrit un MIROIR du dossier Donnees dans
-# <cle>/Pilote/Donnees. Pas d'historique, pas de rotation — on ecrase, c'est
-# une actualisation. Les deux mecanismes coexistent : le miroir pour recuperer
-# ses fichiers tout de suite, les archives pour pouvoir remonter dans le temps.
-
-MIRROR_DIR = os.path.join("Pilote", "Donnees")
-
+# <cle>/Pilote/Donnees (« Pilote » : reglage dossierCle). Pas d'historique, pas
+# de rotation — on ecrase, c'est une actualisation. Les deux mecanismes
+# coexistent : le miroir pour recuperer ses fichiers tout de suite, les
+# archives pour pouvoir remonter dans le temps.
 
 def push_to_usb(root: str = None) -> dict:
     """
@@ -413,9 +567,16 @@ def push_to_usb(root: str = None) -> dict:
 
     Sans `root`, la cle est choisie automatiquement s'il n'y en a qu'une ;
     s'il y en a plusieurs, on rend la liste pour que l'UI demande laquelle.
+    Seules les cles autorisees comptent (liste vide : toutes).
     """
-    drives = list_removable_drives()
+    cfg = load_config()
+    toutes = list_removable_drives()
+    drives = [d for d in toutes if _est_autorisee(d, cfg)]
     if not drives:
+        if toutes:
+            return {"ok": False, "reason": "no_drive",
+                    "error": "Aucune de tes clés autorisées n'est branchée "
+                             "(Paramètres → Sauvegarde USB)."}
         return {"ok": False, "reason": "no_drive",
                 "error": "Aucune clé USB détectée. Branche-la puis réessaie."}
 
@@ -428,7 +589,6 @@ def push_to_usb(root: str = None) -> dict:
         chosen = drives[0]
     else:
         # Si une cle est deja configuree pour les archives, on la privilegie
-        cfg = load_config()
         chosen = next((d for d in drives
                        if d["serial"] and d["serial"] == cfg.get("volumeSerial")), None)
         if not chosen:
@@ -436,15 +596,16 @@ def push_to_usb(root: str = None) -> dict:
                     "error": "Plusieurs clés sont branchées."}
 
     app_dir = storage.get_app_dir()
-    dest = Path(chosen["root"]) / MIRROR_DIR
+    nom = chosen["letter"] or chosen["label"]      # Mac : pas de lettre
+    dest = Path(chosen["root"]) / _dossier_cle(cfg) / "Donnees"
     try:
         dest.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         return {"ok": False, "reason": "error",
-                "error": f"Écriture impossible sur {chosen['letter']} : {e}"}
+                "error": f"Écriture impossible sur {nom} : {e}"}
 
     copies, octets, echecs = 0, 0, []
-    for full, rel in _iter_files(app_dir):
+    for full, rel in _iter_files(app_dir, bool(cfg.get("avecBackups", True))):
         target = dest / rel
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -469,16 +630,23 @@ def push_to_usb(root: str = None) -> dict:
     except Exception:
         pass
 
-    return {"ok": True, "path": str(dest), "files": copies, "size": octets,
-            "drive": chosen["letter"], "label": chosen["label"],
-            "failed": echecs[:5], "failedCount": len(echecs)}
+    res = {"ok": True, "path": str(dest), "files": copies, "size": octets,
+           "drive": nom, "label": chosen["label"],
+           "failed": echecs[:5], "failedCount": len(echecs)}
+    if cfg.get("ejecter"):
+        res["ejection"] = ejecter(chosen["root"])
+    return res
 
 
 def usb_state() -> dict:
-    """Etat rapide pour l'accueil : y a-t-il une cle, et de quand date l'envoi ?"""
+    """Etat rapide pour l'accueil : y a-t-il une cle, et de quand date l'envoi ?
+    Seules les cles autorisees sont comptees ; « autres » : les autres cles."""
     cfg = load_config()
-    drives = list_removable_drives()
+    toutes = list_removable_drives()
+    drives = [d for d in toutes if _est_autorisee(d, cfg)]
     return {"ok": True, "drives": drives, "count": len(drives),
+            "autres": len(toutes) - len(drives),
+            "alerteJours": int(cfg.get("alerteJours", 7) or 0),
             "lastPushAt": cfg.get("lastPushAt", ""),
             "lastPushPath": cfg.get("lastPushPath", ""),
             "lastBackupAt": cfg.get("lastBackupAt", "")}
@@ -537,19 +705,53 @@ def is_due(cfg: dict = None) -> bool:
 
 def auto_backup_if_due() -> dict:
     """
-    Appelee au demarrage. Silencieuse : si la cle n'est pas la, on ne
-    derange pas l'utilisateur, on note juste le statut.
+    Appelee au demarrage, a la fermeture ou toutes les 20 s selon le reglage
+    « moment » (app.py). Silencieuse : si la cle n'est pas la, on ne derange
+    pas l'utilisateur, on note juste le statut (une fois, pas a chaque essai).
     """
     cfg = load_config()
     if not is_due(cfg):
         return {"ok": False, "reason": "not_due"}
     dest = resolve_destination(cfg)
     if not dest["ready"]:
-        cfg["lastStatus"] = "absent"
-        cfg["lastError"]  = dest["message"]
-        save_config(cfg)
+        if cfg.get("lastStatus") != "absent" or cfg.get("lastError") != dest["message"]:
+            cfg["lastStatus"] = "absent"
+            cfg["lastError"]  = dest["message"]
+            save_config(cfg)
         return {"ok": False, "reason": dest["reason"]}
     return run_backup(reason="automatique")
+
+
+def appliquer_reglages(patch: dict) -> dict:
+    """Reglages modifiables depuis Parametres → Sauvegarde USB, valides un par un."""
+    cfg = load_config()
+    patch = patch or {}
+    for k in ("auto", "avecBackups", "ejecter"):
+        if k in patch:
+            cfg[k] = bool(patch[k])
+    if patch.get("frequence") in ("daily", "weekly", "manual"):
+        cfg["frequence"] = patch["frequence"]
+    if patch.get("moment") in ("demarrage", "branchement", "fermeture"):
+        cfg["moment"] = patch["moment"]
+    if "keep" in patch:
+        try:
+            cfg["keep"] = max(1, min(100, int(patch["keep"] or 10)))
+        except (TypeError, ValueError):
+            pass
+    if "alerteJours" in patch:
+        try:
+            cfg["alerteJours"] = max(0, min(365, int(patch["alerteJours"] or 0)))
+        except (TypeError, ValueError):
+            pass
+    if "dossierCle" in patch:
+        cfg["dossierCle"] = _dossier_cle({"dossierCle": patch["dossierCle"]})
+    if isinstance(patch.get("clesAutorisees"), list):
+        cfg["clesAutorisees"] = [
+            {"serial": str(a.get("serial") or "")[:64], "label": str(a.get("label") or "")[:64]}
+            for a in patch["clesAutorisees"][:20]
+            if isinstance(a, dict) and (a.get("serial") or a.get("label"))]
+    save_config(cfg)
+    return status()
 
 
 # ─── Restauration ─────────────────────────────────────────────────────────────
@@ -641,11 +843,14 @@ def status() -> dict:
     """Tout ce dont l'ecran Parametres a besoin, en un appel."""
     cfg  = load_config()
     dest = resolve_destination(cfg)
+    drives = list_removable_drives()
+    for d in drives:     # « Mes cles autorisees » : la cle y figure-t-elle ?
+        d["autorisee"] = _dans_liste(d, cfg.get("clesAutorisees") or [])
     return {
         "ok": True,
         "config":      cfg,
         "destination": dest,
-        "drives":      list_removable_drives(),
+        "drives":      drives,
         "due":         is_due(cfg),
         "appDir":      str(storage.get_app_dir()),
     }

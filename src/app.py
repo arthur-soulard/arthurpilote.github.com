@@ -363,17 +363,10 @@ class Api:
             return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
 
     def sauvegarde_set_config(self, patch: dict) -> dict:
-        """Met a jour les seuls champs de comportement (auto, frequence, keep)."""
+        """Met a jour les reglages (comportement et reglages de la cle), sans
+        jamais toucher a la destination ni aux derniers resultats."""
         try:
-            cfg = sauvegarde.load_config()
-            for key in ("auto", "frequence", "keep"):
-                if key in (patch or {}):
-                    cfg[key] = patch[key]
-            cfg["keep"] = max(1, min(100, int(cfg.get("keep") or 10)))
-            if cfg.get("frequence") not in ("daily", "weekly", "manual"):
-                cfg["frequence"] = "daily"
-            sauvegarde.save_config(cfg)
-            return sauvegarde.status()
+            return sauvegarde.appliquer_reglages(patch)
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -1027,13 +1020,33 @@ def main() -> int:
 
     # Sauvegarde externe automatique, en arriere-plan et sans rien bloquer :
     # si la cle USB n'est pas branchee, on note le statut et on n'insiste pas.
-    def _auto_sauvegarde():
+    # Reglage « moment », relu a chaque tour (un changement vaut tout de suite) :
+    # au demarrage (une fois), des que la cle est branchee (toutes les 20 s tant
+    # que Pilote est ouvert) ou a la fermeture (fin de main).
+    def _sauvegarde_auto_une() -> dict:
         try:
             res = sauvegarde.auto_backup_if_due()
             if res.get("ok"):
                 print(f"[app] sauvegarde externe : {res.get('path')}", flush=True)
+            return res
         except Exception as e:
             print(f"[app] sauvegarde auto KO : {e}", flush=True)
+            return {"ok": False, "reason": "error"}
+
+    def _auto_sauvegarde():
+        premier = True
+        while True:
+            try:
+                moment = sauvegarde.load_config().get("moment") or "demarrage"
+            except Exception:
+                moment = "demarrage"
+            attente = 20
+            if moment == "branchement" or (premier and moment == "demarrage"):
+                # Ecriture ratee (cle pleine, protegee) : pas un essai toutes les 20 s
+                if _sauvegarde_auto_une().get("reason") == "error":
+                    attente = 600
+            premier = False
+            _time_lancement.sleep(attente)
 
     try:
         threading.Thread(target=_auto_sauvegarde, daemon=True).start()
@@ -1294,6 +1307,44 @@ def main() -> int:
                   flush=True)
         threading.Thread(target=_diag_https, daemon=True).start()
 
+        # Mac : cles USB (docs/mac.md, etape 4). build-mac.yml monte une image
+        # disque CLETEST : ecartee comme toute image, puis presentee comme une
+        # cle USB pour essayer le televersement et l'ejection par diskutil.
+        def _diag_usb():
+            import time as _t
+            _t.sleep(25)
+            if sys.platform != "darwin":
+                return
+            try:
+                for p in sorted(Path("/Volumes").iterdir()):
+                    info = sauvegarde._mac_disque(str(p))
+                    champs = {k: info.get(k) for k in (
+                        "BusProtocol", "Internal", "Ejectable", "RemovableMedia",
+                        "RemovableMediaOrExternalDevice", "VolumeName", "FilesystemName")}
+                    champs["uuid"] = bool(info.get("VolumeUUID"))
+                    print(f"[usb] {p.name} : {json.dumps(champs, default=str)}", flush=True)
+                print(f"[usb] cles vues : {[d['label'] for d in sauvegarde.list_removable_drives()]}",
+                      flush=True)
+                vrai = sauvegarde._mac_disque
+                sauvegarde._mac_disque = lambda point: (dict(vrai(point), BusProtocol="USB")
+                                                        if point.endswith("/CLETEST") else vrai(point))
+                cles = sauvegarde.list_removable_drives()
+                print(f"[usb] CLETEST en USB : {[(d['label'], bool(d['serial'])) for d in cles]}",
+                      flush=True)
+                cle = next((d for d in cles if d["label"] == "CLETEST"), None)
+                if cle:
+                    r = sauvegarde.push_to_usb(cle["root"])
+                    miroir = os.path.exists("/Volumes/CLETEST/Pilote/Donnees/users.json")
+                    print(f"[usb] televersement : ok={r.get('ok')} fichiers={r.get('files')}"
+                          f" users.json sur la cle={miroir} {r.get('error', '')}", flush=True)
+                    e = sauvegarde.ejecter(cle["root"])
+                    print(f"[usb] ejection : {e} ; encore montee : "
+                          f"{os.path.exists('/Volumes/CLETEST')}", flush=True)
+                sauvegarde._mac_disque = vrai
+            except Exception as ex:
+                print(f"[usb] KO : {ex}", flush=True)
+        threading.Thread(target=_diag_usb, daemon=True).start()
+
         # Mac : fenetre et fermeture (docs/mac.md, etape 3). 45 s apres le
         # lancement : barre de titre, ⌘2, taille ; puis une ecriture laissee en
         # attente et « Quitter » comme ⌘Q. Le test verifie ensuite qu'elle est
@@ -1486,6 +1537,12 @@ def main() -> int:
                 _lock_socket.close()
         except Exception:
             pass
+        # Reglage « moment » de la sauvegarde USB : a la fermeture de Pilote
+        try:
+            if sauvegarde.load_config().get("moment") == "fermeture":
+                _sauvegarde_auto_une()
+        except Exception as e:
+            print(f"[app] sauvegarde a la fermeture KO : {e}", flush=True)
         if sys.platform == "darwin":
             # Filet : un fil de pywebview encore en attente d'une page fermee
             # garderait l'app ouverte (icone dans le Dock) ; 3 s apres, on sort
