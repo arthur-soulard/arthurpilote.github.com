@@ -597,7 +597,12 @@ class Api:
         """Mac : la page a ecrit ce qui attendait, la fenetre peut se fermer
         (voir _on_closing dans main)."""
         if _fermeture_prete is not None:
-            _fermeture_prete()
+            # Apres la reponse a la page, pas pendant : pywebview la renverrait a
+            # une fenetre deja fermee, et ce fil du pont attendrait pour toujours
+            # (vu le 12/10/2026 sur le test Mac : l'app ne quittait plus)
+            t = threading.Timer(0.3, _fermeture_prete)
+            t.daemon = True
+            t.start()
         return {"ok": True}
 
     def minimize(self):
@@ -1442,7 +1447,9 @@ def main() -> int:
                           " : window.pywebview.api.fermeture_prete()")
         except Exception as e:
             print(f"[app] vidange avant fermeture KO : {e}", flush=True)
-        threading.Timer(5.0, _fermer_mac, args=("delai",)).start()
+        filet = threading.Timer(5.0, _fermer_mac, args=("delai",))
+        filet.daemon = True
+        filet.start()
 
     def _on_closing():
         if sys.platform == "darwin" and not fermeture_mac["faite"]:
@@ -1479,6 +1486,12 @@ def main() -> int:
                 _lock_socket.close()
         except Exception:
             pass
+        if sys.platform == "darwin":
+            # Filet : un fil de pywebview encore en attente d'une page fermee
+            # garderait l'app ouverte (icone dans le Dock) ; 3 s apres, on sort
+            fin = threading.Timer(3.0, lambda: os._exit(0))
+            fin.daemon = True
+            fin.start()
 
     return 0
 
