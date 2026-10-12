@@ -131,7 +131,10 @@ Relevés le 11/10/2026 :
   Réglages / Cibles et courtier).
 * **`txFraisBadge`** : un ordre dont les frais réels ne collent pas à la grille
   est marqué « frais ≠ grille » dans Transactions, et compté dans la barre du
-  CTO. Un ordre de plan, Saveback ou arrondi attend `tarif.plan`.
+  CTO. Un ordre de plan, Saveback ou arrondi attend `tarif.plan` ; une action
+  offerte est un ordre ordinaire (1 € chez Trade Republic) ; une division
+  n'attend rien. La comparaison porte sur le courtage seul (`txCourtage` :
+  frais moins `taxe`).
 * Les tarifs se revérifient à chaque version qui touche aux courtiers.
 
 ## Stratégie
@@ -157,27 +160,99 @@ nom de colonne (`cto.lire_csv_tr`), virgule ou point-virgule, décimales au
 point ou à la virgule.
 
 * Repris : `BUY`, `SELL`, `SAVINGS_PLAN_EXECUTED` (plan), `BENEFITS_SAVEBACK`
-  (Saveback), types `*ROUND_UP` (arrondi), `STOCKPERK`/`BONUS` (offert),
-  `DIVIDEND` (montant crédité). Ignorés : espèces (carte, virements, intérêts),
-  classes hors actions et fonds. Types inconnus : listés, jamais devinés.
-* Le montant d'un ordre peut inclure les frais ou non selon les fichiers :
-  un écart jusqu'aux frais est normal (même tolérance que broker-to-edavki).
-* **ISIN → cotation en euros** (`/isin`, `server.cotations_euro`) : Yahoo ne
-  rend pour un ISIN que la cotation principale (Apple → `AAPL` en dollars,
-  MSCI World → `IWDA.L` en dollars). On cherche aussi par symbole et par nom,
-  on garde les places européennes, puis on vérifie la **devise réelle** (le
-  suffixe ne suffit pas). L'import choisit le cours le plus proche du dernier
-  prix payé (à 20 % près) et l'utilisateur valide. Le secteur Yahoo d'une
+  de la catégorie TRADING (Saveback), types `*ROUND_UP` (arrondi),
+  `STOCKPERK`/`BONUS` (offert), `DIVIDEND` (montant crédité), `SPLIT`
+  (division). Ignorés : **toute ligne de la catégorie CASH** (carte, virements,
+  intérêts, Saveback versé, cadeau), classes hors actions et fonds (le
+  Bitcoin : Arthur l'a voulu hors du CTO le 12/10/2026, il n'est pas conservé
+  sur le compte-titres). Types inconnus : listés, jamais devinés.
+* Ordre des opérations : date, puis heure (`datetime`) : une division passe
+  avant la vente du même jour.
+
+### Ce que montre le vrai relevé d'Arthur (12/10/2026)
+
+Premier vrai export (732 lignes, juillet 2025 → octobre 2026, 18 titres) ; les
+essais du 11/10 avaient porté sur un fichier construit. Ce qui différait :
+
+* **Plan** : un `BUY` ordinaire ; seule la description le dit (« Savings plan
+  execution <ISIN> <nom>, quantity: … », « Buy trade … » pour un ordre).
+  Sans ça, 102 achats de plan passaient pour des ordres à 0 € de frais.
+* **Saveback** : une ligne CASH `BENEFITS_SAVEBACK` (ISIN, montant) **plus**
+  l'achat. L'ancien lecteur prenait la ligne CASH pour un achat sans parts.
+  L'achat du même titre et du même montant, à trois jours au plus, devient
+  « Saveback ». Depuis décembre 2025, le Saveback d'Arthur va au Bitcoin.
+* **Action offerte** (« stock perk ») : une ligne CASH `GIFT` (21 €), puis à la
+  même seconde un ordre de 19,99 € + 1 € de frais (Amazon, Tesla) → « offert ».
+* **Taxe** : colonne `tax` = TTF française (0,4 %) sur les actions françaises,
+  hors `amount`. Elle s'ajoute aux frais de la transaction (PRU, investi,
+  carte « Frais cumulés ») et reste aussi dans `taxe` (comparaison à la grille).
+* **Ordre en plusieurs morceaux** : même titre, même sens, même instant, même
+  cours → fusionnés (5 + 0,94972 parts le 13/05/2026, 1 € de frais en tout).
+* **Division** : deux lignes `CORPORATE_ACTION`/`SPLIT` à la même seconde,
+  l'ancienne ligne en parts négatives, la nouvelle en positives, sans prix,
+  ici avec un **nouvel ISIN** (ETP argent x3 de WisdomTree, IE00B7XD2195 →
+  XS3306516876, 1 part → 10). Importée comme une **vente au PRU puis un achat
+  du même coût, sans frais** (`origine: "division"`, badge « Division ») :
+  plus-value nulle, versements déduits qui s'annulent le jour même. Les deux
+  ISIN ont la même cotation (3SIL.MI) : une seule position. Yahoo garde ce
+  jour-là le cours d'avant (183 € au lieu de ~21,84 €) : `buildTwrSeries` ne
+  trace pas de point le jour d'une division (`jourDivision`).
+* `amount` = parts × cours, sans frais ni taxe. Aucun dividende sur la
+  période : le contenu d'une ligne de dividende reste à voir.
+
+Résultat vérifié au centime contre un calcul indépendant fait sur le CSV :
+5 positions (or physique 1,991035 parts pour 145,72 €, HSBC Emerging 23,598439
+pour 353,87 €, Xtrackers Europe Value 5,722762 pour 277,34 €, Amazon 20,99 €,
+Tesla 31,00 €), investi net 939,79 €, frais 27,58 € dont 0,58 € de taxe,
+offert 61,99 €, aucun « frais ≠ grille », 12 lignes clôturées, second import
+du même fichier : rien de nouveau, PEA identique avant et après. Les
+plus-values réalisées par ligne diffèrent de quelques centimes du relevé
+(−110,83 € contre −110,87 €) : `computePos` multiplie parts × cours sans
+arrondir, comme pour le PEA ; l'investi net, lui, part de `brutOrdre`.
+
+### ISIN → cotation en euros (`/isin`, `server.cotations_euro`)
+
+Yahoo ne rend pour un ISIN que la cotation principale (Apple → `AAPL` en
+dollars, MSCI World → `IWDA.L` en dollars). On cherche aussi par symbole et
+par nom, on garde les places européennes, on vérifie la **devise réelle** (le
+suffixe ne suffit pas). Depuis le vrai relevé :
+
+* recherche aussi par le **nom long** de la description, entier puis raccourci
+  (`_nom_court`) : « iShares Physical Gold ETC » trouve l'or physique, que
+  l'ISIN et « Physical Gold USD (Acc) » ne trouvaient pas ;
+* **second saut** par la racine des cotations trouvées (PPFB.SG → PPFB.DE),
+  puis **essai direct sur Xetra** de chaque racine (AMZ.SG → AMZ.DE) : la
+  recherche de Yahoo ne rend pas la même liste d'un appel à l'autre ;
+* tri : même racine que la cotation principale, puis **place du pays de
+  l'ISIN** (`_PLACE_DU_PAYS` : SGO.PA plutôt que SGO.VI), puis les places dans
+  l'ordre de `_PLACES_EUR` ;
+* **vérification par l'historique** : l'import envoie les prix payés
+  (`points=date:prix`, 40 derniers) et le premier ordre (`depuis`). Pour les 4
+  premiers candidats qui ont un cours, écart médian entre prix payés et
+  clôtures (`_ecart_historique`) ; un historique qui ne remonte pas au premier
+  ordre est écarté (la courbe aurait un trou). Passe devant : la place
+  préférée parmi celles à moins d'un point du meilleur écart (Xetra plutôt
+  que le parquet de Francfort). Le cours du jour ne suffit pas : IGLD.DE (or
+  couvert en euros, un autre produit) cotait comme PPFB.DE, mais s'écartait de
+  4,7 % des prix payés, contre 0,7 %. Seuil `ISIN_ECART_MAX` 10 % (un ETP à
+  levier x3 s'écarte de 5 % : cours très mobile dans la journée).
+* L'import prend le candidat vérifié (`ecart`), sinon le premier dont le cours
+  est à 20 % du dernier prix payé, sinon le premier. « vérifiée » s'affiche
+  dans la liste ; l'utilisateur peut toujours changer.
+* Mesuré sur les 18 titres d'Arthur (8 s) : SGO.PA, RHM.DE, EL.PA, LRC.DE,
+  HEI.DE, RRU.DE, MTE.DE, 1KTOS.MI, PPFB.DE, HEMA.PA, AMZ.DE, TL0.DE, 3GOL.MI,
+  NUCL.PA, TDIV.AS, 3SIL.MI (deux ISIN), D5BL.DE. Le secteur Yahoo d'une
   action devient celui de la position (`ctoSecteurYahoo`).
+
+### Le reste
+
 * Doublons : même `transaction_id` (`trId` sur la transaction ou le dividende),
   ou même ordre saisi à la main. Ré-importer le même fichier n'ajoute rien.
 * Rien n'est enregistré avant « Importer » ; un seul `pushUndo` (Retour annule
   tout l'import).
-* **À revérifier sur un vrai export d'Arthur** : les essais du 11/10/2026 ont
-  porté sur un fichier construit d'après le format publié (pas de vrai export
-  sous la main) : ce que contient une ligne de dividende, le nom exact du type
-  des arrondis, et que le PRU affiché par Trade Republic inclut bien les frais
-  (comme Pilote ; un témoignage d'utilisateur le laisse penser).
+* **Reste à voir** : une ligne de dividende réelle, le nom exact du type des
+  arrondis, et que le PRU affiché par Trade Republic inclut bien les frais et
+  la taxe (comme Pilote).
 
 ## Expositions
 

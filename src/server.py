@@ -14,8 +14,10 @@ Endpoints (memes que avant) :
 """
 from __future__ import annotations
 
+import bisect
 import os
 import re
+import statistics
 import http.server
 import http.cookiejar
 import hashlib
@@ -911,10 +913,28 @@ def fetch_yahoo_search(query: str, limit: int = 6):
 # allemand de reference, proche des places ou Trade Republic execute)
 _PLACES_EUR = [".DE", ".PA", ".AS", ".MI", ".BR", ".MC", ".LS", ".IR", ".VI", ".HE",
                ".F", ".MU", ".SG", ".HM", ".DU", ".BE", ".HA"]
-_MOTS_VIDES = {"inc", "corp", "corporation", "plc", "sa", "se", "ag", "nv", "the", "ucits",
+# Premier vrai releve d'Arthur (11/10/2026, 18 titres) : la recherche par ISIN
+# ne trouvait rien pour l'or physique iShares (IE00B4ND3602), et une cotation
+# sans cours pour l'ETF Uranium de VanEck. D'ou, en plus :
+#   - le nom long de la colonne description (« iShares Physical Gold ETC »),
+#     entier puis raccourci : Yahoo ne trouve rien sur un nom trop long ;
+#   - un second saut par la racine des cotations trouvees (PPFB.SG -> PPFB.DE) ;
+#   - la place du pays de l'ISIN d'abord (SGO.PA, pas SGO.VI a Vienne) ;
+#   - surtout, la VERIFICATION par l'historique : les prix payes (date:prix)
+#     sont compares aux clotures de chaque candidat. Le cours du jour ne suffit
+#     pas : IGLD.DE (or couvert en euros, un autre produit) cote comme PPFB.DE
+#     aujourd'hui, mais s'ecartait de 4,7 % des prix payes, contre 0,7 %.
+_PLACE_DU_PAYS = {"FR": ".PA", "DE": ".DE", "NL": ".AS", "IT": ".MI", "BE": ".BR",
+                  "ES": ".MC", "PT": ".LS", "AT": ".VI", "FI": ".HE"}
+# Ecart median tolere entre prix payes et clotures : 0,1 a 3 % sur une
+# cotation juste (3 % pour un seul ordre d'Amazon), 5 a 6 % sur un ETP a
+# levier x3 (cours tres mobile dans la journee), 4,7 % pour IGLD.DE. On garde
+# le MEILLEUR candidat : ce seuil n'ecarte que les titres sans rapport.
+ISIN_ECART_MAX = 0.10
+_MOTS_VIDES ={"inc", "corp", "corporation", "plc", "sa", "se", "ag", "nv", "the", "ucits",
                "etf", "acc", "dist", "usd", "eur", "class", "shares", "ishares", "ishs",
                "iii", "ii", "fund", "r"}
-_isin_cache = {}               # {isin: {resultat, ts}}
+_isin_cache = {}               # {isin|depuis|points: {resultat, ts}}
 ISIN_CACHE_TTL = 24 * 3600
 
 
@@ -931,15 +951,47 @@ def _mots(s: str) -> set:
             if len(t) >= 3 and t not in _MOTS_VIDES}
 
 
-def cotations_euro(isin: str, nom: str = "") -> dict:
-    """{ok, principal: {symbol, nom}, candidats: [{symbol, nom, place, prix, devise}]}
-    candidats : cotations en euros verifiees, la plus probable en premier."""
+def _nom_court(s: str) -> str:
+    """« VanEck UCITS ETFs plc - VanEck Uranium and Nuclear Technologies UCITS
+    ETF » -> « VanEck Uranium and Nuclear » : Yahoo ne trouve rien sur le nom
+    entier."""
+    s = " ".join((s or "").split())
+    if " - " in s:
+        s = s.rsplit(" - ", 1)[1]
+    mots = [w for w in s.split() if not re.fullmatch(r"(?i)ucits|etf|etc|inh\.?|eo|dl|[-,.\d]+", w)]
+    return " ".join(mots[:4])
+
+
+def _ecart_historique(symbol: str, points: list, depuis: str):
+    """Ecart median entre les prix payes [(date, prix)] et les clotures de
+    `symbol` ces jours-la ; None si son historique ne remonte pas a `depuis`
+    (cotation trop recente : la courbe du compte aurait un trou)."""
+    h = get_history([symbol], "max", since=depuis).get(symbol)
+    if not h or not h.get("dates") or h["dates"][0] > depuis:
+        return None
+    ecarts = []
+    for date, prix in points:
+        i = bisect.bisect_right(h["dates"], date) - 1
+        if i >= 0 and h["closes"][i]:
+            ecarts.append(abs(prix / h["closes"][i] - 1))
+    return statistics.median(ecarts) if ecarts else None
+
+
+def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis: str = "") -> dict:
+    """{ok, principal: {symbol, nom}, candidats: [{symbol, nom, place, prix, devise, ecart}]}
+    candidats : cotations en euros verifiees, la plus probable en premier.
+    nom2 : nom long (description du releve) ; points : prix payes
+    [(AAAA-MM-JJ, prix)] et depuis : premier ordre, pour la verification par
+    l'historique (`ecart` : ecart median, None si non verifiee)."""
     isin = (isin or "").strip().upper()
     if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", isin):
         return {"ok": False, "error": "ISIN invalide"}
+    points = [(d, p) for d, p in (points or []) if p and p > 0]
+    depuis = depuis or min((d for d, _ in points), default="")
+    cle = isin + "|" + depuis + "|" + ",".join(f"{d}:{p:g}" for d, p in points)
     now = time.time()
     with _lock:
-        c = _isin_cache.get(isin)
+        c = _isin_cache.get(cle)
         if c and now - c["ts"] < ISIN_CACHE_TTL:
             return c["resultat"]
     titres = ("EQUITY", "ETF", "MUTUALFUND")
@@ -950,28 +1002,54 @@ def cotations_euro(isin: str, nom: str = "") -> dict:
     prin = p[0] if p else {}
     base = (prin.get("symbol") or "").split(".")[0]
     pnom = prin.get("shortname") or prin.get("longname") or ""
-    ref = _mots(pnom) | _mots(nom)
-    cands = {}
-    for q in (isin, base, nom, pnom):
-        if not q:
-            continue
+    ref = _mots(pnom) | _mots(nom) | _mots(nom2)
+    pays = _PLACE_DU_PAYS.get(isin[:2])
+    cands, faites = {}, set()
+
+    def chercher(q):
+        if not q or q.lower() in faites:
+            return
+        faites.add(q.lower())
         try:
             quotes = [x for x in p] if q == isin else _yahoo_search_brut(q)
         except Exception:
-            continue
+            return
         for x in quotes:
             s = x.get("symbol") or ""
             suf = "." + s.rsplit(".", 1)[-1] if "." in s else ""
             if suf not in _PLACES_EUR or x.get("quoteType") not in titres:
                 continue
             xnom = (x.get("shortname") or x.get("longname") or "").strip()
-            commun = len(ref & _mots(xnom)) + (2 if s.split(".")[0] == base else 0)
-            if commun == 0:
+            mots, racine = len(ref & _mots(xnom)), s.split(".")[0] == base
+            if not mots and not racine:
                 continue
+            # Meme racine que la cotation principale, puis place du pays, puis
+            # les autres places dans l'ordre, puis le nom le plus proche
+            place = -1 if suf == pays else _PLACES_EUR.index(suf)
             cands[s] = {"symbol": s, "nom": " ".join(xnom.split()),
                         "place": x.get("exchDisp") or x.get("exchange") or "",
-                        "_score": (commun, -_PLACES_EUR.index(suf))}
-    classes = sorted(cands.values(), key=lambda c: (-c["_score"][0], -c["_score"][1]))[:5]
+                        "_cle": (-int(racine), place, -mots)}
+
+    for q in (isin, base, nom, pnom, nom2, _nom_court(nom2)):
+        chercher(q)
+    for r in sorted({c["symbol"].split(".")[0] for c in cands.values()})[:3]:
+        chercher(r)   # second saut : PPFB.SG -> PPFB.DE
+    # Essai direct de la meme racine sur Xetra : la recherche de Yahoo ne la
+    # rend pas toujours (AMZ.SG trouve, AMZ.DE absent, le 12/10/2026)
+    essais = {}
+    for c in sorted(cands.values(), key=lambda c: c["_cle"]):
+        r = c["symbol"].split(".")[0]
+        if r + ".DE" not in cands and not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", r):
+            essais.setdefault(r + ".DE", c)
+    essais = dict(list(essais.items())[:4])
+    if essais:
+        trouves = get_prices(list(essais))
+        for s, c in essais.items():
+            info = trouves.get(s) or {}
+            if info.get("prix") and info.get("devise") == "EUR":
+                cands[s] = dict(c, symbol=s, place="XETRA",
+                                _cle=(c["_cle"][0], -1 if pays == ".DE" else 0, c["_cle"][2]))
+    classes = sorted(cands.values(), key=lambda c: c["_cle"])[:6]
     # Devise et cours reels des meilleurs candidats (meme cache que /cours)
     prix = get_prices([c["symbol"] for c in classes]) if classes else {}
     candidats = []
@@ -979,10 +1057,24 @@ def cotations_euro(isin: str, nom: str = "") -> dict:
         info = prix.get(c["symbol"]) or {}
         if info.get("devise") and info["devise"] != "EUR":
             continue
-        c.pop("_score", None)
+        c.pop("_cle", None)
         c["prix"] = info.get("prix")
         c["devise"] = info.get("devise") or ""
+        c["ecart"] = None
         candidats.append(c)
+    # Verification par l'historique (4 premiers candidats qui ont un cours) :
+    # la place preferee parmi celles a moins d'un point du meilleur ecart passe
+    # devant (Xetra plutot que le parquet de Francfort a 1,1 % contre 0,9 %),
+    # les autres gardent leur ordre
+    if points and depuis:
+        for c in [c for c in candidats if c["prix"]][:4]:
+            e = _ecart_historique(c["symbol"], points, depuis)
+            c["ecart"] = round(e, 4) if e is not None and e < ISIN_ECART_MAX else None
+        ecarts = [c["ecart"] for c in candidats if c["ecart"] is not None]
+        if ecarts:
+            choix = next(c for c in candidats if c["ecart"] is not None and c["ecart"] <= min(ecarts) + 0.01)
+            candidats.remove(choix)
+            candidats.insert(0, choix)
     # Secteur de Yahoo (actions seulement) : l'import en tire celui de la position
     resultat = {"ok": True, "principal": {"symbol": prin.get("symbol") or "", "nom": pnom,
                                           "secteur": prin.get("sector") or "",
@@ -990,7 +1082,7 @@ def cotations_euro(isin: str, nom: str = "") -> dict:
                 "candidats": candidats}
     if candidats:   # un echec de Yahoo ne se garde pas une journee
         with _lock:
-            _isin_cache[isin] = {"resultat": resultat, "ts": now}
+            _isin_cache[cle] = {"resultat": resultat, "ts": now}
     return resultat
 
 
@@ -1335,7 +1427,17 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             # Import du CTO : cotations en euros d'un ISIN (voir cotations_euro)
             isin = params.get("isin", [""])[0].strip()
             nom  = params.get("nom", [""])[0].strip()[:120]
-            return self._json(200, cotations_euro(isin, nom))
+            nom2 = params.get("nom2", [""])[0].strip()[:160]
+            # points=2025-12-02:70.075,2026-10-02:72.065 : prix payes, a verifier
+            points = []
+            for x in params.get("points", [""])[0].split(",")[:60]:
+                m = re.fullmatch(r"(\d{4}-\d{2}-\d{2}):(\d+(?:\.\d+)?)", x.strip())
+                if m:
+                    points.append((m.group(1), float(m.group(2))))
+            depuis = params.get("depuis", [""])[0].strip()
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", depuis):
+                depuis = ""
+            return self._json(200, cotations_euro(isin, nom, nom2, points, depuis))
 
         if parsed.path == "/users":
             try:
