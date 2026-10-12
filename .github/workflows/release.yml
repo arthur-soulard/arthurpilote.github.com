@@ -51,3 +51,43 @@ jobs:
           # seul le Setup est publie (c'est aussi lui que prend updater.py)
           files: |
             dist/Pilote_Setup.exe
+
+  # App Mac (docs/mac.md), jointe a la meme release APRES le Setup : job a
+  # part, qui attend que la release existe ; s'il echoue, le Setup est deja
+  # publie et les PC se mettent a jour normalement. updater.py sur Mac prend
+  # Pilote_Mac.zip (MAC_ASSET) ; tant qu'il manque, aucun Mac ne voit la version.
+  mac:
+    needs: build
+    runs-on: macos-15          # puce Apple
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build app (PyInstaller)
+        run: python -m PyInstaller build/pilote-mac.spec --clean --noconfirm
+
+      - name: Check bundle
+        run: |
+          test -x dist/Pilote.app/Contents/MacOS/Pilote
+          test -d dist/Pilote.app/Contents/Resources/ui/vendor
+          test -f dist/Pilote.app/Contents/Resources/nouveautes.json
+
+      - name: Zip app
+        # ditto garde les liens et attributs du paquet (zip les abimerait)
+        run: ditto -c -k --keepParent dist/Pilote.app Pilote_Mac.zip
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Pilote_Mac.zip

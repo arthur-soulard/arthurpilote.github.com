@@ -52,6 +52,8 @@ jobs:
           test -x dist/Pilote.app/Contents/MacOS/Pilote
           ls dist/Pilote.app/Contents/Resources/ui/
           ls dist/Pilote.app/Contents/Resources/ui/vendor/
+          # verifie aussi par le job mac de release.yml
+          test -f dist/Pilote.app/Contents/Resources/nouveautes.json
           echo "::notice title=Bundle::$(du -sh dist/Pilote.app | cut -f1) - ui et vendor presents"
 
       - name: Launch and check
@@ -132,6 +134,45 @@ jobs:
           test -n "$UP"
           test -d "$DONNEES"
           test ! -e dist/Pilote.app/Contents/MacOS/Donnees
+
+      - name: Update test
+        # Mise a jour faite par Pilote lui-meme (updater._installer_mac) : l'app
+        # du build est posee dans /Applications, une « nouvelle version » (la
+        # meme, plus un fichier temoin) est servie en local comme une release
+        # 99.0.0 ; Pilote doit la telecharger, se remplacer et se relancer.
+        if: always()
+        run: |
+          rm -rf /Applications/Pilote.app
+          ditto dist/Pilote.app /Applications/Pilote.app
+          rm -rf maj && mkdir maj && ditto dist/Pilote.app maj/Pilote.app
+          echo "version d'essai" > maj/Pilote.app/Contents/Resources/temoin-maj.txt
+          codesign --force --deep -s - maj/Pilote.app > /dev/null 2>&1 || true
+          (cd maj && ditto -c -k --keepParent Pilote.app ../Pilote_Mac.zip)
+          python -m http.server 8765 --bind 127.0.0.1 > http.log 2>&1 &
+          SRV=$!
+          PILOTE_DIAG=1 PILOTE_MAJ_ESSAI="http://127.0.0.1:8765/Pilote_Mac.zip|99.0.0" \
+            /Applications/Pilote.app/Contents/MacOS/Pilote > maj.log 2>&1 &
+          PID=$!
+          FIN="toujours ouverte apres 90 s"
+          for i in $(seq 1 90); do
+            if ! kill -0 $PID 2>/dev/null; then FIN="fermee apres $i s"; break; fi
+            sleep 1
+          done
+          # Le script remplace l'app puis la relance par « open »
+          RELANCE="pas relancee"
+          for i in $(seq 1 40); do
+            if pgrep -f "/Applications/Pilote.app/Contents/MacOS/Pilote" > /dev/null; then RELANCE="relancee"; break; fi
+            sleep 1
+          done
+          sleep 8
+          PING=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7438/ping || true)
+          TEMOIN=$(test -f /Applications/Pilote.app/Contents/Resources/temoin-maj.txt && echo "nouvelle version en place" || echo "ancienne version")
+          RESTE=$(ls -d /Applications/Pilote.app.ancienne 2>/dev/null && echo "ancienne app restee" || echo "ancienne app retiree")
+          echo "::notice title=Mise a jour::$FIN ; $RELANCE (ping $PING) ; $TEMOIN ; $RESTE ; $(grep "\[maj\]" maj.log | tr '\n' ' ' | head -c 1500)"
+          echo "::notice title=Mise a jour (journaux)::$(tail -c 600 "$HOME/Library/Logs/Pilote/update_sh.log" 2>/dev/null | tr '\n' ' ') | $(grep "INSTALL" "$HOME/Library/Logs/Pilote/update.log" 2>/dev/null | tail -n 6 | tr '\n' ' ' | head -c 1500)"
+          pkill -f "/Applications/Pilote.app/Contents/MacOS/Pilote" || true
+          kill $SRV 2>/dev/null || true
+          exit 0
 
       - name: Capture (annotations)
         # Les artefacts ne se lisent qu'avec un compte : une petite copie JPEG de
