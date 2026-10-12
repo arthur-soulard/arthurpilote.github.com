@@ -1,6 +1,6 @@
 # Mise à jour automatique
 
-Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
+Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
 ## Système d'auto-update (tout est en place, ne pas casser)
 

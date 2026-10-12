@@ -1,6 +1,6 @@
 # PEA : Expositions, Wishlist, Stratégie, courbe du capital
 
-Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
+Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
 ## Espèces : chaque ordre arrondi au centime (08/10/2026)
 

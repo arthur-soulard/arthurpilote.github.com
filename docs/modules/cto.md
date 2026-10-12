@@ -1,6 +1,6 @@
 # Module CTO (comptes-titres ordinaires)
 
-Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
+Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
 ## Ce qui a été décidé avec Arthur (11/10/2026)
 

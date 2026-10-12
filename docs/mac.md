@@ -1,6 +1,6 @@
 # Pilote sur Mac
 
-Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
+Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
 ## Décisions d'Arthur (11/10/2026)
 
@@ -28,8 +28,8 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 | 2 bis | Certificats HTTPS | fait (12/10/2026) : `plateforme.certificats_mac`, voir l'inventaire. Testé en cachant le fichier de la machine GitHub |
 | 3 | Fenêtre et raccourcis | fait (12/10/2026) : voir « Fenêtre Mac » |
 | 4 | Clé USB : réglages (les deux systèmes) + détection sur Mac (`/Volumes`, `diskutil info -plist`) | fait (12/10/2026) : `docs/sauvegarde-usb.md`, « Les quatre réglages » et « Sur Mac » |
-| 5 | OCR Santé et Vocabulaire : Vision d'Apple (hors ligne, français en mode « accurate », boîtes par mot) et PDFKit pour les PDF, via pyobjc déjà tiré par pywebview | |
-| 6 | Mise à jour Mac (téléchargée et installée par Pilote), asset Mac dans `release.yml` (job séparé, qui ne bloque jamais le Setup), README et notice d'installation | |
+| 5 | Lecture des captures Santé (Vision), code Gmail dans le Trousseau, rapport annuel | fait (12/10/2026) : voir « Lecture d'images, Trousseau, rapport » (le Vocabulaire est sorti de Pilote en 4.4.0 : pas de PDFKit) |
+| 6 | Mise à jour Mac (téléchargée et installée par Pilote), asset Mac dans `release.yml` (job séparé, qui ne bloque jamais le Setup), README et notice d'installation | fait (12/10/2026) : voir « Mise à jour sur Mac » ; publié en **4.4.8** |
 
 ## Ce qui est déjà en place (étape 1)
 
@@ -146,13 +146,60 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 | Remise au premier plan, icône à l'accent, raccourcis `.lnk` | `app.py`, `appicon.py` | sans effet (exceptions rattrapées) |
 | Coins arrondis de l'écran de chargement (DWM) | `splash.py` | sans effet |
 | Détection des clés USB (`GetLogicalDrives`, numéro de série) | `sauvegarde.py` | réglé (étape 4) : `/Volumes` et `diskutil` |
-| OCR (`ocr_win.ps1`, Windows.Media.Ocr) | `sante.py`, `vocabulaire.py` | « OCR disponible uniquement sous Windows » |
-| Installation de la mise à jour (`.bat`, `cmd.exe`, Setup) | `updater.py` | jamais proposée (étape 1) ; Paramètres affiche pourtant « À jour (dernière : vX) » même en retard : à corriger avant de distribuer |
+| OCR (`ocr_win.ps1`, Windows.Media.Ocr) | `sante.py` | réglé (étape 5) : Vision d'Apple |
+| Installation de la mise à jour (`.bat`, `cmd.exe`, Setup) | `updater.py` | réglé (étape 6) : `Pilote_Mac.zip`, Pilote se remplace lui-même |
 | Raccourcis Ctrl, textes « Windows » | `index.html` | réglé (étape 3) : ⌘, « ce Mac » |
 | ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | réglé (étape 3) : voir « Fenêtre Mac » |
-| Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | seulement encodé en base64 (« b64: »), donc lisible dans `actus.json` et dans les sauvegardes : passer au Trousseau de macOS |
+| Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | réglé (étape 5) : Trousseau de la session |
 | Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | test du 12/10/2026 (annotation « HTTPS ») : l'app compilée cherche ses certificats dans `/Library/Frameworks/Python.framework/Versions/3.11/etc/openssl/cert.pem`, le Python installé sur la machine de GitHub. Yahoo, Gmail et GitHub y répondent, mais un Mac ordinaire n'a pas ce fichier. Avec `/etc/ssl/cert.pem` (fourni avec macOS), les trois répondent aussi. **Réglé** : `plateforme.certificats_mac()`, en tête d'`app.py` avant tout contexte TLS, pointe `SSL_CERT_FILE` sur ce fichier quand celui du Python manque ; le test cache désormais le fichier de GitHub (`sudo mv`) : Yahoo, Gmail, GitHub OK et cours lu |
-| Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | probablement sans effet : pywebview Mac ne remplace que le `window.print` de la page principale (`customize.js`), pas celui de l'iframe (vu le 12/10/2026, non essayé) |
+| Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | réglé (étape 5) : pywebview Mac n'imprime que la page principale ; le rapport s'ouvre dans le navigateur (`Api.ouvrir_rapport`), où ⌘P l'imprime |
+
+## Lecture d'images, Trousseau, rapport (étape 5, 12/10/2026)
+
+* **Captures Santé** : `plateforme.ocr_mac` (Vision, mode précis, français puis
+  anglais, **sans correction linguistique**, qui « corrigerait » les nombres) rend
+  le même JSON qu'`ocr_win.ps1`. Vision donne des lignes : la boîte de chaque mot
+  vient de `boundingBoxForRange`, puis est **resserrée sur ses pixels**. Sans ce
+  resserrement, les boîtes de Vision ont la hauteur de la ligne, et `sante.py`, qui
+  groupe lignes et libellés selon la hauteur des mots, prenait 18,5 % pour l'IMC.
+  Vérifié sur une image d'essai à la mise en page FitDays : boîtes identiques au
+  pixel près à celles de Windows, même lecture (poids 72,4, IMC 22,1, masse
+  musculaire 55,3). Pas encore essayé sur de vraies captures FitDays lues sur Mac.
+  Dépendance : `pyobjc-framework-Vision` (Mac seulement), `Vision` dans les
+  `hiddenimports`.
+* **Code Gmail d'Actus** : Trousseau de la session, par l'outil `security`
+  (`actus.json` : `trousseau:<compte>`, un compte par utilisateur Pilote), retiré à la
+  déconnexion. Par `security` plutôt que par l'API Security : l'élément appartient à
+  `/usr/bin/security`, signé par Apple et stable, alors que l'app, non signée, change
+  d'identité à chaque version et redemanderait l'accès après chaque mise à jour. Le
+  code passe en argument de `security` le temps d'un appel (visible des seuls
+  processus du même compte).
+* **Rapport annuel** : sur Mac, « Imprimer » écrit le rapport dans le dossier
+  temporaire de la session et l'ouvre dans le navigateur par défaut.
+
+## Mise à jour sur Mac (étape 6, 12/10/2026)
+
+* `release.yml` : un job `mac` (après le job Windows, `needs: build`) fabrique
+  Pilote.app et joint **`Pilote_Mac.zip`** (`ditto`, qui garde les attributs du
+  paquet) à la release. S'il échoue, le Setup est déjà publié.
+* `updater.py` : sur Mac, la release propose `Pilote_Mac.zip` (`MAC_ASSET`, par
+  l'API ou la page publique, comme le Setup). `_installer_mac` le télécharge, le
+  décompresse, puis un script `/bin/sh` attend la fin de Pilote, met l'ancienne app
+  de côté (`Pilote.app.ancienne`), pose la nouvelle (remet l'ancienne si ça rate), la
+  relance par `open` et nettoie. Le fichier téléchargé par Pilote n'a pas la marque
+  de quarantaine : pas de nouvel « Ouvrir quand même ». Les données sont hors de
+  l'app (Application Support).
+* **Pilote doit être dans Applications** (ou un dossier modifiable) : lancée depuis
+  Téléchargements sans avoir été déplacée, l'app tourne d'une copie en lecture seule
+  (App Translocation). `mac_a_deplacer()` le détecte : message au démarrage, et refus
+  clair au moment d'installer.
+* Test (`build-mac.yml`, « Update test ») : l'app posée dans /Applications installe
+  une fausse version 99.0.0 servie en local (`PILOTE_MAJ_ESSAI`, seulement avec
+  `PILOTE_DIAG`) ; vu le 12/10/2026 : fichier témoin en place, ancienne app retirée,
+  app relancée. Le script retire `PILOTE_*` de l'environnement avant la relance
+  (sinon l'app relancée refaisait la mise à jour d'essai).
+* `build-windows.yml` : sur la branche `mac`, le build Windows de `release.yml` sans
+  rien publier, lancé et vérifié, avant de fusionner dans main.
 
 ## Gatekeeper (app non signée)
 
