@@ -14,6 +14,26 @@ import sys
 import subprocess
 
 
+def certificats_mac() -> None:
+    """Mac : donne a Python les certificats fournis avec macOS quand il n'en a pas.
+
+    Pour verifier Yahoo, Gmail et GitHub, le Python compile dans l'app ne lit
+    pas le Trousseau du Mac : il cherche un fichier a l'endroit prevu par le
+    Python qui a fabrique l'app (/Library/Frameworks/Python.framework/...).
+    Sur la machine de GitHub il existe, sur un Mac ordinaire non : sans ce
+    repli, aucune connexion HTTPS n'aboutirait (constate le 12/10/2026, voir
+    docs/mac.md). /etc/ssl/cert.pem est livre avec macOS. A appeler avant le
+    premier contexte TLS (server._SSL_CTX se cree a l'import de server)."""
+    if sys.platform != "darwin" or os.environ.get("SSL_CERT_FILE"):
+        return
+    import ssl
+    p = ssl.get_default_verify_paths()     # cafile/capath : None s'ils n'existent pas
+    if p.cafile or p.capath:
+        return
+    if os.path.isfile("/etc/ssl/cert.pem"):
+        os.environ["SSL_CERT_FILE"] = "/etc/ssl/cert.pem"
+
+
 def ouvrir(chemin: str) -> None:
     """Ouvre un fichier ou un dossier avec l'application par defaut du systeme
     (Explorateur sous Windows, Finder sur Mac). Leve une exception en cas d'echec."""
