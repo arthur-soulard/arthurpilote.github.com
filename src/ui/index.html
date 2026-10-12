@@ -5814,10 +5814,8 @@ function filterByRange(series, range) {
 
    MODE PLAGE PARTIELLE (1S, 1M, 6M, YTD) :
      P&L € = valeur finale − valeur debut − versements nets de la periode
-     P&L % = TWR (Time-Weighted Return) : produit des sous-periodes separees
-             par chaque versement/retrait. La valeur "juste avant un flux" est
-             le dernier point STRICTEMENT AVANT la date du flux (p.date < bDate),
-             pour ne pas inclure le nouveau capital dans le rendement.
+     P&L % = P&L € ÷ argent engage (Dietz modifie) : valeur de debut + chaque
+             versement/retrait pondere par la part de la plage restant a courir.
 ───────────────────────────────────────────────────────────────────────── */
 function computePnl(series, range) {
   if (!series || series.length < 2) return {pnlEur: null, pnlPct: null};
@@ -5871,32 +5869,22 @@ function computePnl(series, range) {
   /* P&L EUR = ΔValeur totale − flux de capital externes */
   const pnlEur = Math.round((vEnd - vStart - fluxNet) * 100) / 100;
 
-  /* Dates de rupture TWR = chaque versement (sans doublon, < endDate) */
-  const breakDates = [...new Set(windowDeps.map(d => d.date))]
-    .filter(d => d < endDate)
-    .sort();
+  /* P&L % = gain ÷ argent engagé (méthode de Dietz modifiée) : valeur de
+     départ + chaque flux pondéré par la part de la plage où il a travaillé
+     (un versement la veille de la fin ne compte presque pas). Toujours du
+     même signe que le gain en euros.
+     Jusqu'à la 4.4.2 : un TWR coupé à chaque flux, qui repartait du premier
+     point du jour du flux et perdait le rendement de ce jour-là. Peu visible
+     sur le PEA (un versement par mois), faux sur un CTO où chaque ordre est
+     un flux : « YTD » affichait … % pour … € (12/10/2026). Choix
+     d'Arthur : ce rendement plutôt qu'un TWR corrigé (… % ce jour-là),
+     qui peut être de signe opposé au gain. */
+  const jour   = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 864e5;
+  const duree  = jour(endDate) - jour(startDate);
+  const engage = vStart + windowDeps.reduce((s, d) => s + d.amount * (jour(endDate) - jour(d.date)) / duree, 0);
+  if (!(duree > 0) || engage <= 0) return {pnlEur, pnlPct: null};
 
-  if (!breakDates.length) {
-    return {pnlEur, pnlPct: Math.round((vEnd / vStart - 1) * 10000) / 100};
-  }
-
-  /* Produit TWR — un seul type de rupture : les versements de capital */
-  let twrProduct = 1;
-  let prevEnd    = vStart;
-
-  for (const bDate of [...breakDates, endDate]) {
-    /* Dernier point STRICTEMENT avant bDate (valeur avant le flux) */
-    const pts = series.filter(p => normDate(p.date) < bDate);
-    if (!pts.length || prevEnd <= 0) continue;
-    const vBefore = pts[pts.length - 1].val;
-    twrProduct *= vBefore / prevEnd;
-
-    /* Premier point >= bDate = valeur apres flux applique */
-    const ptsAfter = series.filter(p => normDate(p.date) >= bDate);
-    prevEnd = ptsAfter.length ? ptsAfter[0].val : vBefore;
-  }
-
-  return {pnlEur, pnlPct: Math.round((twrProduct - 1) * 10000) / 100};
+  return {pnlEur, pnlPct: Math.round(pnlEur / engage * 10000) / 100};
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -5915,17 +5903,26 @@ let _benchHistory = {};
 let _benchEnabled = { cac40: false, sp500: false, world: false };
 
 async function _loadBenchHistory(bench) {
-  if (_benchHistory[bench]) return _benchHistory[bench];
+  /* Le PEA et chaque CTO ne commencent pas le même jour : un historique chargé
+     pour un compte ne sert à un autre que s'il remonte jusqu'à son premier
+     ordre (même règle que le cache du serveur). Jusqu'à la 4.4.2, un indice
+     chargé d'abord sur un CTO (depuis août 2025) restait tronqué sur le PEA
+     (depuis janvier 2025) : CAC 40 à … € au lieu de … € (12/10/2026). */
+  const depuis = _perfDepuisParam();   // "&since=AAAA-MM-JJ", "" = aucun ordre
+  const deja   = _benchHistory[bench];
+  if (deja && (!deja.depuis || !depuis || deja.depuis <= depuis)) return deja;
   const ticker = BENCH_TICKERS[bench];
   if (!ticker) return null;
   try {
-    const url = LOCAL_HIST_URL + "?tickers=" + encodeURIComponent(ticker) + _perfDepuisParam();
+    const url = LOCAL_HIST_URL + "?tickers=" + encodeURIComponent(ticker) + depuis;
     const r   = await fetch(url, {cache: "no-store"});
     if (!r.ok) return null;
     const data = await r.json();
     if (!data.ok || !data.history || !data.history[ticker]) return null;
     const h = data.history[ticker];
-    _benchHistory[bench] = {dates: h.dates, closes: h.closes};
+    // Un autre chargement a pu finir entre-temps : on garde celui qui remonte le plus loin
+    const cur = _benchHistory[bench];
+    if (!cur || h.dates[0] <= cur.dates[0]) _benchHistory[bench] = {dates: h.dates, closes: h.closes, depuis};
     return _benchHistory[bench];
   } catch (e) { console.warn("bench", bench, e); return null; }
 }
@@ -6005,7 +6002,14 @@ function _buildBenchSeries(benchHistory, dates, transactions, syntheticStart) {
 
 let _benchUiReady = false;
 async function _initBenchmarkUi() {
-  if (_benchUiReady) return;
+  if (_benchUiReady) {
+    // Autre compte affiché : ses indices cochés remontent-ils assez loin ?
+    const coches = Object.keys(_benchEnabled).filter(b => _benchEnabled[b]);
+    const avant  = coches.map(b => _benchHistory[b]);
+    await Promise.all(coches.map(_loadBenchHistory));
+    if (_ch.perf && coches.some((b, i) => _benchHistory[b] !== avant[i])) drawPerfChart();
+    return;
+  }
   // Restaure depuis prefs si dispo
   try {
     const saved = window.__appPrefs && window.__appPrefs.ui && window.__appPrefs.ui.benchEnabled;
@@ -6192,7 +6196,9 @@ function drawPerfChart() {
     let note = "";
     const startD   = normDate(series[0].date);
     const cutToday = todayISO();
-    if (_perfRange === "YTD" && startD > cutToday.slice(0, 4) + "-01-01") {
+    // Le 1er janvier est férié : la plage YTD commence au mieux le 2. Le
+    // portefeuille n'est « ouvert le » que si toute sa courbe commence cette année.
+    if (_perfRange === "YTD" && normDate(_perfFullSeries[0].date) >= cutToday.slice(0, 4) + "-01-01") {
       note = " \u00B7 portefeuille ouvert le " + fmtShort(startD);
     }
     rangeEl.textContent  = "Du " + fmtShort(series[0].date) + " au " + fmtShort(series[series.length - 1].date) + note;
@@ -6317,7 +6323,7 @@ function drawPerfChart() {
               const v   = ctx.raw;
               const idx = ctx.dataIndex;
               if (ctx.datasetIndex === 0) {
-                return " Versements : " + v.toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " \u20AC";
+                return (_estCto() ? " Investi net : " : " Versements : ") + v.toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " \u20AC";
               }
               /* Dataset 1 = valeur portfolio */
               const dep   = depVals[idx] || 0;
