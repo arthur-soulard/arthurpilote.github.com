@@ -9,7 +9,8 @@ OCR
 ───
 Le moteur est celui integre a Windows (Windows.Media.Ocr), pilote par
 `ocr_win.ps1`. Aucune dependance nouvelle, aucun binaire embarque, aucun acces
-reseau : les captures ne quittent jamais le PC.
+reseau : les captures ne quittent jamais le PC. Sur Mac, c'est Vision d'Apple
+(plateforme.ocr_mac), lui aussi hors ligne, qui rend les memes mots places.
 
 Le moteur ne voit pas tout du premier coup — le texte colore de FitDays (vert,
 orange, rouge, bleu) lui echappe souvent. On lance donc PLUSIEURS passes avec
@@ -253,9 +254,16 @@ def _ocr_script_path() -> str:
 
 
 def ocr_available() -> dict:
-    """Le moteur OCR de Windows est-il utilisable sur ce poste ?"""
+    """Le moteur OCR (Windows, ou Vision sur Mac) est-il utilisable sur ce poste ?"""
+    if sys.platform == "darwin":
+        try:
+            import Vision  # noqa: F401
+            from PIL import Image  # noqa: F401
+        except Exception as e:
+            return {"ok": False, "error": f"Lecture d'images indisponible : {e}"}
+        return {"ok": True}
     if sys.platform != "win32":
-        return {"ok": False, "error": "OCR disponible uniquement sous Windows."}
+        return {"ok": False, "error": "OCR disponible uniquement sous Windows et sur Mac."}
     if not Path(_ocr_script_path()).exists():
         return {"ok": False, "error": "Script OCR introuvable."}
     try:
@@ -268,7 +276,11 @@ def ocr_available() -> dict:
 def _run_ocr(image_path: str, timeout: int = 90) -> dict:
     """
     Lance ocr_win.ps1 et retourne {ok, words:[{t,x,y,w,h}], ...}.
+    Sur Mac : Vision d'Apple, meme resultat (plateforme.ocr_mac).
     """
+    if sys.platform == "darwin":
+        import plateforme
+        return plateforme.ocr_mac(image_path)
     out_fd, out_path = tempfile.mkstemp(prefix="pilote_ocr_", suffix=".json")
     os.close(out_fd)
     try:

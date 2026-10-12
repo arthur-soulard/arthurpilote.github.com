@@ -4,6 +4,8 @@
 # un plantage sur puce Apple.
 pywebview==4.4.1; sys_platform == "win32"
 pywebview==6.2.1; sys_platform == "darwin"
+# Mac : lecture des captures Sante par Vision d'Apple (plateforme.ocr_mac)
+pyobjc-framework-Vision==12.2.2; sys_platform == "darwin"
 pyinstaller==6.11.1
 win10toast==0.9; sys_platform == "win32"
 pillow==10.4.0

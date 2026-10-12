@@ -586,6 +586,21 @@ class Api:
         reveal_main_window("page")
         return {"ok": True}
 
+    def ouvrir_rapport(self, html: str, nom: str = "Pilote_rapport") -> dict:
+        """Mac : le rapport annuel s'ouvre dans le navigateur, qui sait l'imprimer
+        (pywebview n'imprime pas l'iframe du rapport). Fichier du dossier
+        temporaire de la session, lisible par ce seul compte."""
+        try:
+            import re as _re
+            import tempfile
+            nom = _re.sub(r"[^A-Za-z0-9_-]", "", str(nom))[:60] or "Pilote_rapport"
+            chemin = Path(tempfile.gettempdir()) / f"{nom}.html"
+            chemin.write_text(str(html), encoding="utf-8")
+            plateforme.ouvrir(str(chemin))
+            return {"ok": True, "path": str(chemin)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def fermeture_prete(self) -> dict:
         """Mac : la page a ecrit ce qui attendait, la fenetre peut se fermer
         (voir _on_closing dans main)."""
@@ -1344,6 +1359,57 @@ def main() -> int:
             except Exception as ex:
                 print(f"[usb] KO : {ex}", flush=True)
         threading.Thread(target=_diag_usb, daemon=True).start()
+
+        # Mac : lecture d'images (Vision), code Gmail dans le Trousseau, rapport
+        # annuel (docs/mac.md, etape 5). Une capture fabriquee, un code d'essai.
+        def _diag_mac_divers():
+            import time as _t
+            import tempfile
+            _t.sleep(30)
+            if sys.platform != "darwin":
+                return
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                img = Path(tempfile.gettempdir()) / "pilote_essai_ocr.png"
+                im = Image.new("RGB", (900, 420), "white")
+                d = ImageDraw.Draw(im)
+                police = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 44)
+                for i, ligne in enumerate(("Poids 72,4 kg", "Graisse corporelle 18,5 %",
+                                           "IMC 22,1", "Masse musculaire 55,3 kg")):
+                    d.text((40, 30 + i * 95), ligne, fill=(20, 20, 20), font=police)
+                im.save(img)
+                print(f"[ocr] disponible : {sante.ocr_available()}", flush=True)
+                r = plateforme.ocr_mac(str(img))
+                mots = " ".join(w["t"] for w in r.get("words", []))
+                boites = [(w["t"], w["x"], w["y"]) for w in r.get("words", [])[:3]]
+                print(f"[ocr] ok={r.get('ok')} {r.get('error', '')} mots : {mots} ; boites : {boites}",
+                      flush=True)
+                lu = sante.read_screenshot(str(img))
+                print(f"[ocr] lecture Sante : { {k: v for k, v in lu.items() if k != 'debug'} }"[:600],
+                      flush=True)
+            except Exception as e:
+                print(f"[ocr] KO : {e}", flush=True)
+            try:
+                s = actus._chiffrer("abcd efgh ijkl mnop")
+                relu = actus._dechiffrer(s)
+                actus._oublier(s)
+                parti = True
+                try:
+                    actus._dechiffrer(s)
+                    parti = False
+                except Exception:
+                    pass
+                print(f"[trousseau] range : {s.split(':')[0]} ; relu identique : "
+                      f"{relu == 'abcd efgh ijkl mnop'} ; retire a la deconnexion : {parti}", flush=True)
+            except Exception as e:
+                print(f"[trousseau] KO : {e}", flush=True)
+            try:
+                r = Api().ouvrir_rapport("<!DOCTYPE html><p>Rapport d'essai</p>", "Pilote_rapport_essai")
+                print(f"[rapport] {r.get('ok')} {r.get('error', '')} fichier present : "
+                      f"{os.path.exists(r.get('path', ''))}", flush=True)
+            except Exception as e:
+                print(f"[rapport] KO : {e}", flush=True)
+        threading.Thread(target=_diag_mac_divers, daemon=True).start()
 
         # Mac : fenetre et fermeture (docs/mac.md, etape 3). 45 s apres le
         # lancement : barre de titre, ⌘2, taille ; puis une ecriture laissee en

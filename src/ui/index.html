@@ -3398,7 +3398,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div class="card-b">
         <div id="ac-cnx-boite"></div>
         <div class="ac-pied">
-          <p>Pilote garde le code chiffré par Windows sur ce PC, et ne l'envoie qu'à Gmail.</p>
+          <p>Pilote garde le code <span class="txt-win">chiffré par Windows sur ce PC</span><span
+            class="txt-mac">dans le Trousseau de ce Mac</span>, et ne l'envoie qu'à Gmail.</p>
           <p><b>Pour le retirer</b>&nbsp;: sur la page des mots de passe d'application, clique sur
             <b>Supprimer</b> à côté de «&nbsp;Pilote&nbsp;». Google l'annule aussi tout seul si tu
             changes le mot de passe de ton compte&nbsp;: il faudra alors en créer un nouveau.</p>
@@ -9851,7 +9852,15 @@ ${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>$
   const frame = ov.querySelector("#rep-frame");
   // srcdoc charge l'HTML directement dans l'iframe (pas de window.open)
   frame.srcdoc = html;
-  ov.querySelector("#rep-print").onclick = () => {
+  ov.querySelector("#rep-print").onclick = async () => {
+    // Mac : pywebview n'imprime que la page principale, pas cette iframe. Le
+    // rapport s'ouvre donc dans le navigateur, où ⌘P l'imprime ou en fait un PDF.
+    if (EST_MAC) {
+      const r = await pywebview.api.ouvrir_rapport(html, "Pilote_rapport_" + year);
+      if (r && r.ok) showToastModern("Rapport ouvert dans ton navigateur : ⌘P pour l'imprimer ou l'enregistrer en PDF", "ok");
+      else showToastModern("Ouverture du rapport impossible : " + ((r && r.error) || ""), "err");
+      return;
+    }
     try {
       // Imprime UNIQUEMENT le contenu de l'iframe (popup d'impression Windows)
       frame.contentWindow.focus();

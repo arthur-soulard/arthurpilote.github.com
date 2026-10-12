@@ -120,7 +120,9 @@ jobs:
           echo "::notice title=Fermeture::$FIN ; ecriture en attente retrouvee dans $ECRIT pea_data.json ; $MAXI"
           # Essai USB d'app.py (_diag_usb, 25 s apres le lancement) : fini a ce stade
           echo "::notice title=USB::$(grep "\[usb\]" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
-          echo "::notice title=Journal::$(tail -c 900 pilote.log | tr '\n' ' ' | tr -d '\r')"
+          # Lecture d'images, Trousseau, rapport (app.py, _diag_mac_divers a 30 s).
+          # (remplace le journal brut : 10 annotations au plus par etape)
+          echo "::notice title=Divers::$(grep -E "\[(ocr|trousseau|rapport)\]" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
 
           kill $PID 2>/dev/null || true
           sleep 2
