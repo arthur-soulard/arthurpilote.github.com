@@ -30,7 +30,9 @@ l'assistant des premiers pas (`docs/accueil.md`) : `cfgRenderModules()`, `cfgMod
 Cocher affiche **tous** les onglets de la section, décocher les masque tous
 (`_afficherModule`, dans `S.uiPrefs.hiddenSidebar` comme l'œil) ; la barre latérale est
 redessinée (`_reconstruireSidebar`, qui revient à l'accueil si l'onglet ouvert vient
-de disparaître) et les tuiles du module quittent l'accueil. Un module est « coché »
+de disparaître) et les tuiles du module quittent l'accueil. Un module décoché n'est
+plus chargé aux lancements suivants ; le recocher le charge tout de suite
+(`_chargerModule`, voir `docs/accueil.md`, « Sauf les modules masqués »). Un module est « coché »
 dès qu'un de ses onglets est visible. Dessous, la liste « Onglets masqués » ne montre
 plus que les onglets des modules affichés (ceux d'un module décoché reviennent par sa
 case). Restaurer un onglet ou un bloc redessine la liste sur place

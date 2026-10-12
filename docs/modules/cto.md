@@ -70,6 +70,17 @@ barre est dessinée avant, avec la seule section « CTO ».
   `save_ui_prefs`. Jamais de `localStorage` du PEA.
 * **`_cptGen`** : `loadPerfHistory`, `renderPerf` et `perfSeriesAsync` jettent
   une réponse arrivée après une bascule.
+* **Une courbe par compte** (`_perfCharts`, `_perfCanvas`, `_perfMontrerCompte`,
+  12/10/2026, demande d'Arthur) : le PEA dessine dans `c-perf`, chaque CTO dans
+  son propre `c-perf-<id>`, créé à sa première courbe ; seul celui du compte
+  affiché est visible, `_ch.perf` pointe sur son graphique. Avant, un seul
+  graphique servait à tous : en passant du PEA au CTO, la courbe et le gain du
+  PEA restaient affichés sur le CTO le temps de charger son historique (2,8 s
+  mesurées sur son vrai CTO). À l'entrée d'un autre compte, `renderPerf` cache
+  aussitôt le résumé (gain, %, plage) ; la courbe se redessine sur l'historique
+  déjà chargé de ce compte (`_ctoCaches`), sinon l'écran reste vide sous
+  « Chargement… ». Redessiner plutôt que réafficher l'ancien graphique : il
+  prend le thème et l'accent du moment.
 * **`dashRender()` ne fait rien pendant qu'un CTO est dans `S`** : les tuiles du
   PEA (Jour, Performance, Prochain achat) le liraient. L'accueil remet le PEA.
 * **`renderMetrics()` passe la main à `ctoRenderMetrics()`** pour un CTO : rien
