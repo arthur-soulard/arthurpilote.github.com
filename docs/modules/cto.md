@@ -153,6 +153,10 @@ Relevés le 11/10/2026 :
 
 ## Import du relevé CSV de Trade Republic
 
+Depuis la 4.4.3, l'import lit aussi les relevés des autres banques et sert au
+PEA : fenêtre commune, `releves.py`, voir `docs/import-releves.md`. Ce qui suit
+reste propre à Trade Republic (`cto.lire_csv_tr`) et à la cotation en euros.
+
 Export dans l'appli depuis avril 2026 : Profil → Relevés → Export des
 transactions. Trade Republic ne publie pas ses colonnes : les 23 colonnes
 viennent du lecteur open source de broker-to-edavki (ADR 0015). Lecture par
@@ -240,9 +244,12 @@ suffixe ne suffit pas). Depuis le vrai relevé :
 * **second saut** par la racine des cotations trouvées (PPFB.SG → PPFB.DE),
   puis **essai direct sur Xetra** de chaque racine (AMZ.SG → AMZ.DE) : la
   recherche de Yahoo ne rend pas la même liste d'un appel à l'autre ;
-* tri : même racine que la cotation principale, puis **place du pays de
-  l'ISIN** (`_PLACE_DU_PAYS` : SGO.PA plutôt que SGO.VI), puis les places dans
-  l'ordre de `_PLACES_EUR` ;
+* tri (`_rang_place`, 4.4.3) : **place du pays de l'ISIN** (`_PLACE_DU_PAYS` :
+  SGO.PA plutôt que SGO.VI), puis les **grandes places** (`_PLACES_PRINCIPALES` :
+  Xetra, Paris, Amsterdam, Milan…), puis les places régionales allemandes et
+  Vienne ; à niveau égal, même racine que la cotation principale, puis l'ordre
+  de `_PLACES_EUR`. Avant, la racine passait en premier : Micron partait sur
+  MU.VI (racine « MU » du Nasdaq) plutôt que MTE.DE quand Yahoo rendait MU.VI ;
 * **vérification par l'historique** : l'import envoie les prix payés
   (`points=date:prix`, 40 derniers) et le premier ordre (`depuis`). Pour les 4
   premiers candidats qui ont un cours, écart médian entre prix payés et

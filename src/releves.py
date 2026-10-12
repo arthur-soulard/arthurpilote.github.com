@@ -822,11 +822,15 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
             return {"ok": True, "banque": lot.banque, "operations": lot.ops, "inconnues": lot.inconnues}
         colonnes = colonnes_auto(entetes)
         # En-tête muet : une colonne d'ISIN ou de dates se reconnaît à son contenu
+        # (une colonne « Titre » remplie d'ISIN est l'ISIN, pas le nom)
         for champ, motif in (("isin", r"[A-Z]{2}[A-Z0-9]{9}\d"), ("date", r"\d{1,4}[-/.]\d{1,2}[-/.]\d{2,4}.*")):
             if champ not in colonnes:
                 for i in range(len(entetes)):
                     vals = [r[i].strip() for r in corps[:10] if i < len(r) and r[i].strip()]
-                    if vals and i not in colonnes.values() and sum(bool(re.fullmatch(motif, v)) for v in vals) >= 0.8 * len(vals):
+                    libre = i not in colonnes.values() or (champ == "isin" and colonnes.get("nom") == i)
+                    if vals and libre and sum(bool(re.fullmatch(motif, v)) for v in vals) >= 0.8 * len(vals):
+                        if colonnes.get("nom") == i:
+                            del colonnes["nom"]
                         colonnes[champ] = i
                         break
         manque =[c for c in ("date", "qty") if c not in colonnes] + \

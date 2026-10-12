@@ -926,6 +926,17 @@ _PLACES_EUR = [".DE", ".PA", ".AS", ".MI", ".BR", ".MC", ".LS", ".IR", ".VI", ".
 #     aujourd'hui, mais s'ecartait de 4,7 % des prix payes, contre 0,7 %.
 _PLACE_DU_PAYS = {"FR": ".PA", "DE": ".DE", "NL": ".AS", "IT": ".MI", "BE": ".BR",
                   "ES": ".MC", "PT": ".LS", "AT": ".VI", "FI": ".HE"}
+# Grandes places, avant les places regionales allemandes et Vienne (cours
+# moins suivis) : Micron passait sur MU.VI, de meme racine que MU (Nasdaq),
+# plutot que MTE.DE, quand Yahoo rendait MU.VI dans sa recherche (12/10/2026)
+_PLACES_PRINCIPALES = {".DE", ".PA", ".AS", ".MI", ".BR", ".MC", ".LS", ".IR"}
+
+
+def _rang_place(suf: str, pays: str) -> tuple:
+    """(rang de la place) : celle du pays de l'ISIN, puis les grandes, puis
+    les autres, chacune dans l'ordre de _PLACES_EUR."""
+    niveau = 0 if suf == pays else (1 if suf in _PLACES_PRINCIPALES else 2)
+    return niveau, _PLACES_EUR.index(suf)
 # Ecart median tolere entre prix payes et clotures : 0,1 a 3 % sur une
 # cotation juste (3 % pour un seul ordre d'Amazon), 5 a 6 % sur un ETP a
 # levier x3 (cours tres mobile dans la journee), 4,7 % pour IGLD.DE. On garde
@@ -1023,12 +1034,13 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
             mots, racine = len(ref & _mots(xnom)), s.split(".")[0] == base
             if not mots and not racine:
                 continue
-            # Meme racine que la cotation principale, puis place du pays, puis
-            # les autres places dans l'ordre, puis le nom le plus proche
-            place = -1 if suf == pays else _PLACES_EUR.index(suf)
+            # Place du pays, puis grandes places, puis les autres ; a niveau
+            # egal, meme racine que la cotation principale, puis la place dans
+            # l'ordre de _PLACES_EUR, puis le nom le plus proche
+            niveau, place = _rang_place(suf, pays)
             cands[s] = {"symbol": s, "nom": " ".join(xnom.split()),
                         "place": x.get("exchDisp") or x.get("exchange") or "",
-                        "_cle": (-int(racine), place, -mots)}
+                        "_cle": (niveau, -int(racine), place, -mots)}
 
     for q in (isin, base, nom, pnom, nom2, _nom_court(nom2)):
         chercher(q)
@@ -1048,7 +1060,7 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
             info = trouves.get(s) or {}
             if info.get("prix") and info.get("devise") == "EUR":
                 cands[s] = dict(c, symbol=s, place="XETRA",
-                                _cle=(c["_cle"][0], -1 if pays == ".DE" else 0, c["_cle"][2]))
+                                _cle=(_rang_place(".DE", pays)[0], c["_cle"][1], 0, c["_cle"][3]))
     classes = sorted(cands.values(), key=lambda c: c["_cle"])[:6]
     # Devise et cours reels des meilleurs candidats (meme cache que /cours)
     prix = get_prices([c["symbol"] for c in classes]) if classes else {}
