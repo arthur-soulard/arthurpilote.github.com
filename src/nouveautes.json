@@ -2,6 +2,20 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.10",
+      "date": "2026-10-12",
+      "titre": "Chaque compte a sa courbe, et les modules masqués ne se chargent plus",
+      "nouveau": [
+        "Accueil : « Suggérer une amélioration », juste sous les boutons du haut. Une idée, un bug à signaler : le bouton ouvre ta messagerie, ou Gmail dans le navigateur, avec l'adresse de l'auteur de Pilote et l'objet déjà remplis."
+      ],
+      "ameliore": [
+        "Les modules masqués dans Paramètres → Modules ne sont plus chargés au démarrage : Pilote ne lit plus leurs données et ne va plus chercher leurs cours ni la boîte mail. Les recocher les charge aussitôt."
+      ],
+      "corrige": [
+        "En passant du PEA à un CTO (ou l'inverse), la courbe « Évolution du capital » et le gain de l'autre compte restaient affichés quelques secondes. Chaque compte a maintenant sa propre courbe."
+      ]
+    },
+    {
       "version": "4.4.9",
       "date": "2026-10-12",
       "titre": "25 tuiles de plus sur l'accueil, et un pense-bête",
