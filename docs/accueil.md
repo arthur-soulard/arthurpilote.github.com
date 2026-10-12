@@ -29,6 +29,19 @@ fenêtre plus étroite, ce sont les boutons qui passent à la ligne, pas « Bonj
 `svPushToUsb()` sauve et restaure le libellé du bouton USB en `innerHTML`, pas en
 `textContent` : sinon l'icône disparaît après la première copie.
 
+**Suggérer une amélioration** (12/10/2026, demande d'Arthur) : bouton-texte à
+l'accent, sur la ligne de l'état de la clé (`.home-row3`), pas avec les cinq
+boutons. La ligne des boutons est pleine à 1366 px : un 6e y passait à la ligne
+et la dernière tuile finissait à 740 px pour 720 (704 sans lui, 706 avec le
+bouton-texte). Il ouvre `ov-suggestion` : l'adresse d'Arthur
+(`SUGGESTION_ADRESSE`, arthur.economie@gmail.com) avec un bouton Copier,
+« Ouvrir ma messagerie » (lien `mailto:`) et « Écrire avec Gmail » (page de
+rédaction de Gmail dans le navigateur), objet « Suggestion pour Pilote » et
+version de Pilote déjà remplis, par `Api.open_url`. Rien ne part de Pilote :
+c'est la messagerie de l'utilisateur qui envoie. Le bouton Gmail existe parce
+qu'un `mailto:` sans messagerie installée n'ouvre rien d'utile (chez Arthur, le
+`mailto:` est confié à Brave).
+
 Depuis la 4.1.4, `homeRender()` ne fait plus que la salutation et la date : **les tuiles
 sont déléguées à `dashRender()`** (voir « Accueil : tableau de bord modulaire »). Il n'y
 a plus de carte codée en dur.
@@ -138,6 +151,31 @@ restaient vides à vie tant qu'on n'y était jamais allé, et cocher la case dan
 les paramètres ne faisait visiblement rien. `saBootstrap(discret)` et
 `paBootstrap(discret)` chargent alors les **données seules** : le patch de
 `goTab` dessine le panneau à la première visite, inutile de le faire au démarrage.
+
+**Sauf les modules masqués** (Paramètres → Modules, 12/10/2026, demande
+d'Arthur : « on gagne du temps à l'ouverture et au chargement des données »).
+`MODULES_A_CHARGER` (juste avant `boot()`) associe chaque chargement à sa
+section de `NAV_SECTIONS` ; `boot()` ne lance que ceux des sections affichées
+(`_modulesVisibles`) et écrit les autres au journal (« modules masques, non
+charges »). Un module masqué n'a donc ni fichier lu, ni cours demandés (Prêt,
+CTO), ni relevé de la boîte (Actus). Le PEA reste toujours lu
+(`pea_data.json` porte les réglages de tous les modules) ; masqué, il ne
+demande pas son historique au lancement. Cocher un module le charge aussitôt
+(`cfgModule` → `_chargerModule`), comme au lancement (ligne du CTO dans le
+Patrimoine, cours des CTO). Conséquences voulues :
+
+* les tuiles d'un module masqué ne s'affichaient déjà plus ; « Toute ma
+  bourse » sans le module CTO dit « le PEA seul » (sans « aucun CTO » : on ne
+  les a pas lus) et n'attend plus `_ctoBootstrapped` (sinon squelette à vie) ;
+* `dashSaveConfig` garde les tuiles `cto:<id>` d'un CTO non lu : absentes de
+  `DASH_WIDGETS`, `dashConfig` les filtrait et la première tuile modifiée les
+  effaçait des réglages ;
+* la ligne d'un CTO ou du prêt dans le Patrimoine ne se calcule plus seule
+  quand son module est masqué : elle reprend son dernier relevé.
+
+Vérifié au banc d'essai sur une copie de ses données : Santé puis CTO masqués,
+`load_sante` et `load_cto` absents au relancement ; PEA masqué, aucun
+`/history` ; chaque module recoché se charge (section du CTO, tuile Poids).
 
 De même, `svRenderUsbState()` publie désormais `window._dashUsb` — la tuile
 « Sauvegarde USB » lisait cette variable que personne n'écrivait.

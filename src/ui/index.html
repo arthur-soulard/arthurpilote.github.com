@@ -2108,13 +2108,26 @@ thead th, .wish-table thead th {
 .home-user { box-shadow: none; font-weight: 500; }
 .home-user-add { background: transparent; }
 .home-actions { grid-column: 2; grid-row: 2; justify-content: flex-end; margin-top: 0; }
-.home-usb-state { grid-column: 2; grid-row: 3; text-align: right; font-size: 12px; color: var(--txt2); margin-top: 2px; }
+/* 3e ligne, alignée à droite comme les boutons : « Suggérer une amélioration »
+   puis l'état de la clé */
+.home-row3 {
+  grid-column: 2; grid-row: 3; margin-top: 2px;
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 18px;
+}
+.home-sug {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-size: 12px; color: var(--accent-text);
+}
+.home-sug:hover { text-decoration: underline; }
+.home-sug .ph { font-size: 14px; align-self: center; }
+.home-usb-state { margin: 0; text-align: right; font-size: 12px; color: var(--txt2); }
 .home-usb-state.vieux { color: var(--a); font-weight: 500; }
 @media (max-width: 1150px) {
   .home-hero { grid-template-columns: minmax(0, 1fr); }
-  .home-hero-txt, .home-users, .home-actions, .home-usb-state { grid-column: 1; grid-row: auto; }
+  .home-hero-txt, .home-users, .home-actions, .home-row3 { grid-column: 1; grid-row: auto; }
   .home-hero-txt { margin-bottom: 12px; }
-  .home-users, .home-actions { justify-content: flex-start; }
+  .home-users, .home-actions, .home-row3 { justify-content: flex-start; }
   .home-actions { margin-top: 6px; }
   .home-usb-state { text-align: left; }
 }
@@ -2259,6 +2272,13 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .dash-nl-titre ~ .dash-nl .dash-note-t { color: var(--txt2); text-decoration: line-through; }
 .dash-nl-vide { padding: 10px 0; font-size: 12.5px; color: var(--txt2); }
 .dash-obj-aide { margin: 10px 0 0; font-size: 12px; color: var(--txt2); }
+/* Fenêtre « Une idée pour Pilote ? » (bouton de l'accueil) */
+.sug-txt { margin: 0 0 14px; font-size: 13px; color: var(--txt2); }
+.sug-adr {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--brd); border-radius: 10px;
+  padding: 8px 8px 8px 14px; font-size: 14px; user-select: all;
+}
 
 /* — Mes comptes : dépenses fréquentes et suggestions du libellé — */
 .fin-freq { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2664,7 +2684,13 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <button class="btn btn-ghost btn-sm" id="home-usb-btn" onclick="svPushToUsb()"
               title="Copier toutes les données sur la clé USB"><i class="ph ph-usb"></i> Téléverser vers clé USB</button>
     </div>
-    <div class="home-usb-state" id="home-usb-state"></div>
+    <!-- Sous les boutons : la ligne des boutons est pleine à 1366 px, un 6e
+         y passait à la ligne et la 2e rangée de tuiles sortait de l'écran -->
+    <div class="home-row3">
+      <button type="button" class="home-sug" onclick="homeSuggestion()"
+              title="Proposer une amélioration à l'auteur de Pilote"><i class="ph ph-lightbulb"></i> Suggérer une amélioration</button>
+      <div class="home-usb-state" id="home-usb-state"></div>
+    </div>
   </div>
   <div class="home-cards" id="home-cards"></div>
 </div>
@@ -4478,6 +4504,25 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-dash-objectif')">Annuler</button>
       <button class="btn btn-primary" onclick="dashObjectifEnregistrer()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Suggestion d'amélioration (bouton de l'accueil) : la messagerie de
+     l'utilisateur, ou Gmail dans le navigateur, sur l'adresse de l'auteur -->
+<div class="ov" id="ov-suggestion" onclick="if(event.target===this)closeOv('ov-suggestion')">
+  <div class="modal" style="max-width:480px">
+    <h2>Une idée pour Pilote ?</h2>
+    <p class="sug-txt">Une amélioration à proposer, un bug à signaler : écris à l'auteur de Pilote.</p>
+    <div class="sug-adr">
+      <span id="sug-adresse"></span>
+      <button type="button" class="m-iconbtn" onclick="homeSuggestionCopier()" title="Copier l'adresse"><i class="ph ph-copy"></i></button>
+    </div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-suggestion')">Fermer</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="homeSuggestionEcrire(true)"><i class="ph ph-google-logo"></i> Écrire avec Gmail</button>
+      <button class="btn btn-primary" onclick="homeSuggestionEcrire(false)"><i class="ph ph-envelope-simple"></i> Ouvrir ma messagerie</button>
     </div>
   </div>
 </div>
@@ -6400,6 +6445,47 @@ function buildDepositSeries(dates) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   UNE COURBE PAR COMPTE
+   Le PEA et chaque CTO ont leur propre <canvas> et leur propre graphique
+   (c-perf pour le PEA, c-perf-<id> pour un CTO). Jusqu'à la 4.4.9, un seul
+   graphique servait à tous : en passant du PEA à un CTO, la courbe et le gain
+   du PEA restaient affichés sur le CTO le temps de charger son historique
+   (2,8 s mesurées sur le vrai CTO d'Arthur).
+───────────────────────────────────────────────────────────────────────── */
+const _perfCharts = {};       // compte affiché ("pea" ou id du CTO) → Chart
+let _perfCompteVu = "pea";    // compte de la dernière courbe montrée
+
+/** Le canvas du compte affiché (créé à sa première courbe) ; les autres sont cachés. */
+function _perfCanvas() {
+  const pea = document.getElementById("c-perf");
+  const id  = _estCto() ? "c-perf-" + _compteActif : "c-perf";
+  let c = document.getElementById(id);
+  if (!c) {
+    c = document.createElement("canvas");
+    c.id = id;
+    pea.parentNode.appendChild(c);
+  }
+  pea.parentNode.querySelectorAll("canvas").forEach(x => { x.style.display = x === c ? "" : "none"; });
+  return c;
+}
+
+/** Autre compte que la dernière fois : la courbe et les chiffres de l'ancien
+    disparaissent tout de suite. Celle du nouveau se redessine sur son
+    historique déjà chargé (retour sur un compte déjà vu), sinon l'écran reste
+    vide sous « Chargement… » jusqu'à son historique. */
+function _perfMontrerCompte() {
+  if (_perfCompteVu === _compteActif) return;
+  _perfCompteVu = _compteActif;
+  _perfCanvas();
+  _ch.perf = _perfCharts[_compteActif] || null;
+  ["twr-summary", "twr-cache-lbl", "perf-nodata"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+  if (_perfHistory) drawPerfChart();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    DESSIN DU GRAPHIQUE
 ───────────────────────────────────────────────────────────────────────── */
 function drawPerfChart() {
@@ -6516,9 +6602,9 @@ function drawPerfChart() {
   const portFill  = carnetAreaFill(col.accent);
 
   /* ── Construction du graphique ───────────────────────────────────────────── */
-  const c = document.getElementById("c-perf");
+  const c = _perfCanvas();
   if (_ch.perf) { _ch.perf.destroy(); _ch.perf = null; }
-  _ch.perf = new Chart(c, {
+  _ch.perf = _perfCharts[_compteActif] = new Chart(c, {
     type: "line",
     data: {
       labels,
@@ -6709,6 +6795,8 @@ new MutationObserver(() => {
    POINT D'ENTREE : appele par goTab("dash") (vue d'ensemble, ex-onglet Performance)
 ───────────────────────────────────────────────────────────────────────── */
 async function renderPerf() {
+  // La courbe de ce compte, jamais celle du compte affiché juste avant
+  _perfMontrerCompte();
   // Restaure les prefs benchmarks et branche les checkboxes
   _initBenchmarkUi();
   // Restaure la plage YTD/MAX sauvegardee
@@ -10890,6 +10978,8 @@ function cfgModule(secId, on) {
   _afficherModule(secId, on);
   _enregistrerUiPrefs();
   _reconstruireSidebar();
+  // Masqué au lancement, il n'a pas été chargé (boot)
+  if (on) _chargerModule(secId);
   if (typeof dashRender === "function") dashRender();
   cfgRenderModules();
   _cfgRenderMasques();
@@ -18863,6 +18953,41 @@ function homeDisplayName() {
   return (typeof S !== "undefined" && S && S.prenom) ? S.prenom : "";
 }
 
+/* ── Suggérer une amélioration (4.4.10) : écrire à l'auteur de Pilote ──────
+   Rien ne part de Pilote : le bouton ouvre la messagerie de l'utilisateur
+   (lien mailto:), ou Gmail dans le navigateur pour qui n'en a pas, avec
+   l'objet et la version déjà remplis. */
+const SUGGESTION_ADRESSE = "arthur.economie@gmail.com";
+
+function homeSuggestion() {
+  document.getElementById("sug-adresse").textContent = SUGGESTION_ADRESSE;
+  document.getElementById("ov-suggestion").classList.add("open");
+}
+
+async function homeSuggestionEcrire(gmail) {
+  let version = "";
+  try {
+    const info = await pywebview.api.app_info();
+    if (info && info.version) version = " " + info.version;
+  } catch (e) {}
+  const objet = "Suggestion pour Pilote";
+  const corps = "\r\n\r\n\r\n--\r\nPilote" + version + (EST_MAC ? " sur Mac" : " sur Windows");
+  const url = gmail
+    ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(SUGGESTION_ADRESSE)
+      + "&su=" + encodeURIComponent(objet) + "&body=" + encodeURIComponent(corps)
+    : "mailto:" + SUGGESTION_ADRESSE + "?subject=" + encodeURIComponent(objet)
+      + "&body=" + encodeURIComponent(corps);
+  const api = window.pywebview && pywebview.api;
+  if (api && api.open_url) api.open_url(url);
+  else window.open(url, "_blank", "noopener");
+  closeOv("ov-suggestion");
+}
+
+async function homeSuggestionCopier() {
+  try { await navigator.clipboard.writeText(SUGGESTION_ADRESSE); showToastModern("Adresse copiée", "ok"); }
+  catch (e) { showToastModern("Copie impossible : sélectionne l'adresse à la main", "warn"); }
+}
+
 /** Prochain objectif sportif : l'evenement le plus proche, sinon la derniere perf visee. */
 function homeNextGoal() {
   if (typeof SP === "undefined" || !SP) return null;
@@ -21908,7 +22033,8 @@ const DASH_WIDGETS = [
         gain = (gain == null || r.pv == null) ? null : gain + r.pv;
       }
       return { lbl: "Toute ma bourse", val: eur(Math.round(valeur * 100) / 100),
-               sub: ctos.length ? "PEA + " + ctos.length + " CTO" : "le PEA seul, aucun CTO",
+               // CTO pas lus (module masqué) : on ne sait pas s'il y en a
+               sub: ctos.length ? "PEA + " + ctos.length + " CTO" : _ctoBootstrapped ? "le PEA seul, aucun CTO" : "le PEA seul",
                subHtml: gain != null ? `<b class="${gain >= 0 ? "c-g" : "c-r"}">${eur(Math.round(gain * 100) / 100, true)}</b>`
                           + (base > 0 ? ` (${pct(gain / base * 100)})` : "") + " au total" : "",
                go: "Voir le PEA" };
@@ -22338,6 +22464,13 @@ function dashConfig() {
 async function dashSaveConfig(cfg) {
   if (typeof S === "undefined" || !S) return;
   if (!S.uiPrefs) S.uiPrefs = {};
+  // Tuiles d'un CTO pas lu (module masqué, donc absent de DASH_WIDGETS) :
+  // gardées telles quelles, elles reviennent avec le module
+  if (!_ctoBootstrapped && Array.isArray(S.uiPrefs.dash)) {
+    S.uiPrefs.dash.forEach(c => {
+      if (String(c.id).startsWith("cto:") && !cfg.some(x => x.id === c.id)) cfg.push(c);
+    });
+  }
   S.uiPrefs.dash = cfg;
   try {
     if (window.pywebview && pywebview.api) await pywebview.api.save_ui_prefs(S.uiPrefs);
@@ -22364,7 +22497,8 @@ function dashModuleReady(mod) {
     case "Sauvegarde": return !!window._dashUsb;
     case "Comptes":    return _finBootstrapped;
     case "CTO":        return _ctoBootstrapped;
-    case "Bourse":     return !!window._peaPv && _ctoBootstrapped;
+    // Module CTO masqué : jamais chargé, la tuile n'a pas à l'attendre
+    case "Bourse":     return !!window._peaPv && (_ctoBootstrapped || !_modulesVisibles().has("sec-cto"));
     // Boîte connectée : attendre le premier relevé (réussi ou non)
     case "Actus":      return _acBootstrapped && (!acConnecte() || !!AC.majA || !!AC.erreur);
   }
@@ -23141,6 +23275,41 @@ function dashWireDnd(box) {
   });
 }
 
+/* Chargement de chaque module : [nom du journal, section de NAV_SECTIONS,
+   chargement]. boot() ne charge que les sections affichées ; une section
+   cochée plus tard dans Paramètres → Modules se charge à ce moment-là. Santé
+   et Patrimoine en « discret » : données seules, le panneau se dessine à la
+   première visite (patch de goTab). */
+const MODULES_A_CHARGER = [
+  ["fin",        "sec-comptes", () => finBootstrap()],
+  ["sports",     "sec-sport",   () => spBootstrap()],
+  ["pret",       "sec-pret",    () => prBootstrap()],
+  ["sante",      "sec-sante",   () => saBootstrap(true)],
+  ["patrimoine", "sec-patri",   () => paBootstrap(true)],
+  ["actus",      "sec-actus",   () => acBootstrap()],
+  ["cto",        "sec-cto",     () => ctoBootstrap()],
+];
+
+/** Un module qu'on vient de cocher (il était masqué au lancement, donc pas
+    chargé). Sans effet s'il l'est déjà : chaque bootstrap le vérifie. Le PEA
+    n'y est pas : il est toujours lu (pea_data.json porte aussi les réglages),
+    et sa tuile demande elle-même l'historique sauté au lancement. */
+function _chargerModule(secId) {
+  if (!(window.pywebview && pywebview.api)) return;
+  const m = MODULES_A_CHARGER.find(([, sec]) => sec === secId);
+  if (!m) return;
+  Promise.resolve(m[2]()).then(() => {
+    _jn(m[0] + " charge (module coche)");
+    // Comme au lancement : une ligne par CTO dans le Patrimoine (il faut les
+    // deux modules lus), et les cours des CTO pour leurs tuiles
+    if ((secId === "sec-cto" || secId === "sec-patri") && _ctoBootstrapped && ctoComptes().length) {
+      ctoLignesPatrimoine().catch(e => console.warn("[cto] patrimoine:", e));
+      if (secId === "sec-cto") applyCoursData();
+    }
+    if (typeof homeRender === "function") homeRender();
+  }, e => console.warn("[" + m[0] + "] chargement KO:", e));
+}
+
 /* Pilote démarre derrière un petit écran de chargement (splash.py) : la
    fenêtre principale reste cachée jusqu'à ce signal, envoyé une seule fois
    quand l'accueil est prêt, ou plus tôt si l'écran du code PIN attend une
@@ -23204,10 +23373,12 @@ function _appReady() {
         .catch(e => console.warn("[premiers pas / nouveautés]", e));
     } catch(e) {}
     const coursPrets = startCoursRefresh();
+    // Modules masqués (Paramètres → Modules) : rien n'est chargé pour eux
+    const visibles = _modulesVisibles();
     // Historique du PEA : la tuile de l'accueil en tire sa mini-courbe et ses
     // chiffres 1S, 1M, YTD. Demandé tout de suite, attendu avec les cours :
     // sinon il arrivait après l'ouverture de la fenêtre.
-    const histPret = perfSeriesAsync();
+    const histPret = visibles.has("sec-pea") ? perfSeriesAsync() : null;
     // Verifie les mises a jour apres stabilisation de l'UI (15s = temps suffisant pour l'API GitHub)
     if (window.pywebview) setTimeout(_checkForUpdates, 5000);
     // Initialise le module Mes Comptes (en silence, sans bloquer le rendu PEA)
@@ -23215,17 +23386,14 @@ function _appReady() {
     // de six modules, il ne doit pas attendre six allers-retours enchaines.
     // Sante et Patrimoine en font partie : sans eux leurs tuiles restaient vides
     // tant qu'on n'avait pas ouvert leur onglet au moins une fois.
+    // Sauf les modules masqués : ni fichier lu, ni cours, ni relevé de la boîte
+    // (4.4.10). Ils se chargent quand on les coche de nouveau (cfgModule).
     if (hasPy) {
-      const boots = [
-        ["fin",        finBootstrap()],
-        ["sports",     spBootstrap()],
-        ["pret",       prBootstrap()],
-        ["sante",      saBootstrap(true)],
-        ["patrimoine", paBootstrap(true)],
-        ["actus",      acBootstrap()],
-        ["cto",        ctoBootstrap()],
-        ["usb",        svRenderUsbState()],
-      ];
+      const boots = MODULES_A_CHARGER.filter(([, sec]) => visibles.has(sec))
+        .map(([nom, , charger]) => [nom, charger()]);
+      boots.push(["usb", svRenderUsbState()]);
+      const masques = MODULES_A_CHARGER.filter(([, sec]) => !visibles.has(sec)).map(([nom]) => nom);
+      if (masques.length) _jn("modules masques, non charges : " + masques.join(", "));
       await Promise.all(boots.map(([nom, pr]) =>
         Promise.resolve(pr).then(() => _jn(nom + " ok"),
                                  e => { console.warn("[" + nom + "] bootstrap KO:", e);
