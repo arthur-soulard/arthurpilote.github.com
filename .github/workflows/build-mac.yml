@@ -82,8 +82,8 @@ jobs:
 
           VENDOR=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7438/vendor/chart.umd.js || true)
           OUVERTE=$(grep -o "fenetre ouverte ([a-z]*)" pilote.log || echo "pas de ligne")
-          echo "::notice title=Serveur::ping ${UP:-KO} s - /vendor/chart.umd.js HTTP $VENDOR"
-          echo "::notice title=Interface::$OUVERTE"
+          # (10 annotations au plus par etape : une seule pour serveur et interface)
+          echo "::notice title=Serveur::ping ${UP:-KO} s - /vendor/chart.umd.js HTTP $VENDOR - $OUVERTE"
           echo "::notice title=Donnees::$(ls "$DONNEES" 2>/dev/null | tr '\n' ' ' || echo absent)"
           # 3. Le journal de demarrage de la page, ecrit 30 s apres le lancement
           for i in $(seq 1 40); do
@@ -99,6 +99,22 @@ jobs:
           done
           echo "::notice title=HTTPS::$(grep -E "\[https\]|Yahoo/query" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
           echo "::notice title=Modules::$(grep "\[module\]" pilote.log | tr '\n' ' ' || echo absent)"
+          # 5. Fenetre et fermeture (app.py, _diag_fenetre a 45 s) : apres
+          #    « Quitter » (comme Cmd+Q), l'app doit ecrire ce qui attendait et
+          #    se fermer seule
+          for i in $(seq 1 60); do
+            grep -qE "\[fenetre\] (Quitter|KO)" pilote.log && break
+            sleep 1
+          done
+          FIN="encore ouverte apres 20 s"
+          for i in $(seq 1 20); do
+            if ! kill -0 $PID 2>/dev/null; then FIN="fermee seule en $i s"; break; fi
+            sleep 1
+          done
+          ECRIT=$(grep -l "ecrit avant de quitter" "$DONNEES"/users/*/pea_data.json 2>/dev/null | wc -l | tr -d ' ')
+          MAXI=$(grep -ho '"windowMaximized": *[a-z]*' "$DONNEES"/users/*/pea_data.json 2>/dev/null | head -1)
+          echo "::notice title=Fenetre::$(grep -E "\[fenetre\]|\[app\] fermeture" pilote.log | tr '\n' ' ' | head -c 3000)"
+          echo "::notice title=Fermeture::$FIN ; ecriture en attente retrouvee dans $ECRIT pea_data.json ; $MAXI"
           echo "::notice title=Journal::$(tail -c 900 pilote.log | tr '\n' ' ' | tr -d '\r')"
 
           kill $PID 2>/dev/null || true
@@ -118,13 +134,26 @@ jobs:
           test -f capture.png || exit 0
           sips -s format jpeg -s formatOptions 25 -Z 720 capture.png --out cap.jpg > /dev/null
           { base64 -i cap.jpg | tr -d '\n' | fold -w 3800; echo; } > cap.b64
+          # 10 annotations au plus par etape : les morceaux 1 a 10 ici, la suite apres
           N=$(wc -l < cap.b64 | tr -d ' ')
-          echo "::notice title=Capture::$(wc -c < cap.jpg | tr -d ' ') octets, $N morceaux"
           i=0
           while read -r ligne; do
             i=$((i+1))
-            echo "::notice title=Capture $i/$N::$ligne"
+            if [ $i -le 10 ]; then echo "::notice title=Capture $i/$N::$ligne"; fi
           done < cap.b64
+          exit 0
+
+      - name: Capture (suite)
+        if: always()
+        run: |
+          test -f cap.b64 || exit 0
+          N=$(wc -l < cap.b64 | tr -d ' ')
+          i=0
+          while read -r ligne; do
+            i=$((i+1))
+            if [ $i -gt 10 ] && [ $i -le 20 ]; then echo "::notice title=Capture $i/$N::$ligne"; fi
+          done < cap.b64
+          exit 0
 
       - name: Zip app
         if: always()

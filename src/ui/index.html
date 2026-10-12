@@ -615,6 +615,15 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--brd2); }
 }
 .tb-btn:hover { background: var(--bg4); color: var(--txt); }
 .tb-btn.tb-close:hover { background: #e81123; color: #fff; }
+/* Mac : la barre de titre est celle du système (app.py, frameless sous Windows
+   seulement) ; la nôtre n'est pas créée, ses 36 px disparaissent avec elle */
+html.os-mac body.has-shell { padding-top: 0; }
+html.os-mac .sidebar { top: 0; }
+/* Textes propres à un système : .txt-win sous Windows, .txt-mac sur Mac ;
+   .win-seul : réglage qui n'existe que sous Windows */
+.txt-mac { display: none; }
+html.os-mac .txt-mac { display: inline; }
+html.os-mac .txt-win, html.os-mac .win-seul { display: none !important; }
 
 /* — Sidebar gauche — */
 body.has-shell { padding-top: 36px; }
@@ -3961,7 +3970,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
             <label>Couleur d'accent</label>
             <div id="cfg-accent-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:4px"></div>
           </div>
-          <div class="fg">
+          <div class="fg win-seul">
             <label>Icône de l'application</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" onclick="applyIconToShortcuts()"
@@ -4012,7 +4021,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           <h3>Modules</h3>
           <p class="set-lead">Coche les modules à garder dans la barre de gauche. Un module
             décoché est masqué avec ses tuiles de l'accueil, pas effacé : ses données
-            restent sur ce PC et reviennent quand tu le recoches.</p>
+            restent sur <span class="txt-win">ce PC</span><span class="txt-mac">ce Mac</span>
+            et reviennent quand tu le recoches.</p>
           <div class="pp-mods" id="cfg-modules"></div>
 
           <h3 style="margin-top:22px">Masqué</h3>
@@ -4155,7 +4165,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
         <div class="set-sec" data-sec="donnees">
           <h3>Données &amp; application</h3>
-          <p class="set-lead">Tout est stocké en clair sur ce PC, un dossier par utilisateur.</p>
+          <p class="set-lead">Tout est stocké en clair sur <span class="txt-win">ce PC</span><span
+            class="txt-mac">ce Mac</span>, un dossier par utilisateur.</p>
           <div class="fg">
             <label>Dossier</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -4712,6 +4723,12 @@ function _jn(m) { try { window.__journal.push(Math.round(performance.now()) + " 
 window.addEventListener("error", e => _jn("ERREUR " + e.message + " (ligne " + e.lineno + ")"));
 window.addEventListener("unhandledrejection", e => _jn("REJET " + ((e.reason && e.reason.message) || e.reason)));
 _jn("script principal : debut");
+
+/* Mac (WebKit) : barre de titre du système, ⌘ au lieu de Ctrl, textes « ce
+   Mac ». Tout passe par EST_MAC ou la classe html.os-mac (docs/mac.md) ;
+   sous Windows rien ne change. */
+const EST_MAC = /Macintosh|Mac OS X/.test(navigator.userAgent);
+if (EST_MAC) document.documentElement.classList.add("os-mac");
 
 /* ─── Graphiques : la police et le gris du texte courant (identité « Carnet ») ───
    Les graphiques sont dessinés dans un <canvas> : ils n'héritent pas du CSS.
@@ -10210,7 +10227,7 @@ async function _showWelcomeIfFirstRun() {
           sport, santé…) dans une seule application, qui tourne entièrement sur ton ordinateur.</p>
         ${identitySection}
         <ul class="pp-points">
-          <li><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ce PC.</b>
+          <li><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
             Pas de compte, pas de serveur : tes données vivent dans le dossier Données,
             avec une sauvegarde chaque jour.</span></li>
           <li><i class="ph ph-squares-four"></i><span><b>Tu choisis tes modules.</b>
@@ -13543,7 +13560,15 @@ function _navToggleSection(secId) {
 }
 
 
+/* Mac : bouton rouge, ⌘Q et ⌘W passent par Python (_on_closing, app.py), qui
+   appelle ceci avant de fermer : même vidange que le bouton Fermer ci-dessous. */
+window._fermerApresVidange = async function () {
+  await Promise.race([_viderEnregistrements(), new Promise(r => setTimeout(r, 3000))]);
+  try { await window.pywebview.api.fermeture_prete(); } catch (e) {}
+};
+
 function _injectTitlebar() {
+  if (EST_MAC) return;     // barre de titre du système (app.py)
   const html = `
     <div class="titlebar" id="app-titlebar">
       <div class="titlebar-brand">
@@ -13945,7 +13970,8 @@ function _installShortcuts() {
     const inField = t === "INPUT" || t === "TEXTAREA" || t === "SELECT";
     if (inField) return;
 
-    if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+    // Mac : ⌘ (metaKey) là où Windows prend Ctrl
+    if ((EST_MAC ? e.metaKey : e.ctrlKey) && !e.shiftKey && !e.altKey) {
       if (e.key === "n" || e.key === "N") { e.preventDefault(); openAddPos(); }
       if (e.key === "r" || e.key === "R") { e.preventDefault(); manualRefresh(); }
       if (e.key === "e" || e.key === "E") { e.preventDefault(); doExport(); }
@@ -14049,6 +14075,10 @@ function installShellEnhancements() {
   _applyHiddenCards();
   _injectCardEyeBtns();
   _installShortcuts();
+  // Mac : les bulles d'aide annoncent ⌘ au lieu de Ctrl
+  if (EST_MAC) document.querySelectorAll('[title*="Ctrl+"]').forEach(el => {
+    el.title = el.title.replace(/Ctrl\+/g, "⌘");
+  });
   // Pastille utilisateur en bas de la sidebar
   if (typeof _renderUserPill === "function") _renderUserPill();
 
@@ -14091,7 +14121,7 @@ function _diag(msg, kind) {
   if (!bar) {
     bar = document.createElement("div");
     bar.id = "pea-diag";
-    bar.style.cssText = "position:fixed;top:36px;left:0;right:0;z-index:9999;"
+    bar.style.cssText = "position:fixed;top:" + (EST_MAC ? 0 : 36) + "px;left:0;right:0;z-index:9999;"
       + "padding:8px 16px;font-family:JetBrains Mono,monospace;font-size:11px;"
       + "border-bottom:1px solid var(--brd2);background:#fff7e6;color:#92400e;";
     document.body.appendChild(bar);

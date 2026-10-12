@@ -34,6 +34,41 @@ def certificats_mac() -> None:
         os.environ["SSL_CERT_FILE"] = "/etc/ssl/cert.pem"
 
 
+def zone_ecran_mac() -> tuple:
+    """Mac : zone utile de l'ecran principal, sans la barre des menus ni le Dock,
+    en points et origine en haut a gauche comme pywebview : (x, y, largeur, hauteur)."""
+    import AppKit
+    AppKit.NSApplication.sharedApplication()     # NSScreen a besoin de l'application
+    ecran = AppKit.NSScreen.mainScreen() or AppKit.NSScreen.screens()[0]
+    f, v = ecran.frame(), ecran.visibleFrame()
+    haut = (f.origin.y + f.size.height) - (v.origin.y + v.size.height)
+    return (int(v.origin.x - f.origin.x), int(haut), int(v.size.width), int(v.size.height))
+
+
+# Mac : menus et boites de dialogue de pywebview en francais (cles de
+# webview/localization.py ; le nom de l'app est ajoute a « Quitter », etc.)
+LOCALISATION_MAC = {
+    "global.quitConfirmation": "Voulez-vous vraiment quitter ?",
+    "global.ok": "OK",
+    "global.quit": "Quitter",
+    "global.cancel": "Annuler",
+    "global.saveFile": "Enregistrer le fichier",
+    "cocoa.menu.about": "À propos de",
+    "cocoa.menu.services": "Services",
+    "cocoa.menu.view": "Présentation",
+    "cocoa.menu.edit": "Édition",
+    "cocoa.menu.hide": "Masquer",
+    "cocoa.menu.hideOthers": "Masquer les autres",
+    "cocoa.menu.showAll": "Tout afficher",
+    "cocoa.menu.quit": "Quitter",
+    "cocoa.menu.fullscreen": "Passer en plein écran",
+    "cocoa.menu.cut": "Couper",
+    "cocoa.menu.copy": "Copier",
+    "cocoa.menu.paste": "Coller",
+    "cocoa.menu.selectAll": "Tout sélectionner",
+}
+
+
 def ouvrir(chemin: str) -> None:
     """Ouvre un fichier ou un dossier avec l'application par defaut du systeme
     (Explorateur sous Windows, Finder sur Mac). Leve une exception en cas d'echec."""
