@@ -973,6 +973,22 @@ def _nom_court(s: str) -> str:
     return " ".join(mots[:4])
 
 
+def _variantes_nom(nom: str) -> list:
+    """Le nom d'un relevé sans ISIN (CSV de Fortuneo), raccourci jusqu'à ce que
+    Yahoo le trouve : « Amundi PEA Emergent (MSCI Emerging) ESG Transition UCITS
+    ETF - S EUR ACC » -> « Amundi PEA Emergent MSCI Emerging », « … MSCI »,
+    « Amundi PEA Emergent ». Rien n'est trouvé sur le nom entier (12/10/2026)."""
+    out = []
+    for part in [x for x in re.split(r"\s+-\s+", nom or "") if x.strip()]:
+        mots = [w for w in re.sub(r"[()]", " ", part).split()
+                if not re.fullmatch(r"(?i)ucits|etf|etc|acc|dis|dist|eur|usd|[csd]|inh\.?|eo|dl|[-,.\d]+", w)]
+        for n in (5, 4, 3):
+            v = " ".join(mots[:n])
+            if len(mots) >= 2 and v not in out:
+                out.append(v)
+    return out
+
+
 def _ecart_historique(symbol: str, points: list, depuis: str):
     """Ecart median entre les prix payes [(date, prix)] et les clotures de
     `symbol` ces jours-la ; None si son historique ne remonte pas a `depuis`
@@ -993,13 +1009,16 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
     candidats : cotations en euros verifiees, la plus probable en premier.
     nom2 : nom long (description du releve) ; points : prix payes
     [(AAAA-MM-JJ, prix)] et depuis : premier ordre, pour la verification par
-    l'historique (`ecart` : ecart median, None si non verifiee)."""
+    l'historique (`ecart` : ecart median, None si non verifiee).
+    Sans ISIN (CSV de Fortuneo) : recherche par le nom seul, mêmes vérifications."""
     isin = (isin or "").strip().upper()
     if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", isin):
-        return {"ok": False, "error": "ISIN invalide"}
+        if isin or not (nom or "").strip():
+            return {"ok": False, "error": "ISIN invalide"}
+        isin = ""
     points = [(d, p) for d, p in (points or []) if p and p > 0]
     depuis = depuis or min((d for d, _ in points), default="")
-    cle = isin + "|" + depuis + "|" + ",".join(f"{d}:{p:g}" for d, p in points)
+    cle = (isin or "NOM:" + nom) + "|" + depuis + "|" + ",".join(f"{d}:{p:g}" for d, p in points)
     now = time.time()
     with _lock:
         c = _isin_cache.get(cle)
@@ -1007,7 +1026,7 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
             return c["resultat"]
     titres = ("EQUITY", "ETF", "MUTUALFUND")
     try:
-        p = [q for q in _yahoo_search_brut(isin) if q.get("quoteType") in titres]
+        p = [q for q in _yahoo_search_brut(isin) if q.get("quoteType") in titres] if isin else []
     except Exception as e:
         return {"ok": False, "error": "Yahoo injoignable : " + str(e)}
     prin = p[0] if p else {}
@@ -1042,7 +1061,7 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
                         "place": x.get("exchDisp") or x.get("exchange") or "",
                         "_cle": (niveau, -int(racine), place, -mots)}
 
-    for q in (isin, base, nom, pnom, nom2, _nom_court(nom2)):
+    for q in (isin, base, nom, pnom, nom2, _nom_court(nom2), *([] if isin else _variantes_nom(nom))):
         chercher(q)
     for r in sorted({c["symbol"].split(".")[0] for c in cands.values()})[:3]:
         chercher(r)   # second saut : PPFB.SG -> PPFB.DE
@@ -1436,7 +1455,8 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             return self._json(200, {"ok": True, "results": fetch_yahoo_search(q)})
 
         if parsed.path == "/isin":
-            # Import du CTO : cotations en euros d'un ISIN (voir cotations_euro)
+            # Import des releves : cotations en euros d'un ISIN, ou d'un nom
+            # seul quand le releve n'a pas d'ISIN (voir cotations_euro)
             isin = params.get("isin", [""])[0].strip()
             nom  = params.get("nom", [""])[0].strip()[:120]
             nom2 = params.get("nom2", [""])[0].strip()[:160]

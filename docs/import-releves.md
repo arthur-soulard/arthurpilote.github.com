@@ -37,6 +37,10 @@ vrais documents.
   Crédit Agricole. Exemples XML d'Interactive Brokers : `datatransfer/ibflex/`.
 * **Export-To-Ghostfolio** (Apache-2.0) : `samples/` contient de vrais exports
   CSV (Degiro relevé de compte en néerlandais, IBKR, Saxo, Trading 212…).
+* **Fortuneo, vrai fichier d'Arthur (12/10/2026, 4.4.5)** : son espace client
+  donne en fait un **CSV** de l'historique des opérations de bourse, dans un
+  .zip (« HistoriqueOperationsBourse_<compte>.zip », contenant
+  « …_du_03_09_2025_au_12_10_2026.csv »). Voir « Fortuneo » plus bas.
 * Le texte des exemples PDF est celui de PDFBox ; Pilote lit les PDF avec pypdf,
   dont la mise en page du texte peut différer. **Aucun vrai PDF de banque n'a pu
   être essayé** (12/10/2026) : la chaîne pypdf → lecteur a été vérifiée sur des
@@ -52,6 +56,7 @@ vrais documents.
 | IBKR CSV, Trading 212, Saxo CSV, Degiro relevé de compte | contrôlés à la main ligne à ligne |
 | IBKR XML (9 exemples) | autant d'ordres que de `<Trade>` d'actions ou de fonds |
 | Trade Republic (relevé d'Arthur) | les mêmes 134 opérations qu'en 4.4.1 ; CTO : 939,79 € investis, 27,58 € de frais, 0 « frais ≠ grille » |
+| Fortuneo CSV (relevé d'Arthur, .zip) | 13 opérations, chiffres identiques au fichier ; dans son PEA saisi à la main : 13 sur 13 « déjà dans Pilote », 0 à importer, 3 transferts et 1 détachement écartés, chaque titre sur son ticker (PNAS, WPEA, PEMS, EPA:SGO, ESE, PANX) |
 
 Écarts voulus avec Portfolio Performance :
 
@@ -90,6 +95,20 @@ XML Flex d'IBKR, sinon texte (UTF-8, puis cp1252) lu comme CSV, séparateur devi
 
 ### Fortuneo (Arkéa Direct Bank)
 
+* **CSV « Historique des opérations de bourse »** (le chemin le plus simple,
+  4.4.5) : un .zip, lu tel quel (Pilote ouvre les archives ; un .xlsx, lui
+  aussi un zip, se reconnaît à son dossier `xl/`). CSV en cp1252, `;`,
+  décimales au point, montants signés : `libellé;Opération;Place;Date;Qté;
+  Prix d'éxé;Montant brut;Courtage/Prélèvement;Montant net;Devise;`.
+  L'en-tête du prix s'écrit **« Prix d'éxé »** : la colonne se repère par son
+  début (« prix »). Opérations : « Achat Comptant », « Vente comptant » (suivi
+  d'espaces), « Encaissement coupons intérêt/dividende » (dividende net),
+  « OST de création de coupons - Détachement coupon optionnel » (**ignoré** :
+  même montant, deux jours avant l'encaissement, ce serait un doublon),
+  « Transfert de portefeuille entrant » (**ignoré** : titres arrivés d'une autre
+  banque à 0 €, l'achat d'origine vient de l'ancienne banque ; les compter
+  ferait un PRU nul). **Pas d'ISIN** : la cotation se cherche par le nom (voir
+  « Sans ISIN »). Pas de versements dans ce fichier.
 * **Avis d'opérations** : un bloc par titre (« ACTION : ORANGE (FR0000133308) »,
   « TRACKER : … », « OPCVM : … »), une ou plusieurs exécutions par bloc (ordre
   fractionné). **La référence ne suffit pas comme identifiant** : deux ordres du
@@ -163,6 +182,20 @@ XML Flex d'IBKR, sinon texte (UTF-8, puis cp1252) lu comme CSV, séparateur devi
   Sans colonne « sens », quantité négative = vente. Il manque la date, la
   quantité, l'ISIN ou le nom, ou le cours ou le montant : l'interface demande
   les colonnes (`aChoisir`, étape « colonnes » de la fenêtre).
+
+### Sans ISIN (CSV de Fortuneo)
+
+* Le titre se repère par son nom dans l'aperçu (`_ctoImpCle` : « NOM:<nom> »,
+  colonne ISIN « — »), jamais enregistré comme ISIN de la position.
+* `/isin` accepte un nom sans ISIN : Yahoo ne trouve rien sur le nom complet
+  (« Amundi PEA Emergent (MSCI Emerging) ESG Transition UCITS ETF - S EUR
+  ACC »), d'où `_variantes_nom` (partie avant « - », sans UCITS/ETF/ACC…, 5,
+  4 puis 3 mots). Plusieurs parts du même fonds sortent (PNAS.PA et PUST.PA,
+  PEMS.PA et PAEEM.PA) : la **vérification par les prix payés** tranche.
+* **Un ticker que le compte utilise déjà** (ligne ouverte, vendue, ou ordre)
+  passe devant parmi les candidats vérifiés : sans ISIN, pas de place du pays,
+  et Saint-Gobain partait sur GOB.DE quand le PEA le suit en EPA:SGO ; ses
+  ventes auraient été comptées deux fois. Vaut aussi avec ISIN.
 
 ### Autre devise que l'euro
 
