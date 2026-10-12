@@ -1222,6 +1222,54 @@ def main() -> int:
                 print(f"[diag] lecture KO : {e}", flush=True)
         threading.Thread(target=_diag, daemon=True).start()
 
+        # Certificats HTTPS (docs/mac.md) : le Python compile ne lit pas le
+        # Trousseau du Mac. Ecrit ou il cherche ses certificats, puis essaie
+        # Yahoo, Gmail et GitHub comme Pilote aujourd'hui, et avec le fichier
+        # fourni avec macOS. Poignee de main TLS seulement : rien n'est envoye.
+        def _diag_https():
+            import ssl
+            import socket
+            import time as _t
+            _t.sleep(16)                  # apres l'echantillonneur du demarrage
+            # D'abord les bibliotheques importees a la demande : bien embarquees
+            # dans l'app ? (meme piege qu'ocr_win.ps1 : tout marche en dev)
+            for mod in ("pypdf", "PIL.Image"):
+                try:
+                    __import__(mod)
+                    print(f"[module] {mod} OK", flush=True)
+                except Exception as e:
+                    print(f"[module] {mod} KO : {e}", flush=True)
+            p = ssl.get_default_verify_paths()
+            print(f"[https] {ssl.OPENSSL_VERSION} ; cherche {p.openssl_cafile}"
+                  f" (existe : {os.path.isfile(p.openssl_cafile)}) et {p.openssl_capath}"
+                  f" (existe : {os.path.isdir(p.openssl_capath)}) ;"
+                  f" SSL_CERT_FILE={os.environ.get('SSL_CERT_FILE')}", flush=True)
+
+            def essais(ctx) -> str:
+                res = []
+                for nom, hote, port in (("Yahoo", "query1.finance.yahoo.com", 443),
+                                        ("Gmail", "imap.gmail.com", 993),
+                                        ("GitHub", "api.github.com", 443)):
+                    try:
+                        with socket.create_connection((hote, port), timeout=10) as s:
+                            with ctx.wrap_socket(s, server_hostname=hote):
+                                pass
+                        res.append(f"{nom} OK")
+                    except Exception as e:
+                        res.append(f"{nom} KO ({type(e).__name__} : {str(e)[:90]})")
+                return ", ".join(res)
+
+            print(f"[https] comme Pilote aujourd'hui : {essais(ssl.create_default_context())}",
+                  flush=True)
+            if os.path.isfile("/etc/ssl/cert.pem"):
+                ctx_mac = ssl.create_default_context(cafile="/etc/ssl/cert.pem")
+                print(f"[https] avec /etc/ssl/cert.pem (fourni avec macOS) : {essais(ctx_mac)}",
+                      flush=True)
+            cours = server.fetch_yahoo("WPEA.PA")
+            print(f"[https] cours WPEA.PA lu par Pilote : {cours and cours.get('prix')}",
+                  flush=True)
+        threading.Thread(target=_diag_https, daemon=True).start()
+
         # Echantillonneur : toutes les 0,5 s pendant 15 s, ce que fait chaque fil
         # Python (fonction en cours la plus profonde du code de Pilote ou de ses
         # bibliotheques). Montre qui occupe Python quand le demarrage traine.

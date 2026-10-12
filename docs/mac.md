@@ -94,7 +94,8 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 ## Build Mac
 
 * `build/pilote-mac.spec` : à part de `pilote.spec` pour que le build Windows ne
-  bouge pas. Même piège : `ui/vendor` doit rester dans les `datas`. L'icône est
+  bouge pas. Même piège : `ui/vendor` doit rester dans les `datas`, et `pypdf`
+  dans les `hiddenimports` (import des relevés PDF, comme `pilote.spec`). L'icône est
   `assets/icon.ico` (la même que Windows ; `icon_512.png` est exclue de git), convertie en `.icns` par PyInstaller.
 * **`BUNDLE_ID = "io.github.arthur-soulard.pilote"`** : l'identité de l'app pour
   macOS (autorisations, préférences). Comme l'`AppId` de `installer.iss`, ne
@@ -102,7 +103,8 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 * `build-mac.yml` ne se déclenche que sur la branche `mac` (et à la main). Il
   fabrique l'app, la lance, attend `/ping` et la ligne « fenêtre ouverte », prend
   une capture d'écran, vérifie que `Donnees` est dans Application Support et pas
-  dans l'app. Les constats sortent en annotations (lisibles sans compte via
+  dans l'app. Depuis le 12/10/2026, `PILOTE_DIAG` essaie aussi Yahoo, Gmail et
+  GitHub en HTTPS (annotation « HTTPS », voir l'inventaire). Les constats sortent en annotations (lisibles sans compte via
   l'API publique des check-runs) ; capture, journal et app zippée sont en artefact.
 
 ## Inventaire de ce qui reste propre à Windows
@@ -120,6 +122,7 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 | ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | à gérer côté Python |
 | Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | seulement encodé en base64 (« b64: »), donc lisible dans `actus.json` et dans les sauvegardes : passer au Trousseau de macOS |
 | Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | non vérifié : le test Mac n'appelle encore aucun site en HTTPS |
+| Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | probablement sans effet : pywebview Mac ne remplace que le `window.print` de la page principale (`customize.js`), pas celui de l'iframe (vu le 12/10/2026, non essayé) |
 
 ## Gatekeeper (app non signée)
 

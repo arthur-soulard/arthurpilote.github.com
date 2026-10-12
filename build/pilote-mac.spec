@@ -51,6 +51,8 @@ a = Analysis(
         "PIL.Image",
         "PIL.ImageDraw",
         "PIL.ImageFont",
+        # Import des releves PDF (releves.py, import paresseux), comme pilote.spec
+        "pypdf",
     ],
     hookspath=[],
     hooksconfig={},
