@@ -21009,7 +21009,7 @@ function ctoImportRender() {
     ? `<span title="${escHtml(I.inconnues.map(x => x.date + " " + x.type + " " + x.nom).join("\n"))}"><b>${I.inconnues.length}</b> ligne(s) d'un type que Pilote ne connaît pas, laissée(s) de côté (survole pour le détail)</span>` : "";
   const versements = I.ops.filter(o => o.type === "Versement" || o.type === "Retrait").length;
   const docs = I.documents.map(d => d.erreur ? `<span class="cto-ecart" title="${escHtml(d.erreur)}"><i class="ph ph-warning"></i> ${escHtml(d.nom)} : non lu</span>`
-    : `<span title="${escHtml(d.nom)}">${escHtml(d.banque || "?")} : ${d.operations} op.</span>`);
+    : `<span>${escHtml(d.nom)} (${escHtml(d.banque || "?")}) : ${d.operations} op.</span>`);
   document.getElementById("cto-imp-resume").innerHTML = `
     <span><b>${nouvelles.length}</b> nouvelle(s)</span>
     <span>${compte(o => o.deja && o.type !== "Taxe", "déjà dans Pilote")}</span>
