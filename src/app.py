@@ -37,6 +37,7 @@ import finances
 import sports
 import pret
 import cto
+import releves
 import patrimoine
 import sante
 import actus
@@ -254,10 +255,12 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    def cto_lire_csv(self, texte: str) -> dict:
-        """Export CSV de Trade Republic -> operations a valider (rien n'est ecrit)."""
+    def releves_lire(self, fichiers: list) -> dict:
+        """Releves de banque ou de courtier (PDF, CSV, Excel, XML, en base64)
+        -> operations a valider dans le PEA ou un CTO (rien n'est ecrit).
+        Voir releves.py et docs/import-releves.md."""
         try:
-            return cto.lire_csv_tr(texte or "")
+            return releves.lire(fichiers or [])
         except Exception as e:
             return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
 
