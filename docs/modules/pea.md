@@ -343,7 +343,8 @@ YTD (prb-ytd), Max (prb-max, défaut).
                             bascule sur MAX avec message
 * `loadPerfHistory()`     — un seul appel `/history?…&since=<premier ordre>`
                             (`_perfDepuisParam()`, repris par les comparaisons)
-* `computePnl(series, allTxs, range)` — P&L sur la plage (TWR pour les plages partielles)
+* `computePnl(series, range)` — P&L sur la plage. Plages partielles : gain ÷
+                            argent engagé (Dietz modifié), voir plus bas
 
 Format labels axe X : 1S, 1M, YTD → « 12 mai » ; 6M, Max → « nov. 25 ». L'infobulle
 donne toujours le jour exact (« mer. 1 juil. 2026 »).
@@ -392,6 +393,23 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   chargent désormais ensemble, puis `drawPerfChart()` est rappelée.
 * Yahoo garde quelques trous (WPEA : clôture vide le 22/12/2025 et du 29/12/2025
   au 02/01/2026) : `priceAt` reprend le dernier cours connu, comme un jour férié.
+* **Pourcentage des plages 1S, 1M, 6M, YTD (12/10/2026)** : gain en euros ÷
+  argent engagé (Dietz modifié : valeur de départ + chaque versement pondéré par
+  la part de la plage où il a travaillé). Toujours du même signe que le gain.
+  Avant : un TWR qui repartait du premier point du jour de chaque flux et perdait
+  le rendement de ce jour-là. Faux sur un CTO, où chaque ordre est un flux
+  (« YTD » : +22,17 % pour −43,70 €). Choix d'Arthur contre un TWR corrigé
+  (+1,76 % ce jour-là), qui peut être de signe opposé au gain. Sur son PEA :
+  YTD 4,50 % → 3,29 %, 6M 12,48 % → 10,82 %. La tuile « Performance du PEA »
+  de l'accueil lit le même calcul. Max ne change pas.
+* **Comparaisons d'un compte à l'autre (12/10/2026)** : `_benchHistory` garde le
+  `since` de son chargement et n'est repris que s'il remonte jusqu'au premier
+  ordre du compte affiché ; `_initBenchmarkUi` complète les indices cochés à
+  chaque `renderPerf()`. Avant, un indice chargé d'abord sur un CTO (août 2025)
+  restait tronqué sur le PEA (janvier 2025) : CAC 40 à 1 214 € au lieu de
+  1 971 €, les versements d'avant août n'achetant rien.
+* « portefeuille ouvert le … » (YTD) : seulement si toute la courbe commence
+  cette année. Le 1er janvier étant férié, la note s'affichait toujours.
 
 Points critiques :
 * `_perfFullSeries` est mis en cache (reconstruit uniquement si null), invalidé à
