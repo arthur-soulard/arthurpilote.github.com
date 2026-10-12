@@ -2205,6 +2205,11 @@ label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 1
 .home-cards.dash-editing .dash-rng { pointer-events: none; opacity: .6; }
 /* Sur la tuile « Poids » : « Comparer avec », même taille que les pastilles */
 label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap: 4px; white-space: nowrap; }
+/* Coin droit de l'en-tête d'une tuile (d.coin) : « vs » et sa liste, sans la
+   ligne qu'ils prenaient au-dessus de la courbe (4.4.13) */
+.dash-coin { margin-left: auto; min-width: 0; }
+.dash-coin label.dash-cmp { margin: 0; flex-wrap: nowrap; gap: 5px; }
+.dash-coin .dash-cmp select { padding: 1px 8px; max-width: 120px; }   /* tient dans une tuile de 240 px */
 .dash-cmp select { font-size: 11.5px; padding: 2px 8px; max-width: 130px; }
 .home-cards.dash-editing .dash-cmp { pointer-events: none; opacity: .6; }
 .home-card-sub b { font-weight: 500; }
@@ -22283,14 +22288,17 @@ const DASH_WIDGETS = [
       const prev = saRef();
       const d = saDelta("poids", last.poids, prev ? prev.poids : null);
       const o = saCompareOptions(true);
+      // Dans l'en-tête, à droite de « Poids » (4.4.13) : sur sa propre ligne
+      // au-dessus de la courbe, il rendait la tuile la plus haute de l'accueil
+      // et la 2e rangée sortait de l'écran à 1366 × 720
       const cmp = o.disabled ? "" :
-        `<label class="sa-cmp dash-cmp" onclick="event.stopPropagation()">Comparer avec
-           <select onchange="saSetCompare(this.value)">${o.html}</select></label>`;
+        `<label class="sa-cmp dash-cmp" title="Comparer avec" onclick="event.stopPropagation()">vs
+           <select aria-label="Comparer avec" onchange="saSetCompare(this.value)">${o.html}</select></label>`;
       return { lbl: "Poids", val: saFmt("poids", last.poids),
                cls: saDeltaClass("poids", last.poids, prev ? prev.poids : null) === "down" ? "c-g" : "",
                sub: d ? d + " " + saRefLabel(prev) : (prev ? "pas de poids à comparer" : "première pesée"),
                subHtml: dashSanteCompo(last, prev),
-               go: "Voir le suivi", viz: cmp + dashSanteSpark(prev) };
+               go: "Voir le suivi", coin: cmp, viz: dashSanteSpark(prev) };
     },
   },
   {
@@ -22547,7 +22555,7 @@ function dashCardHtml(w, d, muted) {
     : "";
   return `<div class="home-card${muted ? " dash-muted" : ""}"${act}>
     ${outils}
-    <span class="home-card-lbl">${dashIcon(w)}${escHtml(d.lbl)}</span>
+    <span class="home-card-lbl">${dashIcon(w)}${escHtml(d.lbl)}${d.coin ? `<span class="dash-coin">${d.coin}</span>` : ""}</span>
     ${d.val != null ? `<span class="home-card-val ${d.cls || ""}">${d.val}</span>` : ""}
     ${(d.sub || d.val != null) ? `<span class="home-card-sub">${escHtml(d.sub || "")}</span>` : ""}
     ${d.subHtml ? `<span class="home-card-sub">${d.subHtml}</span>` : ""}
