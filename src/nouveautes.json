@@ -2,6 +2,14 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.6",
+      "date": "2026-10-12",
+      "titre": "« Prix de revient » au lieu d'« Investi »",
+      "corrige": [
+        "Carte « Valeur » du PEA et de chaque CTO : la ligne « Investi » s'appelle maintenant « Prix de revient des lignes ». C'est ce qu'ont coûté les lignes que tu détiens, frais compris, et non l'argent que tu as versé : le gain ou la perte des lignes déjà vendues et les dividendes ont été réinvestis. Ta plus-value latente s'affiche à côté."
+      ]
+    },
+    {
       "version": "4.4.5",
       "date": "2026-10-12",
       "titre": "L'historique de bourse Fortuneo s'importe tel quel",
