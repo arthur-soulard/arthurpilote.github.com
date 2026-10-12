@@ -142,6 +142,67 @@ les paramètres ne faisait visiblement rien. `saBootstrap(discret)` et
 De même, `svRenderUsbState()` publie désormais `window._dashUsb` — la tuile
 « Sauvegarde USB » lisait cette variable que personne n'écrivait.
 
+### 25 tuiles de plus (12/10/2026)
+
+Choisies par Arthur parmi une quarantaine de propositions. Toutes arrivent
+éteintes, comme toute tuile nouvelle. Chacune relit le calcul de son module,
+jamais un second calcul :
+
+| Module | Tuiles (id) | Source du chiffre |
+|---|---|---|
+| PEA | `pea-div`, `pea-div-next`, `pea-plafond`, `pea-versement`, `pea-frais`, `pea-5ans`, `pea-wish` | `dashDivRecus` (mêmes règles que `renderDividends`), `S.divFuture`, `peaTotalVerse`, `depPrevus`, frais des ordres datés d'aujourd'hui ou avant, `peaDateFiscale`, `m1` de `/cours` |
+| Bourse | `bourse-totale`, `marches` | `_peaPv` + `ctoResume` de chaque CTO ; indices de `/cours` |
+| Actus | `actus` | `AC.mails` non lus ; `acRenderBadge` redessine l'accueil |
+| Patrimoine | `pa-repartition`, `pa-an`, `pa-objectif` | `_paNet.detail` par type (couleurs de `PA_TYPES`), `_paSerie`, `S.uiPrefs.dashObjectif` |
+| Sports | `sport-semaine`, `sport-annee`, `sport-derniere`, `sport-km`, `sport-ajout` | `spMoyenneHebdo` (sortie de `spRenderStatsKpis`), `spTotals`, `spTrackStart` |
+| Santé | `sante-rappel`, `sante-ajout` | `saMesures`, `saLast` |
+| Prêt | `pret-mensualite`, `pret-gains` | configuration du prêt, `prOverview().benefice_net` |
+| Comptes | `fin-solde`, `fin-revenu` | `finComputeMonthTotals` |
+| Pense-bête | `pense-bete` | `S.uiPrefs.penseBete` |
+
+Choix d'Arthur et pièges :
+
+* **Cap des 5 ans** : date d'ouverture saisie dans les réglages du PEA
+  (`S.ouverture`). La tuile s'efface une fois l'avantage fiscal atteint.
+* **Rappel de pesée** : affiché tant que le mois n'a aucune pesée, comme le
+  relevé de patrimoine (choix d'Arthur, plutôt que « 7 jours sans pesée »).
+  Rien tant que le module Santé n'a jamais servi.
+* **Prochaine mensualité** : échéancier théorique tiré de la configuration
+  (1re mensualité, durée, mensualité). Avant la 1re, « Première mensualité »
+  avec le délai. Les remboursements restent saisis à la main.
+* **Cumul de l'année (sport)** : comparé à l'an dernier *à la même date*, et
+  jamais à une période d'avant le suivi. Les barres commencent au mois de la
+  première séance : un mois d'avant n'était pas « zéro sport ».
+* **Marchés du jour** : CAC 40 `^FCHI`, S&P 500 `^GSPC`, Nasdaq `^IXIC` (le
+  Nasdaq demandé par Arthur en plus) et MSCI World `^990100-USD-STRD`, l'indice
+  lui-même (en dollars), pas un ETF. Ils ne sont demandés à Yahoo que si la
+  tuile est affichée (`dashMarchesTickers`, appelée par `fetchLocalCours`), et
+  tout de suite quand on l'ajoute (`dashMarchesCharger`). Une séance qui n'est
+  pas celle du jour porte son jour (« ven. ») : New York ouvre à 15 h 30.
+  Les quatre lignes partagent une seule grille (`.dash-mkt` en
+  `display: contents`) : avec une grille par ligne, les chiffres ne
+  s'alignaient pas.
+* **Objectif de patrimoine** : montant et date facultative, saisis depuis la
+  tuile (`ov-dash-objectif`). Avec une date : ce qu'il reste ÷ les mois
+  restants, arrondi à l'euro supérieur.
+* **Pense-bête** (une seule tuile, choix d'Arthur) : les trois notes les plus
+  proches (dépassées en tête, en rouge), « + N autres », une coche pour
+  « c'est fait ». La fenêtre `ov-dash-notes` sert à écrire, modifier,
+  supprimer et remettre à faire. Les notes vivent dans `S.uiPrefs`, donc dans
+  `pea_data.json` et ses sauvegardes, sans module Python à part.
+  **Écritures en file** (`dashSauverPrefs`, `_dashPrefsChaine`) : cinq notes
+  ajoutées coup sur coup partaient en même temps et la 4e écrasait la 5e (vu au
+  banc d'essai). Jamais d'écriture avant la lecture réussie du PEA
+  (`_hydrationDone`).
+
+Mécanique ajoutée à `dashCardHtml` / `dashRender` : `val: null` = pas de grand
+chiffre (pense-bête, marchés) ; `vizCls: "dash-viz-haut"` = la liste juste
+sous le titre au lieu du bas de la tuile ; `ready()` sur un widget remplace
+`dashModuleReady` (squelette des marchés pendant leur chargement). La fenêtre
+« Ajouter une tuile » range les tuiles sous un titre par module, dans l'ordre
+de `DASH_WIDGETS`. `dashDeMois()` écrit « d'octobre », « de novembre » :
+la tuile des dépenses disait « Dépenses de octobre ».
+
 ### Tuiles des CTO (4.4.0)
 
 Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de
