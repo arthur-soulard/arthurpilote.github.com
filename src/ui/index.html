@@ -2226,7 +2226,12 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .expo-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--txt2); margin-top: 12px; }
 .expo-leg span, .expo-det span { display: inline-flex; align-items: center; gap: 6px; }
 .expo-pt { width: 9px; height: 9px; border-radius: 3px; flex: none; display: inline-block; }
-.expo-alerte { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--a); }
+.expo-alerte { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--a); flex-wrap: wrap; }
+.expo-alerte > span { flex: 1 1 280px; }
+.pos-compo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--txt2); }
+.pos-compo > span { flex: 1 1 220px; }
+.pos-compo .ok { color: var(--g); }
+.pos-compo .ko { color: var(--a); }
 .expo-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
 @media (max-width: 1080px) { .expo-duo { grid-template-columns: 1fr; } }
 .expo-row {
@@ -4401,6 +4406,15 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <select id="f-type"><option value="action">Action</option><option value="etf">ETF</option></select>
       </div>
       <div class="fg"><label>Date d'achat</label><input id="f-date" type="date"></div>
+    </div>
+    <!-- Ajout d'un ETF : Pilote connaît-il sa composition ? (posCompoMaj) -->
+    <div class="fg" id="f-compo" style="display:none">
+      <label>Composition de l'ETF</label>
+      <div class="pos-compo">
+        <span id="f-compo-txt"></span>
+        <button type="button" class="btn btn-sm btn-ghost" id="f-compo-chercher" onclick="posCompoChercher()"><i class="ph ph-magnifying-glass"></i> Chercher l'ETF</button>
+        <button type="button" class="btn btn-sm btn-ghost" id="f-compo-je" onclick="posCompoJustetf()"><i class="ph ph-arrow-square-out"></i> Ouvrir justETF</button>
+      </div>
     </div>
     <div class="fg-row">
       <div class="fg"><label>Secteur d'activité</label>
@@ -7138,7 +7152,8 @@ function renderTx() {
 /* ─── Expositions : pays, secteurs et entreprises ───
    Chaque ETF est décomposé selon l'INDICE qu'il suit (src/expositions.py : données
    livrées avec l'app, remplacées ETF par ETF par le bouton « Mettre à jour les
-   données »). Une action compte pour son pays de cotation et son secteur. Une
+   données »). Un ETF que Pilote ne suit pas est cherché sur internet
+   (expoChercherInconnus). Une action compte pour son pays de cotation et son secteur. Une
    correction à la main (« Modifier la composition ») vit dans
    S.uiPrefs.expoPerso[ticker] et l'emporte sur tout le reste.
    Base : les titres détenus, hors espèces (même base que la répartition de la vue
@@ -7251,9 +7266,12 @@ const EXPO_MEME_INDICE = {
   IE00B53SZB19: "PNAS", CNDX: "PNAS", SXRV: "PNAS", CSNDX: "PNAS",
   LU0908500753: "ETZ",  MEUD: "ETZ",
 };
+/* « _mp » : or, argent… (ETC), sans pays ni secteur : une ligne à part */
+const EXPO_NOM_MP = "Or et matières premières";
 function expoNomPays(code) {
   if (code === "_nd") return "Non détaillé";
   if (code === "_inconnu") return "Composition inconnue";
+  if (code === "_mp") return EXPO_NOM_MP;
   return EXPO_PAYS[code] ? EXPO_PAYS[code][0] : code;
 }
 /* Drapeau d'un pays (code ISO à deux lettres) : l'emoji drapeau, que la police
@@ -7263,13 +7281,19 @@ function expoDrapeau(code) {
   const emoji = String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
   return `<span class="expo-drap" aria-hidden="true">${emoji}</span>`;
 }
+/* Lignes rangées en bas de liste : ce qui n'est pas connu. L'or, lui, se range
+   selon son poids (16 % en bas d'une liste de 40 pays passait inaperçu). */
+function expoEnBas(code) {
+  return code === "_nd" || code === "_inconnu";
+}
 function expoZone(code) {
-  if (code === "_nd" || code === "_inconnu") return code;
+  if (code === "_nd" || code === "_inconnu" || code === "_mp") return code;
   return EXPO_PAYS[code] ? EXPO_PAYS[code][1] : "autres";
 }
 function expoNomSect(id, court) {
   if (id === "_nd") return "Non détaillé";
   if (id === "_inconnu") return "Composition inconnue";
+  if (id === "_mp") return EXPO_NOM_MP;
   const s = EXPO_SECT[id];
   return s ? s[court ? 1 : 0] : id;
 }
@@ -7377,7 +7401,7 @@ function expoCalcul() {
     });
   });
   const trie = map => Object.values(map).sort((a, b) =>
-    (a.cle.startsWith("_") - b.cle.startsWith("_")) || (b.pct - a.pct));
+    (expoEnBas(a.cle) - expoEnBas(b.cle)) || (b.pct - a.pct));
   const entreprises = Object.values(ents).sort((a, b) => b.pct - a.pct);
   return {
     lignes, total, inconnus,
@@ -7451,6 +7475,71 @@ function expoCharger(force) {
   return _expoChargement;
 }
 
+/* ETF dont Pilote n'a pas la composition (ajouté à la main, importé d'un CTO) :
+   Python la cherche sur internet (expositions.chercher : ISIN, indice d'après
+   justETF, puis la meilleure source) et la garde dans etf_compositions.json,
+   d'où elle sert ensuite hors ligne. Une tentative par ETF et par lancement. */
+const _expoRecherche = {};     // clé -> {enCours} | {ok} | {erreur, isin}
+function expoPeutChercher() {
+  const api = window.pywebview && window.pywebview.api;
+  return !!(api && api.expositions_chercher);
+}
+/* Une recherche (EXPO déjà chargé). annoncer : un message à la fin, pour un
+   ETF qu'on vient d'ajouter sans ouvrir l'onglet. */
+function expoChercher(cle, isin, annoncer) {
+  _expoRecherche[cle] = { enCours: true };
+  return window.pywebview.api.expositions_chercher(cle, isin || "").then(r => {
+    if (r && r.ok && r.composition) {
+      EXPO.etfs[cle] = r.composition;
+      _expoRecherche[cle] = { ok: true };
+      if (annoncer) showToastModern(`Composition de ${cle} trouvée${r.composition.indice ? " : indice " + r.composition.indice : ""}`, "ok");
+    } else {
+      _expoRecherche[cle] = { erreur: (r && r.error) || "composition introuvable", isin: (r && r.isin) || isin || "" };
+      if (annoncer) showToastModern(`Composition de ${cle} introuvable : Expositions propose d'ouvrir sa fiche justETF`, "warn");
+    }
+  }).catch(e => {
+    _expoRecherche[cle] = { erreur: String((e && e.message) || e), isin: isin || "" };
+  }).finally(() => {
+    if (document.getElementById("pane-sector")?.classList.contains("active")) expoRender();
+    if (document.getElementById("ov-pos")?.classList.contains("open")) posCompoMaj();
+  });
+}
+function expoChercherInconnus(annoncer) {
+  if (!expoPeutChercher()) return;
+  if (!EXPO) { expoCharger().then(() => { if (EXPO) expoChercherInconnus(annoncer); }); return; }
+  if (EXPO.erreur) return;     // compositions illisibles : tout paraîtrait inconnu
+  (S.positions || []).forEach(p => {
+    const cle = expoCle(p.ticker);
+    if (p.type !== "etf" || _expoRecherche[cle] || expoCompo(p)) return;
+    expoChercher(cle, p.isin, annoncer);
+  });
+}
+/* « Chercher à nouveau » (après un échec : pas de connexion, site muet…) */
+function expoRelancer(id) {
+  const p = (S.positions || []).find(x => x.id === id);
+  if (!p || !expoPeutChercher() || !EXPO) return;
+  const cle = expoCle(p.ticker);
+  expoChercher(cle, p.isin || (_expoRecherche[cle] || {}).isin);
+  expoRender();
+}
+/* Quand Pilote ne trouve pas : la fiche justETF de l'ETF (par son ISIN), sinon
+   la recherche de justETF sur son ticker, dans le navigateur de l'utilisateur.
+   On y recopie pays et secteurs dans « Renseigner la composition ». */
+function expoJustetfPos(id) {
+  const p = (S.positions || []).find(x => x.id === id);
+  if (p) expoOuvrirJustetf(expoCle(p.ticker), p.isin, p.name);
+}
+function expoOuvrirJustetf(cle, isin, nom) {
+  const p = (S.positions || []).find(x => expoCle(x.ticker) === cle);
+  isin = isin || (p && p.isin) || (_expoRecherche[cle] || {}).isin || "";
+  const url = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)
+    ? "https://www.justetf.com/fr/etf-profile.html?isin=" + isin
+    : "https://www.justetf.com/fr/search.html?search=ETFS&query=" + encodeURIComponent(cle || nom || "");
+  const api = window.pywebview && window.pywebview.api;
+  if (api && api.open_url) api.open_url(url);
+  else window.open(url, "_blank", "noopener");
+}
+
 /* Point d'entrée de l'onglet (goTab("sector"), persist(), fenêtres Position) */
 function renderSectors() {
   expoRenderBouton();
@@ -7467,6 +7556,7 @@ function renderSectors() {
 
 function expoRender() {
   if (!document.getElementById("expo-resume")) return;
+  expoChercherInconnus();      // avant le calcul : « Recherche… » plutôt que « inconnue »
   expoRenderBouton();
   const calc = expoCalcul();
   const vide = '<div class="m-empty">Aucune position : ajoute des titres dans <a href="#" onclick="goTab(\'pos\');return false">Positions</a> pour voir leur exposition.</div>';
@@ -7500,9 +7590,21 @@ function expoRenderResume(calc) {
     h += `<div class="expo-leg">${calc.lignes.map(l =>
       `<span><i class="expo-pt" style="background:${l.couleur}"></i>${escHtml(l.cle)} · ${expoPct(l.poids)}</span>`).join("")}</div>`;
   }
-  if (calc.inconnus.length) {
+  const enRecherche = calc.inconnus.filter(l => (_expoRecherche[l.cle] || {}).enCours);
+  const inconnus = calc.inconnus.filter(l => !enRecherche.includes(l));
+  if (enRecherche.length) {
+    h += `<div class="expo-alerte"><i class="ph ph-magnifying-glass"></i>
+      Recherche de la composition de ${enRecherche.map(l => escHtml(l.cle)).join(", ")} sur internet…</div>`;
+  }
+  if (inconnus.length && expoPeutChercher()) {
+    // Pilote a cherché sans trouver : la fiche justETF, à recopier à la main
     h += `<div class="expo-alerte"><i class="ph ph-warning-circle"></i>
-      Composition inconnue pour ${calc.inconnus.map(l => escHtml(l.cle)).join(", ")} :
+      <span>Pilote n'a pas trouvé la composition de ${inconnus.map(l => escHtml(l.cle)).join(", ")} :
+      ouvre ${inconnus.length > 1 ? "leur" : "sa"} fiche justETF, puis recopie-la avec « Renseigner la composition », en bas de l'onglet.</span>
+      ${inconnus.map(l => `<button class="btn btn-sm btn-ghost" onclick="expoJustetfPos(${Number(l.p.id)})"><i class="ph ph-arrow-square-out"></i> ${escHtml(l.cle)} sur justETF</button>`).join("")}</div>`;
+  } else if (inconnus.length) {
+    h += `<div class="expo-alerte"><i class="ph ph-warning-circle"></i>
+      Composition inconnue pour ${inconnus.map(l => escHtml(l.cle)).join(", ")} :
       renseigne-la dans « Détail par position », en bas de l'onglet.</div>`;
   }
   if (EXPO && EXPO.erreur) {
@@ -7521,7 +7623,7 @@ function expoRenderGeo(calc) {
     // (sinon « Pays émergents » disparaissait et semblait oublié)
     const zones = calc.zones.slice();
     Object.keys(EXPO_ZONES).forEach(z => { if (!zones.some(x => x.cle === z)) zones.push({ cle: z, pct: 0, par: [] }); });
-    zones.sort((a, b) => (a.cle.startsWith("_") - b.cle.startsWith("_")) || (b.pct - a.pct));
+    zones.sort((a, b) => (expoEnBas(a.cle) - expoEnBas(b.cle)) || (b.pct - a.pct));
     h = zones.map(z => expoRowHtml(Object.assign({}, z,
       { nom: EXPO_ZONES[z.cle] || expoNomPays(z.cle) }), calc)).join("");
     h += `<p class="expo-note">Zones au sens de MSCI : la Corée du Sud, Taïwan, la Pologne ou la Grèce comptent parmi les pays émergents.</p>`;
@@ -7541,7 +7643,7 @@ function expoRenderGeo(calc) {
 function expoRenderSect(calc) {
   const autres = calc.secteurs.find(x => x.cle === "autres");
   document.getElementById("expo-sect").innerHTML = calc.secteurs.map(x =>
-    expoRowHtml(Object.assign({}, x, { nom: expoNomSect(x.cle), ico: EXPO_SECT[x.cle] ? EXPO_SECT[x.cle][2] : "" }), calc)
+    expoRowHtml(Object.assign({}, x, { nom: expoNomSect(x.cle), ico: EXPO_SECT[x.cle] ? EXPO_SECT[x.cle][2] : x.cle === "_mp" ? "coins" : "" }), calc)
   ).join("") + `<p class="expo-note">Secteurs de la classification GICS, celle de MSCI, S&amp;P et des émetteurs.
     Une action détenue en direct prend le secteur choisi dans sa fiche Position.
     ${autres && autres.pct >= 0.1 ? "« Autres secteurs » : ce que la source ne détaille pas. Amundi y réunit ses deux plus petits secteurs, en général services aux collectivités et immobilier." : ""}</p>`;
@@ -7563,10 +7665,11 @@ function expoRenderEnt(calc) {
       ? '<i class="ph ph-caret-up"></i> Réduire'
       : `<i class="ph ph-caret-down"></i> Afficher les ${n} premières`}</button>`;
   }
-  const partiels = calc.lignes.filter(l => l.compo && l.compo.statut !== "action" && !l.compo.lignes).map(l => l.cle);
+  const partiels = calc.lignes.filter(l => l.compo && l.compo.statut !== "action" && !l.compo.lignes
+    && (l.compo.entreprises || []).length).map(l => l.cle);
   h += `<p class="expo-note">Les lignes connues couvrent ${expoPct(calc.couverture)} du portefeuille : au-delà,
     des centaines d'entreprises pèsent chacune trop peu pour être listées.
-    ${partiels.length ? `Pour ${partiels.map(escHtml).join(", ")}, l'émetteur ne publie que les 10 premières lignes de l'indice.` : ""}</p>`;
+    ${partiels.length ? `Pour ${partiels.map(escHtml).join(", ")}, seules les 10 premières lignes de l'indice sont publiées.` : ""}</p>`;
   document.getElementById("expo-ent").innerHTML = calc.entreprises.length ? h
     : '<div class="m-empty">Aucune entreprise connue pour ces positions.</div>';
 }
@@ -7577,7 +7680,12 @@ function expoRenderPos(calc) {
   document.getElementById("expo-pos").innerHTML = calc.lignes.map(l => {
     const c = l.compo, id = Number(l.p.id);
     let src, badge = "";
-    if (!c) {
+    const rech = _expoRecherche[l.cle] || {};
+    if (!c && rech.enCours) {
+      src = "Recherche de sa composition sur internet…";
+    } else if (!c && rech.erreur) {
+      src = `Pilote n'a pas trouvé sa composition (${escHtml(rech.erreur)}). Ouvre sa fiche justETF, puis recopie ses pays et secteurs avec « Renseigner la composition ».`;
+    } else if (!c) {
       src = "Composition inconnue : Pilote ne suit pas cet ETF. Renseigne-la d'après sa fiche justETF ou celle de l'émetteur.";
     } else if (c.statut === "action") {
       src = `Action : pays de cotation (${escHtml(expoNomPays(Object.keys(c.pays)[0]))}), secteur ${
@@ -7591,6 +7699,7 @@ function expoRenderPos(calc) {
       src = bits.join(" · ");
       badge = c.statut === "perso" ? '<span class="m-tag accent">Modifiée à la main</span>'
             : c.statut === "maj"   ? '<span class="m-tag">Mise à jour le ' + expoDate(c.releve) + '</span>'
+            : c.statut === "auto"  ? '<span class="m-tag">Trouvée sur internet le ' + expoDate(c.releve) + '</span>'
             : '<span class="m-tag">Livrée avec Pilote</span>';
     }
     const perso = c && c.statut === "perso";
@@ -7607,6 +7716,8 @@ function expoRenderPos(calc) {
         <div><b>Secteurs</b>${top(c.secteurs, k => expoNomSect(k, true)) || "—"}</div>
       </div>` : ""}
       <div class="expo-pos-acts">
+        ${!c && rech.erreur ? `<button class="btn btn-sm btn-ghost" onclick="expoJustetfPos(${id})"><i class="ph ph-arrow-square-out"></i> Ouvrir justETF</button>
+        <button class="btn btn-sm btn-ghost" onclick="expoRelancer(${id})"><i class="ph ph-magnifying-glass"></i> Chercher à nouveau</button>` : ""}
         <button class="btn btn-sm btn-ghost" onclick="expoOuvrirEdition(${id})"><i class="ph ph-pencil-simple"></i> ${c ? "Modifier la composition" : "Renseigner la composition"}</button>
         ${perso ? `<button class="btn btn-sm btn-ghost" onclick="expoAnnulerPerso(${id})"><i class="ph ph-arrow-counter-clockwise"></i> Revenir aux données ${l.p.type === "etf" ? "de l'ETF" : "automatiques"}</button>` : ""}
       </div>
@@ -7729,6 +7840,7 @@ function expoEdLire(genre) {
       v[3].split("|").filter(Boolean).forEach(a => { index[expoNorm(a)] = sid; });
     });
   }
+  if (index) { index[expoNorm(EXPO_NOM_MP)] = "_mp"; index.or = "_mp"; }
   document.getElementById(id).value.split("\n").forEach((brut, i) => {
     const ligne = brut.trim();
     if (!ligne) return;
@@ -9019,6 +9131,7 @@ function _wireTickerSearch(opts) {
         tkEl.value   = yahooToGoogle(item.dataset.sym);
         if (typeEl && /etf|fund/i.test(item.dataset.type)) typeEl.value = "etf";
         closeSuggest();
+        if (opts.apresChoix) opts.apresChoix();
       };
     });
     sug.style.display = "block";
@@ -9074,8 +9187,66 @@ function openAddPos() {
     const el=document.getElementById(id);
     if(el){ el.oninput=updatePosRecap; }
   });
-  _wireTickerSearch();
+  _wireTickerSearch({ apresChoix: posCompoMaj });
+  _posCompoAjout = true;
+  document.getElementById("f-type").onchange = posCompoMaj;
+  document.getElementById("f-ticker").oninput = posCompoMaj;
+  posCompoMaj();
   document.getElementById("ov-pos").classList.add("open");
+}
+
+/* ─── « Ajouter une position » : composition d'un ETF ───
+   Pour un ETF, Pilote dit s'il connaît sa composition. Sinon « Chercher
+   l'ETF » la cherche sur internet (expoChercher : justETF, puis la meilleure
+   source), et « Ouvrir justETF » mène à sa fiche quand il ne la trouve pas.
+   Rien n'empêche d'enregistrer sans : la recherche repart à l'enregistrement. */
+let _posCompoAjout = false;    // fenêtre ouverte pour un ajout, pas « Modifier la position »
+function _posCompoTicker() {
+  return normalizeTicker(document.getElementById("f-ticker").value || "");
+}
+function posCompoMaj() {
+  const bloc = document.getElementById("f-compo");
+  if (!bloc) return;
+  const ticker = _posCompoTicker(), cle = expoCle(ticker);
+  if (!_posCompoAjout || document.getElementById("f-type").value !== "etf" || !cle || !expoPeutChercher()) {
+    bloc.style.display = "none";
+    return;
+  }
+  bloc.style.display = "";
+  const txt = document.getElementById("f-compo-txt");
+  const bChercher = document.getElementById("f-compo-chercher"), bJustetf = document.getElementById("f-compo-je");
+  bChercher.style.display = bJustetf.style.display = "none";
+  bChercher.innerHTML = `<i class="ph ph-magnifying-glass"></i> ${(_expoRecherche[cle] || {}).erreur ? "Chercher à nouveau" : "Chercher l'ETF"}`;
+  if (!EXPO) {
+    txt.textContent = "Lecture des compositions connues…";
+    expoCharger().then(posCompoMaj);
+    return;
+  }
+  const c = expoCompo({ ticker, type: "etf", isin: "" });
+  const r = _expoRecherche[cle] || {};
+  if (c) {
+    txt.innerHTML = `<span class="ok"><i class="ph ph-check-circle"></i> ${r.ok ? "Trouvée sur internet" : "Connue de Pilote"}</span>`
+      + (c.indice ? ` : indice ${escHtml(c.indice)}` : "");
+  } else if (r.enCours) {
+    txt.textContent = `Recherche de ${cle} sur justETF et chez les émetteurs…`;
+  } else if (r.erreur) {
+    txt.innerHTML = `<span class="ko"><i class="ph ph-warning-circle"></i> Introuvable</span> (${escHtml(r.erreur)}).
+      Ouvre sa fiche justETF : tu pourras recopier sa composition dans l'onglet Expositions.`;
+    bChercher.style.display = bJustetf.style.display = "";
+  } else {
+    txt.textContent = "Pilote ne connaît pas encore cet ETF.";
+    bChercher.style.display = "";
+  }
+}
+function posCompoChercher() {
+  const cle = expoCle(_posCompoTicker());
+  if (!cle || !EXPO || !expoPeutChercher()) return;
+  expoChercher(cle, "");
+  posCompoMaj();
+}
+function posCompoJustetf() {
+  const cle = expoCle(_posCompoTicker());
+  if (cle) expoOuvrirJustetf(cle, (_expoRecherche[cle] || {}).isin, document.getElementById("f-name").value.trim());
 }
 
 function updatePosRecap() {
@@ -9155,6 +9326,7 @@ function savePos() {
   renderTx();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
   if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
+  expoChercherInconnus(true);   // un nouvel ETF : sa composition, prête quand on ouvrira Expositions
   // Actualiser les cours immédiatement pour la nouvelle position
   applyCoursData();
   // Et sa courbe 30j, son PER, son rendement : sans ça, ils n'apparaissaient
@@ -9182,6 +9354,8 @@ function editPos(id) {
   });
   document.getElementById("pos-recap").style.display="none";
   document.querySelector("#ov-pos h2").textContent = "Modifier la position";
+  _posCompoAjout = false;
+  posCompoMaj();
   const btn = document.querySelector("#ov-pos .btn-primary");
   btn.textContent = "Mettre à jour";
   btn.onclick = ()=>saveEditPos(id);
@@ -12507,6 +12681,7 @@ function pacSaisir(i) {
   document.getElementById("f-frais").value  = od.gratuit ? 0 : pacR2(od.frais);
   document.querySelector("#ov-pos h2").textContent = "Saisir l'achat de " + od.label;
   updatePosRecap();
+  posCompoMaj();
   showToastModern("Corrige le cours et les frais réels de l'avis d'opéré avant d'enregistrer", "info");
 }
 
@@ -21239,6 +21414,7 @@ function ctoImportValider() {
   renderAll();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
   if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
+  expoChercherInconnus();
   applyCoursData();
   fetchSparklines();
   fetchKeystats();
