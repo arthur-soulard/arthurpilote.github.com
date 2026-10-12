@@ -2,6 +2,14 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.12",
+      "date": "2026-10-12",
+      "titre": "Un accueil plus léger",
+      "ameliore": [
+        "Accueil : les boutons Exporter et Importer quittent le haut de la page. Ils restent dans Paramètres → Données & application, et les raccourcis Ctrl+E et Ctrl+I (⌘E et ⌘I sur Mac) marchent toujours."
+      ]
+    },
+    {
       "version": "4.4.11",
       "date": "2026-10-12",
       "titre": "La performance de chaque CTO sur l'accueil",
