@@ -1,0 +1,14 @@
+# Écrans photographiés par le test Mac (build-mac.yml, job « ecrans-mac »),
+# sur les données d'exemple de tests/donnees_exemple.py.
+#
+# À METTRE À JOUR À CHAQUE FONCTIONNALITÉ : les écrans qu'elle change.
+# Une ligne par capture : l'onglet (id de goTab, sans « pane- »), puis, si
+# besoin, de combien de pixels faire défiler la page. La fenêtre du test
+# fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
+# passent en 45 annotations au plus).
+#
+# 12/10/2026, 4.4.9 : les 25 nouvelles tuiles de l'accueil. Décalages calés
+# sur le haut des rangées de tuiles (2e rangée à 602 px, 4e à 1153 px).
+home
+home 560
+home 1110
