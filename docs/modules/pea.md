@@ -151,6 +151,18 @@ Vérifié : LVMH ajoutée, PER 17,3 et 3,43 % affichés 0,3 s après.
 Même chose pour la mini-courbe **30j** d'une ligne ajoutée : `savePos` relance
 `fetchSparklines()` (affichée 0,8 s après l'ajout, au lieu de « — » pendant 3 min).
 
+## Positions : ordre des lignes au glisser (12/10/2026)
+
+Demande d'Arthur : ranger ses lignes « comme la barre latérale ». Chaque ligne du
+tableau se glisse (`_posBrancherGlisser`, branché une fois sur `#pos-body`) :
+elle prend sa place sous la souris, les autres coulissent en 160 ms, la ligne
+glissée est à demi transparente. Lâchée hors de la carte (ou Échap), elle revient.
+L'ordre est celui de `S.positions`, donc propre au compte affiché (PEA, chaque
+CTO) et enregistré avec lui (`persist`) ; Retour l'annule (`pushUndo`). Les
+listes de titres des fenêtres (transaction, dividende…) suivent le même ordre.
+Un rafraîchissement des cours pendant le glisser redessine le tableau : le
+glisser est alors abandonné, sans rien changer.
+
 ## Positions et Wishlist : formats des nombres (4.3.17)
 
 PER, rendement du dividende (`_renderPER`, `_renderYield`, via `_frNum`) et

@@ -283,6 +283,9 @@ thead th:first-child { text-align: left; padding-left: 2px; }
 tbody tr { border-bottom: 1px solid var(--brd); transition: background .1s; }
 tbody tr:last-child  { border-bottom: none; }
 tbody tr:hover       { background: var(--bg3); }
+/* Lignes des Positions : se déplacent en glissant (_posBrancherGlisser) */
+#pos-body tr[draggable] { cursor: grab; }
+#pos-body tr.pos-glisse { opacity: .4; }
 td {
   padding: 11px 10px; text-align: right;
   font-family: var(--mono); vertical-align: middle; font-size: 12px;
@@ -5464,7 +5467,7 @@ function renderPositions() {
     const rV = (tv>0 && e.val!=null) ? e.val/tv*100 : null;
     const r  = rV!=null ? rV : rI;
     const aVenir = e.qty <= 0.0001 ? _achatAVenir(p) : "";
-    return `<tr>
+    return `<tr data-id="${p.id}" draggable="true">
       <td>
         <div class="tk">${p.name}</div>
         <div class="tk2">${p.ticker}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
@@ -5485,7 +5488,62 @@ function renderPositions() {
       <td>${ebtn("editPos",p.id)}${dbtn("delPos",p.id)}</td>
     </tr>`;
   }).join("");
+  _posBrancherGlisser(body);
   renderMetrics();
+}
+
+/* Glisser une ligne pour changer l'ordre des positions (12/10/2026), comme les
+   sections de la barre latérale : elle prend sa place sous la souris, les
+   autres coulissent ; lâchée hors du tableau (ou Échap), elle revient. L'ordre
+   est celui de S.positions, propre au compte affiché (PEA ou chaque CTO) ; les
+   listes de titres des fenêtres (transaction, dividende…) le suivent. */
+function _posBrancherGlisser(body) {
+  if (body._glisser) return;   // le tbody reste, seules ses lignes sont redessinées
+  body._glisser = true;
+  const zone = body.closest(".card") || body;   // lâcher sur l'en-tête compte aussi
+  let src = null, revenir = null;
+  body.addEventListener("dragstart", e => {
+    const tr = e.target.closest && e.target.closest("tr[data-id]");
+    if (!tr) return;
+    src = tr;
+    revenir = tr.nextElementSibling;
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", tr.dataset.id); } catch (err) {}
+    // Après le départ : toucher à la page pendant dragstart annule le glisser
+    setTimeout(() => { if (src) src.classList.add("pos-glisse"); }, 0);
+  });
+  zone.addEventListener("dragover", e => {
+    if (!src || !src.isConnected) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    // Positions de mise en page (offsetTop, relatif au tableau) : l'animation ne les fausse pas
+    const y = e.clientY - body.closest("table").getBoundingClientRect().top;
+    const ref = [...body.children].find(x => x !== src && y < x.offsetTop + x.offsetHeight / 2) || null;
+    if (ref === src.nextElementSibling) return;
+    const avant = new Map([...body.children].map(x => [x, x.offsetTop]));
+    body.insertBefore(src, ref);
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    [...body.children].forEach(x => {
+      const dy = avant.get(x) - x.offsetTop;
+      if (dy && x.animate) x.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }],
+                                     { duration: 160, easing: "ease-out" });
+    });
+  });
+  zone.addEventListener("drop", e => { if (src) e.preventDefault(); });
+  body.addEventListener("dragend", e => {
+    const tr = src;
+    src = null;
+    if (!tr) return;
+    tr.classList.remove("pos-glisse");
+    if (!tr.isConnected) return;   // tableau redessiné pendant le glisser (cours du jour)
+    if (e.dataTransfer.dropEffect === "none") { body.insertBefore(tr, revenir); return; }
+    const ordre = [...body.children].map(x => x.dataset.id);
+    if (ordre.join() === S.positions.map(p => String(p.id)).join()) return;
+    pushUndo();
+    const rang = p => { const i = ordre.indexOf(String(p.id)); return i < 0 ? ordre.length : i; };
+    S.positions = [...S.positions].sort((a, b) => rang(a) - rang(b));
+    persist();
+  });
 }
 
 /* ─── Performance + camemberts ─── */

@@ -2,6 +2,15 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.4",
+      "date": "2026-10-12",
+      "titre": "Tes lignes rangées dans l'ordre que tu veux",
+      "nouveau": [
+        "Onglet Positions, du PEA comme de chaque CTO : fais glisser une ligne pour la placer plus haut ou plus bas. Lâchée hors du tableau, elle revient à sa place, et Retour annule le déplacement.",
+        "Chaque compte garde son propre ordre. Les listes de titres des fenêtres (nouvelle transaction, dividende) le suivent."
+      ]
+    },
+    {
       "version": "4.4.3",
       "date": "2026-10-12",
       "titre": "Tes relevés de banque, lus directement par Pilote",
