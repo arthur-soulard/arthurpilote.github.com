@@ -6,9 +6,12 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 Six lots de questions avant d'écrire une ligne. Ses choix :
 
-* **Une section « CTO » à part** dans la barre latérale (le PEA ne bouge pas),
-  et **plusieurs CTO** par utilisateur, chacun avec son courtier, choisis par
-  une liste déroulante en haut des onglets (pas une section par CTO).
+* **Plusieurs CTO** par utilisateur, chacun avec son courtier. Au départ (4.4.0),
+  une seule section « CTO » et une liste déroulante en haut des onglets.
+  **Changé le 12/10/2026 (4.4.1), à sa demande** : « un module complet pour un
+  CTO », donc **une section par CTO** dans la barre latérale, à son nom
+  (« CTO » + nom du compte) ; en créer un agrandit la barre (« + » du titre
+  Bourse). La liste déroulante a disparu. Détail : `CLAUDE.md`, « Navigation ».
 * Son CTO : **Trade Republic**. ETF en euros, actions européennes, titres américains.
 * **Cours en euros** : Trade Republic exécute en euros sur des places
   européennes (LS Exchange, puis « Best Price » depuis la fin du paiement pour
@@ -51,7 +54,12 @@ divergent un jour). Ouvrir un onglet `cto-*` appelle `_cptBasculer(id)` :
 
 Tout autre onglet remet le PEA. `goTab` d'origine fait la bascule
 (`ctoAvantOnglet` : `cto-pos` → pane `pos`) ; `cto-dash@c2` ouvre un CTO précis
-(tuile d'accueil), `_navSectionOf` et `_setActiveSidebar` ignorent le `@…`.
+(onglets de sa section, tuile d'accueil). `_navSectionOf` ignore le `@…` ;
+`_setActiveSidebar` complète un onglet sans `@` par le CTO affiché.
+
+Créer, renommer ou supprimer un CTO rebâtit la barre latérale
+(`_reconstruireSidebar`), comme la lecture de `cto.json` au lancement : la
+barre est dessinée avant, avec la seule section « CTO ».
 
 ### Ce qu'il ne faut pas défaire
 
