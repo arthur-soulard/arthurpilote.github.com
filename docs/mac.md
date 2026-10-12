@@ -163,8 +163,9 @@ sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
 * **`python tests/lire_tests.py <sha> <dossier>`** relit les deux tests sans
   compte (étapes, annotations) et recolle `capture-mac.jpg` et `ecran-<n>.jpg`.
 * La fenêtre du Mac de GitHub fait 1024 × 681 : plus étroite que l'écran
-  d'Arthur (1366). Premier constat, sur la tuile Marchés : les noms d'indices
-  y sont coupés (« S&P 5… »).
+  d'Arthur (1366). Premiers constats (12/10/2026), corrigés aussitôt : noms
+  d'indices coupés sur la tuile Marchés (« S&P 5… »), libellés du Plafond du
+  PEA sur deux lignes. Le reste des tuiles rend sous WebKit comme sous Windows.
 
 ## Inventaire de ce qui reste propre à Windows
 
