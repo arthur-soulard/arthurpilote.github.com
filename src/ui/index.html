@@ -1918,6 +1918,29 @@ body { font-variant-numeric: tabular-nums; }
 .sb-sub .sb-item { padding: 6px 12px; font-size: 13px; font-weight: 400; }
 .sb-home { margin-bottom: 10px; }
 .sb-bottom { border-top-color: var(--brd); }
+/* Deux tas de sections, « Bourse » et « Vie perso » (4.4.1) : de simples
+   titres ; les sections se déplacent en glissant leur en-tête */
+.sb-grp {
+  display: flex; align-items: center; min-height: 22px; padding: 4px 5px 0 12px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--txt2); user-select: none;   /* --txt3 : 2,8:1 seulement en thème clair */
+}
+.sb-home:has(+ .sb-grp) { margin-bottom: 4px; }
+.sb-grp[data-grp="perso"] { margin-top: 6px; }
+.sb-grp.vide:not(:has(.sb-grp-add)) { display: none; }
+.sidebar.sb-tri .sb-grp.vide { display: flex; }
+.sb-grp-add {
+  margin-left: auto; width: 22px; height: 22px; border-radius: 999px; border: 0;
+  background: transparent; color: var(--txt2); cursor: pointer; font-size: 13px;
+  display: grid; place-items: center; transition: background .12s, color .12s;
+}
+.sb-grp-add:hover { background: var(--hover); color: var(--accent-text); }
+/* Le nom d'un CTO est libre : coupé d'un « … » s'il est trop long (son nom
+   entier au survol), et le point d'accent ne lui prend que l'espacement */
+.sb-sec-lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-sec-btn .sb-dot { margin-left: 0; }
+.sb-sec.sb-glisse { opacity: .4; }
+.sidebar.sb-tri .sb-sec-btn:hover { background: transparent; }
 
 /* — Barre du haut : un fil d'Ariane à la place d'un second « Pilote » — */
 .topbar {
@@ -2257,10 +2280,6 @@ body.cpt-cto .cto-bar {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   background: var(--bg2); border: 1px solid var(--brd); border-radius: var(--radl);
   padding: .55rem .8rem; margin-bottom: 14px;
-}
-.cto-bar select {
-  font: inherit; font-weight: 600; font-size: 14px; color: var(--txt); background: var(--bg3);
-  border: 1px solid var(--brd2); border-radius: var(--rad); padding: 6px 10px; max-width: 280px;
 }
 .cto-bar-courtier { font-size: 12px; color: var(--txt2); }
 .cto-bar-courtier b { color: var(--txt); font-weight: 600; }
@@ -9904,7 +9923,7 @@ async function _checkPinLock() {
    description, premier geste, onglet où le faire, tuiles de l'accueil */
 const NAV_MODULES = {
   "sec-pea": {
-    desc: "Positions, dividendes, performance comparée aux indices, simulateurs.",
+    desc: "Positions, dividendes, performance comparée aux indices, prochain achat.",
     pas:  "Saisis tes dépôts, puis tes positions : les cours suivent tout seuls.",
     tab: "dep", tuiles: ["pea"] },
   "sec-cto": {
@@ -9925,7 +9944,7 @@ const NAV_MODULES = {
     pas:  "Note ta première séance dans l'agenda : les heures se cumulent seules.",
     tab: "sp-agenda", tuiles: ["sport", "sport-goal"] },
   "sec-patri": {
-    desc: "Tous tes comptes relevés une fois par mois, valeur nette et son évolution.",
+    desc: "Tous tes comptes relevés une fois par mois, valeur nette, simulateurs de placement.",
     pas:  "Crée tes comptes (livret, assurance vie…), puis fais le relevé du mois.",
     tab: "pa-comptes", tuiles: ["patrimoine", "patri-rappel"] },
   "sec-sante": {
@@ -9970,6 +9989,8 @@ function _reconstruireSidebar() {
   if (old) old.remove();
   _injectSidebar();
   if (typeof acRenderBadge === "function") acRenderBadge();
+  // La pastille de l'utilisateur vit dans la barre : elle partait avec elle
+  if (typeof _renderUserPill === "function") _renderUserPill();
   const actif = document.querySelector(".pane.active");
   // L'onglet, pas le pane : un onglet CTO montre un pane du PEA (cto-pos → pane-pos)
   const id = document.body.dataset.activeTab || (actif ? actif.id.replace("pane-", "") : "home");
@@ -13200,11 +13221,11 @@ const NAV_SECTIONS = [
     { id: "wish",   label: "Wishlist"       },
     { id: "dep",    label: "Dépôts"         },
     { id: "strat",  label: "Stratégie"      },
-    { id: "sim",    label: "Simulateurs"    },
   ]},
-  // Comptes-titres (4.4.0) : les écrans du PEA, sur le CTO choisi en haut de
-  // page (bloc CTO, « Compte actif »). Pas de Dépôts : le CTO ne suit pas les
-  // espèces ; pas de Simulateurs : ils ne dépendent d'aucun compte.
+  // Comptes-titres (4.4.0) : les écrans du PEA, sur un CTO (bloc CTO,
+  // « Compte actif »). Pas de Dépôts : le CTO ne suit pas les espèces.
+  // La barre latérale montre une section par CTO (_navBlocs), onglets
+  // « cto-pos@c2 » ; sans CTO, cette section seule mène à l'écran de création.
   { id: "sec-cto", label: "CTO", children: [
     { id: "cto-dash",   label: "Vue d'ensemble" },
     { id: "cto-pos",    label: "Positions"      },
@@ -13233,6 +13254,8 @@ const NAV_SECTIONS = [
   { id: "sec-patri", label: "Patrimoine", children: [
     { id: "pa-vue",     label: "Vue d'ensemble" },
     { id: "pa-comptes", label: "Comptes"        },
+    // Dans le PEA jusqu'à la 4.4.0 : ils ne dépendent d'aucun compte
+    { id: "sim",        label: "Simulateurs"    },
   ]},
   { id: "sec-sante", label: "Santé", children: [
     { id: "sa-suivi",   label: "Suivi"     },
@@ -13287,25 +13310,94 @@ const CARD_ITEMS = [
   { id: "card-fin-year-top",     label: "Mes comptes · Top dépenses (année)" },
 ];
 
-/* Fil d'Ariane de la barre du haut : « Accueil », ou « PEA › Positions ». */
+/* Fil d'Ariane de la barre du haut : « Accueil », ou « PEA › Positions ».
+   Un CTO affiché y met le nom de sa section (« CTO TR › Positions »). */
 function _updateCrumb(id) {
   const el = document.getElementById("topbar-crumb");
   if (!el) return;
   const sec  = _navSectionOf(id);
-  const item = sec && sec.children.find(c => c.id === id);
+  const item = sec && sec.children.find(c => c.id === String(id).split("@")[0]);
+  const nom  = (sec && sec.id === "sec-cto" && _estCto()) ? ctoNomSection(ctoCompte(_compteActif)) : sec && sec.label;
   el.innerHTML = (sec && item)
-    ? `${escHtml(sec.label)} <i class="ph ph-caret-right"></i> <b>${escHtml(item.label)}</b>`
+    ? `${escHtml(nom)} <i class="ph ph-caret-right"></i> <b>${escHtml(item.label)}</b>`
     : (id === "home" ? "<b>Accueil</b>" : "");
 }
 
+/* ── Barre latérale : deux tas, une section par CTO, ordre libre (4.4.1) ──
+   La barre montre un bloc par section de NAV_SECTIONS, sauf la section CTO
+   qui en montre un par CTO, à son nom (onglets « cto-pos@c2 »). Deux titres,
+   « Bourse » et « Vie perso », sont de simples repères : chaque bloc se glisse
+   où l'on veut, d'un tas à l'autre. L'ordre est dans S.uiPrefs.navOrdre : les
+   clés des blocs (« sec-pea », « sec-cto@c2 »…) et « @perso », le second titre.
+   Un CTO absent de cet ordre (tout juste créé) se range après le dernier CTO ;
+   le premier CTO prend la place de la section CTO qui l'attendait, et celle-ci
+   revient à la place du dernier CTO supprimé. */
+const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-actus", "@perso",
+                          "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante"];
+
+/* Les blocs de la barre : {cle, sec, label, enfants: [{id, base, label}]} */
+function _navBlocs() {
+  const comptes = (typeof ctoComptes === "function") ? ctoComptes() : [];
+  const blocs = [];
+  NAV_SECTIONS.forEach(sec => {
+    if (sec.id === "sec-cto" && comptes.length) {
+      comptes.forEach(c => blocs.push({ cle: "sec-cto@" + c.id, sec, label: ctoNomSection(c),
+        enfants: sec.children.map(x => ({ id: x.id + "@" + c.id, base: x.id, label: x.label })) }));
+    } else {
+      blocs.push({ cle: sec.id, sec, label: sec.label,
+        enfants: sec.children.map(x => ({ id: x.id, base: x.id, label: x.label })) });
+    }
+  });
+  return blocs;
+}
+
+/* Les clés des blocs dans l'ordre de la barre, « @perso » compris */
+function _navOrdre(blocs) {
+  const cles  = blocs.map(b => b.cle);
+  const estCto = k => k.startsWith("sec-cto");
+  const enr   = S.uiPrefs && S.uiPrefs.navOrdre;
+  const base  = (Array.isArray(enr) && enr.includes("@perso")) ? enr : NAV_ORDRE_DEFAUT;
+  const out = [];
+  let ancre = -1;   // place du premier CTO disparu, ou de la section CTO d'avant le premier CTO
+  base.forEach(k => {
+    if (out.includes(k)) return;
+    if (k === "@perso" || cles.includes(k)) out.push(k);
+    else if (estCto(k) && ancre < 0) ancre = out.length;
+  });
+  // Restent : un CTO après le dernier CTO (sinon à l'ancre), une section
+  // après celle qui la précède dans l'ordre par défaut, sinon à la fin
+  cles.filter(k => !out.includes(k)).forEach(k => {
+    let i = -1;
+    if (estCto(k)) {
+      out.forEach((x, j) => { if (estCto(x)) i = j; });
+      if (i < 0 && ancre >= 0) { out.splice(ancre, 0, k); return; }
+    }
+    for (let d = NAV_ORDRE_DEFAUT.indexOf(estCto(k) ? "sec-cto" : k) - 1; i < 0 && d >= 0; d--)
+      i = out.indexOf(NAV_ORDRE_DEFAUT[d]);
+    out.splice(i < 0 ? out.length : i + 1, 0, k);
+  });
+  return out;
+}
+
+/* « cto-pos » → « cto-pos@c2 » : l'onglet dans la section du CTO affiché */
+function _ongletComplet(id) {
+  id = String(id || "");
+  if (!id.startsWith("cto-") || typeof ctoComptes !== "function" || !ctoComptes().length) return id;
+  const [base, cpt] = id.split("@");
+  if (cpt && ctoCompte(cpt)) return id;
+  const c = _estCto() ? _compteActif : ctoActifId();
+  return c ? base + "@" + c : base;
+}
+
 function _setActiveSidebar(id) {
-  id = String(id || "").split("@")[0];   // « cto-dash@c2 » → cto-dash
+  id = _ongletComplet(id);
   document.querySelectorAll(".sb-item[data-tab]").forEach(el => {
     el.classList.toggle("active", el.dataset.tab === id);
   });
   const sec = _navSectionOf(id);
+  const cle = sec && (sec.id === "sec-cto" && id.includes("@") ? "sec-cto@" + id.split("@")[1] : sec.id);
   document.querySelectorAll(".sb-sec").forEach(el => {
-    el.classList.toggle("has-active", !!(sec && el.dataset.sec === sec.id));
+    el.classList.toggle("has-active", !!cle && el.dataset.sec === cle);
   });
 }
 
@@ -13368,25 +13460,32 @@ const NAV_ICONS = {
 function _injectSidebar() {
   const hidden = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
   const openId = _navOuverte;           // au lancement : toutes repliees
+  const blocs  = _navBlocs();
+  // Le « + » ajoute un CTO, donc une section : pas de « + » si le module est décoché
+  const plus = _modulesVisibles().has("sec-cto")
+    ? `<button class="sb-grp-add" onclick="ctoOuvrirCompte(null)" title="Nouveau CTO" aria-label="Nouveau CTO"><i class="ph ph-plus"></i></button>` : "";
   let html = `<aside class="sidebar" id="app-sidebar">
-    <button class="sb-item sb-home" data-tab="home"><i class="ph ph-house sb-ico"></i><span>Accueil</span></button>`;
+    <button class="sb-item sb-home" data-tab="home"><i class="ph ph-house sb-ico"></i><span>Accueil</span></button>
+    <div class="sb-grp" data-grp="bourse"><span>Bourse</span>${plus}</div>`;
 
-  NAV_SECTIONS.forEach(sec => {
-    const kids = sec.children.filter(c => !hidden.includes(c.id));
+  _navOrdre(blocs).forEach(cle => {
+    if (cle === "@perso") { html += `<div class="sb-grp" data-grp="perso"><span>Vie perso</span></div>`; return; }
+    const b = blocs.find(x => x.cle === cle);
+    const kids = b.enfants.filter(c => !hidden.includes(c.base));
     if (!kids.length) return;
-    const isOpen = (sec.id === openId);
-    html += `<div class="sb-sec${isOpen ? " open" : ""}" data-sec="${sec.id}">
-      <button class="sb-sec-btn" data-sec-btn="${sec.id}">
-        <i class="ph ph-${NAV_ICONS[sec.id] || "circle"} sb-ico"></i>
-        <span>${escHtml(sec.label)}</span>
+    const isOpen = (cle === openId);
+    html += `<div class="sb-sec${isOpen ? " open" : ""}" data-sec="${escHtml(cle)}">
+      <button class="sb-sec-btn" data-sec-btn="${escHtml(cle)}" draggable="true">
+        <i class="ph ph-${NAV_ICONS[b.sec.id] || "circle"} sb-ico"></i>
+        <span class="sb-sec-lbl"${b.cle.includes("@") ? ` title="${escHtml(b.label)}"` : ""}>${escHtml(b.label)}</span>
         <i class="ph ph-caret-right sb-chev"></i>
         <span class="sb-dot"></span>
       </button>
       <div class="sb-sub">`;
     kids.forEach(it => {
-      html += `<button class="sb-item" data-tab="${it.id}">
+      html += `<button class="sb-item" data-tab="${escHtml(it.id)}">
                  <span>${it.label}</span>
-                 <span class="sb-eye-btn" data-hide="${it.id}" title="Masquer cet onglet"><i class="ph ph-eye-slash"></i></span>
+                 <span class="sb-eye-btn" data-hide="${it.base}" title="Masquer cet onglet"><i class="ph ph-eye-slash"></i></span>
                </button>`;
     });
     html += `</div></div>`;
@@ -13411,7 +13510,7 @@ function _injectSidebar() {
   document.querySelectorAll(".sb-item[data-tab]").forEach(el => {
     el.onclick = e => {
       if (e.target.closest(".sb-eye-btn")) {
-        _hideSidebarItem(el.dataset.tab);
+        _hideSidebarItem(el.dataset.tab.split("@")[0]);   // dans tous les CTO
         return;
       }
       goTab(el.dataset.tab);
@@ -13419,10 +13518,107 @@ function _injectSidebar() {
     };
   });
 
+  const side = document.getElementById("app-sidebar");
+  _navTitresVides(side);
+  _navBrancherGlisser(side);
+
   // Theme toggle
   const themeBtn = document.getElementById("sb-theme");
   themeBtn.onclick = toggleTheme;
   _refreshThemeLabel();
+}
+
+/* Un titre sans section sous lui se cache (sauf « Bourse » et son « + ») ;
+   il réapparaît pendant un glisser, pour qu'on puisse y déposer une section */
+function _navTitresVides(side) {
+  let titre = null;
+  [...side.children].forEach(x => {
+    if (x.matches(".sb-grp")) { titre = x; titre.classList.add("vide"); }
+    else if (titre && x.matches(".sb-sec")) titre.classList.remove("vide");
+  });
+}
+
+/* Glisser une section par son en-tête pour la déplacer : elle prend sa place
+   sous la souris, d'un tas à l'autre. Lâchée hors de la barre (ou Échap),
+   elle revient d'où elle venait. Un clic sans glisser ouvre la section. */
+function _navBrancherGlisser(side) {
+  let src = null, revenir = null, rouvrir = false;
+  const rangees = () => [...side.children].filter(x =>
+    x !== src && (x.matches(".sb-sec") || x.matches('.sb-grp[data-grp="perso"]')));
+  side.querySelectorAll(".sb-sec-btn[draggable]").forEach(btn => {
+    btn.addEventListener("dragstart", e => {
+      src = btn.closest(".sb-sec");
+      revenir = src.nextElementSibling;
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", src.dataset.sec); } catch (err) {}
+      // Après le départ : toucher à la page pendant dragstart annule le glisser
+      setTimeout(() => {
+        if (!src) return;
+        rouvrir = src.classList.contains("open");
+        src.classList.remove("open");      // repliée, elle se déplace sans tout bousculer
+        src.classList.add("sb-glisse");
+        side.classList.add("sb-tri");
+      }, 0);
+    });
+    btn.addEventListener("dragend", e => {
+      if (!src) return;
+      const annule = e.dataTransfer.dropEffect === "none";
+      if (annule) side.insertBefore(src, revenir);
+      src.classList.remove("sb-glisse");
+      if (rouvrir) src.classList.add("open");
+      side.classList.remove("sb-tri");
+      src = null;
+      _navTitresVides(side);
+      if (!annule) _navEnregistrerOrdre(side);
+    });
+  });
+  side.addEventListener("dragover", e => {
+    if (!src) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    // Positions de mise en page (offsetTop) : l'animation ne les fausse pas
+    const y = e.clientY - side.getBoundingClientRect().top + side.scrollTop;
+    const lignes = rangees();
+    const avant = lignes.find(x => {
+      const h = x.matches(".sb-sec") ? x.firstElementChild.offsetHeight : x.offsetHeight;
+      return y < x.offsetTop + h / 2;      // le milieu de l'en-tête
+    });
+    const ref = avant || (lignes.length ? lignes[lignes.length - 1].nextElementSibling : null);
+    if (!ref || ref === src || src.nextElementSibling === ref) return;
+    _navDeplacer(side, () => side.insertBefore(src, ref));
+  });
+  side.addEventListener("drop", e => { if (src) e.preventDefault(); });
+}
+
+/* Déplace (deplacer()) en faisant glisser les voisins jusqu'à leur nouvelle place */
+function _navDeplacer(side, deplacer) {
+  const els = [...side.querySelectorAll(":scope > .sb-sec, :scope > .sb-grp")];
+  const avant = new Map(els.map(x => [x, x.offsetTop]));
+  deplacer();
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  els.forEach(x => {
+    const dy = avant.get(x) - x.offsetTop;
+    if (dy && x.animate) x.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }],
+                                   { duration: 160, easing: "ease-out" });
+  });
+}
+
+/* Enregistre l'ordre affiché. Une section masquée (module décoché) reste
+   juste après celle qu'elle suivait : réaffichée, elle retrouve son voisin. */
+function _navEnregistrerOrdre(side) {
+  const vus = [...side.querySelectorAll(':scope > .sb-sec, :scope > .sb-grp[data-grp="perso"]')]
+    .map(x => x.dataset.sec || "@perso");
+  const suite = { "": [] };   // section affichée → sections masquées qui la suivent
+  let prec = "";
+  _navOrdre(_navBlocs()).forEach(k => {
+    if (vus.includes(k)) { prec = k; suite[k] = []; }
+    else suite[prec].push(k);
+  });
+  const ordre = [...suite[""]];
+  vus.forEach(k => ordre.push(k, ...(suite[k] || [])));
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.navOrdre = ordre;
+  _enregistrerUiPrefs();
 }
 
 function _hideSidebarItem(id) {
@@ -13433,12 +13629,12 @@ function _hideSidebarItem(id) {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs) {
     try { window.pywebview.api.save_ui_prefs(S.uiPrefs); } catch(e) {}
   }
-  // Retire visuellement de la sidebar sans rechargement
-  const el = document.querySelector(`.sb-item[data-tab="${id}"]`);
-  if (el) el.remove();
+  // Retire visuellement de la sidebar sans rechargement (un onglet de CTO :
+  // de la section de chaque CTO)
+  document.querySelectorAll(`.sb-item[data-tab="${id}"], .sb-item[data-tab^="${id}@"]`).forEach(el => el.remove());
   // Si cet onglet etait actif, basculer sur un voisin de la meme section
-  const activePane = document.querySelector(".pane.active");
-  if (activePane && activePane.id === "pane-" + id) {
+  // (l'onglet, pas le pane : cto-pos montre pane-pos)
+  if (document.body.dataset.activeTab === id) {
     const hid  = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
     const sec  = _navSectionOf(id);
     const next = (sec && sec.children.find(c => c.id !== id && !hid.includes(c.id)))
@@ -13446,9 +13642,10 @@ function _hideSidebarItem(id) {
               || { id: "pos" };
     goTab(next.id); _setActiveSidebar(next.id);
   }
-  // La section peut etre devenue vide
-  const secEl = document.querySelector(`.sb-sec[data-sec="${(_navSectionOf(id)||{}).id}"]`);
-  if (secEl && !secEl.querySelector(".sb-item[data-tab]")) secEl.remove();
+  // La section peut etre devenue vide (celles de tous les CTO à la fois)
+  document.querySelectorAll(".sb-sec").forEach(s => { if (!s.querySelector(".sb-item[data-tab]")) s.remove(); });
+  const side = document.getElementById("app-sidebar");
+  if (side) _navTitresVides(side);
   const label = SIDEBAR_ITEMS.find(x => x.id === id)?.label || id;
   if (typeof showToastModern === "function")
     showToastModern(`« ${label} » masqué — restaurable dans ⚙ Paramètres`, "info");
@@ -13461,11 +13658,8 @@ function _showSidebarItem(id) {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs) {
     try { window.pywebview.api.save_ui_prefs(S.uiPrefs); } catch(e) {}
   }
-  const old = document.getElementById("app-sidebar");
-  if (old) old.remove();
-  _injectSidebar();
-  const activePane = document.querySelector(".pane.active");
-  if (activePane) _setActiveSidebar(activePane.id.replace("pane-", ""));
+  // Marque l'onglet ouvert, pas le pane (un onglet CTO montre un pane du PEA)
+  _reconstruireSidebar();
 }
 
 /* ── Boutons œil sur les cartes ── */
@@ -19932,8 +20126,9 @@ async function acDeconnecter() {
 /* ══════════════════════════════════════════════════════════════════════════
    MODULE CTO (comptes-titres ordinaires, 4.4.0)
    Plusieurs CTO par utilisateur, chacun avec son courtier (cto.py, cto.json).
-   Aucun écran propre : la section CTO montre les écrans du PEA sur le CTO
-   choisi dans la barre du haut (« Compte actif », près de S). Ce bloc :
+   Aucun écran propre : chaque CTO a sa section dans la barre latérale
+   (4.4.1, _navBlocs), qui montre les écrans du PEA sur lui (« Compte actif »,
+   près de S). Ce bloc :
    * range et remet les données (_cptBasculer) quand on entre ou sort d'un
      onglet CTO, avec ses caches (historique Yahoo) ;
    * déduit les versements d'un CTO de ses ordres (ctoDepotsDeduits) : ses
@@ -19955,6 +20150,12 @@ window._ctoPv = {};           // dernier résumé de chaque CTO affiché
 function ctoApi() { return (window.pywebview && pywebview.api && pywebview.api.load_cto) ? pywebview.api : null; }
 function ctoComptes() { return (CTO && CTO.comptes) || []; }
 function ctoCompte(id) { return ctoComptes().find(c => c.id === id) || null; }
+/* Nom de la section d'un CTO dans la barre latérale : « CTO » suivi de son
+   nom, sauf s'il commence déjà par CTO (« CTO TR » reste « CTO TR ») */
+function ctoNomSection(c) {
+  const nom = String((c && c.nom) || "").trim();
+  return /^cto\b/i.test(nom) ? nom : "CTO " + nom;
+}
 /* Le CTO que montre la section : le dernier choisi, sinon le premier */
 function ctoActifId() {
   if (!CTO) return "";
@@ -19987,6 +20188,8 @@ async function ctoBootstrap() {
     CTO._nid = Object.assign({ compte: 1 }, CTO._nid || {});
     _ctoBootstrapped = true;   // la lecture a réussi : l'écriture est permise
     ctoSyncWidgets();
+    // Une section par CTO : la barre, dessinée avant cette lecture, n'en avait qu'une
+    if (ctoComptes().length && document.getElementById("app-sidebar")) _reconstruireSidebar();
   } catch (e) {
     console.warn("[cto] lecture KO:", e);
   }
@@ -20249,32 +20452,18 @@ function ctoRenderBarre() {
   const c = ctoCompte(_compteActif);
   if (!c) return;
   const k = courtierDe(c.courtier);
-  const opts = ctoComptes().map(x =>
-    `<option value="${escHtml(x.id)}"${x.id === c.id ? " selected" : ""}>${escHtml(x.nom)}</option>`).join("")
-    + `<option value="__nouveau">+ Nouveau CTO…</option>`;
   // Ordres dont les frais ne collent pas à la grille du courtier
   const ecarts = (S.transactions || []).filter(t => {
     const a = txFraisAttendus(t);
     return a != null && Math.abs((t.frais || 0) - a) >= 0.011;
   }).length;
-  bar.innerHTML = `<select aria-label="CTO affiché" onchange="ctoChoisir(this.value)">${opts}</select>
-    <span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
+  // Plus de liste des CTO ici (4.4.1) : chacun a sa section dans la barre latérale
+  bar.innerHTML = `<span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
     ${ecarts ? `<span class="cto-bar-alerte" title="Voir les ordres marqués dans Transactions"><i class="ph ph-warning"></i>
       ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</span>` : ""}
     <span class="cto-bar-sp"></span>
     ${c.courtier === "trade-republic" ? `<button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()"><i class="ph ph-file-csv"></i> Importer le relevé CSV</button>` : ""}
     <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirCompte('${escHtml(c.id)}')"><i class="ph ph-gear-six"></i> Réglages du compte</button>`;
-}
-
-/* Choix du CTO dans la barre : l'onglet ouvert se redessine sur lui */
-function ctoChoisir(id) {
-  if (id === "__nouveau") { ctoRenderBarre(); ctoOuvrirCompte(null); return; }
-  if (!ctoCompte(id) || id === _compteActif) return;
-  CTO.actif = id;
-  const onglet = document.body.dataset.activeTab || "cto-dash";
-  goTab(onglet);
-  _setActiveSidebar(onglet);
-  ctoPersist(false);
 }
 
 /* ── Créer, régler, supprimer un CTO ───────────────────────────────────── */
@@ -20310,6 +20499,7 @@ async function ctoEnregistrerCompte() {
   if (!nom) { showToastModern("Donne un nom au compte", "warn"); return; }
   const courtier = document.getElementById("cto-cpt-courtier").value;
   const k = courtierDe(courtier);
+  let cible = _ctoEdition;
   if (_ctoEdition) {
     const c = ctoCompte(_ctoEdition);
     if (!c) return;
@@ -20321,15 +20511,18 @@ async function ctoEnregistrerCompte() {
       id, nom, courtier, tarif: tarifCopie(k ? k.tarif : TARIF_VIDE), cree: todayISO(),
     }));
     CTO.actif = id;
+    cible = id;
+    _navOuverte = "sec-cto@" + id;   // sa nouvelle section, dépliée
   }
   closeOv("ov-cto-compte");
   ctoSyncWidgets();
   await ctoLignesPatrimoine();
-  // Nouveau compte (ou nouveau nom) : on l'affiche
+  // Nouveau compte (ou nouveau nom) : on l'affiche, et la barre latérale
+  // lui donne sa section (ou son nouveau nom)
   const onglet = (document.body.dataset.activeTab || "").startsWith("cto-") ? document.body.dataset.activeTab : "cto-pos";
   _ctoAEcrire();
-  goTab(onglet);
-  _setActiveSidebar(onglet);
+  goTab(onglet + "@" + cible);
+  _reconstruireSidebar();
   showToastModern(_ctoEdition ? "Compte enregistré" : "CTO créé : importe ton historique ou ajoute tes positions", "ok");
 }
 /* Écrit cto.json même si aucun CTO n'est affiché (création depuis l'écran vide) */
@@ -20361,7 +20554,7 @@ async function ctoSupprimerCompte() {
   ctoSyncWidgets();
   _ctoAEcrire();
   goTab("cto-dash");
-  _setActiveSidebar("cto-dash");
+  _reconstruireSidebar();   // sa section disparaît de la barre latérale
   showToastModern("CTO supprimé", "ok");
 }
 

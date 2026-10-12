@@ -83,3 +83,11 @@ de ses titres (`ctoValeurAuto` → `ctoResume`). Un mois passé n'est proposé q
 la courbe de ce CTO est chargée ; sinon la ligne reprend son dernier relevé. Un
 CTO supprimé masque sa ligne, sauf si elle a des relevés. Détail :
 `docs/modules/cto.md`.
+
+## Onglet Simulateurs (4.4.1)
+
+Projection de versements, objectifs et comparateur d'actifs (`pane-sim`,
+`_initSimulateurs`) : dans le PEA jusqu'à la 4.4.0, déplacés ici à la demande
+d'Arthur (12/10/2026). Ils ne lisent aucun compte ; leurs saisies restent dans
+`S.uiPrefs.simulators`, et l'onglet garde son id `sim` (onglet masqué, cartes
+`card-sim-*`). Le PEA est dans `S` quand ils s'ouvrent (onglet hors CTO).
