@@ -281,3 +281,25 @@ retenue par CTO (`S.uiPrefs.dashCtoRange`). Les deux tuiles passent par
   `dashPerfTuile` sur les cinq périodes.
 * Module CTO masqué : ses tuiles `cto:` et `cto-perf:` sont gardées dans la
   configuration (`dashSaveConfig`) et reviennent avec lui.
+
+**Performance de toute ma bourse** (`bourse-perf`, demandée par Arthur le
+12/10/2026) : le PEA et chaque CTO qui a des lignes, additionnés période par
+période, mêmes pastilles (`S.uiPrefs.dashBourseRange`). `dashBourseComptes`
+donne, pour chaque compte, ce que sa propre tuile calcule ; aucun chiffre
+n'est recalculé à part :
+
+* gain de la période = somme des gains de chaque compte ;
+* % = somme des gains ÷ somme des capitaux engagés de chaque compte, le
+  dénominateur de son propre % : `computePnl` renvoie pour cela `engage`
+  (versements nets en historique complet, valeur de départ + flux pondérés
+  sur une plage), `dashPeaDay` renvoie `avant` (valeur à la clôture
+  précédente), Max prend les versements (PEA) et l'investi net (CTO) ;
+* Max = `dashBourseMax`, que la tuile « Toute ma bourse » lit aussi (un seul
+  calcul de la plus-value totale) ;
+* mini-courbe : la plus-value de chaque compte (`dashPvPoints`) additionnée
+  date par date ; un compte sans cotation un jour garde sa dernière valeur.
+* Vérifié sur une copie des données d'Arthur : 1S −10,75 € (PEA) − 12,22 €
+  (CTO TR) = −22,97 € (−0,84 %, entre −0,58 % et −1,39 %) ; 1M +56,05 € ;
+  YTD +5,22 € ; Max −51,72 € (−1,77 %), comme « Toute ma bourse ».
+* Titre court sur la tuile (« Performance de ma bourse ») : le nom complet
+  passait sur deux lignes à 1024 px.
