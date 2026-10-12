@@ -77,7 +77,17 @@ plutôt qu'un logiciel de bureau.
   Calculs revérifiés à la main sur les vraies données, tous justes ; seule la
   définition différait. La bonne est titres + espèces : c'est la valeur à laquelle
   se mesure le rendement (valeur − versements) et celle d'un PEA pour la banque.
-  Le détail titres / espèces / investi reste sous le chiffre.
+  Le détail titres / espèces / prix de revient reste sous le chiffre.
+* **« Prix de revient des lignes », pas « Investi » (4.4.6).** La 3e ligne de la
+  carte Valeur (PEA et CTO, `ligneRevient`) est le coût des lignes détenues, frais
+  compris (somme des `computePos().inv`). Appelée « Investi » jusqu'en 4.4.5, elle
+  a été lue comme l'argent versé : … € sous un « Total déposé » de
+  … € avec … € d'espèces, l'écart (… €) étant le réalisé des lignes
+  vendues et les dividendes, réinvestis (12/10/2026, chiffres vrais au centime).
+  Le latent (titres − prix de revient) suit entre parenthèses, absent tant qu'un
+  cours manque. Montant et latent sont insécables : à 147 px (fenêtre de 1 280 px)
+  la ligne passe sur trois lignes propres. La colonne « Investi » des Positions
+  garde son nom : ligne par ligne, rien ne prête à confusion.
 * **Mini-graphiques des tuiles** : un widget peut renvoyer `viz` (HTML) dans
   `render()`. `dashSpark(valeurs, depuis)` (courbe SVG ; `depuis`, facultatif,
   estompe le trait avant cet indice), `dashProgress(pct, g, d)`,
