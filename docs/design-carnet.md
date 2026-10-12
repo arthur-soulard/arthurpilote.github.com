@@ -88,6 +88,12 @@ plutôt qu'un logiciel de bureau.
   cours manque. Montant et latent sont insécables : à 147 px (fenêtre de 1 280 px)
   la ligne passe sur trois lignes propres. La colonne « Investi » des Positions
   garde son nom : ligne par ligne, rien ne prête à confusion.
+* **PRU et cours au millième (4.4.7)**, demandés par Arthur : `eur3`
+  (3 décimales) pour le PRU et le cours dans les Positions (PEA et CTO), le
+  cours de chaque ordre dans Transactions et l'aperçu d'import, l'onglet PEA du
+  Prêt et le bilan annuel. Les ETF du PEA cotent au millième (7,297 €) :
+  6,9657 € s'affichait 6,97 €, et un ordre à 6,789 € se lisait 6,79 €, ce qui
+  cachait une erreur de saisie de 0,003 €. Les montants restent au centime (`eur`).
 * **Mini-graphiques des tuiles** : un widget peut renvoyer `viz` (HTML) dans
   `render()`. `dashSpark(valeurs, depuis)` (courbe SVG ; `depuis`, facultatif,
   estompe le trait avant cet indice), `dashProgress(pct, g, d)`,

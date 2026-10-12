@@ -2,6 +2,19 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.7",
+      "date": "2026-10-12",
+      "titre": "La composition de tous tes ETF, et les prix au millième",
+      "nouveau": [
+        "Expositions : un ETF que Pilote ne connaissait pas n'est plus « Composition inconnue ». Pilote cherche tout seul sur internet quel indice il suit (justETF), puis la composition de cet indice : pays, secteurs et principales entreprises. Ça vaut pour l'ETF que tu ajoutes comme pour ceux importés d'un relevé.",
+        "Ajouter une position : pour un ETF, Pilote dit s'il connaît sa composition, et le bouton « Chercher l'ETF » la cherche tout de suite. S'il ne la trouve pas, « Ouvrir justETF » ouvre sa fiche pour que tu la recopies avec « Renseigner la composition »."
+      ],
+      "ameliore": [
+        "L'or et les autres matières premières (ETC) ont leur propre ligne « Or et matières premières » dans Expositions, rangée selon son poids.",
+        "Le PRU et le cours s'affichent avec trois chiffres après la virgule (6,966 € au lieu de 6,97 €), comme la Bourse cote les ETF : tableau des Positions du PEA et des CTO, cours de chaque ordre dans Transactions, onglet PEA du Prêt et bilan annuel. Les montants restent au centime."
+      ]
+    },
+    {
       "version": "4.4.6",
       "date": "2026-10-12",
       "titre": "« Prix de revient » au lieu d'« Investi »",
