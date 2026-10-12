@@ -6181,6 +6181,7 @@ function computePnl(series, range) {
       return {
         pnlEur: Math.round((vEnd - netDeposits) * 100) / 100,
         pnlPct: Math.round((vEnd / netDeposits - 1) * 10000) / 100,
+        engage: netDeposits,
       };
     }
     /* Repli : aucun versement saisi → capital net deploye via les transactions */
@@ -6194,6 +6195,7 @@ function computePnl(series, range) {
     return {
       pnlEur: Math.round((vEnd - netCapital) * 100) / 100,
       pnlPct: Math.round((vEnd / netCapital - 1) * 10000) / 100,
+      engage: netCapital,
     };
   }
 
@@ -6222,7 +6224,9 @@ function computePnl(series, range) {
   const engage = vStart + windowDeps.reduce((s, d) => s + d.amount * (jour(endDate) - jour(d.date)) / duree, 0);
   if (!(duree > 0) || engage <= 0) return {pnlEur, pnlPct: null};
 
-  return {pnlEur, pnlPct: Math.round(pnlEur / engage * 10000) / 100};
+  // engage : le dénominateur du %, pour additionner plusieurs comptes
+  // (tuile « Performance de toute ma bourse »)
+  return {pnlEur, pnlPct: Math.round(pnlEur / engage * 10000) / 100, engage};
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -22036,22 +22040,21 @@ const DASH_WIDGETS = [
     // les chiffres de leurs vues d'ensemble, simplement additionnés
     id: "bourse-totale", label: "Toute ma bourse", module: "Bourse", tab: "dash",
     render() {
-      const pv = window._peaPv || {};
-      if (pv.total == null) return null;
-      const ctos = (typeof ctoComptes === "function" ? ctoComptes() : []).map(c => ctoResume(c.id)).filter(r => r && r.n);
-      let valeur = pv.total, gain = pv.eur, base = peaTotalVerse();
-      for (const r of ctos) {
-        if (r.valeur == null) return null;   // un cours manque : pas de total faux
-        valeur += r.valeur; base += r.investiNet;
-        gain = (gain == null || r.pv == null) ? null : gain + r.pv;
-      }
-      return { lbl: "Toute ma bourse", val: eur(Math.round(valeur * 100) / 100),
+      // dashBourseMax : null si un cours manque (pas de total faux)
+      const m = dashBourseMax();
+      if (!m) return null;
+      return { lbl: "Toute ma bourse", val: eur(Math.round(m.valeur * 100) / 100),
                // CTO pas lus (module masqué) : on ne sait pas s'il y en a
-               sub: ctos.length ? "PEA + " + ctos.length + " CTO" : _ctoBootstrapped ? "le PEA seul, aucun CTO" : "le PEA seul",
-               subHtml: gain != null ? `<b class="${gain >= 0 ? "c-g" : "c-r"}">${eur(Math.round(gain * 100) / 100, true)}</b>`
-                          + (base > 0 ? ` (${pct(gain / base * 100)})` : "") + " au total" : "",
+               sub: m.nCto ? "PEA + " + m.nCto + " CTO" : _ctoBootstrapped ? "le PEA seul, aucun CTO" : "le PEA seul",
+               subHtml: m.eur != null ? `<b class="${m.eur >= 0 ? "c-g" : "c-r"}">${eur(Math.round(m.eur * 100) / 100, true)}</b>`
+                          + (m.base > 0 ? ` (${pct(m.eur / m.base * 100)})` : "") + " au total" : "",
                go: "Voir le PEA" };
     },
+  },
+  {
+    // Le PEA et tous les CTO, mêmes périodes que la tuile du PEA : dashBoursePerf
+    id: "bourse-perf", label: "Performance de toute ma bourse", module: "Bourse", tab: "dash",
+    render() { return dashBoursePerf(); },
   },
   {
     id: "marches", label: "Marchés du jour", module: "Bourse", tab: null,
@@ -22715,7 +22718,7 @@ function dashPeaDay(total = (window._peaPv || {}).total) {
   const seance = new Date(t * 1000);
   const quand = seance.toDateString() === new Date().toDateString() ? "aujourd'hui"
     : "séance du " + seance.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
-  return { eur: Math.round(gain * 100) / 100, pct: avant > 0 ? gain / avant * 100 : null, quand };
+  return { eur: Math.round(gain * 100) / 100, pct: avant > 0 ? gain / avant * 100 : null, quand, avant };
 }
 
 function dashPeaPerf() {
@@ -22749,6 +22752,13 @@ function dashPerfTuile(o) {
     const d = o.calcul(o.jour);
     return d ? plein(d.eur, d.pct, d.quand) : vide("En attente des cours du jour");
   }
+  // Plusieurs comptes (toute ma bourse) : leurs résultats déjà additionnés
+  if (o.periode) {
+    const p = o.periode(r);
+    if (p === undefined) return vide("Chargement de l'historique…");
+    if (!p) return vide(r === "MAX" ? "En attente des cours" : "Pas encore assez d'historique");
+    return plein(p.eur, p.pct, p.quand, p.spark);
+  }
   const full = o.serie();
   if (r === "MAX") {
     const m = o.max();
@@ -22770,13 +22780,19 @@ function dashPerfTuile(o) {
     full : la série d'un CTO (dans dashAvecCto) ; par défaut celle du PEA. */
 function dashPeaSpark(kind, range, full = dashPeaSeries()) {
   if (!full) return "";
+  if (kind === "pv") return dashSpark(dashPvPoints(full, range).map(p => p.pv));
   let serie = filterByRange(full, range || "6M");
   if (!serie || serie.length < 2) serie = full;
-  if (kind === "pv") {
-    const dep = buildDepositSeries(serie.map(p => p.date));
-    return dashSpark(serie.map((p, i) => p.val - dep[i]));
-  }
   return dashSpark(serie.map(p => p.val));
+}
+
+/** Plus-value jour par jour (valeur − versements) sur six mois ou `range`,
+    pour le compte dans S : les points de la mini-courbe « pv ». */
+function dashPvPoints(full, range) {
+  let serie = filterByRange(full, range || "6M");
+  if (!serie || serie.length < 2) serie = full;
+  const dep = buildDepositSeries(serie.map(p => p.date));
+  return serie.map((p, i) => ({ date: p.date, pv: p.val - dep[i] }));
 }
 
 /* ── Tuile « Performance » d'un CTO (une par CTO, ctoSyncWidgets) ────────────
@@ -22854,6 +22870,118 @@ function dashCtoPerf(id) {
     max: () => res.pv == null ? null : { eur: res.pv, pct: res.pvPct, quand: "depuis le premier achat" },
     serie: () => dashCtoSerie(id),
     calcul: fn => dashAvecCto(id, fn),
+  });
+}
+
+/* ── Tuile « Performance de toute ma bourse » (demandée par Arthur, 12/10/2026)
+   Le PEA et chaque CTO qui a des lignes, additionnés période par période.
+   Chaque compte est calculé comme sa propre tuile (dashPeaDay, computePnl sur
+   sa série, _peaPv ou ctoResume pour Max) ; le % rapporte la somme des gains à
+   la somme de leurs capitaux engagés, le dénominateur de chacun (versements
+   pour Max, computePnl.engage pour une période, valeur de la veille pour
+   Jour). */
+
+/** Les comptes de la bourse : le PEA, puis les CTO qui ont des lignes. */
+function dashBourseComptes() {
+  const l = [{ calcul: fn => fn(), serie: dashPeaSeries, jour: () => dashPeaDay(),
+               max: () => { const pv = window._peaPv || {};
+                            return pv.total == null ? null : { eur: pv.eur, base: peaTotalVerse(), valeur: pv.total }; } }];
+  (typeof ctoComptes === "function" ? ctoComptes() : []).forEach(c => {
+    const res = ctoResume(c.id);
+    if (!res || !res.n) return;
+    l.push({ calcul: fn => dashAvecCto(c.id, fn), serie: () => dashCtoSerie(c.id),
+             jour: () => dashPeaDay(res.valeur),
+             max: () => res.valeur == null ? null : { eur: res.pv, base: res.investiNet, valeur: res.valeur } });
+  });
+  return l;
+}
+
+/** Valeur et plus-value de toute la bourse depuis le début (null tant qu'un
+    cours manque) : la tuile « Toute ma bourse » et la période Max. */
+function dashBourseMax() {
+  const l = dashBourseComptes(), out = { valeur: 0, eur: 0, base: 0, nCto: l.length - 1 };
+  for (const c of l) {
+    const m = c.max();
+    if (!m || m.valeur == null) return null;
+    out.valeur += m.valeur;
+    out.eur = (out.eur == null || m.eur == null) ? null : out.eur + m.eur;
+    out.base += m.base || 0;
+  }
+  return out;
+}
+
+/** Mini-courbe de la plus-value additionnée : chaque compte suit ses propres
+    jours de cotation ; un compte sans point à une date garde sa dernière
+    valeur (la première avant son début), pour ne pas créer de marche. */
+function dashBourseSpark(points) {
+  const dates = [...new Set(points.flatMap(l => l.map(p => p.date)))].sort();
+  if (dates.length < 2) return "";
+  const idx = points.map(() => 0);
+  return dashSpark(dates.map(d => points.reduce((s, l, k) => {
+    while (idx[k] + 1 < l.length && l[idx[k] + 1].date <= d) idx[k]++;
+    return s + (l.length ? l[idx[k]].pv : 0);
+  }, 0)));
+}
+
+/** Une période (1W, 1M, YTD ou MAX) pour toute la bourse : undefined tant
+    qu'une série charge, null sans rien à montrer. */
+function dashBoursePeriode(r) {
+  const comptes = dashBourseComptes();
+  const series = comptes.map(c => c.serie());
+  const charge = series.some(s => s === undefined);
+  const spark = range => charge ? "" : dashBourseSpark(comptes.map((c, k) =>
+    series[k] ? c.calcul(() => dashPvPoints(series[k], range)) || [] : []));
+  if (r === "MAX") {
+    const m = dashBourseMax();
+    if (!m || m.eur == null) return null;
+    return { eur: Math.round(m.eur * 100) / 100, pct: m.base > 0 ? m.eur / m.base * 100 : null,
+             quand: "depuis le début", spark: spark() };
+  }
+  if (charge) return undefined;
+  let eurT = 0, engage = 0, n = 0;
+  comptes.forEach((c, k) => {
+    const res = series[k] ? c.calcul(() => {
+      const s = filterByRange(series[k], r);
+      return (s && s.length >= 2) ? computePnl(s, r) : null;
+    }) : null;
+    if (!res || res.pnlEur == null) return;
+    eurT += res.pnlEur; engage += res.engage || 0; n++;
+  });
+  if (!n) return null;
+  return { eur: Math.round(eurT * 100) / 100, pct: engage > 0 ? eurT / engage * 100 : null,
+           quand: r === "1W" ? "sur 7 jours" : r === "1M" ? "sur 1 mois" : "depuis le 1ᵉʳ janvier",
+           spark: spark(r) };
+}
+
+/** Jour : la variation de chaque compte depuis la clôture précédente. */
+function dashBourseJour() {
+  let eurT = 0, avant = 0, quand = null;
+  for (const c of dashBourseComptes()) {
+    const d = c.calcul(c.jour);
+    if (!d) return null;        // un cours du jour manque encore
+    eurT += d.eur; avant += d.avant || 0; quand = quand || d.quand;
+  }
+  return { eur: Math.round(eurT * 100) / 100, pct: avant > 0 ? eurT / avant * 100 : null, quand };
+}
+
+function dashBourseRange() {
+  const r = (S.uiPrefs || {}).dashBourseRange;
+  return DASH_PEA_RANGES.some(x => x[0] === r) ? r : "MAX";
+}
+function dashSetBourseRange(r) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.dashBourseRange = r;
+  dashRender();
+  dashSauverPrefs();
+}
+
+function dashBoursePerf() {
+  if (!window._peaPv || window._peaPv.total == null) return null;
+  return dashPerfTuile({
+    // Plus court que son nom dans la liste : « … de toute ma bourse » passait
+    // sur deux lignes à 1024 px de large (fenêtre du test Mac)
+    lbl: "Performance de ma bourse", range: dashBourseRange(), clic: k => `dashSetBourseRange('${k}')`,
+    jour: dashBourseJour, calcul: fn => fn(), periode: dashBoursePeriode,
   });
 }
 
