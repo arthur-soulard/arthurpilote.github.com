@@ -1542,10 +1542,11 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
 .dash-pick:disabled { opacity: .42; cursor: default; }
 .dash-pick.current { border-color: var(--accent); }
 .dash-pick-lbl { font-weight: 600; }
-.dash-pick-mod {
-  font-size: 9px; text-transform: uppercase; letter-spacing: .07em;
-  color: var(--txt3); font-weight: 700;
+.dash-pick-grp {
+  display: flex; align-items: center; gap: 6px; margin: 8px 2px 0;
+  font-size: 12px; font-weight: 500; color: var(--txt2);
 }
+.dash-pick-grp:first-child { margin-top: 0; }
 .dash-pick-state { margin-left: auto; font-size: 10.5px; color: var(--txt3); font-family: var(--mono); }
 
 /* ── Santé ──────────────────────────────────────────────────────────────── */
@@ -2187,6 +2188,68 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .home-card-sub b { font-weight: 500; }
 /* Mini-courbe : la partie d'avant la pesée de référence, estompée */
 .dash-spark path.dash-spark-ctx { stroke: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* — Tuiles ajoutées le 12/10/2026 — */
+/* Contenu en liste (Marchés, Pense-bête) : juste sous le titre, pas en bas */
+.home-card-viz.dash-viz-haut { margin-top: 2px; padding-top: 6px; }
+.dash-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dash-tile-btn { margin-top: 8px; }
+.dash-tile-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.home-cards.dash-editing .dash-tile-btn, .home-cards.dash-editing .dash-tile-btns,
+.home-cards.dash-editing .dash-note, .home-cards.dash-editing .dash-note-plus { pointer-events: none; opacity: .6; }
+/* Répartition du patrimoine : barre empilée + légende */
+.dash-stack { display: flex; gap: 2px; height: 8px; border-radius: 99px; overflow: hidden; background: var(--bg4); }
+.dash-stack i { display: block; min-width: 3px; }
+.dash-leg { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 6px; font-size: 11.5px; color: var(--txt2); }
+.dash-leg span { display: inline-flex; align-items: center; gap: 5px; }
+.dash-leg i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+/* Marchés du jour */
+/* Une seule grille pour les quatre lignes : les colonnes s'alignent */
+.dash-mkts { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 26px; align-items: baseline; gap: 5px 10px; font-size: 13px; }
+.dash-mkt { display: contents; }
+.dash-mkt-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-mkt-v, .dash-mkt b { font-variant-numeric: tabular-nums; text-align: right; }
+.dash-mkt-v { color: var(--txt2); font-size: 12px; }
+.dash-mkt b { font-weight: 500; }
+.dash-mkt em { font-style: normal; font-size: 10.5px; color: var(--txt3); }
+/* Pense-bête : tuile et fenêtre */
+.dash-notes { display: flex; flex-direction: column; gap: 2px; }
+.dash-note, .dash-nl {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  padding: 3px 4px; margin: 0 -4px; border-radius: 6px; font-size: 13px;
+}
+.dash-note { cursor: pointer; }
+.dash-note:hover { background: var(--hover); }
+.dash-note-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-note-d { flex: none; font-size: 11.5px; color: var(--txt2); font-variant-numeric: tabular-nums; }
+.dash-note-d.dash-note-auj { color: var(--accent-text); font-weight: 500; }
+.dash-note-chk {
+  all: unset; box-sizing: border-box; flex: none; cursor: pointer;
+  width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--brd3);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.dash-note-chk .ph { font-size: 10px; opacity: 0; color: var(--accent); transition: opacity .12s; }
+.dash-note-chk:hover { border-color: var(--accent); }
+.dash-note-chk:hover .ph { opacity: 1; }
+.dash-note-chk.on { background: var(--accent); border-color: var(--accent); }
+.dash-note-chk.on .ph { opacity: 1; color: #fff; }
+.dash-note-chk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dash-notes-pied { display: flex; align-items: center; gap: 10px; }
+.dash-note-plus {
+  all: unset; cursor: pointer; font-size: 12px; color: var(--txt2); margin: 8px 0 0 auto;
+}
+.dash-note-plus:hover { color: var(--accent-text); }
+.dash-nl-form { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.dash-nl-form .dash-err { margin-right: auto; }
+.dash-err { font-size: 12px; color: var(--r); }
+.dash-nl-liste { margin-top: 14px; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--brd); padding-top: 8px; }
+.dash-nl { padding: 6px 4px; }
+.dash-nl.edit { background: var(--accent-soft); }
+.dash-nl .m-acts { flex: none; }
+.dash-nl-titre { margin: 12px 0 4px; font-size: 12px; font-weight: 500; color: var(--txt2); }
+.dash-nl-titre ~ .dash-nl .dash-note-t { color: var(--txt2); text-decoration: line-through; }
+.dash-nl-vide { padding: 10px 0; font-size: 12.5px; color: var(--txt2); }
+.dash-obj-aide { margin: 10px 0 0; font-size: 12px; color: var(--txt2); }
 
 /* — Mes comptes : dépenses fréquentes et suggestions du libellé — */
 .fin-freq { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -4318,6 +4381,50 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<div class="ov" id="ov-dash-notes" onclick="if(event.target===this)closeOv('ov-dash-notes')">
+  <div class="modal" style="max-width:540px">
+    <h2>Pense-bête</h2>
+    <div class="fg-row" style="grid-template-columns:minmax(0,1fr) 150px">
+      <div class="fg"><label for="dn-texte">Ne pas oublier…</label>
+        <input id="dn-texte" maxlength="200" placeholder="Renouveler la carte d'identité" autocomplete="off"
+               oninput="document.getElementById('dn-err').hidden=true"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();dashNoteEnregistrer()}"></div>
+      <div class="fg"><label for="dn-date">Date (facultative)</label><input id="dn-date" type="date"></div>
+    </div>
+    <div class="dash-nl-form">
+      <span id="dn-err" class="dash-err" hidden>Écris la note avant de l'ajouter.</span>
+      <button class="btn btn-ghost btn-sm" id="dn-annuler" hidden onclick="dashNoteAnnulerEdition()">Annuler la modification</button>
+      <button class="btn btn-primary btn-sm" id="dn-ok" onclick="dashNoteEnregistrer()"><i class="ph ph-plus"></i> Ajouter</button>
+    </div>
+    <div class="dash-nl-liste" id="dn-liste"></div>
+    <div class="mact">
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeOv('ov-dash-notes')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov-dash-objectif" onclick="if(event.target===this)closeOv('ov-dash-objectif')">
+  <div class="modal" style="max-width:440px">
+    <h2>Objectif de patrimoine</h2>
+    <div class="fg-row">
+      <div class="fg"><label for="do-montant">Montant à atteindre (€)</label>
+        <input id="do-montant" inputmode="decimal" placeholder="50 000" autocomplete="off"
+               oninput="document.getElementById('do-err').hidden=true"
+               onkeydown="if(event.key==='Enter')dashObjectifEnregistrer()"></div>
+      <div class="fg"><label for="do-date">D'ici le (facultatif)</label><input id="do-date" type="date"></div>
+    </div>
+    <span id="do-err" class="dash-err" hidden>Indique un montant supérieur à zéro.</span>
+    <p class="dash-obj-aide">Comparé au patrimoine net de l'onglet Patrimoine. Avec une date, la tuile dit combien mettre de côté chaque mois pour y arriver.</p>
+    <div class="mact">
+      <button class="btn btn-ghost" id="do-suppr" hidden onclick="dashObjectifSupprimer()">Retirer l'objectif</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeOv('ov-dash-objectif')">Annuler</button>
+      <button class="btn btn-primary" onclick="dashObjectifEnregistrer()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ov-sa-mesure" onclick="if(event.target===this)closeOv('ov-sa-mesure')">
   <div class="modal" style="max-width:660px">
     <h2 id="sa-mes-title">Nouvelle pesée</h2>
@@ -5289,13 +5396,23 @@ function computePos(p, toutes) {
 }
 
 /* ─── PEA info bar ─── */
+/** Date de l'avantage fiscal : 5 ans après l'ouverture (null sans date
+    d'ouverture). Lue aussi par la tuile d'accueil « Cap des 5 ans ». */
+function peaDateFiscale() {
+  if (!S.ouverture) return null;
+  const target = new Date(S.ouverture + "T00:00:00");
+  target.setFullYear(target.getFullYear() + 5);
+  return target;
+}
+/** Total versé sur le PEA (versements − retraits), compté pour le plafond de
+    150 000 € : la barre d'infos et la tuile « Plafond du PEA ». */
+function peaTotalVerse() {
+  return (S.depots||[]).reduce((s,d)=>s+(d.amount||0),0);
+}
+
 function renderPeaInfo() {
   const ouv = S.ouverture ? new Date(S.ouverture + "T00:00:00") : null;
-  let target = null;
-  if (ouv) {
-    target = new Date(ouv);
-    target.setFullYear(target.getFullYear() + 5);
-  }
+  const target = peaDateFiscale();
   const now = new Date();
   const fdays = document.getElementById("f-days");
   if (target) {
@@ -5330,7 +5447,7 @@ function renderPeaInfo() {
   const fiscStr = target ? target.toLocaleDateString("fr-FR", {day:"2-digit", month:"long", year:"numeric"}) : "—";
   const sub = document.getElementById("pea-bank-line");
   if (sub) sub.textContent = banque + " · Ouvert " + ouvStr + " · Avantage fiscal " + fiscStr;
-  const depSum  = (S.depots||[]).reduce((s,d)=>s+(d.amount||0),0);
+  const depSum  = peaTotalVerse();
   const fillPct = Math.min(100, depSum/150000*100);
   document.getElementById("f-fill").style.width = fillPct.toFixed(2)+"%";
   document.getElementById("fill-pct").textContent = fillPct.toFixed(2)+"%";
@@ -8182,6 +8299,8 @@ async function fetchLocalCours() {
   // Les comptes non affichés (le PEA pendant un CTO, les autres CTO) : leurs
   // tuiles d'accueil et leurs lignes du Patrimoine suivent les cours aussi
   if (typeof ctoAutresTickers === "function") ctoAutresTickers().forEach(t => tickers.push(t));
+  // Indices de la tuile « Marchés du jour », seulement quand elle est affichée
+  if (typeof dashMarchesTickers === "function") dashMarchesTickers().forEach(t => tickers.push(t));
   if (tickers.length === 0) return { prices: {}, variations: {}, frais: 0, demandes: 0 };
 
   const unique = [...new Set(tickers)];
@@ -16951,6 +17070,20 @@ function spRenderStats() {
   spRenderHeatmap();
 }
 
+/** Moyenne hebdomadaire d'une année, sur les semaines écoulées, comptées à
+    partir de la première séance si le suivi a commencé en cours d'année.
+    Celle des statistiques et de la tuile « Sport de la semaine ». */
+function spMoyenneHebdo(annee) {
+  const debut = spTrackStart();
+  const now = new Date();
+  const endOfYear = new Date(annee, 11, 31);
+  const end = (now < endOfYear) ? now : endOfYear;
+  const jan1 = new Date(annee, 0, 1);
+  const from = (debut && spParseISO(debut) > jan1) ? spParseISO(debut) : jan1;
+  const weeks = Math.max(1, Math.round((end - from) / 604800000));
+  return { min: spTotals(spYearSessions(annee)).min / weeks, weeks, from, end, jan1 };
+}
+
 function spRenderStatsKpis() {
   const box = document.getElementById("sp-stats-kpis");
   if (!box) return;
@@ -16964,15 +17097,7 @@ function spRenderStatsKpis() {
     : String(_spStatsYear) + "-12-31" < debut ? "avant le début du suivi"
     : String(_spStatsYear - 1) + "-12-31" < debut ? "première année suivie" : null;
   const delta = (cur, prev, kind) => sansRef || spDelta(cur, prev, kind, ref);
-
-  // Moyenne hebdomadaire sur les semaines ecoulees de l'annee, comptees a
-  // partir de la premiere seance si le suivi a commence en cours d'annee
-  const now = new Date();
-  const endOfYear = new Date(_spStatsYear, 11, 31);
-  const end = (now < endOfYear) ? now : endOfYear;
-  const jan1 = new Date(_spStatsYear, 0, 1);
-  const from = (debut && spParseISO(debut) > jan1) ? spParseISO(debut) : jan1;
-  const weeks = Math.max(1, Math.round((end - from) / 604800000));
+  const { weeks, from, end, jan1 } = spMoyenneHebdo(_spStatsYear);
 
   box.innerHTML = `
     <div class="mkpi accent"><span class="mkpi-lbl">Heures de sport en ${_spStatsYear}</span>
@@ -20070,6 +20195,7 @@ function acRenderBadge() {
   b.hidden = !n;
   b.textContent = n;
   b.title = n + (n > 1 ? " mails non lus" : " mail non lu");
+  if (typeof dashRender === "function") dashRender();   // tuile « Newsletters non lues »
 }
 
 /* ── Dates ─────────────────────────────────────────────────────────────── */
@@ -21481,6 +21607,158 @@ const DASH_WIDGETS = [
     },
   },
   {
+    // Reçus = mêmes règles que l'onglet Dividendes (renderDividends) : les reçus
+    // et les estimatifs dont la date est passée
+    id: "pea-div", label: "Dividendes de l'année", module: "PEA", tab: "div",
+    render() {
+      const recus = dashDivRecus();
+      if (!recus.length) return null;
+      const an = new Date().getFullYear(), mois = new Date().getMonth();
+      const cetteAnnee = recus.filter(d => d.date.startsWith(an + "-"));
+      const total = cetteAnnee.reduce((s, d) => s + (d.montant || 0), 0);
+      const avant = recus.filter(d => d.date.startsWith((an - 1) + "-")).reduce((s, d) => s + (d.montant || 0), 0);
+      const parMois = Array.from({ length: mois + 1 }, (_, m) =>
+        cetteAnnee.filter(d => Number(d.date.slice(5, 7)) === m + 1).reduce((s, d) => s + (d.montant || 0), 0));
+      const n = cetteAnnee.length;
+      return { lbl: "Dividendes " + an, val: eur(total),
+               sub: (n ? n + " versement" + (n > 1 ? "s" : "") : "aucun encore cette année")
+                    + (avant > 0 ? " · " + (an - 1) + " : " + eur(avant) : ""),
+               go: "Voir les dividendes",
+               viz: dashBarsMois(parMois, eur) };
+    },
+  },
+  {
+    id: "pea-div-next", label: "Prochain dividende", module: "PEA", tab: "div",
+    render() {
+      const auj = todayISO();
+      const prevus = (S.divFuture || []).filter(d => d.date && normDate(d.date) > auj)
+                                        .sort((a, b) => a.date.localeCompare(b.date));
+      if (!prevus.length) return null;
+      const d = prevus[0], pos = S.positions.find(p => p.ticker === d.ticker);
+      return { lbl: "Prochain dividende", val: eur(d.montant),
+               sub: (pos ? pos.name : d.ticker) + " · " + dashQuand(normDate(d.date))
+                    + (prevus.length > 1 ? " · " + (prevus.length - 1) + " autre" + (prevus.length > 2 ? "s" : "") + " prévu" + (prevus.length > 2 ? "s" : "") : ""),
+               go: "Voir les dividendes" };
+    },
+  },
+  {
+    id: "pea-plafond", label: "Plafond du PEA", module: "PEA", tab: "dep",
+    render() {
+      const verse = peaTotalVerse();
+      if (!(verse > 0)) return null;
+      const p = Math.min(100, verse / 150000 * 100);
+      return { lbl: "Plafond du PEA", val: eur(verse),
+               sub: "versés sur 150 000 €", go: "Voir les versements",
+               viz: dashProgress(p, p.toFixed(p < 10 ? 1 : 0).replace(".", ",") + " % du plafond",
+                                 "reste " + eur(Math.max(0, 150000 - verse))) };
+    },
+  },
+  {
+    // depPrevus : les versements annoncés, à part des vrais dépôts. Un versement
+    // dont la date est passée attend qu'on le dise arrivé (onglet Versements).
+    id: "pea-versement", label: "Prochain versement prévu", module: "PEA", tab: "dep",
+    render() {
+      const l = depPrevus();
+      if (!l.length) return null;
+      const v = l[0], retard = v.date < todayISO();
+      return { lbl: "Prochain versement", val: eur(v.amount), cls: retard ? "c-a" : "",
+               sub: retard ? "prévu " + dashQuand(v.date) + ", pas encore arrivé" : dashQuand(v.date)
+                    + (l.length > 1 ? " · " + (l.length - 1) + " autre" + (l.length > 2 ? "s" : "") + " ensuite" : ""),
+               go: "Voir les versements" };
+    },
+  },
+  {
+    // Même périmètre que la carte « Frais cumulés » (ordres datés d'aujourd'hui
+    // ou avant), restreint à l'année
+    id: "pea-frais", label: "Frais de l'année", module: "PEA", tab: "tx",
+    render() {
+      const an = String(new Date().getFullYear()), auj = todayISO();
+      const tous = (S.transactions || []).filter(t => normDate(t.date) <= auj);
+      if (!tous.length) return null;
+      const txs = tous.filter(t => normDate(t.date).startsWith(an));
+      const total = txs.reduce((s, t) => s + (t.frais || 0), 0);
+      const gratuits = txs.filter(t => !(t.frais > 0)).length;
+      return { lbl: "Frais " + an, val: eur(total),
+               sub: txs.length ? txs.length + " ordre" + (txs.length > 1 ? "s" : "")
+                      + (gratuits ? ", dont " + gratuits + " sans frais" : "")
+                      : "aucun ordre cette année",
+               go: "Voir les transactions" };
+    },
+  },
+  {
+    // Date d'ouverture saisie dans les réglages du PEA ; la tuile s'efface une
+    // fois l'avantage fiscal atteint (la barre d'infos du PEA le dit déjà)
+    id: "pea-5ans", label: "Cap des 5 ans", module: "PEA", tab: "dash",
+    render() {
+      const cible = peaDateFiscale();
+      if (!cible || cible <= new Date()) return null;
+      const ouv = new Date(S.ouverture + "T00:00:00");
+      const p = (new Date() - ouv) / (cible - ouv) * 100;
+      return { lbl: "Avantage fiscal du PEA", val: dashDuree(new Date(), cible),
+               sub: "à attendre, jusqu'au " + cible.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+               go: "Voir le PEA",
+               viz: dashProgress(p, "ouvert le " + ouv.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }),
+                                 Math.floor(p) + " %") };
+    },
+  },
+  {
+    // Variation sur un mois (m1 de /cours, celle de la colonne « 1M » de la
+    // Wishlist) ; la tuile s'efface quand rien n'a baissé
+    id: "pea-wish", label: "Wishlist en baisse", module: "PEA", tab: "wish",
+    render() {
+      const l = (S.wishlist || []).filter(w => w.ticker && (!w.list || w.list === "pea"))
+        .map(w => ({ w, v: getVar(w.ticker) }))
+        .filter(x => x.v && x.v.m1 != null && x.v.m1 < 0)
+        .sort((a, b) => a.v.m1 - b.v.m1);
+      if (!l.length) return null;
+      const x = l[0];
+      return { lbl: "Wishlist en baisse", val: pct(x.v.m1), cls: "c-r",
+               sub: (x.w.name || x.w.ticker) + " sur 1 mois" + (x.v.cours ? " · " + eur(x.v.cours) : ""),
+               subHtml: l.length > 1 ? "puis " + l.slice(1, 3).map(y =>
+                 `${escHtml(y.w.name || y.w.ticker)} <b class="c-r">${pct(y.v.m1)}</b>`).join(" · ") : "",
+               go: "Voir la wishlist" };
+    },
+  },
+  {
+    // Le PEA (titres + espèces, window._peaPv) et chaque CTO (ctoResume) :
+    // les chiffres de leurs vues d'ensemble, simplement additionnés
+    id: "bourse-totale", label: "Toute ma bourse", module: "Bourse", tab: "dash",
+    render() {
+      const pv = window._peaPv || {};
+      if (pv.total == null) return null;
+      const ctos = (typeof ctoComptes === "function" ? ctoComptes() : []).map(c => ctoResume(c.id)).filter(r => r && r.n);
+      let valeur = pv.total, gain = pv.eur, base = peaTotalVerse();
+      for (const r of ctos) {
+        if (r.valeur == null) return null;   // un cours manque : pas de total faux
+        valeur += r.valeur; base += r.investiNet;
+        gain = (gain == null || r.pv == null) ? null : gain + r.pv;
+      }
+      return { lbl: "Toute ma bourse", val: eur(Math.round(valeur * 100) / 100),
+               sub: ctos.length ? "PEA + " + ctos.length + " CTO" : "le PEA seul, aucun CTO",
+               subHtml: gain != null ? `<b class="${gain >= 0 ? "c-g" : "c-r"}">${eur(Math.round(gain * 100) / 100, true)}</b>`
+                          + (base > 0 ? ` (${pct(gain / base * 100)})` : "") + " au total" : "",
+               go: "Voir le PEA" };
+    },
+  },
+  {
+    id: "marches", label: "Marchés du jour", module: "Bourse", tab: null,
+    render() { return dashMarches(); },
+    ready() { return !_dashMarchesAttente; },
+  },
+  {
+    id: "actus", label: "Newsletters non lues", module: "Actus", tab: "ac-boite",
+    render() {
+      if (typeof acConnecte !== "function" || !acConnecte()) return null;
+      const nl = AC.mails.filter(m => !m.lu);
+      if (!nl.length) return null;
+      const m = nl[0];
+      return { lbl: "Newsletters", val: String(nl.length),
+               sub: nl.length > 1 ? "non lues" : "non lue",
+               subHtml: `<span class="dash-clamp"><b>${escHtml(m.de || "")}</b> · ${escHtml(m.objet || "")}</span>`,
+               go: "Lire" };
+    },
+  },
+  {
     id: "patrimoine", label: "Patrimoine net", module: "Patrimoine", tab: "pa-vue",
     render() {
       if (typeof _paNet === "undefined" || !_paNet) return null;
@@ -21502,6 +21780,70 @@ const DASH_WIDGETS = [
       if (paMoisSaisi()) return null;   // rien à rappeler : le widget s'efface
       return { lbl: "Relevé de patrimoine", val: "À faire",
                sub: paMoisLabel(_paMois) + " n'est pas saisi", go: "Le faire maintenant" };
+    },
+  },
+  {
+    // _paNet.detail (calculé côté Python), regroupé par type de compte, aux
+    // couleurs de la répartition de l'onglet Patrimoine
+    id: "pa-repartition", label: "Répartition du patrimoine", module: "Patrimoine", tab: "pa-vue",
+    render() {
+      if (typeof _paNet === "undefined" || !_paNet || !(PA && PA.releves && PA.releves.length)) return null;
+      const parType = {};
+      _paNet.detail.filter(d => d.type !== "dette" && d.montant > 0)
+        .forEach(d => { parType[d.type] = (parType[d.type] || 0) + d.montant; });
+      const l = Object.entries(parType).sort((a, b) => b[1] - a[1]);
+      const total = l.reduce((s, x) => s + x[1], 0);
+      if (!(total > 0)) return null;
+      const barre = `<div class="dash-stack">${l.map(([t, v]) =>
+        `<i style="flex:${v};background:${escHtml(paType(t).color || "var(--txt3)")}" title="${escHtml(paType(t).label || t)} : ${paEur(v)}"></i>`).join("")}</div>`;
+      const leg = `<div class="dash-leg">${l.slice(0, 3).map(([t, v]) =>
+        `<span><i style="background:${escHtml(paType(t).color || "var(--txt3)")}"></i>${escHtml(paType(t).label || t)} ${Math.round(v / total * 100)} %</span>`).join("")}</div>`;
+      return { lbl: "Répartition du patrimoine", val: paEur(total),
+               sub: "d'actifs en " + dashMoisAn(new Date(_paNet.date + "T00:00:00")) + (_paNet.dettes > 0 ? ", " + paEur(_paNet.dettes) + " de dettes" : ""),
+               go: "Voir le patrimoine", viz: barre + leg };
+    },
+  },
+  {
+    // _paSerie : un point par mois, du premier relevé au mois en cours
+    id: "pa-an", label: "Patrimoine sur un an", module: "Patrimoine", tab: "pa-vue",
+    render() {
+      if (typeof _paSerie === "undefined" || _paSerie.length < 2) return null;
+      const fin = _paSerie[_paSerie.length - 1];
+      const d = new Date(fin.date + "T00:00:00"); d.setFullYear(d.getFullYear() - 1);
+      const ilYaUnAn = paMoisIso(d);
+      const i = Math.max(0, _paSerie.findIndex(p => p.date >= ilYaUnAn));
+      const debut = _paSerie[i], diff = fin.net - debut.net;
+      return { lbl: "Patrimoine sur un an", val: (diff >= 0 ? "+" : "−") + paEur(Math.abs(diff)),
+               cls: diff >= 0 ? "c-g" : "c-r",
+               sub: (debut.date === ilYaUnAn ? "en douze mois" : "depuis " + dashMoisAn(new Date(debut.date + "T00:00:00")))
+                    + (debut.net > 0 ? " · " + pct(diff / debut.net * 100) : ""),
+               go: "Voir le patrimoine", viz: dashSpark(_paSerie.slice(i).map(p => p.net)) };
+    },
+  },
+  {
+    // Objectif saisi sur la tuile (S.uiPrefs.dashObjectif = {montant, date}) ;
+    // sans objectif, la tuile propose d'en fixer un
+    id: "pa-objectif", label: "Objectif de patrimoine", module: "Patrimoine", tab: "pa-vue",
+    render() {
+      if (typeof _paNet === "undefined" || !_paNet || !(PA && PA.releves && PA.releves.length)) return null;
+      const o = (S.uiPrefs && S.uiPrefs.dashObjectif) || null;
+      const btn = lib => `<button type="button" class="btn btn-ghost btn-sm dash-tile-btn"
+        onclick="event.stopPropagation();dashObjectifOuvrir()"><i class="ph ph-${o ? "pencil-simple" : "target"}"></i> ${lib}</button>`;
+      if (!o || !(o.montant > 0))
+        return { lbl: "Objectif de patrimoine", val: null, sub: "Fixe un montant à atteindre, et une date si tu veux savoir combien mettre de côté chaque mois.",
+                 go: null, viz: btn("Fixer un objectif") };
+      const net = _paNet.net, reste = o.montant - net;
+      const p = Math.max(0, net / o.montant * 100);
+      let sub = reste <= 0 ? "objectif atteint" : "reste " + paEur(reste), mois = null;
+      if (reste > 0 && o.date) {
+        const fin = new Date(o.date + "T00:00:00"), auj = new Date();
+        mois = (fin.getFullYear() - auj.getFullYear()) * 12 + fin.getMonth() - auj.getMonth();
+        sub += mois > 0 ? ", soit " + paEur(Math.ceil(reste / mois)) + " par mois d'ici " + dashMoisAn(fin)
+                        : ", échéance de " + dashMoisAn(fin) + " passée";
+      }
+      return { lbl: "Objectif : " + paEur(o.montant), val: Math.floor(p) + " %", cls: reste <= 0 ? "c-g" : "",
+               sub, go: "Voir le patrimoine",
+               viz: dashProgress(p, "net : " + paEur(net), mois > 0 ? mois + " mois restants" : "") + btn("Modifier") };
     },
   },
   {
@@ -21531,6 +21873,92 @@ const DASH_WIDGETS = [
                                    tl.t.n + " séance" + (tl.t.n > 1 ? "s" : "")) };
       }
       return { lbl: "Prochain objectif", val: "◎", sub: g.title, go: "Voir les objectifs" };
+    },
+  },
+  {
+    // Semaine du lundi au dimanche ; la moyenne est celle des statistiques
+    // (spMoyenneHebdo), sur l'année en cours
+    id: "sport-semaine", label: "Sport de la semaine", module: "Sports", tab: "sp-agenda",
+    render() {
+      if (typeof SP === "undefined" || !SP || !spSessions().length) return null;
+      const now = new Date();
+      const lundi = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+      const du = spDateISO(lundi), au = spDateISO(new Date(lundi.getFullYear(), lundi.getMonth(), lundi.getDate() + 6));
+      const t = spTotals(spSessions().filter(s => s.date >= du && s.date <= au));
+      const moy = spMoyenneHebdo(now.getFullYear()).min;
+      return { lbl: "Sport cette semaine", val: t.min ? spFmtDur(t.min) : "0 h",
+               sub: t.n ? t.n + " séance" + (t.n > 1 ? "s" : "") + " depuis lundi" : "Aucune séance depuis lundi",
+               go: "Ouvrir l'agenda",
+               viz: moy > 0 ? dashProgress(t.min / moy * 100, "moyenne : " + spFmtDur(moy) + " par semaine",
+                                           Math.round(t.min / moy * 100) + " %") : "" };
+    },
+  },
+  {
+    // Comparé à l'an dernier à la même date, jamais à une période d'avant le
+    // suivi (spTrackStart), comme les chiffres clés du module
+    id: "sport-annee", label: "Cumul de l'année", module: "Sports", tab: "sp-stats",
+    render() {
+      if (typeof SP === "undefined" || !SP || !spSessions().length) return null;
+      const now = new Date(), an = now.getFullYear();
+      const t = spTotals(spYearSessions(an));
+      const debut = spTrackStart();
+      const memeJour = spDateISO(new Date(an - 1, now.getMonth(), now.getDate()));
+      const avant = spTotals(spSessions().filter(s => s.date >= (an - 1) + "-01-01" && s.date <= memeJour));
+      let sub;
+      if (debut > (an - 1) + "-01-01") {
+        sub = debut.startsWith(String(an)) ? "depuis le " + spFmtDayMonth(debut) + ", début du suivi"
+                                           : "suivi commencé le " + spFmtDayMonth(debut) + " " + debut.slice(0, 4);
+      } else sub = spDelta(t.min, avant.min, "dur", (an - 1) + " à la même date");
+      const parMois = Array.from({ length: now.getMonth() + 1 }, (_, m) => spTotals(spMonthSessions(an, m)).min);
+      // Pas de barres vides pour les mois d'avant le suivi : ce n'était pas « zéro sport »
+      const premier = debut.startsWith(String(an)) ? Number(debut.slice(5, 7)) - 1 : 0;
+      return { lbl: "Sport en " + an, val: spFmtDur(t.min) === "—" ? "0 h" : spFmtDur(t.min), sub,
+               go: "Voir les statistiques", viz: dashBarsMois(parMois, spFmtDur, premier) };
+    },
+  },
+  {
+    id: "sport-derniere", label: "Dernière séance", module: "Sports", tab: "sp-agenda",
+    render() {
+      if (typeof SP === "undefined" || !SP) return null;
+      const s = dashDerniereSeance();
+      if (!s) return null;
+      const sp = spSportById(s.sport);
+      return { lbl: "Dernière séance", val: dashIlYa(s.date),
+               sub: String(sp.label || "Séance").split(" / ")[0] + (spSummary(s) ? " · " + spSummary(s) : ""),
+               go: "Ouvrir l'agenda" };
+    },
+  },
+  {
+    // Même total que la carte « Distance » du mois (spTotals, natation en km)
+    id: "sport-km", label: "Kilomètres du mois", module: "Sports", tab: "sp-agenda",
+    render() {
+      if (typeof SP === "undefined" || !SP) return null;
+      const now = new Date();
+      const l = spMonthSessions(now.getFullYear(), now.getMonth());
+      const t = spTotals(l);
+      if (!(t.km > 0)) return null;
+      const parSport = {};
+      l.forEach(s => { const k = spDistKm(s); if (k > 0) parSport[s.sport] = (parSport[s.sport] || 0) + k; });
+      return { lbl: "Distance en " + SP_MONTHS[now.getMonth()], val: spFmtNum(t.km, 1) + " km",
+               sub: Object.entries(parSport).sort((a, b) => b[1] - a[1]).slice(0, 3)
+                 .map(([id, km]) => String(spSportById(id).label || id).split(" / ")[0] + " " + spFmtNum(km, km < 10 ? 1 : 0) + " km").join(" · "),
+               go: "Ouvrir l'agenda" };
+    },
+  },
+  {
+    // Raccourci de saisie, comme « Ajouter une dépense » : le bouton ouvre la
+    // fenêtre « Nouvelle séance » sans passer par l'agenda
+    id: "sport-ajout", label: "Ajouter une séance", module: "Sports", tab: "sp-agenda",
+    render() {
+      if (typeof SP === "undefined" || !SP) return null;
+      const now = new Date();
+      const n = spMonthSessions(now.getFullYear(), now.getMonth()).length;
+      const s = dashDerniereSeance();
+      return { lbl: "Séances " + dashDeMois(), val: String(n),
+               sub: s ? "dernière : " + dashIlYa(s.date).toLowerCase() : "aucune séance saisie",
+               go: "Ouvrir l'agenda",
+               viz: `<button type="button" class="btn btn-primary btn-sm dash-tile-btn"
+                       onclick="event.stopPropagation();spOpenSession(null)"><i class="ph ph-plus"></i> Ajouter une séance</button>` };
     },
   },
   {
@@ -21568,6 +21996,33 @@ const DASH_WIDGETS = [
     },
   },
   {
+    // Comme le relevé de patrimoine : à faire tant que le mois n'a aucune
+    // pesée (choix d'Arthur, 12/10/2026), effacé ensuite. Rien tant que le
+    // module n'a jamais servi.
+    id: "sante-rappel", label: "Rappel de pesée", module: "Santé", tab: "sa-suivi",
+    render() {
+      if (typeof SA === "undefined" || !SA || !saMesures().length) return null;
+      const mois = todayISO().slice(0, 7);
+      if (saMesures().some(m => String(m.date || "").startsWith(mois))) return null;
+      const last = saLast();
+      return { lbl: "Pesée du mois", val: "À faire",
+               sub: SP_MONTHS[new Date().getMonth()].replace(/^./, c => c.toUpperCase()) + " n'a pas encore de pesée"
+                    + (last ? " · dernière : " + dashIlYa(last.date).toLowerCase() : ""),
+               go: "Voir le suivi", viz: dashBoutonsPesee() };
+    },
+  },
+  {
+    id: "sante-ajout", label: "Ajouter une pesée", module: "Santé", tab: "sa-suivi",
+    render() {
+      if (typeof SA === "undefined" || !SA) return null;
+      const last = saLast();
+      return { lbl: "Dernière pesée", val: last ? dashIlYa(last.date) : "Aucune",
+               sub: last ? saDateCourte(last.date) + (last.poids != null && last.poids !== "" ? " · " + saFmt("poids", last.poids) : "")
+                         : "première pesée à saisir",
+               go: "Voir le suivi", viz: dashBoutonsPesee() };
+    },
+  },
+  {
     id: "pret", label: "Prêt", module: "Prêt", tab: "pr-overview",
     render() {
       if (typeof PR === "undefined" || !PR || !PR.pret || !PR.pret.montant) return null;
@@ -21575,6 +22030,47 @@ const DASH_WIDGETS = [
       if (reste === null) return null;
       return { lbl: prNom(), val: paEur(reste),
                sub: "capital restant dû", go: "Voir le prêt" };
+    },
+  },
+  {
+    // Échéancier théorique tiré de la configuration du prêt (1re mensualité,
+    // durée, montant) : il n'affiche que la prochaine échéance. Les
+    // remboursements, eux, restent saisis à la main (choix d'Arthur).
+    id: "pret-mensualite", label: "Prochaine mensualité", module: "Prêt", tab: "pr-overview",
+    render() {
+      if (typeof PR === "undefined" || !PR || !PR.pret) return null;
+      const p = PR.pret, m = prN(p.mensualite), duree = prN(p.duree_remboursement);
+      if (!(m > 0) || !p.date_premier_remboursement) return null;
+      const auj = prToday();
+      if (p.date_premier_remboursement > auj) {
+        const d = new Date(p.date_premier_remboursement + "T00:00:00");
+        return { lbl: "Première mensualité", val: dashDuree(new Date(), d),
+                 sub: prEur(m) + " le " + d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+                 go: "Voir le prêt" };
+      }
+      let k = 0;
+      while (prAddMonths(p.date_premier_remboursement, k) < auj && (!duree || k < duree)) k++;
+      if (duree && k >= duree) return null;   // dernière échéance passée
+      const date = prAddMonths(p.date_premier_remboursement, k);
+      return { lbl: "Prochaine mensualité", val: prEur(m),
+               sub: dashQuand(date) + (duree ? " · " + (k + 1) + "ᵉ sur " + duree : ""),
+               go: "Voir le prêt",
+               viz: duree ? dashProgress(k / duree * 100, k + " échéance" + (k > 1 ? "s" : "") + " passée" + (k > 1 ? "s" : ""),
+                                         (duree - k) + " restante" + (duree - k > 1 ? "s" : "")) : "" };
+    },
+  },
+  {
+    // « Gains nets » de la vue d'ensemble du prêt (prOverview) : latents +
+    // réalisés + intérêts − frais
+    id: "pret-gains", label: "Ce que rapporte le prêt", module: "Prêt", tab: "pr-overview",
+    render() {
+      if (typeof PR === "undefined" || !PR || !PR.pret || !prN(PR.pret.montant)) return null;
+      const o = prOverview();
+      if (!(o.valeur_portefeuille > 0) && !o.benefice_net) return null;
+      return { lbl: "Ce que rapporte le prêt", val: eur(o.benefice_net, true),
+               cls: o.benefice_net >= 0 ? "c-g" : "c-r",
+               sub: "gains nets, frais déduits · placements : " + prEur(o.valeur_portefeuille),
+               go: "Voir le prêt" };
     },
   },
   {
@@ -21587,12 +22083,42 @@ const DASH_WIDGETS = [
       if (typeof F === "undefined" || !F) return null;
       const now = new Date();
       const t = finComputeMonthTotals(now.getFullYear(), now.getMonth());
-      const mois = now.toLocaleDateString("fr-FR", { month: "long" });
-      return { lbl: "Dépenses de " + mois, val: finFmtAbs(t.expense),
+      return { lbl: "Dépenses " + dashDeMois(), val: finFmtAbs(t.expense),
                sub: t.expCount + " dépense" + (t.expCount > 1 ? "s" : "") + " saisie" + (t.expCount > 1 ? "s" : ""),
                go: "Voir mes comptes",
                viz: `<button type="button" class="btn btn-primary btn-sm dash-add-exp"
                        onclick="event.stopPropagation();dashAddExpense()"><i class="ph ph-plus"></i> Ajouter une dépense</button>` };
+    },
+  },
+  {
+    // finComputeMonthTotals : les mêmes totaux que l'onglet Mois
+    id: "fin-solde", label: "Solde du mois", module: "Comptes", tab: "fin-month",
+    render() {
+      if (typeof F === "undefined" || !F) return null;
+      const now = new Date();
+      const t = finComputeMonthTotals(now.getFullYear(), now.getMonth());
+      if (!t.income && !t.expense) return null;
+      return { lbl: "Solde " + dashDeMois(), val: finFmtSigned(t.net),
+               cls: t.net >= 0 ? "c-g" : "c-r",
+               sub: !(t.income > 0) ? "aucun revenu saisi ce mois-ci"
+                    : t.net >= 0 ? Math.round(t.net / t.income * 100) + " % des revenus mis de côté"
+                    : Math.round(t.expense / t.income * 100) + " % des revenus dépensés",
+               subHtml: `revenus <b>${finFmtAbs(t.income)}</b> · dépenses <b>${finFmtAbs(t.expense)}</b>`,
+               go: "Voir mes comptes" };
+    },
+  },
+  {
+    // Le pendant de « Ajouter une dépense », pour les revenus
+    id: "fin-revenu", label: "Ajouter un revenu", module: "Comptes", tab: "fin-month",
+    render() {
+      if (typeof F === "undefined" || !F) return null;
+      const now = new Date();
+      const t = finComputeMonthTotals(now.getFullYear(), now.getMonth());
+      return { lbl: "Revenus " + dashDeMois(), val: finFmtAbs(t.income),
+               sub: t.incCount + " revenu" + (t.incCount > 1 ? "s" : "") + " saisi" + (t.incCount > 1 ? "s" : ""),
+               go: "Voir mes comptes",
+               viz: `<button type="button" class="btn btn-primary btn-sm dash-add-exp"
+                       onclick="event.stopPropagation();dashAddExpense('income')"><i class="ph ph-plus"></i> Ajouter un revenu</button>` };
     },
   },
   {
@@ -21613,6 +22139,12 @@ const DASH_WIDGETS = [
       }
       return { lbl: "Dernière sauvegarde USB", val, cls, sub, go: null };
     },
+  },
+  {
+    // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
+    // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
+    id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
+    render() { return dashNotesTuile(); },
   },
 ];
 
@@ -21658,6 +22190,9 @@ function dashModuleReady(mod) {
     case "Sauvegarde": return !!window._dashUsb;
     case "Comptes":    return _finBootstrapped;
     case "CTO":        return _ctoBootstrapped;
+    case "Bourse":     return !!window._peaPv && _ctoBootstrapped;
+    // Boîte connectée : attendre le premier relevé (réussi ou non)
+    case "Actus":      return _acBootstrapped && (!acConnecte() || !!AC.majA || !!AC.erreur);
   }
   return true;
 }
@@ -21692,10 +22227,10 @@ function dashCardHtml(w, d, muted) {
   return `<div class="home-card${muted ? " dash-muted" : ""}"${act}>
     ${outils}
     <span class="home-card-lbl">${dashIcon(w)}${escHtml(d.lbl)}</span>
-    <span class="home-card-val ${d.cls || ""}">${d.val}</span>
-    <span class="home-card-sub">${escHtml(d.sub || "")}</span>
+    ${d.val != null ? `<span class="home-card-val ${d.cls || ""}">${d.val}</span>` : ""}
+    ${(d.sub || d.val != null) ? `<span class="home-card-sub">${escHtml(d.sub || "")}</span>` : ""}
     ${d.subHtml ? `<span class="home-card-sub">${d.subHtml}</span>` : ""}
-    ${d.viz ? `<div class="home-card-viz">${d.viz}</div>` : ""}
+    ${d.viz ? `<div class="home-card-viz${d.vizCls ? " " + d.vizCls : ""}">${d.viz}</div>` : ""}
     ${(!_dashEdit && d.go && w.tab) ? `<span class="home-card-go">${escHtml(d.go)} →</span>` : ""}
   </div>`;
 }
@@ -21902,15 +22437,301 @@ function dashPeaSpark(kind, range) {
   return dashSpark(serie.map(p => p.val));
 }
 
-/** Bouton de la tuile « Ajouter une dépense » : la fenêtre de saisie de
-    Mes comptes, ouverte depuis l'accueil. */
-async function dashAddExpense() {
+/** Bouton des tuiles « Ajouter une dépense » et « Ajouter un revenu » : la
+    fenêtre de saisie de Mes comptes, ouverte depuis l'accueil. */
+async function dashAddExpense(type) {
   if (!_finBootstrapped && typeof finBootstrap === "function") await finBootstrap();
   if (typeof F === "undefined" || !F) {
     showToastModern("Mes comptes n'est pas encore chargé", "warn");
     return;
   }
-  finOpenTx("expense");
+  finOpenTx(type || "expense");
+}
+
+/* ── Outils communs des tuiles ──────────────────────────────────────────── */
+
+/** Dividendes reçus du PEA : les reçus et les estimatifs dont la date est
+    passée, comme le total de l'onglet Dividendes (renderDividends). */
+function dashDivRecus() {
+  const auj = todayISO();
+  return [...(S.divReceived || []), ...(S.divFuture || [])]
+    .filter(d => d.date && normDate(d.date) <= auj)
+    .map(d => ({ ...d, date: normDate(d.date) }));
+}
+
+/** Barres de janvier (ou du mois `depuis`) au mois en cours, le dernier en
+    plein, initiale du mois dessous. "" quand tout est à zéro. */
+function dashBarsMois(vals, fmt, depuis) {
+  const max = Math.max(0, ...vals);
+  if (!max) return "";
+  const l = vals.map((v, i) => ({ v, i })).slice(depuis || 0);
+  return `<div class="dash-bars">${l.map(({ v, i }) =>
+      `<span title="${SP_MONTHS[i]} : ${escHtml(fmt(v))}" style="height:${(v > 0 ? Math.max(8, v / max * 100) : 3).toFixed(0)}%"></span>`).join("")}</div>`
+    + `<div class="dash-bars-l">${l.map(({ i }) => `<span>${"JFMAMJJASOND"[i]}</span>`).join("")}</div>`;
+}
+/** « d'octobre », « de novembre » : le mois en cours, pour un titre de tuile. */
+function dashDeMois() {
+  const m = new Date().toLocaleDateString("fr-FR", { month: "long" });
+  return (/^[aeiou]/.test(m) ? "d'" : "de ") + m;
+}
+
+/** Jours entre aujourd'hui et une date "AAAA-MM-JJ" (négatif : passée). */
+function dashJours(iso) {
+  return Math.round((spParseISO(iso) - spParseISO(todayISO())) / 86400000);
+}
+function dashDateCourte(iso) {
+  const d = spParseISO(iso);
+  return d.toLocaleDateString("fr-FR", d.getFullYear() === new Date().getFullYear()
+    ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+}
+/** « aujourd'hui », « demain », « hier », sinon « le 24 oct. », avec le
+    nombre de jours sous deux mois (« le 24 oct., dans 12 jours »). */
+function dashQuand(iso) {
+  const j = dashJours(iso);
+  if (j === 0) return "aujourd'hui";
+  if (j === 1) return "demain";
+  if (j === -1) return "hier";
+  return "le " + dashDateCourte(iso) + (j > 1 && j <= 60 ? ", dans " + j + " jours" : "");
+}
+/** « Aujourd'hui », « Hier », « Il y a 3 j » (le grand chiffre d'une tuile). */
+function dashIlYa(iso) {
+  const j = -dashJours(iso);
+  return j <= 0 ? "Aujourd'hui" : j === 1 ? "Hier" : "Il y a " + j + " j";
+}
+/** Durée entre deux dates : « 2 ans 5 mois », « 5 mois », « 12 jours »
+    (même découpage que le compte à rebours de la barre d'infos du PEA). */
+function dashDuree(a, b) {
+  let ans = b.getFullYear() - a.getFullYear(), mois = b.getMonth() - a.getMonth(), j = b.getDate() - a.getDate();
+  if (j < 0) { mois--; j += new Date(b.getFullYear(), b.getMonth(), 0).getDate(); }
+  if (mois < 0) { mois += 12; ans--; }
+  if (ans > 0) return ans + " an" + (ans > 1 ? "s" : "") + (mois ? " " + mois + " mois" : "");
+  if (mois > 0) return mois + " mois";
+  return j + " jour" + (j > 1 ? "s" : "");
+}
+function dashMoisAn(d) { return d.toLocaleDateString("fr-FR", { month: "short", year: "numeric" }); }
+
+/** Séance la plus récente, aujourd'hui compris (null s'il n'y en a aucune). */
+function dashDerniereSeance() {
+  const auj = todayISO();
+  return spSessions().filter(s => s.date && s.date <= auj)
+    .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""))).pop() || null;
+}
+
+/** Les deux façons d'ajouter une pesée, comme dans l'onglet Suivi. */
+function dashBoutonsPesee() {
+  return `<div class="dash-tile-btns">
+    <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();saImportScreens()"><i class="ph ph-camera"></i> Captures</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();saOpenMesure(null)"><i class="ph ph-pencil-simple"></i> À la main</button>
+  </div>`;
+}
+
+/** Enregistre S.uiPrefs (pense-bête, objectif de patrimoine). Jamais avant
+    la lecture réussie du PEA : uiPrefs vit dans pea_data.json.
+    Une écriture à la fois, chacune avec l'état du moment où elle part : cinq
+    notes ajoutées coup sur coup partaient ensemble, arrivaient dans le
+    désordre, et la 4e écrasait la 5e (vu au banc d'essai, 12/10/2026). */
+let _dashPrefsChaine = Promise.resolve();
+function dashSauverPrefs() {
+  if (!_hydrationDone) {
+    _alerteEnregistrement("Non enregistré : le fichier du PEA n'a pas pu être lu au démarrage (voir le bandeau en haut).");
+    return _dashPrefsChaine;
+  }
+  _dashPrefsChaine = _dashPrefsChaine.then(async () => {
+    try {
+      if (!(window.pywebview && pywebview.api)) return;
+      const r = await pywebview.api.save_ui_prefs(S.uiPrefs);
+      if (r && r.ok === false) throw new Error(r.error || "écriture refusée");
+    } catch (e) {
+      _alerteEnregistrement("Enregistrement impossible : " + ((e && e.message) || e));
+    }
+  });
+  return _dashPrefsChaine;
+}
+
+/* ── Tuile « Marchés du jour » ───────────────────────────────────────────────
+   Ses indices sont demandés avec les cours (fetchLocalCours), toutes les
+   3 minutes, tant que la tuile est affichée. ^990100-USD-STRD est l'indice
+   MSCI World lui-même (en dollars), pas un ETF qui le suit. */
+const DASH_MARCHES = [["^FCHI", "CAC 40"], ["^GSPC", "S&P 500"], ["^IXIC", "Nasdaq"], ["^990100-USD-STRD", "MSCI World"]];
+let _dashMarchesAttente = false;
+
+function dashMarchesTickers() {
+  return dashConfig().some(c => c.id === "marches" && c.on) ? DASH_MARCHES.map(x => x[0]) : [];
+}
+/** Tuile tout juste ajoutée : ses indices sont demandés sans attendre la
+    prochaine actualisation des cours. */
+function dashMarchesCharger() {
+  if (_dashMarchesAttente || typeof applyCoursData !== "function") return;
+  _dashMarchesAttente = true;
+  dashRender();
+  Promise.resolve(applyCoursData()).finally(() => { _dashMarchesAttente = false; dashRender(); });
+}
+function dashMarches() {
+  const l = DASH_MARCHES.map(([t, nom]) => ({ nom, v: getVar(t) })).filter(x => x.v && x.v.cours);
+  if (!l.length) return null;
+  const auj = new Date().toDateString();
+  // Une séance qui n'est pas celle du jour (week-end, Bourse de New York pas
+  // encore ouverte) porte le jour de sa clôture
+  const lignes = l.map(x => {
+    const s = x.v.t ? new Date(x.v.t * 1000) : null;
+    const jour = s && s.toDateString() !== auj
+      ? `<em title="Clôture du ${s.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}">${s.toLocaleDateString("fr-FR", { weekday: "short" })}</em>` : "<em></em>";
+    return `<div class="dash-mkt"><span class="dash-mkt-n">${escHtml(x.nom)}</span>
+      <span class="dash-mkt-v">${x.v.cours.toLocaleString("fr-FR", { maximumFractionDigits: 0 })}</span>
+      <b class="${x.v.d1 == null ? "" : x.v.d1 >= 0 ? "c-g" : "c-r"}">${x.v.d1 != null ? pct(x.v.d1) : "—"}</b>${jour}</div>`;
+  }).join("");
+  return { lbl: "Marchés du jour", val: null, go: null, viz: `<div class="dash-mkts">${lignes}</div>`, vizCls: "dash-viz-haut" };
+}
+
+/* ── Tuile « Pense-bête » ────────────────────────────────────────────────────
+   S.uiPrefs.penseBete = [{id, texte, date ("AAAA-MM-JJ" ou ""), faite}],
+   enregistré avec les préférences de l'utilisateur (pea_data.json, donc dans
+   ses sauvegardes). Une note cochée passe dans « Terminées », d'où on peut la
+   remettre à faire ou la supprimer. */
+let _dashNoteEdit = null;   // id de la note en cours de modification
+
+function dashNotes() {
+  if (!S.uiPrefs) S.uiPrefs = {};
+  if (!Array.isArray(S.uiPrefs.penseBete)) S.uiPrefs.penseBete = [];
+  return S.uiPrefs.penseBete;
+}
+/** Notes à faire : les datées d'abord, de la plus ancienne échéance à la plus
+    lointaine (les dépassées en tête), puis les autres dans l'ordre d'écriture. */
+function dashNotesAFaire() {
+  return dashNotes().filter(n => !n.faite).sort((a, b) =>
+    (a.date && b.date) ? a.date.localeCompare(b.date) || a.id - b.id : a.date ? -1 : b.date ? 1 : a.id - b.id);
+}
+function dashNoteEcheance(n) {
+  if (!n.date) return "";
+  const j = dashJours(n.date);
+  const txt = j < -1 ? "il y a " + -j + " j" : j === -1 ? "hier" : j === 0 ? "aujourd'hui"
+            : j === 1 ? "demain" : j <= 30 ? "J−" + j : dashDateCourte(n.date);
+  return `<span class="dash-note-d${j < 0 ? " c-r" : j === 0 ? " dash-note-auj" : ""}" title="${escHtml(dashDateCourte(n.date))}">${txt}</span>`;
+}
+
+function dashNotesTuile() {
+  const l = dashNotesAFaire();
+  const lignes = l.slice(0, 3).map(n => `<div class="dash-note" title="${escHtml(n.texte)}" onclick="event.stopPropagation();dashNotesOuvrir(${n.id})">
+      <button type="button" class="dash-note-chk" title="C'est fait" aria-label="Marquer comme faite"
+              onclick="event.stopPropagation();dashNoteFaite(${n.id}, true)"><i class="ph ph-check"></i></button>
+      <span class="dash-note-t">${escHtml(n.texte)}</span>${dashNoteEcheance(n)}</div>`).join("");
+  const autres = l.length > 3
+    ? `<button type="button" class="dash-note-plus" onclick="event.stopPropagation();dashNotesOuvrir()">+ ${l.length - 3} autre${l.length > 4 ? "s" : ""}</button>` : "";
+  return { lbl: "Pense-bête", val: null, go: null, vizCls: "dash-viz-haut",
+           sub: l.length ? "" : "Rien à retenir pour l'instant.",
+           viz: (lignes ? `<div class="dash-notes">${lignes}</div>` : "")
+              + `<div class="dash-notes-pied"><button type="button" class="btn btn-ghost btn-sm dash-tile-btn"
+                   onclick="event.stopPropagation();dashNotesOuvrir('nouvelle')"><i class="ph ph-plus"></i> Ajouter</button>${autres}</div>` };
+}
+
+/** id : la note à modifier ; "nouvelle" : en écrire une ; rien : la liste. */
+function dashNotesOuvrir(id) {
+  _dashNoteEdit = typeof id === "number" ? id : null;
+  const n = _dashNoteEdit != null ? dashNotes().find(x => x.id === _dashNoteEdit) : null;
+  document.getElementById("dn-texte").value = n ? n.texte : "";
+  document.getElementById("dn-date").value  = n ? (n.date || "") : "";
+  document.getElementById("dn-err").hidden = true;
+  dashNotesRenderListe();
+  openOvTop("ov-dash-notes");
+  if (id !== undefined) setTimeout(() => document.getElementById("dn-texte").focus(), 60);
+}
+
+function dashNotesRenderListe() {
+  const edit = _dashNoteEdit != null;
+  document.getElementById("dn-ok").innerHTML = edit ? '<i class="ph ph-check"></i> Enregistrer' : '<i class="ph ph-plus"></i> Ajouter';
+  document.getElementById("dn-annuler").hidden = !edit;
+  const ligne = (n, faite) => `<div class="dash-nl${n.id === _dashNoteEdit ? " edit" : ""}">
+      <button type="button" class="dash-note-chk${faite ? " on" : ""}" title="${faite ? "Remettre à faire" : "C'est fait"}"
+              aria-label="${faite ? "Remettre à faire" : "Marquer comme faite"}" onclick="dashNoteFaite(${n.id}, ${!faite})"><i class="ph ph-check"></i></button>
+      <span class="dash-note-t">${escHtml(n.texte)}</span>${faite ? "" : dashNoteEcheance(n)}
+      <span class="m-acts">${faite ? "" : `<button type="button" class="m-iconbtn" title="Modifier" aria-label="Modifier" onclick="dashNotesOuvrir(${n.id})"><i class="ph ph-pencil-simple"></i></button>`}
+        <button type="button" class="m-iconbtn danger" title="Supprimer" aria-label="Supprimer" onclick="dashNoteSupprimer(${n.id})"><i class="ph ph-trash"></i></button></span>
+    </div>`;
+  const aFaire = dashNotesAFaire(), faites = dashNotes().filter(n => n.faite);
+  document.getElementById("dn-liste").innerHTML =
+    (aFaire.length ? aFaire.map(n => ligne(n, false)).join("") : `<div class="dash-nl-vide">Aucune note à faire.</div>`)
+    + (faites.length ? `<div class="dash-nl-titre">Faites</div>` + faites.map(n => ligne(n, true)).join("") : "");
+}
+
+function dashNotesApres() {
+  dashRender();
+  if (document.getElementById("ov-dash-notes").classList.contains("open")) dashNotesRenderListe();
+  dashSauverPrefs();
+}
+
+function dashNoteEnregistrer() {
+  const texte = document.getElementById("dn-texte").value.trim();
+  const date  = document.getElementById("dn-date").value || "";
+  const err = document.getElementById("dn-err");
+  if (!texte) { err.hidden = false; document.getElementById("dn-texte").focus(); return; }
+  err.hidden = true;
+  const l = dashNotes();
+  const n = _dashNoteEdit != null ? l.find(x => x.id === _dashNoteEdit) : null;
+  if (n) { n.texte = texte; n.date = date; }
+  else l.push({ id: l.reduce((m, x) => Math.max(m, x.id), 0) + 1, texte, date, faite: false });
+  _dashNoteEdit = null;
+  document.getElementById("dn-texte").value = "";
+  document.getElementById("dn-date").value = "";
+  dashNotesApres();
+  document.getElementById("dn-texte").focus();
+}
+
+function dashNoteAnnulerEdition() {
+  _dashNoteEdit = null;
+  document.getElementById("dn-texte").value = "";
+  document.getElementById("dn-date").value = "";
+  document.getElementById("dn-err").hidden = true;
+  dashNotesRenderListe();
+}
+
+function dashNoteFaite(id, faite) {
+  const n = dashNotes().find(x => x.id === id);
+  if (!n) return;
+  n.faite = !!faite;
+  if (_dashNoteEdit === id) dashNoteAnnulerEdition();
+  dashNotesApres();
+  if (faite && !document.getElementById("ov-dash-notes").classList.contains("open"))
+    showToastModern("Note faite : elle reste dans le pense-bête, rubrique « Faites »", "ok");
+}
+
+function dashNoteSupprimer(id) {
+  const n = dashNotes().find(x => x.id === id);
+  if (!n || !confirm("Supprimer la note « " + n.texte + " » ?")) return;
+  S.uiPrefs.penseBete = dashNotes().filter(x => x.id !== id);
+  if (_dashNoteEdit === id) dashNoteAnnulerEdition();
+  dashNotesApres();
+}
+
+/* ── Objectif de patrimoine (S.uiPrefs.dashObjectif = {montant, date}) ───── */
+
+function dashObjectifOuvrir() {
+  const o = (S.uiPrefs && S.uiPrefs.dashObjectif) || {};
+  document.getElementById("do-montant").value = o.montant || "";
+  document.getElementById("do-date").value = o.date || "";
+  document.getElementById("do-err").hidden = true;
+  document.getElementById("do-suppr").hidden = !o.montant;
+  openOvTop("ov-dash-objectif");
+  setTimeout(() => document.getElementById("do-montant").focus(), 60);
+}
+
+function dashObjectifEnregistrer() {
+  // Virgule décimale et espaces acceptés (« 50 000 », « 12 500,50 »)
+  const brut = document.getElementById("do-montant").value.replace(/[\s  €]/g, "").replace(",", ".");
+  const montant = Number(brut);
+  const err = document.getElementById("do-err");
+  if (!(montant > 0)) { err.hidden = false; document.getElementById("do-montant").focus(); return; }
+  if (!S.uiPrefs) S.uiPrefs = {};
+  S.uiPrefs.dashObjectif = { montant: Math.round(montant * 100) / 100, date: document.getElementById("do-date").value || "" };
+  closeOv("ov-dash-objectif");
+  dashRender();
+  dashSauverPrefs();
+}
+
+function dashObjectifSupprimer() {
+  if (S.uiPrefs) delete S.uiPrefs.dashObjectif;
+  closeOv("ov-dash-objectif");
+  dashRender();
+  dashSauverPrefs();
 }
 
 /** Icône du module d'une tuile, la même que dans la barre latérale. */
@@ -21918,6 +22739,7 @@ const DASH_ICONS = {
   "PEA": "chart-line-up", "Patrimoine": "bank", "Sports": "person-simple-run",
   "Santé": "heartbeat", "Prêt": "hand-coins",
   "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase",
+  "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -21956,7 +22778,7 @@ function dashRender() {
     // Rien à afficher : soit le module charge encore, soit il n'a vraiment
     // rien à dire. En mode édition la tuile reste visible en grisé, sinon on
     // ne pourrait plus ni la changer ni la retirer.
-    if (!dashModuleReady(w.module)) { html.push(dashSkeletonHtml(w)); return; }
+    if (!(w.ready ? w.ready() : dashModuleReady(w.module))) { html.push(dashSkeletonHtml(w)); return; }
     if (_dashEdit) {
       html.push(dashCardHtml(w, { lbl: w.label, val: "—",
                                   sub: "rien à afficher pour l'instant" }, true));
@@ -21993,7 +22815,10 @@ function dashOpenPick(slotId) {
   const actifs = new Set(cfg.filter(c => c.on).map(c => c.id));
   const titre  = document.getElementById("dash-pick-title");
   if (titre) titre.textContent = slotId ? "Afficher ici…" : "Ajouter une tuile";
-  box.innerHTML = DASH_WIDGETS.map(w => {
+  // Rangées par module, dans l'ordre de DASH_WIDGETS : un titre à chaque module
+  const mods = [...new Set(DASH_WIDGETS.map(w => w.module))];
+  box.innerHTML = mods.map(m => `<div class="dash-pick-grp">${dashIcon({ module: m })}${escHtml(m)}</div>` +
+    DASH_WIDGETS.filter(w => w.module === m).map(w => {
     const ici   = (slotId === w.id);
     const actif = actifs.has(w.id);
     let etat = "";
@@ -22004,10 +22829,9 @@ function dashOpenPick(slotId) {
     return `<button type="button" class="dash-pick${ici ? " current" : ""}"
             ${(actif && !ici) ? "disabled" : ""} onclick="dashPickApply('${w.id}')">
       <span class="dash-pick-lbl">${escHtml(w.label)}</span>
-      <span class="dash-pick-mod">${escHtml(w.module)}</span>
       <span class="dash-pick-state">${escHtml(etat)}</span>
     </button>`;
-  }).join("");
+  }).join("")).join("");
   openOvTop("ov-dash-pick");
 }
 
@@ -22037,6 +22861,7 @@ async function dashPickApply(id) {
   await dashSaveConfig(cfg);
   dashRender();
   dashRenderConfig();
+  if (id === "marches") dashMarchesCharger();
 }
 
 /** Glisser-déposer des tuiles directement sur l'accueil (mode édition). */
@@ -22105,6 +22930,7 @@ async function dashToggle(id, on) {
   if (c) c.on = !!on;
   await dashSaveConfig(cfg);
   dashRender();
+  if (id === "marches" && on) dashMarchesCharger();
 }
 
 /** Glisser-déposer pour réordonner les tuiles. */
