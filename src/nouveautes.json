@@ -4,8 +4,13 @@
     {
       "version": "4.4.7",
       "date": "2026-10-12",
-      "titre": "PRU au millième",
+      "titre": "La composition de tous tes ETF, et des PRU au millième",
+      "nouveau": [
+        "Expositions : un ETF que Pilote ne connaissait pas n'est plus « Composition inconnue ». Pilote cherche tout seul sur internet quel indice il suit (justETF), puis la composition de cet indice : pays, secteurs et principales entreprises. Ça vaut pour l'ETF que tu ajoutes comme pour ceux importés d'un relevé.",
+        "Ajouter une position : pour un ETF, Pilote dit s'il connaît sa composition, et le bouton « Chercher l'ETF » la cherche tout de suite. S'il ne la trouve pas, « Ouvrir justETF » ouvre sa fiche pour que tu la recopies avec « Renseigner la composition »."
+      ],
       "ameliore": [
+        "L'or et les autres matières premières (ETC) ont leur propre ligne « Or et matières premières » dans Expositions, rangée selon son poids.",
         "Le PRU de chaque ligne s'affiche avec trois chiffres après la virgule (6,966 € au lieu de 6,97 €), comme les cours des ETF : tableau des Positions du PEA et des CTO, et onglet PEA du Prêt."
       ]
     },
