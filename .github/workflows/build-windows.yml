@@ -1,0 +1,72 @@
+name: Build Windows (test)
+
+# Le meme build que release.yml, sans rien publier : fabrique Pilote.exe sur une
+# machine Windows de GitHub, verifie les fichiers embarques, lance l'exe et
+# attend son serveur et sa page. Sert a s'assurer, avant de fusionner la
+# branche mac dans main, que le code commun n'a rien casse sous Windows.
+# Constats en annotations, lisibles sans compte (API publique des check-runs).
+
+on:
+  push:
+    branches: [mac]
+    paths-ignore: ['docs/**', '**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build exe (PyInstaller)
+        run: python -m PyInstaller build/pilote.spec --clean --noconfirm
+
+      - name: Check bundle
+        shell: pwsh
+        run: |
+          # Les pieges de CLAUDE.md : sans ces fichiers, tout marche en dev et
+          # rien dans l'exe
+          foreach ($f in "dist/Pilote/Pilote.exe", "dist/Pilote/_internal/ocr_win.ps1",
+                         "dist/Pilote/_internal/ui/vendor", "dist/Pilote/_internal/nouveautes.json") {
+            if (-not (Test-Path $f)) { Write-Output "::error title=Bundle::$f absent"; exit 1 }
+          }
+          Write-Output "::notice title=Bundle::exe, ocr_win.ps1, ui/vendor et nouveautes.json presents"
+
+      - name: Launch and check
+        shell: pwsh
+        run: |
+          $env:PILOTE_DIAG = "1"
+          $p = Start-Process -FilePath "dist/Pilote/Pilote.exe" -PassThru `
+                 -RedirectStandardOutput sortie.log -RedirectStandardError pilote.err
+          $up = $null
+          for ($i = 1; $i -le 60; $i++) {
+            try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:7438/ping -TimeoutSec 2 | Out-Null; $up = $i; break } catch { Start-Sleep 1 }
+          }
+          for ($i = 1; $i -le 50; $i++) {
+            if ((Get-Content pilote_diag.log -Raw -ErrorAction SilentlyContinue) -match "\[diag\]") { break }
+            Start-Sleep 1
+          }
+          $log = (Get-Content pilote_diag.log -Raw -ErrorAction SilentlyContinue) -replace "`r?`n", " "
+          $ouverte = [regex]::Match($log, "fenetre ouverte \([a-z]+\)").Value
+          $diag = [regex]::Match($log, "\[diag\] \{.*?\}\}?").Value
+          Write-Output "::notice title=Serveur::ping $(if ($up) { "$up s" } else { 'KO' }) - $ouverte"
+          Write-Output "::notice title=Diag::$($diag.Substring(0, [Math]::Min(3000, $diag.Length)))"
+          $err = (Get-Content pilote.err -Raw -ErrorAction SilentlyContinue)
+          if ($err) { Write-Output "::notice title=Erreurs::$(($err -replace "`r?`n", ' ').Substring(0, [Math]::Min(1500, $err.Length)))" }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          if (-not $up) { exit 1 }

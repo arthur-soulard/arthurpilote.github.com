@@ -475,6 +475,15 @@ def _bundle_mac():
     return None
 
 
+def mac_a_deplacer() -> bool:
+    """Mac : l'app tourne-t-elle d'un endroit ou elle ne pourra pas se mettre a
+    jour (Telechargements non deplacee, dossier en lecture seule) ?"""
+    bundle = _bundle_mac()
+    if sys.platform != "darwin" or bundle is None:
+        return False
+    return "AppTranslocation" in str(bundle) or not os.access(bundle.parent, os.W_OK)
+
+
 def _installer_mac(download_url: str, version: str) -> None:
     import shlex
     import time as _time
@@ -485,7 +494,7 @@ def _installer_mac(download_url: str, version: str) -> None:
         return
     # Lancee depuis Telechargements sans avoir ete deplacee, l'app tourne d'une
     # copie en lecture seule (« App Translocation ») : rien a remplacer
-    if "AppTranslocation" in str(bundle) or not os.access(bundle.parent, os.W_OK):
+    if mac_a_deplacer():
         _set_progress("error", 0, "Déplace Pilote dans le dossier Applications, puis relance-le : "
                                   "la mise à jour pourra s'installer.")
         return
