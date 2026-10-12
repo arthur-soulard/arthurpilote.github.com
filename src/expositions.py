@@ -452,7 +452,12 @@ def recuperer(ticker: str) -> dict:
 # hors ligne, et le bouton « Mettre a jour les donnees » le relit.
 
 class Introuvable(Exception):
-    """Recherche sans resultat : le message s'affiche tel quel dans l'onglet."""
+    """Recherche sans resultat : le message s'affiche tel quel dans l'onglet.
+    isin, quand on l'a trouve : le lien « Ouvrir justETF » mene alors a la fiche."""
+
+    def __init__(self, message: str, isin: str = ""):
+        super().__init__(message)
+        self.isin = isin
 
 
 _ISIN = re.compile(r"[A-Z]{2}[A-Z0-9]{9}[0-9]")
@@ -643,7 +648,8 @@ def _rechercher(cle: str, isin: str = "") -> dict:
         if not 0 < sum(c["pays"].values()) <= 101.5:
             c = None
     if c is None:
-        raise Introuvable("aucune source ne publie sa composition" if j else "justETF n'a pas répondu")
+        raise Introuvable("aucune source ne publie sa composition" if j else "justETF n'a pas répondu",
+                          isin)
     _arrondir(c)
     c.update({"isin": isin, "nom": j.get("nom") or cle, "indice": j.get("indice") or "",
               "source": via, "date": date, "releve": datetime.date.today().isoformat(),

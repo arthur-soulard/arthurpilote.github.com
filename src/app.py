@@ -540,7 +540,7 @@ class Api:
         try:
             return {"ok": True, "composition": expositions.chercher(cle, isin)}
         except expositions.Introuvable as e:
-            return {"ok": False, "error": str(e)}
+            return {"ok": False, "error": str(e), "isin": e.isin}
         except Exception as e:
             traceback.print_exc()
             return {"ok": False, "error": "recherche impossible : " + str(e)[:150]}

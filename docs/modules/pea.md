@@ -143,8 +143,20 @@ relevé, ouverture de l'onglet), Pilote la cherche, une fois par ETF et par lanc
 
 Résultat dans `etf_compositions.json`, marqué `"auto": true` (badge « Trouvée sur
 internet le … ») : il sert ensuite hors ligne, et « Mettre à jour les données » le
-relit avec les ETF suivis. Échec → message dans « Détail par position » (« Euronext
-ne connaît pas le mnémonique… »), la saisie à la main reste possible.
+relit avec les ETF suivis. Un ETF ajouté par le formulaire affiche un message à la
+fin de la recherche (« Composition de C50 trouvée : indice EURO STOXX 50 »).
+
+**Bouton « Chercher l'ETF »** (demande d'Arthur, 12/10/2026). Dans « Ajouter une
+position », dès que le type est ETF et qu'un ticker est saisi, le bloc « Composition
+de l'ETF » (`#f-compo`, `posCompoMaj`) dit « Connue de Pilote : indice … » ou « Pilote
+ne connaît pas encore cet ETF » avec **Chercher l'ETF**, qui lance la recherche sans
+attendre l'enregistrement. Caché dans « Modifier la position » (`_posCompoAjout`).
+**Quand Pilote ne trouve pas**, partout (formulaire, bandeau du haut d'Expositions,
+« Détail par position ») : **Ouvrir justETF** ouvre dans le navigateur la fiche de
+l'ETF (par son ISIN, renvoyé par l'échec quand Euronext l'a donné) ou la recherche
+justETF sur son ticker (`search.html?search=ETFS&query=D5BL` : vérifié, 1 résultat),
+plus **Chercher à nouveau** (après une coupure réseau) ; on recopie ensuite pays et
+secteurs avec « Renseigner la composition » (`expoOuvrirJustetf`, `expoRelancer`).
 
 * Lignes de fonds dans les sources iShares (« ISH MSCI CHINA A ETF », classées
   « Finance / Irlande ») : elles comptent pour le pays de leur nom, en « Autres
