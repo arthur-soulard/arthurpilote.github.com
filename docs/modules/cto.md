@@ -8,7 +8,7 @@ Six lots de questions avant d'écrire une ligne. Ses choix :
 
 * **Plusieurs CTO** par utilisateur, chacun avec son courtier. Au départ (4.4.0),
   une seule section « CTO » et une liste déroulante en haut des onglets.
-  **Changé le 12/10/2026 (4.4.1), à sa demande** : « un module complet pour un
+  **Changé le 12/10/2026 (4.4.2), à sa demande** : « un module complet pour un
   CTO », donc **une section par CTO** dans la barre latérale, à son nom
   (« CTO » + nom du compte) ; en créer un agrandit la barre (« + » du titre
   Bourse). La liste déroulante a disparu. Détail : `CLAUDE.md`, « Navigation ».

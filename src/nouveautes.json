@@ -2,6 +2,20 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.2",
+      "date": "2026-10-12",
+      "titre": "Une section par CTO, et la barre de gauche rangée à ta façon",
+      "nouveau": [
+        "Chaque CTO a sa propre section dans la barre de gauche, à son nom (« CTO » suivi du nom du compte), avec tous ses onglets. Le « + » à côté de « Bourse » en crée un nouveau : une section de plus apparaît.",
+        "Range la barre de gauche comme tu veux : fais glisser l'en-tête d'une section pour la placer plus haut ou plus bas, ou dans l'autre groupe. Lâchée hors de la barre, elle revient à sa place."
+      ],
+      "ameliore": [
+        "La barre de gauche est rangée en deux groupes : « Bourse » (PEA, CTO, Actus) et « Vie perso » (Mes comptes, Prêt, Sports, Patrimoine, Santé).",
+        "Les simulateurs (versements réguliers, objectifs, comparateur) passent du PEA à Patrimoine → Simulateurs. Tes saisies sont gardées.",
+        "La liste déroulante des CTO en haut de leurs écrans disparaît : chaque CTO s'ouvre depuis sa section."
+      ]
+    },
+    {
       "version": "4.4.1",
       "date": "2026-10-12",
       "titre": "L'import Trade Republic lit enfin ton vrai relevé",

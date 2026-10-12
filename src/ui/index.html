@@ -1918,7 +1918,7 @@ body { font-variant-numeric: tabular-nums; }
 .sb-sub .sb-item { padding: 6px 12px; font-size: 13px; font-weight: 400; }
 .sb-home { margin-bottom: 10px; }
 .sb-bottom { border-top-color: var(--brd); }
-/* Deux tas de sections, « Bourse » et « Vie perso » (4.4.1) : de simples
+/* Deux tas de sections, « Bourse » et « Vie perso » (4.4.2) : de simples
    titres ; les sections se déplacent en glissant leur en-tête */
 .sb-grp {
   display: flex; align-items: center; min-height: 22px; padding: 4px 5px 0 12px;
@@ -13273,7 +13273,7 @@ const NAV_SECTIONS = [
   { id: "sec-patri", label: "Patrimoine", children: [
     { id: "pa-vue",     label: "Vue d'ensemble" },
     { id: "pa-comptes", label: "Comptes"        },
-    // Dans le PEA jusqu'à la 4.4.0 : ils ne dépendent d'aucun compte
+    // Dans le PEA jusqu'à la 4.4.1 : ils ne dépendent d'aucun compte
     { id: "sim",        label: "Simulateurs"    },
   ]},
   { id: "sec-sante", label: "Santé", children: [
@@ -13342,7 +13342,7 @@ function _updateCrumb(id) {
     : (id === "home" ? "<b>Accueil</b>" : "");
 }
 
-/* ── Barre latérale : deux tas, une section par CTO, ordre libre (4.4.1) ──
+/* ── Barre latérale : deux tas, une section par CTO, ordre libre (4.4.2) ──
    La barre montre un bloc par section de NAV_SECTIONS, sauf la section CTO
    qui en montre un par CTO, à son nom (onglets « cto-pos@c2 »). Deux titres,
    « Bourse » et « Vie perso », sont de simples repères : chaque bloc se glisse
@@ -20146,7 +20146,7 @@ async function acDeconnecter() {
    MODULE CTO (comptes-titres ordinaires, 4.4.0)
    Plusieurs CTO par utilisateur, chacun avec son courtier (cto.py, cto.json).
    Aucun écran propre : chaque CTO a sa section dans la barre latérale
-   (4.4.1, _navBlocs), qui montre les écrans du PEA sur lui (« Compte actif »,
+   (4.4.2, _navBlocs), qui montre les écrans du PEA sur lui (« Compte actif »,
    près de S). Ce bloc :
    * range et remet les données (_cptBasculer) quand on entre ou sort d'un
      onglet CTO, avec ses caches (historique Yahoo) ;
@@ -20476,7 +20476,7 @@ function ctoRenderBarre() {
     const a = txFraisAttendus(t);
     return a != null && Math.abs(txCourtage(t) - a) >= 0.011;
   }).length;
-  // Plus de liste des CTO ici (4.4.1) : chacun a sa section dans la barre latérale
+  // Plus de liste des CTO ici (4.4.2) : chacun a sa section dans la barre latérale
   bar.innerHTML = `<span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
     ${ecarts ? `<span class="cto-bar-alerte" title="Voir les ordres marqués dans Transactions"><i class="ph ph-warning"></i>
       ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</span>` : ""}
