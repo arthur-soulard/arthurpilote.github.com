@@ -184,6 +184,40 @@ jobs:
           RESTE=$(ls -d /Applications/Pilote.app.ancienne 2>/dev/null && echo "ancienne app restee" || echo "ancienne app retiree")
           echo "::notice title=Mise a jour::$FIN ; $RELANCE (ping $PING) ; $TEMOIN ; $RESTE ; $(grep "\[maj\]" maj.log | tr '\n' ' ' | head -c 1500)"
           echo "::notice title=Mise a jour (journaux)::$(tail -c 600 "$HOME/Library/Logs/Pilote/update_sh.log" 2>/dev/null | tr '\n' ' ') | $(grep "INSTALL" "$HOME/Library/Logs/Pilote/update.log" 2>/dev/null | tail -n 6 | tr '\n' ' ' | head -c 1500)"
+          # Refus de l'acces au reseau local (« Don't Allow ») : Pilote doit
+          # marcher quand meme (127.0.0.1 et internet n'en dependent pas)
+          REFUS=$(osascript <<'OSA' 2>&1
+          tell application "System Events"
+            set n to 0
+            repeat with p in (every process)
+              try
+                repeat with w in (every window of p)
+                  try
+                    repeat with b in (every button of w)
+                      if name of b is in {"Don’t Allow", "Don't Allow", "Ne pas autoriser"} then
+                        click b
+                        set n to n + 1
+                      end if
+                    end repeat
+                  end try
+                end repeat
+              end try
+            end repeat
+            return n
+          end tell
+          OSA
+          )
+          pkill -f "/Applications/Pilote.app/Contents/MacOS/Pilote" || true
+          sleep 4
+          # Relance par le Finder, avec le diagnostic : page, internet, et une
+          # nouvelle demande eventuelle (capture)
+          open -n --env PILOTE_DIAG=1 --stdout "$PWD/apres-refus.log" --stderr "$PWD/apres-refus.log" /Applications/Pilote.app
+          for i in $(seq 1 50); do
+            grep -q "\[diag\]" apres-refus.log 2>/dev/null && grep -q "\[https\] cours" apres-refus.log 2>/dev/null && break
+            sleep 1
+          done
+          screencapture -x capture-maj.png || true
+          echo "::notice title=Apres refus::boutons refuses : $REFUS ; $(grep -E "\[diag\]|\[https\] (reglages|cours)" apres-refus.log | tr '\n' ' ' | head -c 2500)"
           pkill -f "/Applications/Pilote.app/Contents/MacOS/Pilote" || true
           kill $SRV 2>/dev/null || true
           exit 0
