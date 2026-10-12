@@ -534,6 +534,17 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def expositions_chercher(self, cle: str, isin: str = "") -> dict:
+        """ETF que Pilote ne suit pas : cherche sa composition sur internet
+        (quelques secondes, dans le thread de l'appel) et la garde."""
+        try:
+            return {"ok": True, "composition": expositions.chercher(cle, isin)}
+        except expositions.Introuvable as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            traceback.print_exc()
+            return {"ok": False, "error": "recherche impossible : " + str(e)[:150]}
+
     def server_port(self) -> int:
         return server.get_port()
 

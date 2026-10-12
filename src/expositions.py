@@ -24,16 +24,22 @@ qu'un utilisateur fait a la main restent, elles, dans ses ``uiPrefs``.
 Tant qu'aucune mise a jour n'a reussi, l'app se sert de ``expositions_base.py``,
 releve le 30/09/2026 et livre avec le code : l'onglet marche hors ligne des le
 premier lancement. Pour le regenerer : ``python src/expositions.py``.
+
+Un ETF absent de ETFS est cherche sur internet (``chercher``, voir plus bas) :
+justETF dit quel indice il suit, puis la meilleure source connue le decompose.
 """
 from __future__ import annotations
 
 import datetime
+import html
+import http.cookiejar
 import json
 import os
 import re
 import tempfile
 import threading
 import traceback
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -52,6 +58,12 @@ ISHARES_API = ("https://www.ishares.com/varnish-api/uk-retail01-product-data/pro
                "&component=holdings.all&locale=en_GB&portfolioId={pid}&targetSite=ishares-uk"
                "&userType=individual&excludeContent=true&includeConfig=true")
 AMUNDI_API = "https://www.amundietf.fr/mapi/ProductAPI/getProductsData"
+# Recherche d'un ETF inconnu : ISIN d'un mnemonique, indice suivi, liste des fonds iShares
+EURONEXT_RECHERCHE = "https://live.euronext.com/en/instrumentSearch/searchJSON?q={q}"
+JUSTETF = "https://www.justetf.com/en/etf-profile.html?isin={isin}"
+ISHARES_LISTE = ("https://www.ishares.com/varnish-api/blk-product-screener-server/api/v1/"
+                 "product-screener/product-data?country=gb&language=en&siteName=ishares-uk"
+                 "&userType=individual")
 
 # Nombre d'entreprises gardees par ETF quand toutes ses lignes sont connues.
 # Au-dela, chacune pese moins de 0,2 % de l'indice : inutile pour l'addition
@@ -84,6 +96,51 @@ ETFS = {
     "GPEA": {"isin": "FR0014017NX3", "nom": "Amundi PEA Global (MSCI ACWI)",
              "indice": "MSCI ACWI", "src": ("amundi_indice", "FR0014017NX3"),
              "via": "Amundi, indice de l'ETF"},
+}
+
+
+def _norm_indice(nom: str) -> str:
+    """« S&P 500® », « STOXX® Europe 600 », « Nasdaq-100 » -> « s&p 500 »..."""
+    s = re.sub(r"[^a-z0-9&]+", " ", re.sub(r"[®™]", "", (nom or "").lower()))
+    return " ".join(s.split())
+
+
+# ─── Indices dont Pilote sait lire la composition complete ───────────────────
+# Cle = nom de l'indice tel que justETF l'ecrit, normalise. Un ETF inconnu qui
+# suit l'un d'eux prend cette composition, quel que soit son emetteur (HSBC,
+# Xtrackers, SPDR...) : c'est l'indice qui compte, comme pour ETFS. Sources
+# physiques pour avoir toutes les lignes ; Amundi quand l'ETF physique d'iShares
+# passe par d'autres ETF (MSCI EM : Chine A et Bresil, 5,6 %).
+INDICES = {
+    "msci all country world acwi": (("amundi_indice", "FR0014017NX3"), "Amundi PEA Global (GPEA), même indice"),
+    "msci emerging markets": (("amundi_indice", "LU1681045370"), "Amundi MSCI Emerging Markets, même indice"),
+    "msci emerging markets imi": (("ishares", 264659), "iShares Core MSCI EM IMI (EIMI), même indice"),
+    "msci europe": (("ishares", 251861), "iShares Core MSCI Europe (SMEA), même indice"),
+    "msci emu": (("ishares", 253729), "iShares Core MSCI EMU (CEU1), même indice"),
+    "euro stoxx 50": (("ishares", 253712), "iShares Core EURO STOXX 50 (CSX5), même indice"),
+    "cac 40": (("amundi_lignes", "FR0007052782"), "Amundi CAC 40 (C40), même indice"),
+    "dax": (("ishares", 251464), "iShares Core DAX (EXS1), même indice"),
+    "ftse 100": (("ishares", 253716), "iShares Core FTSE 100 (CUKX), même indice"),
+    "msci usa": (("ishares", 253740), "iShares MSCI USA (CSUS), même indice"),
+    "msci japan": (("ishares", 253732), "iShares MSCI Japan (CJPU), même indice"),
+    "msci world small cap": (("ishares", 296576), "iShares MSCI World Small Cap (WSML), même indice"),
+}
+for _t, _i in ETFS.items():           # MSCI World, S&P 500, Nasdaq-100...
+    INDICES.setdefault(_norm_indice(_i["indice"]), (
+        _i["src"], _i["via"] if _i["src"][0] != "amundi_indice" else f"Amundi ({_t}), même indice"))
+
+# Or, argent... : ni pays ni entreprise. Une seule ligne « _mp » (matieres
+# premieres) dans les pays et dans les secteurs.
+MATIERES = ("gold", "silver", "platinum", "palladium", "precious metals")
+
+# Secteurs de justETF (classification FactSet) -> GICS, a peu pres : justETF
+# range Alphabet, Meta et Amazon dans « Technology ». Ne sert qu'en dernier recours.
+SECTEURS_JUSTETF = {
+    "Technology": "it", "Finance": "fin", "Industrials": "ind", "Healthcare": "sante",
+    "Consumer Non-Cyclicals": "base", "Consumer Cyclicals": "discr",
+    "Consumer Services": "discr", "Business Services": "ind",
+    "Telecommunication": "comm", "Non-Energy Materials": "mat", "Energy": "energie",
+    "Utilities": "util", "Real Estate": "immo",
 }
 
 # ─── Noms des sources -> codes ───────────────────────────────────────────────
@@ -197,6 +254,15 @@ def _joli_nom(brut: str) -> str:
     return " ".join(mot(m, i) for i, m in enumerate(mots))
 
 
+_FONDS = re.compile(r"\b(ETF|UCITS)\b")
+
+
+def _pays_du_nom(nom: str) -> str:
+    """« ISHARES MSCI BRAZIL UCITS ET USDHA » -> « Brazil » (cle de PAYS), sinon ""."""
+    n = (nom or "").upper()
+    return next((p for p in PAYS if re.search(r"\b" + re.escape(p.upper()) + r"\b", n)), "")
+
+
 def _get_json(url: str, body: dict = None, timeout: int = 45) -> dict:
     data = json.dumps(body).encode("utf-8") if body is not None else None
     headers = {"User-Agent": _UA, "Accept": "application/json"}
@@ -284,7 +350,7 @@ def _entreprises(lignes: list, nb: int = NB_ENTREPRISES) -> list:
     """Additionne les categories d'une meme entreprise, trie, garde les nb premieres."""
     par = {}
     for l in lignes:
-        if l["pct"] <= 0:
+        if l["pct"] <= 0 or l.get("fonds"):
             continue
         isin = MEME_ENTREPRISE.get(l["isin"], l["isin"]) or l["nom"]
         e = par.get(isin)
@@ -301,6 +367,14 @@ def _entreprises(lignes: list, nb: int = NB_ENTREPRISES) -> list:
 
 def _depuis_lignes(lignes: list) -> dict:
     """Pays, secteurs et entreprises calcules ligne par ligne, ramenes a 100 %."""
+    # Un ETF iShares tient parfois une partie de son indice via d'autres ETF
+    # (« ISH MSCI CHINA A ETF »), que la source classe « Finance / Irlande » :
+    # ils comptent pour le pays de leur nom, en secteur non detaille, et ne sont
+    # pas des entreprises. Sans pays dans le nom, ils sont ecartes.
+    for l in lignes:
+        if _FONDS.search(l["nom"].upper()):
+            l["pays"], l["secteur"], l["fonds"] = _pays_du_nom(l["nom"]), "", True
+    lignes = [l for l in lignes if not l.get("fonds") or l["pays"]]
     total = sum(l["pct"] for l in lignes) or 1.0
     for l in lignes:
         l["pct"] = l["pct"] * 100.0 / total
@@ -328,10 +402,9 @@ def _valider(c: dict) -> None:
         raise ValueError("aucune entreprise lue")
 
 
-def recuperer(ticker: str) -> dict:
-    """Telecharge et calcule la composition d'un ETF de ETFS."""
-    info = ETFS[ticker]
-    genre, ref = info["src"]
+def _lire_source(src: tuple) -> tuple:
+    """(genre, ref) de ETFS ou de INDICES -> (composition validee, date AAAA-MM-JJ)."""
+    genre, ref = src
     if genre == "ishares":
         lignes, date = _lignes_ishares(ref)
         c = _depuis_lignes(lignes)
@@ -344,13 +417,253 @@ def recuperer(ticker: str) -> dict:
     if len(date) == 8 and date.isdigit():             # 20260929 -> 2026-09-29
         date = f"{date[:4]}-{date[4:6]}-{date[6:]}"
     _valider(c)
+    return c, date
+
+
+def _arrondir(c: dict) -> None:
     for cle in ("pays", "secteurs"):
         c[cle] = {k: _r(v) for k, v in sorted(c[cle].items(), key=lambda kv: -kv[1])
                   if _r(v) > 0}
+
+
+def recuperer(ticker: str) -> dict:
+    """Telecharge et calcule la composition d'un ETF de ETFS."""
+    info = ETFS[ticker]
+    c, date = _lire_source(info["src"])
+    _arrondir(c)
     c.update({"isin": info["isin"], "nom": info["nom"], "indice": info["indice"],
               "source": info["via"], "date": date,
               "releve": datetime.date.today().isoformat()})
     return c
+
+
+# ─── ETF que Pilote ne suit pas : recherche sur internet ─────────────────────
+# L'onglet Expositions appelle chercher() pour chaque ETF dont il n'a pas la
+# composition (ajoute a la main ou importe d'un CTO) :
+#   1. ISIN : celui de la position, sinon celui qu'Euronext donne au mnemonique ;
+#   2. justETF dit quel indice l'ETF suit ;
+#   3. indice de INDICES -> sa composition complete ;
+#   4. sinon ETF iShares physique -> ses propres lignes ;
+#   5. sinon ETF Amundi -> la repartition de son indice publiee par Amundi ;
+#   6. sinon or, argent... -> une seule ligne « _mp » ;
+#   7. sinon le resume de justETF : 13 pays au plus, secteurs a peu pres GICS,
+#      10 premieres lignes. Ce qui manque devient « non detaille » dans l'onglet.
+# Le resultat rejoint etf_compositions.json, marque « auto » : il sert ensuite
+# hors ligne, et le bouton « Mettre a jour les donnees » le relit.
+
+class Introuvable(Exception):
+    """Recherche sans resultat : le message s'affiche tel quel dans l'onglet."""
+
+
+_ISIN = re.compile(r"[A-Z]{2}[A-Z0-9]{9}[0-9]")
+_MATIERE = {"pays": {"_mp": 100.0}, "secteurs": {"_mp": 100.0}, "entreprises": [], "lignes": None}
+_ishares = None          # {isin: (portfolioId, nom, classe d'actifs)}, lu une fois par lancement
+_fichier_lock = threading.Lock()
+
+
+def _isin_euronext(mnemo: str) -> str:
+    """ISIN d'un mnemonique cote sur Euronext (« HEMA » -> IE000KCS7J59), Paris d'abord."""
+    trouves = []
+    for r in _get_json(EURONEXT_RECHERCHE.format(q=urllib.parse.quote(mnemo)), timeout=20):
+        sym = re.search(r"class='symbol'>([^<]*)<", r.get("label") or "")
+        if r.get("isin") and sym and sym.group(1).strip().upper() == mnemo:
+            trouves.append(r)
+    trouves.sort(key=lambda r: r.get("mic") != "XPAR")
+    return trouves[0]["isin"] if trouves else ""
+
+
+def _fonds_ishares(isin: str):
+    """(portfolioId, nom, classe d'actifs) d'un fonds iShares, None sinon. La liste
+    complete (1 400 fonds, 4 Mo) n'est lue qu'une fois par lancement."""
+    global _ishares
+    if _ishares is None:
+        _ishares = {v["isin"]: (v.get("portfolioId") or int(pid), v.get("fundName") or "",
+                                v.get("aladdinAssetClass") or "")
+                    for pid, v in _get_json(ISHARES_LISTE, timeout=60).items() if v.get("isin")}
+    return _ishares.get(isin)
+
+
+def _texte(s: str) -> str:
+    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", s)).split())
+
+
+def _testid(h: str, tid: str) -> list:
+    """Textes des balises data-testid="tid" d'une page de justETF."""
+    return [_texte(m.group(1)) for m in
+            re.finditer(r'data-testid="%s"[^>]*>(.*?)</' % re.escape(tid), h, re.S)]
+
+
+def _avec_pct(noms: list, pcts: list) -> list:
+    out = []
+    for n, p in zip(noms, pcts):
+        try:
+            out.append((n, float(p.rstrip("%").replace(",", ""))))
+        except ValueError:
+            pass
+    return out
+
+
+def _justetf(isin: str) -> dict:
+    """Fiche justETF d'un ETF : nom, indice suivi, et son resume de composition
+    (pays, secteurs, 10 premieres lignes)."""
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    op.addheaders = [("User-Agent", _UA), ("Accept-Language", "en-GB,en;q=0.9")]
+    with op.open(JUSTETF.format(isin=isin), timeout=30) as r:
+        h = r.read().decode("utf-8", "replace")
+    titre = re.search(r"<title>(.*?)</title>", h, re.S)
+    date = re.search(r"(\d\d)/(\d\d)/(\d{4})", " ".join(_testid(h, "tl_etf-holdings_reference-date")))
+    j = {"nom": _texte(titre.group(1)).split(" | ")[0] if titre else "",
+         "indice": (_testid(h, "tl_etf-basics_value_index-name") or [""])[0],
+         "date": f"{date.group(3)}-{date.group(2)}-{date.group(1)}" if date else "",
+         "top": _avec_pct(_testid(h, "tl_etf-holdings_top-holdings_link_name"),
+                          _testid(h, "tl_etf-holdings_top-holdings_value_percentage"))}
+    # La page montre 4 pays et 4 secteurs ; son lien « Show more » (Wicket, meme
+    # session) en donne jusqu'a 13, le reste etant « Other »
+    for quoi, lien in (("countries", "loadMoreCountries"), ("sectors", "loadMoreSectors")):
+        tid = f"tl_etf-holdings_{quoi}_value_"
+        j[quoi] = _avec_pct(_testid(h, tid + "name"), _testid(h, tid + "percentage"))
+        m = re.search(r'"u":"([^"]*%s[^"]*)"' % lien, h)
+        if not m:
+            continue
+        try:
+            req = urllib.request.Request(
+                "https://www.justetf.com" + m.group(1).replace("\\/", "/"),
+                headers={"Wicket-Ajax": "true", "Wicket-Ajax-BaseURL": "en/etf-profile.html?isin=" + isin,
+                         "X-Requested-With": "XMLHttpRequest", "Accept": "text/xml"})
+            with op.open(req, timeout=30) as r:
+                x = r.read().decode("utf-8", "replace")
+            plus = _avec_pct(_testid(x, tid + "name"), _testid(x, tid + "percentage"))
+            if len(plus) > len(j[quoi]):
+                j[quoi] = plus
+        except Exception:
+            pass                                      # le resume de la page suffit
+    return j
+
+
+def _cle_nom(nom: str) -> str:
+    """« Amazon.com, Inc. », « Alphabet, Inc. A », « Alphabet (Google) » -> AMAZON, ALPHABET."""
+    mots = re.split(r"[^A-Z0-9&]+", re.sub(r"\(.*?\)", " ", (nom or "").upper()))
+    return " ".join(m for m in mots if len(m) > 1 and m not in _MOTS_JURIDIQUES and m != "COM")
+
+
+# Mots qui peuvent suivre un nom connu sans changer d'entreprise : « Meta
+# Platforms » est Meta, « Eli Lilly and Company » Eli Lilly. Pas « Energy » :
+# Siemens Energy n'est pas Siemens.
+_GENERIQUES = {"PLATFORMS", "TECHNOLOGY", "TECHNOLOGIES", "COMPANY", "GROUP", "AND", "&"}
+_ALIAS = {"TAIWAN SEMICONDUCTOR MANUFACTURING": "TSMC"}
+
+
+def _connue(nom: str, connues: dict):
+    """Entreprise deja connue (ISIN, pays, secteur) qui porte ce nom, sinon None."""
+    cle = _cle_nom(nom)
+    cle = _ALIAS.get(cle, cle)
+    mots = cle.split()
+    for n in range(len(mots), 0, -1):
+        if set(mots[n:]) <= _GENERIQUES and " ".join(mots[:n]) in connues:
+            return connues[" ".join(mots[:n])]
+    return None
+
+
+def _depuis_justetf(j: dict) -> dict:
+    """Resume de justETF. « Other » n'est pas repris : il devient « non detaille ».
+    Les 10 premieres lignes deja connues d'un autre ETF en prennent l'ISIN, le
+    pays et le secteur : elles s'additionnent d'un ETF a l'autre."""
+    pays, secteurs, inconnus = {}, {}, []
+    for nom, pct in j["countries"]:
+        if nom != "Other":
+            code = PAYS.get(nom)
+            if not code:
+                inconnus.append(nom)
+                code = nom
+            pays[code] = pays.get(code, 0) + pct
+    for nom, pct in j["sectors"]:
+        if nom != "Other":
+            sid = SECTEURS_JUSTETF.get(nom, "autres")
+            secteurs[sid] = secteurs.get(sid, 0) + pct
+    connues = {}
+    for c in list(BASE.values()) + list((_lire_fichier().get("etfs") or {}).values()):
+        for e in c.get("entreprises") or []:
+            if e.get("id"):
+                connues.setdefault(_cle_nom(e["nom"]), e)
+    ents = {}
+    for nom, pct in j["top"]:
+        e = _connue(nom, connues) or {"id": "", "pays": "", "secteur": "",
+                                      "nom": _joli_nom(re.sub(r",|\.(?=\s|$)", " ", nom))}
+        cle = e["id"] or e["nom"]
+        if cle in ents:
+            ents[cle]["pct"] += pct                   # Alphabet A et C
+        else:
+            ents[cle] = dict(e, pct=pct)
+    entreprises = sorted((dict(e, pct=_r(e["pct"])) for e in ents.values()), key=lambda e: -e["pct"])
+    return {"pays": pays, "secteurs": secteurs, "entreprises": entreprises,
+            "lignes": None, "inconnus": inconnus}
+
+
+def _rechercher(cle: str, isin: str = "") -> dict:
+    """Composition d'un ETF absent de ETFS, sans l'enregistrer."""
+    isin = (isin or "").strip().upper()
+    if not _ISIN.fullmatch(isin):
+        try:
+            isin = _isin_euronext(cle)
+        except Exception as e:
+            raise Introuvable(f"Euronext n'a pas répondu ({e})")
+        if not isin:
+            raise Introuvable(f"Euronext ne connaît pas le mnémonique {cle}")
+    try:
+        j = _justetf(isin)
+    except Exception as e:                            # les sources suivantes peuvent suffire
+        print(f"[expositions] justETF {isin} : {e}", flush=True)
+        j = {}
+    indice = _norm_indice(j.get("indice"))
+    c = ish = None
+    date = via = ""
+    if indice in INDICES:
+        src, via = INDICES[indice]
+        c, date = _lire_source(src)
+    if c is None:
+        try:
+            ish = _fonds_ishares(isin)
+        except Exception as e:
+            print(f"[expositions] liste iShares : {e}", flush=True)
+        if ish and ish[2] == "Equity" and "swap" not in ish[1].lower():
+            c, date = _lire_source(("ishares", ish[0]))
+            via = f"{ish[1]}, lignes de l'ETF"
+    if c is None:
+        try:
+            c, date = _lire_source(("amundi_indice", isin))
+            via = "Amundi, indice de l'ETF"
+        except Exception:
+            pass                                      # pas un ETF Amundi
+    if c is None and ((any(m in indice for m in MATIERES) and not j.get("countries"))
+                      or (ish and ish[2] == "Commodity")):
+        c, via = json.loads(json.dumps(_MATIERE)), "Matière première : ni pays ni entreprise"
+    if c is None and j.get("countries"):
+        c, date = _depuis_justetf(j), j["date"]
+        via = "justETF : principaux pays et secteurs, 10 premières lignes"
+        if not 0 < sum(c["pays"].values()) <= 101.5:
+            c = None
+    if c is None:
+        raise Introuvable("aucune source ne publie sa composition" if j else "justETF n'a pas répondu")
+    _arrondir(c)
+    c.update({"isin": isin, "nom": j.get("nom") or cle, "indice": j.get("indice") or "",
+              "source": via, "date": date, "releve": datetime.date.today().isoformat(),
+              "auto": True})
+    return c
+
+
+def chercher(cle: str, isin: str = "") -> dict:
+    """Cherche la composition d'un ETF inconnu (cle = mnemonique, « HEMA ») et
+    l'enregistre dans le fichier de l'installation. Quelques secondes : pywebview
+    appelle chaque methode du pont dans son propre thread."""
+    cle = (cle or "").strip().upper()
+    if not re.fullmatch(r"[A-Z0-9]{1,12}", cle):
+        raise Introuvable("mnémonique illisible")
+    c = _rechercher(cle, isin)
+    with _fichier_lock:
+        f = _lire_fichier()
+        f.setdefault("etfs", {})[cle] = c
+        _ecrire_fichier(f)
+    return dict(c, origine="auto")
 
 
 # ─── Fichier de l'installation ───────────────────────────────────────────────
@@ -391,7 +704,7 @@ def charger() -> dict:
     for k, v in (f.get("etfs") or {}).items():
         # Une mise a jour plus ancienne que les donnees livrees ne les ecrase pas
         if k not in etfs or (v.get("date") or "") >= (etfs[k].get("date") or ""):
-            etfs[k] = dict(v, origine="maj")
+            etfs[k] = dict(v, origine="auto" if v.get("auto") else "maj")
     return {"etfs": etfs, "maj": f.get("maj"), "suivis": list(ETFS.keys())}
 
 
@@ -425,22 +738,26 @@ def lancer_mise_a_jour() -> bool:
 
 def _mettre_a_jour() -> None:
     ok, erreurs, nouveaux = [], [], {}
-    tickers = list(ETFS.keys())
+    # Les ETF suivis, puis ceux trouves par chercher()
+    autos = {k: v.get("isin", "") for k, v in (_lire_fichier().get("etfs") or {}).items()
+             if v.get("auto")}
+    tickers = list(ETFS.keys()) + list(autos)
     try:
         for i, t in enumerate(tickers):
             _set(etape=f"{t} ({i + 1}/{len(tickers)})", pct=int(2 + i * 94 / len(tickers)))
             try:
-                nouveaux[t] = recuperer(t)
+                nouveaux[t] = recuperer(t) if t in ETFS else _rechercher(t, autos[t])
                 ok.append(t)
             except Exception as e:
                 erreurs.append({"etf": t, "erreur": str(e)[:200]})
                 print(f"[expositions] {t} KO : {e}", flush=True)
         _set(etape="Enregistrement…", pct=97)
         if nouveaux:
-            f = _lire_fichier()
-            f.setdefault("etfs", {}).update(nouveaux)
-            f["maj"] = datetime.datetime.now().isoformat(timespec="seconds")
-            _ecrire_fichier(f)
+            with _fichier_lock:
+                f = _lire_fichier()
+                f.setdefault("etfs", {}).update(nouveaux)
+                f["maj"] = datetime.datetime.now().isoformat(timespec="seconds")
+                _ecrire_fichier(f)
         _set(enCours=False, fini=True, pct=100, etape="", ok=ok, erreurs=erreurs,
              maj=datetime.datetime.now().isoformat(timespec="seconds") if nouveaux else None)
     except Exception as e:
