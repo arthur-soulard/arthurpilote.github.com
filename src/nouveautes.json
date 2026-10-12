@@ -2,6 +2,14 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.13",
+      "date": "2026-10-12",
+      "titre": "Toutes les tuiles de l'accueil tiennent à l'écran",
+      "ameliore": [
+        "Tuile Poids : le choix de la pesée à comparer (« vs la première », « vs la précédente »…) passe à droite du titre au lieu de prendre une ligne au-dessus de la courbe. La tuile est moins haute, et deux rangées de tuiles tiennent sans défiler sur un écran de portable."
+      ]
+    },
+    {
       "version": "4.4.12",
       "date": "2026-10-12",
       "titre": "Un accueil plus léger",
