@@ -549,6 +549,8 @@ def _installer_mac(download_url: str, version: str) -> None:
         f"if ! mv {q(str(neuf))} {q(str(bundle))}; then mv {q(ancienne)} {q(str(bundle))}; exit 1; fi\n"
         f"xattr -dr com.apple.quarantine {q(str(bundle))} 2>/dev/null\n"
         f"rm -rf {q(ancienne)}\n"
+        # La nouvelle app ne doit pas heriter des reglages d'un test (PILOTE_*)
+        "unset PILOTE_DIAG PILOTE_MAJ_ESSAI\n"
         f"open {q(str(bundle))}\n"
         "echo \"[$(date)] relancee\"\n"
         f"rm -rf {q(str(tmp_dir))}\n",

@@ -2,6 +2,18 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.8",
+      "date": "2026-10-12",
+      "titre": "Pilote existe aussi sur Mac, et la clé USB se règle",
+      "nouveau": [
+        "Pilote tourne maintenant sur les Mac à puce Apple : télécharge « Pilote_Mac.zip » dans la dernière version sur GitHub, glisse Pilote dans Applications, puis suis la notice du README (macOS demande une fois « Ouvrir quand même », Pilote n'étant pas signé par Apple). Mêmes modules qu'ici ; sur Mac, Pilote se met à jour tout seul, lit les captures FitDays avec le moteur d'Apple et garde le code Gmail d'Actus dans le Trousseau.",
+        "Sauvegarde USB : quatre réglages dans Paramètres → Sauvegarde USB. « Mes clés autorisées » : Téléverser n'écrit que sur tes clés. « Dossier et contenu » : le nom du dossier sur la clé, avec ou sans les sauvegardes quotidiennes des modules. « Moment et alerte » : sauvegarder au démarrage, dès que la clé est branchée ou à la fermeture de Pilote, et au bout de combien de jours l'accueil t'alerte. « Éjecter la clé une fois la copie finie »."
+      ],
+      "corrige": [
+        "Sauvegarde USB : les boutons « Restaurer » et le choix d'une clé détectée ne réagissaient pas quand le nom de la clé contenait une apostrophe."
+      ]
+    },
+    {
       "version": "4.4.7",
       "date": "2026-10-12",
       "titre": "La composition de tous tes ETF, et les prix au millième",

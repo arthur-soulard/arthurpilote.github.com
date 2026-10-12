@@ -1,6 +1,6 @@
 # Démarrage et icône de la fenêtre
 
-Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
+Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
 ## Démarrage : écran de chargement (`splash.py`, 4.2.7)
 

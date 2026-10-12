@@ -1,6 +1,6 @@
 # Sauvegarde USB
 
-Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les cinq choses à ne jamais casser).
+Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
 ## Sauvegarde externe sur clé USB (`sauvegarde.py`)
 

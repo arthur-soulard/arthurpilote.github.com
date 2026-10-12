@@ -1,18 +1,20 @@
 # Pilote
 
-Application desktop Windows de suivi personnel : bourse (PEA, comptes-titres), budget, prêt (étudiant ou autre),
+Application desktop Windows et Mac de suivi personnel : bourse (PEA, comptes-titres), budget, prêt (étudiant ou autre),
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
 Seule exception, voulue : le module Actus se connecte à la boîte Gmail de
 l'utilisateur pour la lire (`docs/modules/actus.md`) ; il n'y envoie rien de Pilote.
-**Version Mac en chantier** (décidé le 11/10/2026) : une seule app pour les deux
-systèmes, pas de copie séparée. Avant de toucher à ce qui dépend du système, lire
-`docs/mac.md`.
+**Aussi sur Mac depuis la 4.4.8** (décidé le 11/10/2026, Mac à puce Apple) : une seule
+app pour les deux systèmes, pas de copie séparée ; ce qui diffère passe par
+`sys.platform` ou `plateforme.py`, le chemin Windows y reste celui d'avant. Avant de
+toucher à ce qui dépend du système, lire `docs/mac.md`.
 
-Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS), PyInstaller pour
-compiler en .exe, Inno Setup pour le Setup.exe, GitHub Actions pour build + release.
+Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS ; 4.4.1 sous Windows,
+6.2.1 sur Mac), PyInstaller pour compiler en .exe et en Pilote.app, Inno Setup pour le
+Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.4.0**
+**Version actuelle : 4.4.8**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -65,8 +67,9 @@ données de l'app installée.
 
 ## Données sur disque
 
-Tout vit dans `<racine app>/Donnees/`. **Chaque utilisateur a son propre dossier**,
-tous modules confondus :
+Tout vit dans `<racine app>/Donnees/` (sur Mac, dans l'app compilée :
+`~/Library/Application Support/Pilote/Donnees`, hors de Pilote.app que la mise à jour
+remplace). **Chaque utilisateur a son propre dossier**, tous modules confondus :
 
 ```
 Donnees/
@@ -128,7 +131,7 @@ de la page disparue, et l'app ne se terminerait plus.
 * `storage.migrate_legacy_pin()` — le PIN, global jusqu'à la 4.1.3, est attribué au
   **premier** utilisateur. Appelée au démarrage de `main()` et en fin de `ensure_migrated()`.
 
-## ⚠ Cinq choses à ne JAMAIS casser
+## ⚠ Six choses à ne JAMAIS casser
 
 1. **`_PIN_SALT`** dans `src/server.py` → sert au hash des codes PIN déjà enregistrés.
 2. **L'`AppId` GUID** dans `build/installer.iss` → c'est l'identité de l'installation.
@@ -156,6 +159,11 @@ de la page disparue, et l'app ne se terminerait plus.
    introuvables dans l'exe compilé. Les graphiques disparaissent, la typo retombe sur
    celle du système et les boutons perdent leurs icônes, alors que tout marche
    parfaitement en dev. Vérification : `dist/Pilote/_internal/ui/vendor/` existe.
+
+6. **`BUNDLE_ID` dans `build/pilote-mac.spec`** → l'identité de l'app pour macOS,
+   comme l'`AppId` pour Windows : autorisations et préférences y sont attachées. Ne
+   jamais la changer, et ne pas renommer `Pilote_Mac.zip` (les Mac installés le
+   cherchent sous ce nom dans chaque release, `updater.MAC_ASSET`).
 
 ## Documentation détaillée : `docs/`
 
@@ -210,8 +218,11 @@ dans les fiches) :
    proposer la mise à jour (`docs/mise-a-jour.md`, « Fiche des nouveautés »)
 5. `git add … && git commit && git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`
 6. GitHub Actions build `dist/Pilote/` puis `Pilote_Setup.exe`, et crée la release
-   avec le Setup pour seul fichier (un `Pilote.exe` seul ne tourne pas sans son
-   `_internal/`)
+   avec le Setup (un `Pilote.exe` seul ne tourne pas sans son `_internal/`) ; un
+   second job, sur un Mac de GitHub, y joint ensuite `Pilote_Mac.zip` (s'il échoue,
+   le Setup est déjà publié). Avant de fusionner du code propre à un système dans
+   main, les tests `build-mac.yml` et `build-windows.yml` de la branche `mac`
+   montrent s'il démarre des deux côtés (`docs/mac.md`)
 
 Règle importante : le numéro de version ne peut qu'augmenter (comparaison sémantique).
 Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.

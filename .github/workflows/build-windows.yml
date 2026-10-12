@@ -50,6 +50,8 @@ jobs:
       - name: Launch and check
         shell: pwsh
         run: |
+          # Sortie redirigee : l'exe ecrit dans sortie.log ; sans redirection,
+          # dans pilote_diag.log (app.py, exe sans console) : les deux sont lus
           $env:PILOTE_DIAG = "1"
           $p = Start-Process -FilePath "dist/Pilote/Pilote.exe" -PassThru `
                  -RedirectStandardOutput sortie.log -RedirectStandardError pilote.err
@@ -58,10 +60,10 @@ jobs:
             try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:7438/ping -TimeoutSec 2 | Out-Null; $up = $i; break } catch { Start-Sleep 1 }
           }
           for ($i = 1; $i -le 50; $i++) {
-            if ((Get-Content pilote_diag.log -Raw -ErrorAction SilentlyContinue) -match "\[diag\]") { break }
+            if (((Get-Content sortie.log, pilote_diag.log -Raw -ErrorAction SilentlyContinue) -join " ") -match "\[diag\]") { break }
             Start-Sleep 1
           }
-          $log = (Get-Content pilote_diag.log -Raw -ErrorAction SilentlyContinue) -replace "`r?`n", " "
+          $log = ((Get-Content sortie.log, pilote_diag.log -Raw -ErrorAction SilentlyContinue) -join " ") -replace "`r?`n", " "
           $ouverte = [regex]::Match($log, "fenetre ouverte \([a-z]+\)").Value
           $diag = [regex]::Match($log, "\[diag\] \{.*?\}\}?").Value
           Write-Output "::notice title=Serveur::ping $(if ($up) { "$up s" } else { 'KO' }) - $ouverte"
