@@ -5638,6 +5638,13 @@ function buildTwrSeries(history) {
   const allDates = [...dateSet].sort();
   if (!allDates.length) return null;
 
+  /* Jour d'une division (CTO importé) : Yahoo peut garder ce jour-là le cours
+     d'avant, dix fois plus haut (3SIL.MI le 11/05/2026 : 183 € pour une part
+     qui en valait 21,84), alors que les parts sont déjà dix fois plus
+     nombreuses. Pas de point ce jour-là : ses flux passent au suivant. */
+  const jourDivision = new Set(txs.filter(t => t.origine === "division" && t.type === "Achat")
+    .map(t => t.asset + "|" + normDate(t.date)));
+
   /* Repasse sur toutes les transactions pour construire l'etat du portefeuille */
   let txIdx = 0;
   let ceIdx = 0;
@@ -5675,7 +5682,7 @@ function buildTwrSeries(history) {
     for (const [ticker, qty] of Object.entries(qtys)) {
       if (qty < 0.0001) continue;
       const sm = sortedMaps[ticker];
-      if (!sm) { valid = false; break; }
+      if (!sm || jourDivision.has(ticker + "|" + date)) { valid = false; break; }
       const price = priceAt(sm, date);
       if (price == null) { valid = false; break; }
       equity += qty * price;
@@ -11697,28 +11704,40 @@ function pacFraisOrdre(m, o) {
   return o.tarif ? courtageOrdre(m, o.tarif, o.pea) : pacR2(m * o.taux);
 }
 
-/* Origine d'un ordre importé (plan, Saveback, arrondi, action offerte) */
-const TX_ORIGINES = { plan: "Plan", saveback: "Saveback", arrondi: "Arrondi", offert: "Offert" };
+/* Origine d'un ordre importé (plan, Saveback, arrondi, action offerte,
+   division du titre) */
+const TX_ORIGINES = { plan: "Plan", saveback: "Saveback", arrondi: "Arrondi", offert: "Offert", division: "Division" };
 function txOrigineBadge(t) {
   const l = TX_ORIGINES[t.origine];
-  return l ? `<span class="badge" style="background:var(--bg3);color:var(--txt2)" title="Ordre ${l === "Plan" ? "d'un plan d'investissement programmé" : "automatique (" + l + ")"}">${l}</span>` : "";
+  const titre = l === "Plan" ? "Ordre d'un plan d'investissement programmé"
+    : l === "Division" ? "Division du titre : ni achat ni vente réels, les nouvelles parts reprennent le coût des anciennes"
+    : "Ordre automatique (" + l + ")";
+  return l ? `<span class="badge" style="background:var(--bg3);color:var(--txt2)" title="${titre}">${l}</span>` : "";
+}
+/* Courtage d'un ordre : ses frais sans la taxe sur les transactions
+   financières (importée avec les frais, `taxe` à part), seuls comparables à
+   la grille du courtier */
+function txCourtage(t) {
+  return Math.round(((t.frais || 0) - (t.taxe || 0)) * 100) / 100;
 }
 /* Frais réels qui ne collent pas à la grille du courtier : la grille a peut-être
    changé (les tarifs ne sont pas relus en ligne). Rien sans grille, ni sur un
-   ordre à venir. */
+   ordre à venir, ni sur une division (pas un vrai ordre). Une action offerte
+   est un ordre ordinaire (1 € chez Trade Republic, relevé du 11/10/2026). */
 function txFraisAttendus(t) {
   const cfg = typeof pacCfg === "function" ? pacCfg() : null;
   const tarif = cfg && cfg.tarif;
   if (!tarif || (t.type !== "Achat" && t.type !== "Vente") || normDate(t.date) > todayISO()) return null;
-  if (t.origine && TX_ORIGINES[t.origine]) return tarif.plan == null ? null : tarif.plan;
+  if (t.origine === "division") return null;
+  if (t.origine && t.origine !== "offert" && TX_ORIGINES[t.origine]) return tarif.plan == null ? null : tarif.plan;
   const m = brutOrdre(t);
   // L'ordre gratuit du mois : un ordre à 0 € sous le seuil est normal
-  if (!(t.frais > 0) && tarif.gratuit > 0 && m <= tarif.gratuit + PAC_EPS) return 0;
+  if (!(txCourtage(t) > 0) && tarif.gratuit > 0 && m <= tarif.gratuit + PAC_EPS) return 0;
   return courtageOrdre(m, tarif, !_estCto());
 }
 function txFraisBadge(t) {
   const att = txFraisAttendus(t);
-  if (att == null || Math.abs((t.frais || 0) - att) < 0.011) return "";
+  if (att == null || Math.abs(txCourtage(t) - att) < 0.011) return "";
   return `<span class="badge" style="background:var(--a2);color:var(--a)" title="La grille du courtier donne ${eur(att)} pour cet ordre : ses tarifs ont peut-être changé (Stratégie → Réglages)"><i class="ph ph-warning"></i> frais ≠ grille</span>`;
 }
 
@@ -20210,7 +20229,7 @@ function ctoRenderMetrics() {
   set("m-val", r.n ? eur(r.valeur != null ? r.valeur : r.titres) : "—");
   const sub = document.getElementById("m-val-sub");
   if (sub) sub.innerHTML = r.n ? "Investi : " + eur(r.investi)
-    + (r.offert > 0 ? "<br>dont offert (Saveback) : " + eur(r.offert) : "") : "";
+    + (r.offert > 0 ? "<br>dont offert (Saveback, actions offertes) : " + eur(r.offert) : "") : "";
   const pvEl = document.getElementById("m-pv");
   if (pvEl) {
     pvEl.textContent = r.pv != null ? eur(r.pv, true) : "—";
@@ -20255,7 +20274,7 @@ function ctoRenderBarre() {
   // Ordres dont les frais ne collent pas à la grille du courtier
   const ecarts = (S.transactions || []).filter(t => {
     const a = txFraisAttendus(t);
-    return a != null && Math.abs((t.frais || 0) - a) >= 0.011;
+    return a != null && Math.abs(txCourtage(t) - a) >= 0.011;
   }).length;
   bar.innerHTML = `<select aria-label="CTO affiché" onchange="ctoChoisir(this.value)">${opts}</select>
     <span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
@@ -20609,7 +20628,7 @@ function ctoImportDeja(op) {
   if (op.trId && ((S.transactions || []).some(t => t.trId === op.trId)
                || (S.divReceived || []).some(d => d.trId === op.trId))) return true;
   const pos = (S.positions || []).find(p => p.isin === op.isin);
-  if (!pos) return false;
+  if (!pos || op.type === "Division") return false;
   if (op.type === "Dividende")
     return (S.divReceived || []).some(d => d.ticker === pos.ticker && normDate(d.date) === op.date && Math.abs((d.montant || 0) - op.montant) < 0.011);
   return (S.transactions || []).some(t => t.asset === pos.ticker && t.type === op.type && normDate(t.date) === op.date
@@ -20618,9 +20637,20 @@ function ctoImportDeja(op) {
 
 async function ctoImportAnalyser(r) {
   const titres = {};
+  const titre = (isin, op, nom) => titres[isin] || (titres[isin] = { nom, classe: op.classe, ticker: "", candidats: [],
+    prixPaye: null, date: "", depuis: op.date, nomLong: "", points: [] });
   r.operations.forEach(op => {
-    const t = titres[op.isin] || (titres[op.isin] = { nom: op.nom, classe: op.classe, ticker: "", candidats: [], prixPaye: null, date: "" });
-    if (op.type !== "Dividende" && op.cours > 0 && op.date >= t.date) { t.prixPaye = op.cours; t.date = op.date; }
+    // Une division concerne aussi l'ancienne ligne (ISIN d'avant)
+    if (op.type === "Division") titre(op.isinAvant, op, op.nomAvant);
+    const t = titre(op.isin, op, op.nom);
+    // Nom long de la description, bien écrit de préférence (« iShares Physical Gold ETC »
+    // plutôt que « ISHARES PHYSICAL GOLD ») : la recherche de la cotation s'en sert
+    if (op.nomLong && (!t.nomLong || (t.nomLong === t.nomLong.toUpperCase() && op.nomLong !== op.nomLong.toUpperCase())))
+      t.nomLong = op.nomLong;
+    if (op.type !== "Dividende" && op.cours > 0) {
+      t.points.push(op.date + ":" + op.cours);
+      if (op.date >= t.date) { t.prixPaye = op.cours; t.date = op.date; }
+    }
   });
   // Déjà suivi dans ce CTO : sa cotation ne change pas
   Object.entries(titres).forEach(([isin, t]) => {
@@ -20629,16 +20659,19 @@ async function ctoImportAnalyser(r) {
   });
   await Promise.all(Object.entries(titres).filter(([, t]) => !t.connu).map(async ([isin, t]) => {
     try {
-      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin)}&nom=${encodeURIComponent(t.nom || "")}`;
+      // Prix payés (40 derniers) et premier ordre : le serveur vérifie chaque
+      // cotation sur son historique (server.cotations_euro)
+      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin)}&nom=${encodeURIComponent(t.nom || "")}`
+        + `&nom2=${encodeURIComponent(t.nomLong)}&points=${encodeURIComponent(t.points.slice(-40).join(","))}&depuis=${t.depuis}`;
       const d = await (await fetch(url, { cache: "no-store" })).json();
       t.candidats = (d && d.ok && d.candidats) || [];
       if (d && d.principal) t.secteur = ctoSecteurYahoo(d.principal.secteur, d.principal.industrie);
     } catch (e) { t.candidats = []; }
-    // Le cours le plus proche du dernier prix payé chez Trade Republic, à 20 % près ;
-    // sinon le premier proposé (Xetra d'abord)
-    const proches = t.candidats.filter(c => c.prix > 0 && t.prixPaye > 0)
-      .map(c => ({ c, e: Math.abs(c.prix / t.prixPaye - 1) })).sort((a, b) => a.e - b.e);
-    const choix = (proches.length && proches[0].e < 0.2) ? proches[0].c : t.candidats[0];
+    // La cotation vérifiée sur l'historique (le serveur la met en tête) ; sinon
+    // la première dont le cours est à 20 % du dernier prix payé, sinon la première
+    const choix = t.candidats.find(c => c.ecart != null)
+      || t.candidats.find(c => c.prix > 0 && t.prixPaye > 0 && Math.abs(c.prix / t.prixPaye - 1) < 0.2)
+      || t.candidats[0];
     t.ticker = choix ? normalizeTicker(choix.symbol) : "";
   }));
   _ctoImp = {
@@ -20663,7 +20696,7 @@ function ctoImportRender() {
   document.getElementById("cto-imp-resume").innerHTML = `
     <span><b>${nouvelles.length}</b> nouvelle(s)</span>
     <span>${compte(o => o.deja, "déjà dans Pilote")}</span>
-    <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}</span>
+    <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}${I.ops.some(o => o.type === "Division") ? ", " + compte(o => o.type === "Division", "division(s)") : ""}</span>
     <span>${(I.ignores.especes || 0)} ligne(s) d'espèces ignorée(s) (carte, virements, intérêts)</span>
     ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) hors actions et ETF ignorée(s)</span>` : ""}
     ${inc}`;
@@ -20676,7 +20709,7 @@ function ctoImportRender() {
       : `<span class="cto-imp-titres-sel">
           <select onchange="ctoImportTicker('${isin}', this.value)">
             ${t.candidats.map(x => { const tk = normalizeTicker(x.symbol);
-              return `<option value="${escHtml(tk)}"${tk === t.ticker ? " selected" : ""}>${escHtml(x.symbol)} · ${escHtml(x.place)}${x.prix ? " · " + eur(x.prix) : ""}</option>`; }).join("")}
+              return `<option value="${escHtml(tk)}"${tk === t.ticker ? " selected" : ""}>${escHtml(x.symbol)} · ${escHtml(x.place)}${x.prix ? " · " + eur(x.prix) : ""}${x.ecart != null ? " · vérifiée" : ""}</option>`; }).join("")}
             <option value=""${t.ticker && !t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? " selected" : ""}>Autre ticker…</option>
           </select>
           <input placeholder="ex : VWCE.DE" value="${t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? "" : escHtml(t.ticker)}"
@@ -20686,16 +20719,16 @@ function ctoImportRender() {
       <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(isin)}</td>
       <td style="text-align:left">${sel}${!t.ticker ? ` <span class="cto-ecart">à choisir</span>` : ""}</td>
       <td>${t.prixPaye ? eur(t.prixPaye) : "—"}</td>
-      <td>${prixActuel ? eur(prixActuel) : "—"}${ecart != null && Math.abs(ecart) > 0.2 ? ` <span class="cto-ecart" title="Loin du dernier prix payé : vérifie que c'est le bon titre">${ecart > 0 ? "+" : "−"}${Math.round(Math.abs(ecart) * 100)} %</span>` : ""}</td></tr>`;
+      <td>${prixActuel ? eur(prixActuel) : "—"}${ecart != null && Math.abs(ecart) > 0.2 && !(c && c.ecart != null) ? ` <span class="cto-ecart" title="Loin du dernier prix payé : vérifie que c'est le bon titre">${ecart > 0 ? "+" : "−"}${Math.round(Math.abs(ecart) * 100)} %</span>` : ""}</td></tr>`;
   }).join("");
-  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", dividende: "" };
+  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", dividende: "", division: "" };
   document.getElementById("cto-imp-ops").innerHTML = I.ops.slice().reverse().map(o => `<tr class="${o.deja ? "cto-dup" : ""}">
       <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(o.date)}</td>
       <td style="text-align:left">${o.type}${ORIG[o.origine] ? " · " + ORIG[o.origine] : ""}</td>
-      <td style="text-align:left">${escHtml(o.nom)}</td>
-      <td>${o.qty ? fmtQte(o.qty) : "—"}</td>
+      <td style="text-align:left">${o.type === "Division" ? escHtml(o.nomAvant) + " → " : ""}${escHtml(o.nom)}</td>
+      <td>${o.type === "Division" ? fmtQte(o.qtyAvant) + " → " + fmtQte(o.qty) : o.qty ? fmtQte(o.qty) : "—"}</td>
       <td>${o.cours ? eur(o.cours) : "—"}</td>
-      <td>${o.frais ? eur(o.frais) : "—"}</td>
+      <td${o.taxe ? ` title="dont ${eur(o.taxe)} de taxe sur les transactions financières"` : ""}>${o.frais || o.taxe ? eur((o.frais || 0) + (o.taxe || 0)) : "—"}</td>
       <td>${o.montant ? eur(o.montant) : "—"}</td>
       <td style="text-align:left">${o.deja ? "déjà dans Pilote" : o.alerte ? `<span class="cto-ecart" title="${escHtml(o.alerte)}"><i class="ph ph-warning"></i> ${escHtml(o.alerte)}</span>` : "nouvelle"}</td>
     </tr>`).join("");
@@ -20711,7 +20744,8 @@ function ctoImportValider() {
   const I = _ctoImp;
   if (!I || !_estCto()) return;
   const nouvelles = I.ops.filter(o => !o.deja);
-  const sansTicker = [...new Set(nouvelles.filter(o => !I.titres[o.isin].ticker).map(o => I.titres[o.isin].nom))];
+  const isins = nouvelles.flatMap(o => o.type === "Division" ? [o.isinAvant, o.isin] : [o.isin]);
+  const sansTicker = [...new Set(isins.filter(i => !I.titres[i].ticker).map(i => I.titres[i].nom))];
   if (sansTicker.length) { showToastModern("Choisis la cotation de : " + sansTicker.join(", "), "warn"); return; }
   pushUndo();
   const posDe = isin => {
@@ -20726,15 +20760,36 @@ function ctoImportValider() {
     return p;
   };
   let n = 0;
+  const sautees = [];
   nouvelles.forEach(o => {
-    const p = posDe(o.isin);
-    if (o.type === "Dividende") {
+    const p = o.type === "Division" ? null : posDe(o.isin);
+    if (o.type === "Division") {
+      /* Les parts d'avant deviennent les nouvelles, au même coût : une vente
+         au PRU (plus-value nulle) puis un achat du même montant, sans frais.
+         Les versements déduits s'annulent le même jour. Les opérations
+         passent dans l'ordre : le PRU est celui d'avant la division. */
+      const pa = S.positions.find(x => x.isin === o.isinAvant) || S.positions.find(x => x.ticker === I.titres[o.isinAvant].ticker);
+      const avant = pa ? computePos(pa, S.transactions.filter(t => normDate(t.date) <= o.date)) : {};
+      if (!(avant.qty > 0) || !(o.qtyAvant > 0)) { sautees.push(o.nomAvant); return; }
+      const pn = posDe(o.isin);
+      const cout = avant.pru * o.qtyAvant;
+      const base = { date: o.date, frais: 0, origine: "division" };
+      S.transactions.push({ id: NID.tx++, ...base, asset: pa.ticker, type: "Vente", cours: cout / o.qtyAvant, qty: o.qtyAvant,
+                            ...(o.trIdAvant ? { trId: o.trIdAvant } : {}) });
+      S.transactions.push({ id: NID.tx++, ...base, asset: pn.ticker, type: "Achat", cours: cout / o.qty, qty: o.qty,
+                            ...(o.trId ? { trId: o.trId } : {}) });
+    } else if (o.type === "Dividende") {
       if (!NID.div) NID.div = 1;
       S.divReceived.push({ id: NID.div++, date: o.date, ticker: p.ticker, qty: o.qty || null,
                            ppa: o.qty ? Math.round(o.montant / o.qty * 10000) / 10000 : null,
                            montant: o.montant, note: "Import Trade Republic", trId: o.trId || undefined });
     } else {
-      const tx = { id: NID.tx++, date: o.date, asset: p.ticker, type: o.type, cours: o.cours, qty: o.qty, frais: o.frais || 0 };
+      // La taxe sur les transactions financières (actions françaises) est un
+      // coût de l'ordre comme les frais : elle compte dans le PRU et l'investi.
+      // `taxe` la garde à part pour la comparaison à la grille (txFraisBadge).
+      const tx = { id: NID.tx++, date: o.date, asset: p.ticker, type: o.type, cours: o.cours, qty: o.qty,
+                   frais: Math.round(((o.frais || 0) + (o.taxe || 0)) * 100) / 100 };
+      if (o.taxe) tx.taxe = o.taxe;
       if (o.origine && o.origine !== "ordre") tx.origine = o.origine;
       if (o.trId) tx.trId = o.trId;
       S.transactions.push(tx);
@@ -20751,6 +20806,7 @@ function ctoImportValider() {
   fetchSparklines();
   fetchKeystats();
   showToastModern(n + " opération" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : "") + " (Retour pour annuler)", "ok");
+  if (sautees.length) showToastModern("Division laissée de côté, ancienne ligne absente du CTO : " + sautees.join(", "), "warn");
 }
 
 /* ── Navigation ────────────────────────────────────────────────────────── */
