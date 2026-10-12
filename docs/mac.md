@@ -201,6 +201,28 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 * `build-windows.yml` : sur la branche `mac`, le build Windows de `release.yml` sans
   rien publier, lancé et vérifié, avant de fusionner dans main.
 
+## Réseau local (macOS 15, 12/10/2026)
+
+Vu sur le test Mac quand Pilote est ouvert par le Finder (`open`, comme chez un
+utilisateur ; lancé depuis le terminal, la question ne se voyait pas) : « Allow
+"Pilote" to find devices on local networks? ». Pilote n'a pourtant que deux
+connexions, toutes deux sur 127.0.0.1 (`lsof` : 50317 et le port du serveur).
+
+* **Refuser ne casse rien** : essayé le 12/10/2026, « Don't Allow » cliqué, puis
+  Pilote relancé par le Finder : page et 7 modules chargés, Yahoo, Gmail et GitHub
+  joignables, cours lu, et la question n'est pas reposée. 127.0.0.1 et internet ne
+  relèvent pas de cette autorisation. Le README dit de refuser.
+* **Cause probable** : `HTTPServer.server_bind` appelle `socket.getfqdn()`, dont la
+  recherche du nom passe, sur macOS 15, par le réseau local. Indice : le petit
+  serveur web de Python lancé par le test a fait poser la même question
+  (« Allow "Python"… »). Le serveur Mac de Pilote s'en passe (`server._ServeurMac`,
+  Windows inchangé), et l'Info.plist porte un texte (`NSLocalNetworkUsageDescription`)
+  au cas où la question viendrait d'ailleurs. **Non vérifié** que la question a
+  disparu : le test suivant n'a remonté aucune annotation.
+* Juste après la fermeture d'une app, le port 7438 garde des connexions en attente
+  (TIME_WAIT) : l'app relancée prend 7439 (`_find_free_port`), sans conséquence (la
+  page lit son port dans `location.port`).
+
 ## Gatekeeper (app non signée)
 
 Depuis macOS Sequoia, le clic droit → Ouvrir ne contourne plus le blocage : lancer
