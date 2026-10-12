@@ -4129,12 +4129,24 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           </div>
 
           <div class="fg">
-            <label>Automatique</label>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label>Mes clés autorisées</label>
+            <div id="sv-autorisees" class="sv-drives"></div>
+            <p class="set-lead" style="margin:6px 0 0">Liste vide : Pilote écrit sur n'importe
+              quelle clé branchée. Sinon, le bouton Téléverser de l'accueil ne voit que ces clés.</p>
+          </div>
+
+          <div class="fg">
+            <label>Moment et alerte</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <label class="sv-check">
                 <input type="checkbox" id="sv-auto" onchange="svSaveCfg()">
-                <span>Sauvegarder au démarrage quand la clé est branchée</span>
+                <span>Sauvegarder automatiquement</span>
               </label>
+              <select id="sv-moment" onchange="svSaveCfg()" style="max-width:250px">
+                <option value="demarrage">au démarrage de Pilote</option>
+                <option value="branchement">dès que la clé est branchée</option>
+                <option value="fermeture">à la fermeture de Pilote</option>
+              </select>
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
               <select id="sv-freq" onchange="svSaveCfg()" style="max-width:250px">
@@ -4146,6 +4158,39 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
                 <input type="number" id="sv-keep" min="1" max="100" onchange="svSaveCfg()">
                 archives</label>
             </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+              <label class="sv-inline">Alerte sur l'accueil
+                <select id="sv-alerte" onchange="svSaveCfg()">
+                  <option value="3">après 3 jours sans copie</option>
+                  <option value="7">après 7 jours sans copie</option>
+                  <option value="14">après 14 jours sans copie</option>
+                  <option value="30">après 30 jours sans copie</option>
+                  <option value="0">jamais</option>
+                </select></label>
+            </div>
+          </div>
+
+          <div class="fg">
+            <label>Dossier et contenu</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <label class="sv-inline">Dossier du bouton Téléverser sur la clé
+                <input type="text" id="sv-dossier" maxlength="60" style="width:160px"
+                       onchange="svSaveCfg()" placeholder="Pilote"></label>
+            </div>
+            <label class="sv-check" style="margin-top:8px">
+              <input type="checkbox" id="sv-backups" onchange="svSaveCfg()">
+              <span>Inclure les sauvegardes quotidiennes des modules (dossiers backups)</span>
+            </label>
+          </div>
+
+          <div class="fg">
+            <label>Après la copie</label>
+            <label class="sv-check">
+              <input type="checkbox" id="sv-ejecter" onchange="svSaveCfg()">
+              <span>Éjecter la clé une fois la copie finie</span>
+            </label>
+            <span style="font-size:10.5px;color:var(--txt3)">Tu peux la retirer dès le message
+              « Clé éjectée ».</span>
           </div>
 
           <div class="fg">
@@ -10612,7 +10657,8 @@ async function svRefresh() {
     } else if (dest.ready) {
       box.innerHTML = `<span class="sv-ok">✓ Prête</span> — ${escHtml(dest.path)}`
         + (cfg.volumeLabel ? `<br><span class="sv-none">Clé « ${escHtml(cfg.volumeLabel)} »`
-            + ` · retrouvée même si Windows change sa lettre</span>` : "");
+            + (EST_MAC ? " · retrouvée par son identifiant, même renommée par macOS"
+                       : " · retrouvée même si Windows change sa lettre") + `</span>` : "");
     } else {
       box.innerHTML = `<span class="sv-warn">✕ ${escHtml(dest.message || "Indisponible")}</span>`
         + (cfg.destination ? `<br><span class="sv-none">${escHtml(cfg.destination)}</span>` : "");
@@ -10631,8 +10677,10 @@ async function svRefresh() {
     if (!drives.length) {
       dl.innerHTML = `<div class="m-note" style="font-size:10.5px">Aucune clé USB détectée.</div>`;
     } else {
+      // Chemin en data-root (et non dans le code de onclick) : un nom de clé
+      // avec une apostrophe (« Clé d'Arthur », courant sur Mac) cassait le clic
       dl.innerHTML = drives.map(d => `
-        <button type="button" class="sv-drive" onclick="svUseDrive('${escHtml(d.root).replace(/\\/g, "\\\\")}')">
+        <button type="button" class="sv-drive" data-root="${escHtml(d.root)}" onclick="svUseDrive(this.dataset.root)">
           <span class="sv-drive-ico"><i class="ph ph-usb"></i></span>
           <span><b>${escHtml(d.letter)}</b> ${escHtml(d.label)}</span>
           <span class="sv-drive-sub">${svBytes(d.free)} libres / ${svBytes(d.total)}</span>
@@ -10640,13 +10688,50 @@ async function svRefresh() {
     }
   }
 
+  // Mes clés autorisées : celles de la liste, puis les clés branchées à ajouter
+  const al = document.getElementById("sv-autorisees");
+  if (al) {
+    const liste = cfg.clesAutorisees || [];
+    const aAjouter = (st.drives || []).filter(d => !d.autorisee);
+    al.innerHTML = liste.map((a, i) => `
+        <div class="sv-row">
+          <span class="sv-row-name"><i class="ph ph-check-circle"></i> ${escHtml(a.label || a.serial)}</span>
+          <span class="sv-row-size">${a.serial ? escHtml(a.serial) : "sans numéro"}</span>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
+                  onclick="svRetirerCle(${i})"><i class="ph ph-x"></i> Retirer</button>
+        </div>`).join("")
+      + aAjouter.map((d, i) => `
+        <div class="sv-row">
+          <span class="sv-row-name"><i class="ph ph-usb"></i> ${escHtml((d.letter + " " + d.label).trim())}</span>
+          <span class="sv-row-size">branchée</span>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
+                  onclick="svAutoriserCle(${i})"><i class="ph ph-plus"></i> Autoriser</button>
+        </div>`).join("")
+      || `<div class="m-empty">Aucune clé dans la liste, aucune clé branchée.</div>`;
+  }
+
   // Comportement
   const auto = document.getElementById("sv-auto");
   if (auto) auto.checked = !!cfg.auto;
+  const moment = document.getElementById("sv-moment");
+  if (moment) moment.value = cfg.moment || "demarrage";
   const freq = document.getElementById("sv-freq");
   if (freq) freq.value = cfg.frequence || "daily";
   const keep = document.getElementById("sv-keep");
   if (keep) keep.value = cfg.keep || 10;
+  const alerte = document.getElementById("sv-alerte");
+  if (alerte) {
+    const n = typeof cfg.alerteJours === "number" ? cfg.alerteJours : 7;
+    // Valeur hors de la liste (fichier édité à la main) : on l'ajoute telle quelle
+    if (![...alerte.options].some(o => +o.value === n)) alerte.add(new Option(`après ${n} jours sans copie`, n));
+    alerte.value = String(n);
+  }
+  const dossier = document.getElementById("sv-dossier");
+  if (dossier && document.activeElement !== dossier) dossier.value = cfg.dossierCle || "Pilote";
+  const avecBackups = document.getElementById("sv-backups");
+  if (avecBackups) avecBackups.checked = cfg.avecBackups !== false;
+  const ejecter = document.getElementById("sv-ejecter");
+  if (ejecter) ejecter.checked = !!cfg.ejecter;
 
   // Dernière sauvegarde
   const last = document.getElementById("sv-last");
@@ -10675,21 +10760,47 @@ async function svLoadList() {
       <span class="sv-row-name">${escHtml(svWhen(b.date))}</span>
       <span class="sv-row-size">${svBytes(b.size)}</span>
       <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
-              onclick="svRestore('${escHtml(b.path).replace(/\\/g, "\\\\")}', '${escHtml(svWhen(b.date))}')"><i class="ph ph-arrow-counter-clockwise"></i> Restaurer</button>
+              data-path="${escHtml(b.path)}" data-when="${escHtml(svWhen(b.date))}"
+              onclick="svRestore(this.dataset.path, this.dataset.when)"><i class="ph ph-arrow-counter-clockwise"></i> Restaurer</button>
     </div>`).join("");
 }
 
-async function svSaveCfg() {
+async function svSaveCfg(extra) {
   if (!window.pywebview || !pywebview.api) return;
-  const patch = {
-    auto:      document.getElementById("sv-auto").checked,
-    frequence: document.getElementById("sv-freq").value,
-    keep:      parseInt(document.getElementById("sv-keep").value, 10) || 10,
-  };
+  const patch = Object.assign({
+    auto:        document.getElementById("sv-auto").checked,
+    moment:      document.getElementById("sv-moment").value,
+    frequence:   document.getElementById("sv-freq").value,
+    keep:        parseInt(document.getElementById("sv-keep").value, 10) || 10,
+    alerteJours: parseInt(document.getElementById("sv-alerte").value, 10) || 0,
+    dossierCle:  document.getElementById("sv-dossier").value,
+    avecBackups: document.getElementById("sv-backups").checked,
+    ejecter:     document.getElementById("sv-ejecter").checked,
+  }, extra || {});
   try {
     const st = await pywebview.api.sauvegarde_set_config(patch);
-    if (st && st.ok) { SV_STATE = st; svRefresh(); }
+    if (st && st.ok) { SV_STATE = st; svRefresh(); svRenderUsbState(); }
   } catch (e) {}
+}
+
+/* Mes clés autorisées : ajout d'une clé branchée, retrait d'une clé de la liste */
+function svAutoriserCle(i) {
+  const cfg = (SV_STATE && SV_STATE.config) || {};
+  const d = ((SV_STATE && SV_STATE.drives) || []).filter(x => !x.autorisee)[i];
+  if (!d) return;
+  svSaveCfg({ clesAutorisees: (cfg.clesAutorisees || []).concat([{ serial: d.serial || "", label: d.label || d.letter }]) });
+}
+function svRetirerCle(i) {
+  const liste = (((SV_STATE && SV_STATE.config) || {}).clesAutorisees || []).slice();
+  liste.splice(i, 1);
+  svSaveCfg({ clesAutorisees: liste });
+}
+
+/* Réglage « Éjecter la clé une fois la copie finie » : le dire, réussi ou non */
+function svToastEjection(ej) {
+  if (!ej) return;
+  if (ej.ok) showToastModern("Clé éjectée : tu peux la retirer", "ok");
+  else showToastModern("Clé non éjectée : " + (ej.error || "elle est peut-être encore utilisée"), "warn");
 }
 
 async function svPickFolder() {
@@ -10719,6 +10830,7 @@ async function svRunNow() {
     const res = await pywebview.api.sauvegarde_run();
     if (res && res.ok) {
       showToastModern(`Sauvegardé · ${res.files} fichiers · ${svBytes(res.size)}`, "ok");
+      svToastEjection(res.ejection);
     } else {
       showToastModern((res && res.error) || "Sauvegarde impossible", "err");
     }
@@ -19229,13 +19341,14 @@ async function svPushToUsb(root) {
     if (res.failedCount) {
       showToastModern(`${res.failedCount} fichier(s) non copié(s)`, "warn");
     }
+    svToastEjection(res.ejection);
     svRenderUsbState();
     return;
   }
 
   // Plusieurs clés branchées : on demande laquelle
   if (res && res.reason === "choose" && (res.drives || []).length) {
-    const choix = res.drives.map((d, i) => `${i + 1}. ${d.letter} ${d.label}`).join("\n");
+    const choix = res.drives.map((d, i) => `${i + 1}. ${(d.letter + " " + d.label).trim()}`).join("\n");
     const rep = prompt("Plusieurs clés USB sont branchées.\n\n" + choix
                      + "\n\nLaquelle ? (numéro)", "1");
     if (rep === null) return;
@@ -19247,7 +19360,13 @@ async function svPushToUsb(root) {
   if (st) st.textContent = (res && res.error) || "";
 }
 
-const SV_ALERTE_JOURS = 7;   // au-delà, l'accueil signale la sauvegarde en orange
+/** Au-delà de ce nombre de jours, l'accueil signale la sauvegarde en orange.
+    Réglage « Moment et alerte » (sauvegarde.json, alerteJours) : 7 par défaut,
+    0 = jamais d'alerte. */
+function svAlerteJours(s) {
+  const n = s && typeof s.alerteJours === "number" ? s.alerteJours : 7;
+  return n > 0 ? n : Infinity;
+}
 
 /** Dernière copie des données sur une clé : envoi (Téléverser) ou archive, la
     plus récente des deux. null si aucune. L'accueil et la tuile lisent celle-ci. */
@@ -19269,8 +19388,9 @@ async function svRenderUsbState() {
   window._dashUsb = s;
   if (typeof dashRender === "function") dashRender();
   const parts = [];
-  if (s.count === 0)      parts.push("Aucune clé USB branchée");
-  else if (s.count === 1) parts.push(`Clé détectée : ${s.drives[0].letter} ${s.drives[0].label}`);
+  if (s.count === 0)      parts.push(s.autres ? "Aucune de tes clés autorisées n'est branchée"
+                                              : "Aucune clé USB branchée");
+  else if (s.count === 1) parts.push(`Clé détectée : ${(s.drives[0].letter + " " + s.drives[0].label).trim()}`);
   else                    parts.push(`${s.count} clés branchées`);
 
   // Sauvegarde trop ancienne : en orange, avec quoi faire. En petit gris,
@@ -19281,7 +19401,7 @@ async function svRenderUsbState() {
   const der = svDerniereCopie(s);
   const j = der ? Math.floor((new Date() - der) / 86400000) : null;
   if (j === null) parts.push("aucune sauvegarde sur clé pour l'instant");
-  else if (j >= SV_ALERTE_JOURS) {
+  else if (j >= svAlerteJours(s)) {
     const quand = `Dernière sauvegarde sur clé il y a ${j} jours`;
     const quoi = s.count ? "clique sur Téléverser" : "branche ta clé USB";
     st.classList.add("vieux");
@@ -21469,7 +21589,7 @@ const DASH_WIDGETS = [
       if (d) {
         const j = Math.floor((new Date() - d) / 86400000);
         val = j === 0 ? "Aujourd'hui" : (j === 1 ? "Hier" : "Il y a " + j + " j");
-        if (j >= SV_ALERTE_JOURS) cls = "c-a";
+        if (j >= svAlerteJours(s)) cls = "c-a";
       }
       return { lbl: "Dernière sauvegarde USB", val, cls, sub, go: null };
     },

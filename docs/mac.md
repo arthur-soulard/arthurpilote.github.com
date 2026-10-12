@@ -25,8 +25,9 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 |---|---|---|
 | 1 | Socle : dépendances par système, dossier de données, « Ouvrir le dossier », notifications, mise à jour qui ne propose pas le Setup sur Mac, pas de fouille du Bureau sur Mac, build Mac de test | fait (11/10/2026) |
 | 2 | Lire le résultat du build de test, corriger ce qui casse au lancement | fait (11/10/2026) : icône, pont JS ↔ Python (voir « Pont pywebview et CSP »). Build de test vert, page prête en 0,8 s |
-| 3 | Fenêtre et raccourcis : barre de titre déplaçable, boutons à gauche, Agrandir, taille d'écran, ⌘ au lieu de Ctrl, textes « Windows », ⌘Q qui vide les enregistrements en attente, `private_mode=False` (localStorage gardé, comme sous Windows) | |
-| 4 | Clé USB : réglages (les deux systèmes) + détection sur Mac (`/Volumes`, `diskutil info -plist`) | |
+| 2 bis | Certificats HTTPS | fait (12/10/2026) : `plateforme.certificats_mac`, voir l'inventaire. Testé en cachant le fichier de la machine GitHub |
+| 3 | Fenêtre et raccourcis | fait (12/10/2026) : voir « Fenêtre Mac » |
+| 4 | Clé USB : réglages (les deux systèmes) + détection sur Mac (`/Volumes`, `diskutil info -plist`) | fait (12/10/2026) : `docs/sauvegarde-usb.md`, « Les quatre réglages » et « Sur Mac » |
 | 5 | OCR Santé et Vocabulaire : Vision d'Apple (hors ligne, français en mode « accurate », boîtes par mot) et PDFKit pour les PDF, via pyobjc déjà tiré par pywebview | |
 | 6 | Mise à jour Mac (téléchargée et installée par Pilote), asset Mac dans `release.yml` (job séparé, qui ne bloque jamais le Setup), README et notice d'installation | |
 
@@ -91,6 +92,36 @@ Constat annexe sous Windows : sur le PC d'Arthur, la page est prête entre 13 et
 16 s, et une fois à 22 s (PC chargé) ; elle s'est alors ouverte par le délai de
 secours de 20 s. Rien de cassé, mais la marge est mince.
 
+## Fenêtre Mac (étape 3, 12/10/2026)
+
+* **Barre de titre du système** (`frameless` seulement sous Windows, `app.py`) :
+  boutons rouge/jaune/vert à gauche, déplacement, double-clic, plein écran et
+  réduction natifs. La page ne crée pas sa barre (`_injectTitlebar` sort sur
+  `EST_MAC`) et la marge de 36 px disparaît (`html.os-mac`). Choisi plutôt
+  qu'une barre maison déplaçable : rien à réimplémenter, rien qui casse.
+* **Taille** : `plateforme.zone_ecran_mac()` (écran sans barre des menus ni Dock,
+  `NSScreen.visibleFrame`) donne le « plein écran » d'ouverture et sert à savoir,
+  à la fermeture, si la fenêtre l'était (`windowMaximized`).
+* **Fermeture** : bouton rouge, ⌘Q et ⌘W arrivent directement à `_on_closing`,
+  sans le bouton Fermer de la page qui écrit d'abord ce qui attend. Sur Mac, la
+  première fermeture est annulée, la page vide ses enregistrements
+  (`_fermerApresVidange`), appelle `Api.fermeture_prete()`, et la fenêtre se
+  ferme 0,3 s **après** la réponse : fermer pendant que pywebview renvoie cette
+  réponse bloquait un fil pour toujours et l'app ne quittait plus (vu sur le
+  test). Filets : 5 s si la page ne répond pas, `os._exit` 3 s après la fin de
+  `webview.start()`.
+* **⌘ au lieu de Ctrl** pour les raccourcis et dans les bulles d'aide ;
+  `.txt-win` / `.txt-mac` pour « ce PC » / « ce Mac », `.win-seul` pour un réglage
+  propre à Windows (recolorer les raccourcis).
+* **Menus en français** : `plateforme.LOCALISATION_MAC`, passée à `webview.start`.
+* **`private_mode` reste à sa valeur par défaut**, comme sous Windows : l'idée
+  d'origine (`private_mode=False` « comme sous Windows ») reposait sur une erreur,
+  pywebview 4.4.1 ouvre lui aussi WebView2 en navigation privée
+  (`IsInPrivateModeEnabled`), donc le localStorage n'y survit pas non plus.
+* Test (`_diag_fenetre`, 45 s) : barre, ⌘2, taille, puis une écriture laissée en
+  attente et « Quitter » ; vu le 12/10/2026 : fermée seule en 2 s, écriture sur le
+  disque, `windowMaximized` vrai.
+
 ## Build Mac
 
 * `build/pilote-mac.spec` : à part de `pilote.spec` pour que le build Windows ne
@@ -111,17 +142,16 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 
 | Quoi | Où | Sur Mac aujourd'hui |
 |---|---|---|
-| Déplacement de la fenêtre (`-webkit-app-region`, propre au moteur de Windows) | `index.html` `.titlebar` | fenêtre immobile ; pywebview veut la classe `pywebview-drag-region` |
-| Agrandir, taille de l'écran, taille gardée à la fermeture | `app.py` `maximize_toggle`, `main()`, `_on_closing` | rien / 1280×720 / repli sur `window.width` |
+| Déplacement de la fenêtre, Agrandir, taille de l'écran, taille gardée | `index.html`, `app.py` | réglé (étape 3) : barre de titre du système, zone utile de l'écran |
 | Remise au premier plan, icône à l'accent, raccourcis `.lnk` | `app.py`, `appicon.py` | sans effet (exceptions rattrapées) |
 | Coins arrondis de l'écran de chargement (DWM) | `splash.py` | sans effet |
-| Détection des clés USB (`GetLogicalDrives`, numéro de série) | `sauvegarde.py` | « Aucune clé USB détectée » |
+| Détection des clés USB (`GetLogicalDrives`, numéro de série) | `sauvegarde.py` | réglé (étape 4) : `/Volumes` et `diskutil` |
 | OCR (`ocr_win.ps1`, Windows.Media.Ocr) | `sante.py`, `vocabulaire.py` | « OCR disponible uniquement sous Windows » |
 | Installation de la mise à jour (`.bat`, `cmd.exe`, Setup) | `updater.py` | jamais proposée (étape 1) ; Paramètres affiche pourtant « À jour (dernière : vX) » même en retard : à corriger avant de distribuer |
-| Raccourcis Ctrl, textes « Windows », « Win+Maj+S » | `index.html` | Ctrl au lieu de ⌘ |
-| ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | à gérer côté Python |
+| Raccourcis Ctrl, textes « Windows » | `index.html` | réglé (étape 3) : ⌘, « ce Mac » |
+| ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | réglé (étape 3) : voir « Fenêtre Mac » |
 | Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | seulement encodé en base64 (« b64: »), donc lisible dans `actus.json` et dans les sauvegardes : passer au Trousseau de macOS |
-| Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | test du 12/10/2026 (annotation « HTTPS ») : l'app compilée cherche ses certificats dans `/Library/Frameworks/Python.framework/Versions/3.11/etc/openssl/cert.pem`, le Python installé sur la machine de GitHub. Yahoo, Gmail et GitHub y répondent, mais un Mac ordinaire n'a pas ce fichier. Avec `/etc/ssl/cert.pem` (fourni avec macOS), les trois répondent aussi : c'est la correction à poser, à vérifier en cachant l'autre fichier pendant le test |
+| Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | test du 12/10/2026 (annotation « HTTPS ») : l'app compilée cherche ses certificats dans `/Library/Frameworks/Python.framework/Versions/3.11/etc/openssl/cert.pem`, le Python installé sur la machine de GitHub. Yahoo, Gmail et GitHub y répondent, mais un Mac ordinaire n'a pas ce fichier. Avec `/etc/ssl/cert.pem` (fourni avec macOS), les trois répondent aussi. **Réglé** : `plateforme.certificats_mac()`, en tête d'`app.py` avant tout contexte TLS, pointe `SSL_CERT_FILE` sur ce fichier quand celui du Python manque ; le test cache désormais le fichier de GitHub (`sudo mv`) : Yahoo, Gmail, GitHub OK et cours lu |
 | Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | probablement sans effet : pywebview Mac ne remplace que le `window.print` de la page principale (`customize.js`), pas celui de l'iframe (vu le 12/10/2026, non essayé) |
 
 ## Gatekeeper (app non signée)
