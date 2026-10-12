@@ -117,6 +117,60 @@ comme `sauvegarde.json`). ETF par ETF : un site qui ne répond pas, ou une lectu
 incohérente (`_valider` : pays ou secteurs loin de 100 %), laisse l'ancienne composition.
 Pour rafraîchir les données livrées avant une version : `python src/expositions.py`.
 
+**ETF que Pilote ne suit pas : recherche automatique** (12/10/2026, `chercher` dans
+`expositions.py`, `expoChercherInconnus` côté JS). Avant, tout ETF hors `ETFS` restait
+« Composition inconnue » (HEMA, D5BL et PPFB du CTO TR). Désormais, dès qu'une
+position de type ETF n'a pas de composition (ajout par le formulaire, import d'un
+relevé, ouverture de l'onglet), Pilote la cherche, une fois par ETF et par lancement :
+
+1. ISIN : celui de la position (import d'un CTO), sinon celui qu'Euronext donne au
+   mnémonique (`instrumentSearch/searchJSON`, Paris d'abord) ;
+2. **justETF** dit quel indice l'ETF suit (`data-testid` de la fiche anglaise) ;
+3. indice du catalogue **`INDICES`** → sa composition complète, quel que soit
+   l'émetteur (HSBC, Xtrackers, SPDR…). Catalogue = indices de `ETFS` + MSCI EM
+   (Amundi : l'ETF physique d'iShares passe par d'autres ETF pour la Chine A et le
+   Brésil), MSCI EM IMI, MSCI Europe, MSCI EMU, EURO STOXX 50, CAC 40, DAX, FTSE 100,
+   MSCI USA, MSCI Japan, MSCI World Small Cap, toutes vérifiées le 12/10/2026 ;
+4. sinon ETF iShares physique (nom sans « Swap ») → ses propres lignes, via la
+   liste des 1 400 fonds iShares (`ISHARES_LISTE`, 4 Mo, lue une fois par lancement) ;
+5. sinon ETF Amundi → la répartition de son indice publiée par Amundi ;
+6. sinon or, argent… (indice « Gold », ETC d'iShares) → une ligne **`_mp`**
+   « Or et matières premières », en pays comme en secteur, rangée selon son poids
+   (seuls « Non détaillé » et « Composition inconnue » vont en bas : `expoEnBas`) ;
+7. sinon le **résumé de justETF** : 13 pays au plus (lien Wicket « Show more », même
+   session), secteurs FactSet ramenés à GICS à peu près (`SECTEURS_JUSTETF`), 10
+   premières lignes. « Other » devient « non détaillé ».
+
+Résultat dans `etf_compositions.json`, marqué `"auto": true` (badge « Trouvée sur
+internet le … ») : il sert ensuite hors ligne, et « Mettre à jour les données » le
+relit avec les ETF suivis. Un ETF ajouté par le formulaire affiche un message à la
+fin de la recherche (« Composition de C50 trouvée : indice EURO STOXX 50 »).
+
+**Bouton « Chercher l'ETF »** (demande d'Arthur, 12/10/2026). Dans « Ajouter une
+position », dès que le type est ETF et qu'un ticker est saisi, le bloc « Composition
+de l'ETF » (`#f-compo`, `posCompoMaj`) dit « Connue de Pilote : indice … » ou « Pilote
+ne connaît pas encore cet ETF » avec **Chercher l'ETF**, qui lance la recherche sans
+attendre l'enregistrement. Caché dans « Modifier la position » (`_posCompoAjout`).
+**Quand Pilote ne trouve pas**, partout (formulaire, bandeau du haut d'Expositions,
+« Détail par position ») : **Ouvrir justETF** ouvre dans le navigateur la fiche de
+l'ETF (par son ISIN, renvoyé par l'échec quand Euronext l'a donné) ou la recherche
+justETF sur son ticker (`search.html?search=ETFS&query=D5BL` : vérifié, 1 résultat),
+plus **Chercher à nouveau** (après une coupure réseau) ; on recopie ensuite pays et
+secteurs avec « Renseigner la composition » (`expoOuvrirJustetf`, `expoRelancer`).
+
+* Lignes de fonds dans les sources iShares (« ISH MSCI CHINA A ETF », classées
+  « Finance / Irlande ») : elles comptent pour le pays de leur nom, en « Autres
+  secteurs », et ne sont pas des entreprises (`_FONDS`, `_pays_du_nom`). Sans effet
+  sur les 7 ETF suivis (compositions identiques avant/après, vérifié).
+* Les 10 premières lignes de justETF reprennent l'ISIN, le pays et le secteur d'une
+  entreprise déjà connue (`_connue`) : « Meta Platforms » = Meta, « Taiwan
+  Semiconductor Manufacturing » = TSMC (`_ALIAS`), mais « Siemens Energy » ≠ Siemens.
+* Ce qui sort du PC : le mnémonique et l'ISIN des ETF concernés (Euronext, justETF,
+  iShares, Amundi), comme les tickers envoyés à Yahoo pour les cours. Aucun montant.
+* Vérifié le 12/10/2026 (banc d'essai, copie des données) : HEMA → MSCI EM d'Amundi,
+  D5BL → résumé justETF (« MSCI Europe Enhanced Value »), PPFB → or, CW8 ajouté au
+  PEA → 1 247 lignes de SWDA ; aussi XDWD, SPY5, EXS1, IEFV, VWCE, Xetra-Gold, GDX.
+
 **Corrections à la main** (« Modifier la composition », fenêtre `ov-expo-edit`) :
 `S.uiPrefs.expoPerso[ticker]`, propres à l'utilisateur, prioritaires sur tout le reste.
 Une ligne `nom = pourcentage` ; ce qui manque pour 100 % devient « non détaillé » ;
