@@ -77,6 +77,9 @@ Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
    du Mac. Ce n'est à faire qu'une fois.
 5. Si macOS dit que Pilote « est endommagé », taper dans le Terminal :
    `xattr -dr com.apple.quarantine /Applications/Pilote.app`, puis l'ouvrir.
+6. Si macOS demande d'autoriser Pilote à « trouver des appareils sur les réseaux
+   locaux », réponds **Ne pas autoriser** : Pilote n'en a pas besoin, tout fonctionne
+   après un refus (cours, Actus, mises à jour).
 
 Les mises à jour suivantes sont faites par Pilote lui-même : il télécharge la nouvelle
 version, la met à la place de l'ancienne et se relance, sans repasser par l'étape 4.
