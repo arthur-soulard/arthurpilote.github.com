@@ -2,6 +2,47 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.5",
+      "date": "2026-10-12",
+      "titre": "L'historique de bourse Fortuneo s'importe tel quel",
+      "nouveau": [
+        "Fortuneo : importe le fichier « Historique des opérations de bourse » de ton espace client, le .zip tel quel, sans le décompresser. Achats, ventes et dividendes sont repris ; les titres transférés depuis une autre banque et les détachements de coupon sont écartés, avec leur explication."
+      ],
+      "ameliore": [
+        "Un relevé sans ISIN, comme celui de Fortuneo, retrouve la cotation de chaque titre par son nom, vérifiée sur les prix que tu as payés.",
+        "Pour un titre que ton compte suit déjà, Pilote garde ton ticker : une ligne déjà vendue n'est pas comptée une deuxième fois."
+      ]
+    },
+    {
+      "version": "4.4.4",
+      "date": "2026-10-12",
+      "titre": "Tes lignes rangées dans l'ordre que tu veux",
+      "nouveau": [
+        "Onglet Positions, du PEA comme de chaque CTO : fais glisser une ligne pour la placer plus haut ou plus bas. Lâchée hors du tableau, elle revient à sa place, et Retour annule le déplacement.",
+        "Chaque compte garde son propre ordre. Les listes de titres des fenêtres (nouvelle transaction, dividende) le suivent."
+      ]
+    },
+    {
+      "version": "4.4.3",
+      "date": "2026-10-12",
+      "titre": "Tes relevés de banque, lus directement par Pilote",
+      "nouveau": [
+        "Importer des relevés (onglet Transactions, pour le PEA comme pour un CTO) : Pilote lit les avis d'opéré et de dividende en PDF de Fortuneo, BoursoBank, Bourse Direct et Saxo, le rapport des transactions de Degiro, et les exports CSV, Excel ou XML de Trade Republic, Degiro, Interactive Brokers, Saxo et Trading 212. Il reconnaît la banque tout seul, et tu peux choisir plusieurs fichiers d'un coup.",
+        "Un autre tableau ? Pilote reconnaît ses colonnes, ou te demande lesquelles prendre (date, titre, quantité, cours…).",
+        "Sur le PEA, les versements sont repris quand le document les contient (relevé des liquidités Fortuneo, relevé Bourse Direct)."
+      ],
+      "ameliore": [
+        "La taxe sur les transactions financières envoyée sur un avis à part (Fortuneo, Bourse Direct) s'ajoute aux frais de son ordre.",
+        "Un ordre que tu avais déjà saisi à la main est reconnu : il n'est pas compté deux fois.",
+        "Courbe du capital : le pourcentage des périodes 1S, 1M, 6M et « Depuis janvier » est maintenant ton gain rapporté à l'argent engagé, toujours du même signe que le gain en euros (un CTO pouvait afficher +22 % pour une perte). La tuile « Performance du PEA » de l'accueil suit le même calcul : ses pourcentages changent un peu. « Max » ne change pas.",
+        "Cotation en euros des titres importés : les grandes places (Xetra, Paris, Amsterdam, Milan) passent avant les places régionales, aux cours moins suivis."
+      ],
+      "corrige": [
+        "Les comparaisons avec le CAC 40, le S&P 500 et l'ETF World ne sont plus tronquées sur le PEA après un passage dans un CTO.",
+        "La note « portefeuille ouvert le … » ne s'affiche plus à tort sur « Depuis janvier »."
+      ]
+    },
+    {
       "version": "4.4.2",
       "date": "2026-10-12",
       "titre": "Une section par CTO, et la barre de gauche rangée à ta façon",

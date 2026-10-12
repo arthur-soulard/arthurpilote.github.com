@@ -283,6 +283,9 @@ thead th:first-child { text-align: left; padding-left: 2px; }
 tbody tr { border-bottom: 1px solid var(--brd); transition: background .1s; }
 tbody tr:last-child  { border-bottom: none; }
 tbody tr:hover       { background: var(--bg3); }
+/* Lignes des Positions : se déplacent en glissant (_posBrancherGlisser) */
+#pos-body tr[draggable] { cursor: grab; }
+#pos-body tr.pos-glisse { opacity: .4; }
 td {
   padding: 11px 10px; text-align: right;
   font-family: var(--mono); vertical-align: middle; font-size: 12px;
@@ -2296,6 +2299,11 @@ body.cpt-cto .pea-seul, body.cpt-cto .pea-info { display: none !important; }
 .cto-danger { color: var(--r); }
 .modal.cto-import { max-width: 980px; width: min(980px, 94vw); }
 .cto-imp-aide { margin: 0 0 1rem 1.2rem; font-size: 13px; line-height: 1.7; color: var(--txt2); }
+.cto-imp-aide-p { font-size: 13px; line-height: 1.6; color: var(--txt2); margin: 0 0 .5rem; }
+.cto-imp-col-choix { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px 12px; margin: .4rem 0 .8rem; }
+label.cto-imp-col { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--txt2); }
+label.cto-imp-col select { font: inherit; font-size: 12px; padding: 4px 6px; background: var(--bg3); color: var(--txt);
+  border: 1px solid var(--brd2); border-radius: var(--rad); }
 .cto-imp-aide b { color: var(--txt); }
 .cto-imp-fichier { cursor: pointer; }
 .cto-imp-resume { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--txt2); margin-bottom: 4px; }
@@ -2674,6 +2682,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <select id="tx-filter-sector" onchange="renderTx()" style="font-family:var(--mono);background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rad);padding:5px 8px;font-size:11px;color:var(--txt)">
           <option value="">Tous secteurs</option>
         </select>
+        <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()" title="Avis d'opéré PDF, export CSV, Excel ou XML de ta banque"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
         <button class="btn btn-sm btn-ghost" onclick="openAddTx()"><i class="ph ph-plus"></i> Ajouter</button>
       </div>
     </div>
@@ -4464,24 +4473,35 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
-<!-- Modal : import du relevé CSV de Trade Republic (4.4.0). Rien n'est
-     enregistré avant « Importer » : ctoImport*. -->
+<!-- Modal : import des relevés de banque et de courtier, PEA ou CTO
+     (4.4.0 pour Trade Republic, toutes banques en 4.5.0). Rien n'est
+     enregistré avant « Importer » : ctoImport*, releves.py. -->
 <div class="ov" id="ov-cto-import" onclick="if(event.target===this)closeOv('ov-cto-import')">
   <div class="modal cto-import">
-    <h2>Importer l'historique Trade Republic</h2>
+    <h2 id="cto-imp-titre">Importer des relevés</h2>
     <div id="cto-imp-etape1">
-      <ol class="cto-imp-aide">
-        <li>Dans l'appli Trade Republic : <b>Profil → Relevés → Export des transactions</b>, sur la période la plus longue.</li>
-        <li>Choisis le fichier CSV reçu ci-dessous. Pilote le lit et te montre tout avant d'enregistrer quoi que ce soit.</li>
-      </ol>
-      <label class="btn btn-primary cto-imp-fichier"><i class="ph ph-file-csv"></i> Choisir le fichier CSV
-        <input type="file" id="cto-imp-input" accept=".csv,text/csv" onchange="ctoImportLire(this)" hidden></label>
+      <p class="cto-imp-aide-p">Choisis un ou plusieurs fichiers de ta banque ou de ton courtier : Pilote reconnaît la banque tout seul.</p>
+      <ul class="cto-imp-aide">
+        <li><b>PDF</b> : avis d'opéré, avis de dividende et relevés de <b>Fortuneo</b> (avec l'avis de taxe sur les transactions et le relevé des liquidités du PEA pour les versements), <b>BoursoBank</b>, <b>Bourse Direct</b>, <b>Saxo</b>, et le rapport des transactions de <b>Degiro</b>.</li>
+        <li><b>CSV, Excel ou XML</b> : <b>Fortuneo</b> (historique des opérations de bourse, le .zip tel quel), <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>.</li>
+        <li><b>Tout autre tableau</b> : Pilote reconnaît ses colonnes, ou te demande lesquelles prendre.</li>
+      </ul>
+      <p class="pac-dim">Pilote te montre tout avant d'enregistrer quoi que ce soit, et un document importé deux fois ne compte rien en double.</p>
+      <label class="btn btn-primary cto-imp-fichier"><i class="ph ph-files"></i> Choisir les fichiers
+        <input type="file" id="cto-imp-input" accept=".csv,.pdf,.xlsx,.xml,.txt,.zip,text/csv,application/pdf,application/zip" multiple onchange="ctoImportLire(this)" hidden></label>
       <p class="pac-dim" id="cto-imp-msg"></p>
+    </div>
+    <div id="cto-imp-colonnes" style="display:none">
+      <p class="cto-imp-aide-p">Pilote ne reconnaît pas toutes les colonnes de <b id="cto-imp-col-nom"></b>. Indique ce que contient chacune :
+        sans colonne « Sens », une quantité négative est une vente.</p>
+      <div id="cto-imp-col-choix" class="cto-imp-col-choix"></div>
+      <div class="tw cto-imp-ops"><table id="cto-imp-col-apercu"></table></div>
+      <div style="margin-top:.6rem"><button class="btn btn-primary btn-sm" onclick="ctoImportColonnes()">Lire avec ces colonnes</button></div>
     </div>
     <div id="cto-imp-etape2" style="display:none">
       <div id="cto-imp-resume" class="cto-imp-resume"></div>
       <h3 class="cto-imp-h">Titres : la cotation en euros suivie par Pilote</h3>
-      <p class="pac-dim">Trade Republic exécute en euros. Pilote propose la cotation en euros dont le cours colle au prix payé ; change-la si besoin.</p>
+      <p class="pac-dim">Pilote propose la cotation en euros dont le cours colle aux prix que tu as payés (« vérifiée ») ; change-la si besoin.</p>
       <div class="tw"><table><thead><tr><th style="text-align:left">Titre</th><th style="text-align:left">ISIN</th><th style="text-align:left">Cotation suivie</th><th>Dernier prix payé</th><th>Cours actuel</th></tr></thead>
         <tbody id="cto-imp-titres"></tbody></table></div>
       <h3 class="cto-imp-h">Opérations</h3>
@@ -5457,7 +5477,7 @@ function renderPositions() {
     const rV = (tv>0 && e.val!=null) ? e.val/tv*100 : null;
     const r  = rV!=null ? rV : rI;
     const aVenir = e.qty <= 0.0001 ? _achatAVenir(p) : "";
-    return `<tr>
+    return `<tr data-id="${p.id}" draggable="true">
       <td>
         <div class="tk">${p.name}</div>
         <div class="tk2">${p.ticker}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
@@ -5478,7 +5498,62 @@ function renderPositions() {
       <td>${ebtn("editPos",p.id)}${dbtn("delPos",p.id)}</td>
     </tr>`;
   }).join("");
+  _posBrancherGlisser(body);
   renderMetrics();
+}
+
+/* Glisser une ligne pour changer l'ordre des positions (12/10/2026), comme les
+   sections de la barre latérale : elle prend sa place sous la souris, les
+   autres coulissent ; lâchée hors du tableau (ou Échap), elle revient. L'ordre
+   est celui de S.positions, propre au compte affiché (PEA ou chaque CTO) ; les
+   listes de titres des fenêtres (transaction, dividende…) le suivent. */
+function _posBrancherGlisser(body) {
+  if (body._glisser) return;   // le tbody reste, seules ses lignes sont redessinées
+  body._glisser = true;
+  const zone = body.closest(".card") || body;   // lâcher sur l'en-tête compte aussi
+  let src = null, revenir = null;
+  body.addEventListener("dragstart", e => {
+    const tr = e.target.closest && e.target.closest("tr[data-id]");
+    if (!tr) return;
+    src = tr;
+    revenir = tr.nextElementSibling;
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", tr.dataset.id); } catch (err) {}
+    // Après le départ : toucher à la page pendant dragstart annule le glisser
+    setTimeout(() => { if (src) src.classList.add("pos-glisse"); }, 0);
+  });
+  zone.addEventListener("dragover", e => {
+    if (!src || !src.isConnected) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    // Positions de mise en page (offsetTop, relatif au tableau) : l'animation ne les fausse pas
+    const y = e.clientY - body.closest("table").getBoundingClientRect().top;
+    const ref = [...body.children].find(x => x !== src && y < x.offsetTop + x.offsetHeight / 2) || null;
+    if (ref === src.nextElementSibling) return;
+    const avant = new Map([...body.children].map(x => [x, x.offsetTop]));
+    body.insertBefore(src, ref);
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    [...body.children].forEach(x => {
+      const dy = avant.get(x) - x.offsetTop;
+      if (dy && x.animate) x.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }],
+                                     { duration: 160, easing: "ease-out" });
+    });
+  });
+  zone.addEventListener("drop", e => { if (src) e.preventDefault(); });
+  body.addEventListener("dragend", e => {
+    const tr = src;
+    src = null;
+    if (!tr) return;
+    tr.classList.remove("pos-glisse");
+    if (!tr.isConnected) return;   // tableau redessiné pendant le glisser (cours du jour)
+    if (e.dataTransfer.dropEffect === "none") { body.insertBefore(tr, revenir); return; }
+    const ordre = [...body.children].map(x => x.dataset.id);
+    if (ordre.join() === S.positions.map(p => String(p.id)).join()) return;
+    pushUndo();
+    const rang = p => { const i = ordre.indexOf(String(p.id)); return i < 0 ? ordre.length : i; };
+    S.positions = [...S.positions].sort((a, b) => rang(a) - rang(b));
+    persist();
+  });
 }
 
 /* ─── Performance + camemberts ─── */
@@ -5807,10 +5882,8 @@ function filterByRange(series, range) {
 
    MODE PLAGE PARTIELLE (1S, 1M, 6M, YTD) :
      P&L € = valeur finale − valeur debut − versements nets de la periode
-     P&L % = TWR (Time-Weighted Return) : produit des sous-periodes separees
-             par chaque versement/retrait. La valeur "juste avant un flux" est
-             le dernier point STRICTEMENT AVANT la date du flux (p.date < bDate),
-             pour ne pas inclure le nouveau capital dans le rendement.
+     P&L % = P&L € ÷ argent engage (Dietz modifie) : valeur de debut + chaque
+             versement/retrait pondere par la part de la plage restant a courir.
 ───────────────────────────────────────────────────────────────────────── */
 function computePnl(series, range) {
   if (!series || series.length < 2) return {pnlEur: null, pnlPct: null};
@@ -5864,32 +5937,22 @@ function computePnl(series, range) {
   /* P&L EUR = ΔValeur totale − flux de capital externes */
   const pnlEur = Math.round((vEnd - vStart - fluxNet) * 100) / 100;
 
-  /* Dates de rupture TWR = chaque versement (sans doublon, < endDate) */
-  const breakDates = [...new Set(windowDeps.map(d => d.date))]
-    .filter(d => d < endDate)
-    .sort();
+  /* P&L % = gain ÷ argent engagé (méthode de Dietz modifiée) : valeur de
+     départ + chaque flux pondéré par la part de la plage où il a travaillé
+     (un versement la veille de la fin ne compte presque pas). Toujours du
+     même signe que le gain en euros.
+     Jusqu'à la 4.4.2 : un TWR coupé à chaque flux, qui repartait du premier
+     point du jour du flux et perdait le rendement de ce jour-là. Peu visible
+     sur le PEA (un versement par mois), faux sur un CTO où chaque ordre est
+     un flux : « YTD » affichait +22,17 % pour −43,70 € (12/10/2026). Choix
+     d'Arthur : ce rendement plutôt qu'un TWR corrigé (+1,76 % ce jour-là),
+     qui peut être de signe opposé au gain. */
+  const jour   = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 864e5;
+  const duree  = jour(endDate) - jour(startDate);
+  const engage = vStart + windowDeps.reduce((s, d) => s + d.amount * (jour(endDate) - jour(d.date)) / duree, 0);
+  if (!(duree > 0) || engage <= 0) return {pnlEur, pnlPct: null};
 
-  if (!breakDates.length) {
-    return {pnlEur, pnlPct: Math.round((vEnd / vStart - 1) * 10000) / 100};
-  }
-
-  /* Produit TWR — un seul type de rupture : les versements de capital */
-  let twrProduct = 1;
-  let prevEnd    = vStart;
-
-  for (const bDate of [...breakDates, endDate]) {
-    /* Dernier point STRICTEMENT avant bDate (valeur avant le flux) */
-    const pts = series.filter(p => normDate(p.date) < bDate);
-    if (!pts.length || prevEnd <= 0) continue;
-    const vBefore = pts[pts.length - 1].val;
-    twrProduct *= vBefore / prevEnd;
-
-    /* Premier point >= bDate = valeur apres flux applique */
-    const ptsAfter = series.filter(p => normDate(p.date) >= bDate);
-    prevEnd = ptsAfter.length ? ptsAfter[0].val : vBefore;
-  }
-
-  return {pnlEur, pnlPct: Math.round((twrProduct - 1) * 10000) / 100};
+  return {pnlEur, pnlPct: Math.round(pnlEur / engage * 10000) / 100};
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -5908,17 +5971,26 @@ let _benchHistory = {};
 let _benchEnabled = { cac40: false, sp500: false, world: false };
 
 async function _loadBenchHistory(bench) {
-  if (_benchHistory[bench]) return _benchHistory[bench];
+  /* Le PEA et chaque CTO ne commencent pas le même jour : un historique chargé
+     pour un compte ne sert à un autre que s'il remonte jusqu'à son premier
+     ordre (même règle que le cache du serveur). Jusqu'à la 4.4.2, un indice
+     chargé d'abord sur un CTO (depuis août 2025) restait tronqué sur le PEA
+     (depuis janvier 2025) : CAC 40 à 1 214 € au lieu de 1 971 € (12/10/2026). */
+  const depuis = _perfDepuisParam();   // "&since=AAAA-MM-JJ", "" = aucun ordre
+  const deja   = _benchHistory[bench];
+  if (deja && (!deja.depuis || !depuis || deja.depuis <= depuis)) return deja;
   const ticker = BENCH_TICKERS[bench];
   if (!ticker) return null;
   try {
-    const url = LOCAL_HIST_URL + "?tickers=" + encodeURIComponent(ticker) + _perfDepuisParam();
+    const url = LOCAL_HIST_URL + "?tickers=" + encodeURIComponent(ticker) + depuis;
     const r   = await fetch(url, {cache: "no-store"});
     if (!r.ok) return null;
     const data = await r.json();
     if (!data.ok || !data.history || !data.history[ticker]) return null;
     const h = data.history[ticker];
-    _benchHistory[bench] = {dates: h.dates, closes: h.closes};
+    // Un autre chargement a pu finir entre-temps : on garde celui qui remonte le plus loin
+    const cur = _benchHistory[bench];
+    if (!cur || h.dates[0] <= cur.dates[0]) _benchHistory[bench] = {dates: h.dates, closes: h.closes, depuis};
     return _benchHistory[bench];
   } catch (e) { console.warn("bench", bench, e); return null; }
 }
@@ -5998,7 +6070,14 @@ function _buildBenchSeries(benchHistory, dates, transactions, syntheticStart) {
 
 let _benchUiReady = false;
 async function _initBenchmarkUi() {
-  if (_benchUiReady) return;
+  if (_benchUiReady) {
+    // Autre compte affiché : ses indices cochés remontent-ils assez loin ?
+    const coches = Object.keys(_benchEnabled).filter(b => _benchEnabled[b]);
+    const avant  = coches.map(b => _benchHistory[b]);
+    await Promise.all(coches.map(_loadBenchHistory));
+    if (_ch.perf && coches.some((b, i) => _benchHistory[b] !== avant[i])) drawPerfChart();
+    return;
+  }
   // Restaure depuis prefs si dispo
   try {
     const saved = window.__appPrefs && window.__appPrefs.ui && window.__appPrefs.ui.benchEnabled;
@@ -6185,7 +6264,9 @@ function drawPerfChart() {
     let note = "";
     const startD   = normDate(series[0].date);
     const cutToday = todayISO();
-    if (_perfRange === "YTD" && startD > cutToday.slice(0, 4) + "-01-01") {
+    // Le 1er janvier est férié : la plage YTD commence au mieux le 2. Le
+    // portefeuille n'est « ouvert le » que si toute sa courbe commence cette année.
+    if (_perfRange === "YTD" && normDate(_perfFullSeries[0].date) >= cutToday.slice(0, 4) + "-01-01") {
       note = " \u00B7 portefeuille ouvert le " + fmtShort(startD);
     }
     rangeEl.textContent  = "Du " + fmtShort(series[0].date) + " au " + fmtShort(series[series.length - 1].date) + note;
@@ -6310,7 +6391,7 @@ function drawPerfChart() {
               const v   = ctx.raw;
               const idx = ctx.dataIndex;
               if (ctx.datasetIndex === 0) {
-                return " Versements : " + v.toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " \u20AC";
+                return (_estCto() ? " Investi net : " : " Versements : ") + v.toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " \u20AC";
               }
               /* Dataset 1 = valeur portfolio */
               const dep   = depVals[idx] || 0;
@@ -20496,7 +20577,7 @@ function ctoRenderBarre() {
     ${ecarts ? `<span class="cto-bar-alerte" title="Voir les ordres marqués dans Transactions"><i class="ph ph-warning"></i>
       ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</span>` : ""}
     <span class="cto-bar-sp"></span>
-    ${c.courtier === "trade-republic" ? `<button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()"><i class="ph ph-file-csv"></i> Importer le relevé CSV</button>` : ""}
+    <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
     <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirCompte('${escHtml(c.id)}')"><i class="ph ph-gear-six"></i> Réglages du compte</button>`;
 }
 
@@ -20777,13 +20858,20 @@ async function ctoPlansCopier() {
   catch (e) { showToastModern("Copie refusée par le système", "warn"); }
 }
 
-/* ── Import du relevé CSV de Trade Republic ─────────────────────────────── */
-/* Python lit le fichier (cto.lire_csv_tr) ; ici : ce qui est déjà importé
-   (même transaction_id), la cotation en euros de chaque ISIN (/isin, le cours
-   le plus proche du dernier prix payé), puis l'aperçu. Rien n'est enregistré
-   avant « Importer ». */
+/* ── Import des relevés de banque et de courtier (PEA et CTO) ─────────── */
+/* Python lit les fichiers (releves.lire : PDF, CSV, Excel, XML ; banque
+   reconnue seule, voir docs/import-releves.md) ; ici : la cotation en euros
+   de chaque ISIN (/isin, vérifiée sur les prix payés), ce qui est déjà dans
+   le compte affiché, puis l'aperçu. Rien n'est enregistré avant « Importer ».
+   Sert au PEA comme aux CTO (le compte affiché, dans S) ; les noms ctoImport*
+   datent de la 4.4.0, quand seul le CTO importait. */
 
-let _ctoImp = null;   // {ops, titres: {isin: {nom, classe, ticker, candidats, prixPaye, secteur}}, ignores, inconnues}
+let _ctoImp = null;   // {ops, titres: {isin: {nom, classe, ticker, candidats, prixPaye, secteur}}, ignores, inconnues, documents}
+let _ctoImpFichiers = [];   // [{nom, b64, colonnes?}] : relus quand l'utilisateur indique des colonnes
+
+/* Repère d'un titre dans l'aperçu : son ISIN, ou son nom quand le relevé n'en
+   donne pas (CSV de Fortuneo, 4.4.5) */
+function _ctoImpCle(o) { return o.isin || ("NOM:" + String(o.nom || "").trim().toUpperCase()); }
 
 /* Secteur Yahoo d'une action -> secteur de Pilote (SECTORS), que les
    Expositions traduisent ensuite (EXPO_SECT_ACTION). Rien de reconnu : null,
@@ -20801,9 +20889,12 @@ function ctoSecteurYahoo(secteur, industrie) {
 }
 
 function ctoOuvrirImport() {
-  if (!_estCto()) return;
   _ctoImp = null;
+  _ctoImpFichiers = [];
+  const c = _estCto() ? ctoCompte(_compteActif) : null;
+  document.getElementById("cto-imp-titre").textContent = "Importer des relevés · " + (c ? c.nom : "PEA");
   document.getElementById("cto-imp-etape1").style.display = "";
+  document.getElementById("cto-imp-colonnes").style.display = "none";
   document.getElementById("cto-imp-etape2").style.display = "none";
   document.getElementById("cto-imp-ok").style.display = "none";
   document.getElementById("cto-imp-msg").textContent = "";
@@ -20811,36 +20902,122 @@ function ctoOuvrirImport() {
   openOvTop("ov-cto-import");
 }
 
+/* Contenu d'un fichier en base64, pour le pont pywebview (un PDF n'est pas du texte) */
+async function _ctoImpBase64(f) {
+  const octets = new Uint8Array(await f.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < octets.length; i += 0x8000) bin += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
 async function ctoImportLire(input) {
-  const f = input.files && input.files[0];
-  if (!f) return;
+  const fichiers = [...(input.files || [])];
+  if (!fichiers.length) return;
   const msg = document.getElementById("cto-imp-msg");
-  msg.textContent = "Lecture du fichier…";
-  let texte = "";
-  try { texte = await f.text(); }
-  catch (e) { msg.textContent = "Fichier illisible : " + e; return; }
+  msg.textContent = "Lecture de " + fichiers.length + " fichier" + (fichiers.length > 1 ? "s" : "") + "…";
+  try {
+    _ctoImpFichiers = await Promise.all(fichiers.map(async f => ({ nom: f.name, b64: await _ctoImpBase64(f) })));
+  } catch (e) { msg.textContent = "Fichier illisible : " + e; return; }
+  await ctoImportLancer();
+}
+
+/* Envoie les fichiers à Python, puis : colonnes à indiquer, ou aperçu */
+async function ctoImportLancer() {
+  const msg = document.getElementById("cto-imp-msg");
   let r = null;
-  try { r = await pywebview.api.cto_lire_csv(texte); }
+  try { r = await pywebview.api.releves_lire(_ctoImpFichiers); }
   catch (e) { r = { ok: false, erreur: String(e) }; }
-  if (!r || !r.ok) { msg.textContent = (r && r.erreur) || "Lecture impossible."; return; }
-  if (!r.operations.length) { msg.textContent = "Aucun achat, vente ni dividende dans ce fichier."; return; }
+  const erreurs = ((r && r.documents) || []).filter(d => d.erreur).map(d => d.nom + " : " + d.erreur);
+  if (r && r.aChoisir) { ctoImportColonnesRender(r.aChoisir); return; }
+  if (!r || !r.ok || !r.operations.length) {
+    document.getElementById("cto-imp-etape1").style.display = "";
+    document.getElementById("cto-imp-colonnes").style.display = "none";
+    msg.textContent = (r && r.erreur) || (erreurs.length ? erreurs.join(" · ")
+      : "Aucun achat, vente, dividende ni versement dans ce fichier.");
+    return;
+  }
   msg.textContent = "Recherche de la cotation en euros de chaque titre…";
   await ctoImportAnalyser(r);
   msg.textContent = "";
   ctoImportRender();
 }
 
-/* Ce qui est déjà dans le CTO : même transaction_id, ou même ordre saisi à la
-   main (date, ISIN, sens, quantité et prix à l'identique) */
-function ctoImportDeja(op) {
+/* Tableau dont Pilote ne reconnaît pas les colonnes : l'utilisateur les indique */
+const CTO_IMP_CHAMPS = [["date", "Date *"], ["sens", "Sens (achat, vente…)"], ["isin", "ISIN"], ["nom", "Nom du titre"],
+  ["qty", "Quantité *"], ["cours", "Cours"], ["devise", "Devise"], ["montant", "Montant"], ["frais", "Frais"], ["ref", "Référence"]];
+let _ctoImpTableau = null;
+function ctoImportColonnesRender(a) {
+  _ctoImpTableau = a;
+  document.getElementById("cto-imp-etape1").style.display = "none";
+  document.getElementById("cto-imp-colonnes").style.display = "";
+  document.getElementById("cto-imp-col-nom").textContent = a.nom;
+  const ent = a.entetes || [];
+  const opts = sel => `<option value="-1">—</option>` + ent.map((e, i) =>
+    `<option value="${i}"${sel === i ? " selected" : ""}>${escHtml(e || "colonne " + (i + 1))}</option>`).join("");
+  document.getElementById("cto-imp-col-choix").innerHTML = CTO_IMP_CHAMPS.map(([k, l]) =>
+    `<label class="cto-imp-col">${l}<select data-champ="${k}">${opts(a.proposition && a.proposition[k] != null ? a.proposition[k] : -1)}</select></label>`).join("");
+  document.getElementById("cto-imp-col-apercu").innerHTML =
+    `<thead><tr>${ent.map(e => `<th style="text-align:left">${escHtml(e)}</th>`).join("")}</tr></thead><tbody>`
+    + (a.apercu || []).map(r => `<tr>${ent.map((_, i) => `<td style="text-align:left">${escHtml(r[i] || "")}</td>`).join("")}</tr>`).join("") + "</tbody>";
+}
+async function ctoImportColonnes() {
+  const col = {};
+  document.querySelectorAll("#cto-imp-col-choix select").forEach(s => { if (+s.value >= 0) col[s.dataset.champ] = +s.value; });
+  if (col.date == null || col.qty == null || (col.isin == null && col.nom == null) || (col.cours == null && col.montant == null)) {
+    showToastModern("Indique au moins la date, la quantité, l'ISIN ou le nom, et le cours ou le montant", "warn");
+    return;
+  }
+  const f = _ctoImpFichiers.find(x => x.nom === (_ctoImpTableau && _ctoImpTableau.nom));
+  if (f) f.colonnes = col;
+  document.getElementById("cto-imp-colonnes").style.display = "none";
+  document.getElementById("cto-imp-etape1").style.display = "";
+  document.getElementById("cto-imp-msg").textContent = "Lecture avec ces colonnes…";
+  await ctoImportLancer();
+}
+
+/* Ce qui est déjà dans le compte affiché : même identifiant (référence de la
+   banque, transaction_id), ou même opération saisie à la main : même ligne,
+   même jour, même sens, même quantité et cours à 0,5 % près (un cours tapé
+   arrondi), même montant pour un dividende ou un versement. */
+function ctoImportDeja(op, titres) {
   if (op.trId && ((S.transactions || []).some(t => t.trId === op.trId)
-               || (S.divReceived || []).some(d => d.trId === op.trId))) return true;
-  const pos = (S.positions || []).find(p => p.isin === op.isin);
-  if (!pos || op.type === "Division") return false;
+               || (S.divReceived || []).some(d => d.trId === op.trId)
+               || (S.depots || []).some(d => d.trId === op.trId))) return true;
+  if (op.type === "Versement" || op.type === "Retrait") {
+    const m = op.type === "Retrait" ? -op.montant : op.montant;
+    return !_estCto() && (S.depots || []).some(d => normDate(d.date) === op.date && Math.abs((d.amount || 0) - m) < 0.011);
+  }
+  if (op.type === "Division" || op.type === "Taxe") return false;
+  const pos = op.isin ? (S.positions || []).find(p => p.isin === op.isin) : null;
+  const tt = titres[_ctoImpCle(op)];
+  const ticker = normalizeTicker((pos && pos.ticker) || (tt && tt.ticker) || "");
+  if (!ticker) return false;
   if (op.type === "Dividende")
-    return (S.divReceived || []).some(d => d.ticker === pos.ticker && normDate(d.date) === op.date && Math.abs((d.montant || 0) - op.montant) < 0.011);
-  return (S.transactions || []).some(t => t.asset === pos.ticker && t.type === op.type && normDate(t.date) === op.date
-    && Math.abs(t.qty - op.qty) < 1e-6 && Math.abs(t.cours - (op.cours || 0)) < 1e-4);
+    return [...(S.divReceived || []), ...(S.divFuture || [])].some(d => normalizeTicker(d.ticker || "") === ticker && normDate(d.date) === op.date && Math.abs((d.montant || 0) - op.montant) < 0.011);
+  return (S.transactions || []).some(t => normalizeTicker(t.asset || "") === ticker && t.type === op.type && normDate(t.date) === op.date
+    && Math.abs(t.qty - op.qty) < 1e-6 && Math.abs(t.cours - (op.cours || 0)) <= 0.005 * (op.cours || 0) + 1e-4);
+}
+
+/* État de chaque ligne de l'aperçu : déjà là, et à quel ordre une taxe sur les
+   transactions financières (avis à part chez Fortuneo et Bourse Direct) se
+   rattache : le nouvel ordre du même titre, le même jour. */
+function ctoImportMarquer() {
+  const I = _ctoImp;
+  I.ops.forEach(o => { o.deja = ctoImportDeja(o, I.titres); o.ordreTaxe = null; });
+  I.ops.filter(o => o.type === "Taxe").forEach(o => {
+    const ordre = I.ops.find(x => (x.type === "Achat" || x.type === "Vente") && x.isin === o.isin && x.date === o.date && !x._taxeLiee);
+    if (ordre) { ordre._taxeLiee = true; o.ordreTaxe = ordre; o.deja = ordre.deja; }
+  });
+  I.ops.forEach(o => { delete o._taxeLiee; });
+}
+
+/* Une ligne qui sera enregistrée : ni déjà là, ni une taxe sans son ordre, ni
+   un versement sur un CTO (ses versements se déduisent des ordres) */
+function ctoImportAEnregistrer(o) {
+  if (o.deja) return false;
+  if (o.type === "Taxe") return !!o.ordreTaxe;
+  if (o.type === "Versement" || o.type === "Retrait") return !_estCto();
+  return true;
 }
 
 async function ctoImportAnalyser(r) {
@@ -20848,9 +21025,11 @@ async function ctoImportAnalyser(r) {
   const titre = (isin, op, nom) => titres[isin] || (titres[isin] = { nom, classe: op.classe, ticker: "", candidats: [],
     prixPaye: null, date: "", depuis: op.date, nomLong: "", points: [] });
   r.operations.forEach(op => {
+    if ((!op.isin && !op.nom) || !["Achat", "Vente", "Dividende", "Division"].includes(op.type)) return;
     // Une division concerne aussi l'ancienne ligne (ISIN d'avant)
     if (op.type === "Division") titre(op.isinAvant, op, op.nomAvant);
-    const t = titre(op.isin, op, op.nom);
+    const t = titre(_ctoImpCle(op), op, op.nom);
+    if (!t.nom && op.nom) t.nom = op.nom;
     // Nom long de la description, bien écrit de préférence (« iShares Physical Gold ETC »
     // plutôt que « ISHARES PHYSICAL GOLD ») : la recherche de la cotation s'en sert
     if (op.nomLong && (!t.nomLong || (t.nomLong === t.nomLong.toUpperCase() && op.nomLong !== op.nomLong.toUpperCase())))
@@ -20860,33 +21039,44 @@ async function ctoImportAnalyser(r) {
       if (op.date >= t.date) { t.prixPaye = op.cours; t.date = op.date; }
     }
   });
-  // Déjà suivi dans ce CTO : sa cotation ne change pas
+  // Déjà suivi dans ce compte (ISIN connu) : sa cotation ne change pas
   Object.entries(titres).forEach(([isin, t]) => {
-    const p = (S.positions || []).find(x => x.isin === isin);
+    const p = isin.startsWith("NOM:") ? null : (S.positions || []).find(x => x.isin === isin);
     if (p) { t.ticker = p.ticker; t.connu = true; }
   });
   await Promise.all(Object.entries(titres).filter(([, t]) => !t.connu).map(async ([isin, t]) => {
+    let d = null;
     try {
       // Prix payés (40 derniers) et premier ordre : le serveur vérifie chaque
       // cotation sur son historique (server.cotations_euro)
-      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin)}&nom=${encodeURIComponent(t.nom || "")}`
+      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin.startsWith("NOM:") ? "" : isin)}&nom=${encodeURIComponent(t.nom || "")}`
         + `&nom2=${encodeURIComponent(t.nomLong)}&points=${encodeURIComponent(t.points.slice(-40).join(","))}&depuis=${t.depuis}`;
-      const d = await (await fetch(url, { cache: "no-store" })).json();
+      d = await (await fetch(url, { cache: "no-store" })).json();
       t.candidats = (d && d.ok && d.candidats) || [];
       if (d && d.principal) t.secteur = ctoSecteurYahoo(d.principal.secteur, d.principal.industrie);
     } catch (e) { t.candidats = []; }
     // La cotation vérifiée sur l'historique (le serveur la met en tête) ; sinon
     // la première dont le cours est à 20 % du dernier prix payé, sinon la première
-    const choix = t.candidats.find(c => c.ecart != null)
+    // Un ticker que ce compte utilise déjà (ligne ouverte, vendue, ou ordre)
+    // passe devant s'il colle aux prix payés : sans ISIN, Saint-Gobain partait
+    // sur GOB.DE quand le PEA le suit en EPA:SGO, et ses ventes auraient doublé
+    const dejaUtilises = new Set([...(S.positions || []).map(p => p.ticker), ...(S.closedPositions || []).map(c => c.ticker),
+      ...(S.transactions || []).map(x => x.asset)].filter(Boolean).map(normalizeTicker));
+    const choix = t.candidats.find(c => c.ecart != null && dejaUtilises.has(normalizeTicker(c.symbol)))
+      || t.candidats.find(c => c.ecart != null)
       || t.candidats.find(c => c.prix > 0 && t.prixPaye > 0 && Math.abs(c.prix / t.prixPaye - 1) < 0.2)
       || t.candidats[0];
     t.ticker = choix ? normalizeTicker(choix.symbol) : "";
+    // Relevé sans nom lisible (Saxo, Interactive Brokers) : celui de Yahoo
+    if (!t.nom || t.nom === isin) t.nom = (d && d.principal && d.principal.nom) || (choix && choix.nom) || isin;
+    // Ligne déjà suivie sous ce ticker, sans ISIN (PEA saisi à la main)
+    if (t.ticker && (S.positions || []).some(p => normalizeTicker(p.ticker) === t.ticker)) t.connu = true;
   }));
   _ctoImp = {
-    titres,
-    ops: r.operations.map(op => ({ ...op, deja: ctoImportDeja(op) })),
-    ignores: r.ignores || {}, inconnues: r.inconnues || [],
+    titres, ops: r.operations.map(op => ({ ...op })),
+    ignores: r.ignores || {}, inconnues: r.inconnues || [], documents: r.documents || [],
   };
+  ctoImportMarquer();
 }
 
 function ctoImportRender() {
@@ -20894,20 +21084,26 @@ function ctoImportRender() {
   if (!I) return;
   document.getElementById("cto-imp-etape1").style.display = "none";
   document.getElementById("cto-imp-etape2").style.display = "";
-  const nouvelles = I.ops.filter(o => !o.deja);
+  const nouvelles = I.ops.filter(o => ctoImportAEnregistrer(o) && o.type !== "Taxe");
   const btn = document.getElementById("cto-imp-ok");
   btn.style.display = nouvelles.length ? "" : "none";
   btn.textContent = "Importer " + nouvelles.length + " opération" + (nouvelles.length > 1 ? "s" : "");
   const compte = (f, l) => I.ops.filter(f).length + " " + l;
   const inc = I.inconnues.length
     ? `<span title="${escHtml(I.inconnues.map(x => x.date + " " + x.type + " " + x.nom).join("\n"))}"><b>${I.inconnues.length}</b> ligne(s) d'un type que Pilote ne connaît pas, laissée(s) de côté (survole pour le détail)</span>` : "";
+  const versements = I.ops.filter(o => o.type === "Versement" || o.type === "Retrait").length;
+  const docs = I.documents.map(d => d.erreur ? `<span class="cto-ecart" title="${escHtml(d.erreur)}"><i class="ph ph-warning"></i> ${escHtml(d.nom)} : non lu</span>`
+    : `<span>${escHtml(d.nom)} (${escHtml(d.banque || "?")}) : ${d.operations} op.</span>`);
   document.getElementById("cto-imp-resume").innerHTML = `
     <span><b>${nouvelles.length}</b> nouvelle(s)</span>
-    <span>${compte(o => o.deja, "déjà dans Pilote")}</span>
-    <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}${I.ops.some(o => o.type === "Division") ? ", " + compte(o => o.type === "Division", "division(s)") : ""}</span>
-    <span>${(I.ignores.especes || 0)} ligne(s) d'espèces ignorée(s) (carte, virements, intérêts)</span>
+    <span>${compte(o => o.deja && o.type !== "Taxe", "déjà dans Pilote")}</span>
+    <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}${I.ops.some(o => o.type === "Division") ? ", " + compte(o => o.type === "Division", "division(s)") : ""}${versements ? ", " + versements + " versement(s) ou retrait(s)" + (_estCto() ? " ignoré(s) : le CTO les déduit des ordres" : "") : ""}</span>
+    ${I.ignores.especes ? `<span>${I.ignores.especes} ligne(s) d'espèces ignorée(s) (carte, virements, intérêts)</span>` : ""}
     ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) hors actions et ETF ignorée(s)</span>` : ""}
-    ${inc}`;
+    ${I.ignores.transferts ? `<span>${I.ignores.transferts} transfert(s) de titres depuis une autre banque ignoré(s) : leur achat d'origine vient de l'ancienne banque</span>` : ""}
+    ${I.ignores.detachements ? `<span>${I.ignores.detachements} détachement(s) de coupon ignoré(s) : le dividende est sur la ligne d'encaissement</span>` : ""}
+    ${inc}
+    ${docs.length > 1 || I.documents.some(d => d.erreur) ? `<span>Fichiers : ${docs.join(" · ")}</span>` : ""}`;
   document.getElementById("cto-imp-titres").innerHTML = Object.entries(I.titres).map(([isin, t]) => {
     const cours = t.ticker ? (getVar(t.ticker) || {}).cours : null;
     const c = t.candidats.find(x => normalizeTicker(x.symbol) === t.ticker);
@@ -20915,62 +21111,78 @@ function ctoImportRender() {
     const ecart = (prixActuel && t.prixPaye) ? prixActuel / t.prixPaye - 1 : null;
     const sel = t.connu ? `<b>${escHtml(t.ticker)}</b> <span class="pac-dim">(déjà suivi)</span>`
       : `<span class="cto-imp-titres-sel">
-          <select onchange="ctoImportTicker('${isin}', this.value)">
+          <select data-cle="${escHtml(isin)}" onchange="ctoImportTicker(this.dataset.cle, this.value)">
             ${t.candidats.map(x => { const tk = normalizeTicker(x.symbol);
               return `<option value="${escHtml(tk)}"${tk === t.ticker ? " selected" : ""}>${escHtml(x.symbol)} · ${escHtml(x.place)}${x.prix ? " · " + eur(x.prix) : ""}${x.ecart != null ? " · vérifiée" : ""}</option>`; }).join("")}
             <option value=""${t.ticker && !t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? " selected" : ""}>Autre ticker…</option>
           </select>
           <input placeholder="ex : VWCE.DE" value="${t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? "" : escHtml(t.ticker)}"
-                 onchange="ctoImportTicker('${isin}', this.value)" style="width:110px">
+                 data-cle="${escHtml(isin)}" onchange="ctoImportTicker(this.dataset.cle, this.value)" style="width:110px">
         </span>`;
     return `<tr><td style="text-align:left;font-weight:600">${escHtml(t.nom)} <span class="badge ${t.classe === "etf" ? "be" : "ba"}">${t.classe === "etf" ? "ETF" : "Action"}</span></td>
-      <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(isin)}</td>
+      <td style="text-align:left;font-family:var(--mono);font-size:11px">${isin.startsWith("NOM:") ? "—" : escHtml(isin)}</td>
       <td style="text-align:left">${sel}${!t.ticker ? ` <span class="cto-ecart">à choisir</span>` : ""}</td>
       <td>${t.prixPaye ? eur(t.prixPaye) : "—"}</td>
       <td>${prixActuel ? eur(prixActuel) : "—"}${ecart != null && Math.abs(ecart) > 0.2 && !(c && c.ecart != null) ? ` <span class="cto-ecart" title="Loin du dernier prix payé : vérifie que c'est le bon titre">${ecart > 0 ? "+" : "−"}${Math.round(Math.abs(ecart) * 100)} %</span>` : ""}</td></tr>`;
   }).join("");
-  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", dividende: "", division: "" };
-  document.getElementById("cto-imp-ops").innerHTML = I.ops.slice().reverse().map(o => `<tr class="${o.deja ? "cto-dup" : ""}">
+  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", dividende: "", division: "", especes: "", taxe: "" };
+  const LIB = { Taxe: "Taxe (TTF)" };
+  const etat = o => o.type === "Taxe" ? (o.ordreTaxe ? (o.deja ? "ordre déjà dans Pilote" : "ajoutée aux frais de l'ordre") : "ordre absent : non reprise")
+    : (o.type === "Versement" || o.type === "Retrait") && _estCto() ? "ignoré (CTO)"
+    : o.deja ? "déjà dans Pilote"
+    : o.alerte ? `<span class="cto-ecart" title="${escHtml(o.alerte)}"><i class="ph ph-warning"></i> ${escHtml(o.alerte)}</span>` : "nouvelle";
+  document.getElementById("cto-imp-ops").innerHTML = I.ops.slice().reverse().map(o => `<tr class="${ctoImportAEnregistrer(o) ? "" : "cto-dup"}">
       <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(o.date)}</td>
-      <td style="text-align:left">${o.type}${ORIG[o.origine] ? " · " + ORIG[o.origine] : ""}</td>
-      <td style="text-align:left">${o.type === "Division" ? escHtml(o.nomAvant) + " → " : ""}${escHtml(o.nom)}</td>
+      <td style="text-align:left">${LIB[o.type] || o.type}${ORIG[o.origine] ? " · " + ORIG[o.origine] : ""}</td>
+      <td style="text-align:left">${o.type === "Division" ? escHtml(o.nomAvant) + " → " : ""}${escHtml(o.nom || (I.titres[_ctoImpCle(o)] || {}).nom || (o.type === "Versement" || o.type === "Retrait" ? "Espèces" : ""))}</td>
       <td>${o.type === "Division" ? fmtQte(o.qtyAvant) + " → " + fmtQte(o.qty) : o.qty ? fmtQte(o.qty) : "—"}</td>
       <td>${o.cours ? eur(o.cours) : "—"}</td>
       <td${o.taxe ? ` title="dont ${eur(o.taxe)} de taxe sur les transactions financières"` : ""}>${o.frais || o.taxe ? eur((o.frais || 0) + (o.taxe || 0)) : "—"}</td>
       <td>${o.montant ? eur(o.montant) : "—"}</td>
-      <td style="text-align:left">${o.deja ? "déjà dans Pilote" : o.alerte ? `<span class="cto-ecart" title="${escHtml(o.alerte)}"><i class="ph ph-warning"></i> ${escHtml(o.alerte)}</span>` : "nouvelle"}</td>
+      <td style="text-align:left">${etat(o)}</td>
     </tr>`).join("");
 }
 function ctoImportTicker(isin, v) {
   const t = _ctoImp && _ctoImp.titres[isin];
   if (!t) return;
   t.ticker = normalizeTicker(String(v || "").trim());
+  ctoImportMarquer();
   ctoImportRender();
 }
 
 function ctoImportValider() {
   const I = _ctoImp;
-  if (!I || !_estCto()) return;
-  const nouvelles = I.ops.filter(o => !o.deja);
-  const isins = nouvelles.flatMap(o => o.type === "Division" ? [o.isinAvant, o.isin] : [o.isin]);
-  const sansTicker = [...new Set(isins.filter(i => !I.titres[i].ticker).map(i => I.titres[i].nom))];
+  if (!I) return;
+  const nouvelles = I.ops.filter(ctoImportAEnregistrer);
+  const isins = nouvelles.flatMap(o => o.type === "Division" ? [o.isinAvant, o.isin] : ["Achat", "Vente", "Dividende"].includes(o.type) ? [_ctoImpCle(o)] : []);
+  const sansTicker = [...new Set(isins.filter(i => !I.titres[i] || !I.titres[i].ticker).map(i => (I.titres[i] || {}).nom || i))];
   if (sansTicker.length) { showToastModern("Choisis la cotation de : " + sansTicker.join(", "), "warn"); return; }
   pushUndo();
   const posDe = isin => {
     const t = I.titres[isin];
-    let p = S.positions.find(x => x.isin === isin) || S.positions.find(x => x.ticker === t.ticker);
+    const parNom = isin.startsWith("NOM:");
+    let p = (!parNom && S.positions.find(x => x.isin === isin)) || S.positions.find(x => normalizeTicker(x.ticker) === t.ticker);
     if (!p) {
       const c = t.candidats.find(x => normalizeTicker(x.symbol) === t.ticker);
       p = { id: NID.pos++, ticker: t.ticker, name: t.nom, type: t.classe === "etf" ? "etf" : "action",
-            sector: t.classe === "etf" ? "etf" : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, isin };
+            sector: t.classe === "etf" ? "etf" : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, ...(parNom ? {} : { isin }) };
       S.positions.push(p);
-    } else if (!p.isin) p.isin = isin;
+    } else if (!p.isin && !parNom) p.isin = isin;
     return p;
   };
-  let n = 0;
+  let n = 0, nTaxes = 0;
   const sautees = [];
-  nouvelles.forEach(o => {
-    const p = o.type === "Division" ? null : posDe(o.isin);
+  const txDe = new Map();   // ordre importé -> sa transaction (pour y ajouter sa taxe)
+  nouvelles.filter(o => o.type !== "Taxe").forEach(o => {
+    if (o.type === "Versement" || o.type === "Retrait") {
+      // PEA seulement (ctoImportAEnregistrer) : les versements du compte espèces
+      if (!NID.dep) NID.dep = 1;
+      S.depots.push({ id: NID.dep++, date: o.date, amount: o.type === "Retrait" ? -o.montant : o.montant,
+                      note: "Import " + (o.banque || "relevé"), trId: o.trId || undefined });
+      n++;
+      return;
+    }
+    const p = o.type === "Division" ? null : posDe(_ctoImpCle(o));
     if (o.type === "Division") {
       /* Les parts d'avant deviennent les nouvelles, au même coût : une vente
          au PRU (plus-value nulle) puis un achat du même montant, sans frais.
@@ -20990,7 +21202,7 @@ function ctoImportValider() {
       if (!NID.div) NID.div = 1;
       S.divReceived.push({ id: NID.div++, date: o.date, ticker: p.ticker, qty: o.qty || null,
                            ppa: o.qty ? Math.round(o.montant / o.qty * 10000) / 10000 : null,
-                           montant: o.montant, note: "Import Trade Republic", trId: o.trId || undefined });
+                           montant: o.montant, note: "Import " + (o.banque || "relevé"), trId: o.trId || undefined });
     } else {
       // La taxe sur les transactions financières (actions françaises) est un
       // coût de l'ordre comme les frais : elle compte dans le PRU et l'investi.
@@ -21001,20 +21213,32 @@ function ctoImportValider() {
       if (o.origine && o.origine !== "ordre") tx.origine = o.origine;
       if (o.trId) tx.trId = o.trId;
       S.transactions.push(tx);
+      txDe.set(o, tx);
     }
     n++;
+  });
+  // Taxe envoyée à part (avis récapitulatif) : ajoutée aux frais de son ordre
+  nouvelles.filter(o => o.type === "Taxe").forEach(o => {
+    const tx = txDe.get(o.ordreTaxe);
+    if (!tx) return;
+    tx.taxe = Math.round(((tx.taxe || 0) + o.montant) * 100) / 100;
+    tx.frais = Math.round(((tx.frais || 0) + o.montant) * 100) / 100;
+    nTaxes++;
   });
   persist();
   closeOv("ov-cto-import");
   _ctoImp = null;
+  _ctoImpFichiers = [];
   renderAll();
   if (document.getElementById("pane-dash")?.classList.contains("active")) renderPerf();
   if (document.getElementById("pane-sector")?.classList.contains("active")) renderSectors();
   applyCoursData();
   fetchSparklines();
   fetchKeystats();
-  showToastModern(n + " opération" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : "") + " (Retour pour annuler)", "ok");
-  if (sautees.length) showToastModern("Division laissée de côté, ancienne ligne absente du CTO : " + sautees.join(", "), "warn");
+  showToastModern(n + " opération" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : "")
+    + (nTaxes ? ", " + nTaxes + " taxe" + (nTaxes > 1 ? "s" : "") + " ajoutée" + (nTaxes > 1 ? "s" : "") + " aux frais" : "")
+    + " (Retour pour annuler)", "ok");
+  if (sautees.length) showToastModern("Division laissée de côté, ancienne ligne absente du compte : " + sautees.join(", "), "warn");
 }
 
 /* ── Navigation ────────────────────────────────────────────────────────── */
