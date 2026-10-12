@@ -675,6 +675,40 @@ def _saxo_csv(entetes, lignes, lot):
             lot.ajoute("Versement" if mt > 0 else "Retrait", date, montant=mt, origine="especes")
 
 
+def _fortuneo_csv(entetes, lignes, lot):
+    """Historique des opérations de bourse de Fortuneo (CSV dans un .zip,
+    12/10/2026) : « libellé;Opération;Place;Date;Qté;Prix d'éx.;Montant brut;
+    Courtage/Prélèvement;Montant net;Devise; », en cp1252, décimales au point,
+    montants signés. Pas d'ISIN : la cotation se cherche par le nom.
+    Ignorés : le transfert de titres depuis une autre banque (0 €, l'achat
+    d'origine vient de l'ancienne banque) et le détachement d'un coupon (le
+    dividende est sur la ligne « Encaissement coupons », deux jours après)."""
+    c = {k: i for i, k in enumerate(entetes)}
+    # « Prix d'éxé » dans le vrai fichier : la colonne se repère par son début
+    c["prix"] = next((i for i, k in enumerate(entetes) if k.startswith("prix")), -1)
+    g = lambda r, k: r[c[k]].strip() if k in c and 0 <= c[k] < len(r) else ""
+    for r in lignes:
+        op, date, nom = _norm(g(r, "operation")), _date_fr(g(r, "date")), g(r, "libelle")
+        qty, prix = _n(g(r, "qte")), _n(g(r, "prix"))
+        brut, frais, net = _n(g(r, "montant brut")) or 0, _n(g(r, "courtage/prelevement")) or 0, _n(g(r, "montant net")) or 0
+        dev = (g(r, "devise") or "EUR").upper()
+        if op.startswith(("achat", "souscription", "vente", "rachat")):
+            brut_eur = _vers_eur(abs(brut), dev, date)
+            if brut_eur is None or not qty:
+                lot.inconnues.append({"type": g(r, "operation"), "categorie": "Fortuneo", "nom": nom, "date": date})
+                continue
+            lot.ajoute("Achat" if op.startswith(("achat", "souscription")) else "Vente", date, "", nom, abs(qty),
+                       prix if dev == "EUR" else None, brut_eur, _vers_eur(abs(frais), dev, date) or 0)
+        elif op.startswith("encaissement coupon"):
+            lot.ajoute("Dividende", date, "", nom, abs(qty or 0), montant=_vers_eur(abs(net), dev, date) or 0)
+        elif "transfert" in op:
+            lot.ignores["transferts"] = lot.ignores.get("transferts", 0) + 1
+        elif "detachement" in op or op.startswith("ost de creation de coupon"):
+            lot.ignores["detachements"] = lot.ignores.get("detachements", 0) + 1
+        else:
+            lot.inconnues.append({"type": g(r, "operation"), "categorie": "Fortuneo", "nom": nom, "date": date})
+
+
 def _degiro_compte(entetes, lignes, lot):
     """Relevé de compte Degiro (Account.csv) : dividendes (moins la retenue à
     la source) et versements. Les ordres viennent du rapport des transactions,
@@ -809,6 +843,12 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
             lot.inconnues = []
             _trading212(entetes, corps, lot)
             return {"ok": True, "banque": lot.banque, "operations": lot.ops, "inconnues": lot.inconnues}
+        if "libelle" in entetes and "courtage/prelevement" in entetes:
+            lot = _Lot("Fortuneo")
+            lot.inconnues, lot.ignores = [], {}
+            _fortuneo_csv(entetes, corps, lot)
+            return {"ok": True, "banque": lot.banque, "operations": lot.ops, "inconnues": lot.inconnues,
+                    "ignores": lot.ignores}
         if "instrument isin" in entetes and "event" in entetes:
             lot = _Lot("Saxo")
             lot.inconnues = []
@@ -863,7 +903,30 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None) -> dict:
     if data[:5] == b"%PDF-":
         return lire_pdf(data, nom)
     if data[:2] == b"PK":
-        return lire_tableau(_lignes_xlsx(data), nom, colonnes)
+        z = zipfile.ZipFile(io.BytesIO(data))
+        if any(n.startswith("xl/") for n in z.namelist()):   # un .xlsx est un zip
+            return lire_tableau(_lignes_xlsx(data), nom, colonnes)
+        # Archive (Fortuneo livre son CSV dans un .zip) : chaque fichier lu
+        # comme s'il avait été choisi seul, résultats réunis
+        res = {"ok": False, "operations": [], "inconnues": [], "ignores": {}, "erreur": "archive vide"}
+        for info in z.infolist():
+            membre = info.filename
+            # 20 Mo au plus par fichier : un relevé n'en fait que quelques Ko
+            if membre.endswith("/") or info.file_size > 20_000_000 \
+                    or not membre.lower().endswith((".csv", ".pdf", ".xlsx", ".xml", ".txt")):
+                continue
+            r = lire_fichier(membre, z.read(membre), colonnes)
+            if not r.get("ok"):
+                if r.get("besoinColonnes"):
+                    return r
+                res["erreur"] = membre + " : " + r.get("erreur", "")
+                continue
+            res.update(ok=True, banque=r.get("banque", res.get("banque", "")), erreur="")
+            res["operations"] += r.get("operations", [])
+            res["inconnues"] += r.get("inconnues", [])
+            for k, v in (r.get("ignores") or {}).items():
+                res["ignores"][k] = res["ignores"].get(k, 0) + v
+        return res
     texte = _texte(data)
     if texte.lstrip().startswith("<") and "FlexQueryResponse" in texte[:2000]:
         lot = _Lot("Interactive Brokers")

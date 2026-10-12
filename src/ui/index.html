@@ -4483,12 +4483,12 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <p class="cto-imp-aide-p">Choisis un ou plusieurs fichiers de ta banque ou de ton courtier : Pilote reconnaît la banque tout seul.</p>
       <ul class="cto-imp-aide">
         <li><b>PDF</b> : avis d'opéré, avis de dividende et relevés de <b>Fortuneo</b> (avec l'avis de taxe sur les transactions et le relevé des liquidités du PEA pour les versements), <b>BoursoBank</b>, <b>Bourse Direct</b>, <b>Saxo</b>, et le rapport des transactions de <b>Degiro</b>.</li>
-        <li><b>CSV, Excel ou XML</b> : <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>.</li>
+        <li><b>CSV, Excel ou XML</b> : <b>Fortuneo</b> (historique des opérations de bourse, le .zip tel quel), <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>.</li>
         <li><b>Tout autre tableau</b> : Pilote reconnaît ses colonnes, ou te demande lesquelles prendre.</li>
       </ul>
       <p class="pac-dim">Pilote te montre tout avant d'enregistrer quoi que ce soit, et un document importé deux fois ne compte rien en double.</p>
       <label class="btn btn-primary cto-imp-fichier"><i class="ph ph-files"></i> Choisir les fichiers
-        <input type="file" id="cto-imp-input" accept=".csv,.pdf,.xlsx,.xml,.txt,text/csv,application/pdf" multiple onchange="ctoImportLire(this)" hidden></label>
+        <input type="file" id="cto-imp-input" accept=".csv,.pdf,.xlsx,.xml,.txt,.zip,text/csv,application/pdf,application/zip" multiple onchange="ctoImportLire(this)" hidden></label>
       <p class="pac-dim" id="cto-imp-msg"></p>
     </div>
     <div id="cto-imp-colonnes" style="display:none">
@@ -20854,6 +20854,10 @@ async function ctoPlansCopier() {
 let _ctoImp = null;   // {ops, titres: {isin: {nom, classe, ticker, candidats, prixPaye, secteur}}, ignores, inconnues, documents}
 let _ctoImpFichiers = [];   // [{nom, b64, colonnes?}] : relus quand l'utilisateur indique des colonnes
 
+/* Repère d'un titre dans l'aperçu : son ISIN, ou son nom quand le relevé n'en
+   donne pas (CSV de Fortuneo, 4.4.5) */
+function _ctoImpCle(o) { return o.isin || ("NOM:" + String(o.nom || "").trim().toUpperCase()); }
+
 /* Secteur Yahoo d'une action -> secteur de Pilote (SECTORS), que les
    Expositions traduisent ensuite (EXPO_SECT_ACTION). Rien de reconnu : null,
    le secteur reste à choisir dans la fiche de la position. */
@@ -20969,8 +20973,9 @@ function ctoImportDeja(op, titres) {
     return !_estCto() && (S.depots || []).some(d => normDate(d.date) === op.date && Math.abs((d.amount || 0) - m) < 0.011);
   }
   if (op.type === "Division" || op.type === "Taxe") return false;
-  const pos = (S.positions || []).find(p => p.isin === op.isin);
-  const ticker = normalizeTicker((pos && pos.ticker) || (titres[op.isin] && titres[op.isin].ticker) || "");
+  const pos = op.isin ? (S.positions || []).find(p => p.isin === op.isin) : null;
+  const tt = titres[_ctoImpCle(op)];
+  const ticker = normalizeTicker((pos && pos.ticker) || (tt && tt.ticker) || "");
   if (!ticker) return false;
   if (op.type === "Dividende")
     return [...(S.divReceived || []), ...(S.divFuture || [])].some(d => normalizeTicker(d.ticker || "") === ticker && normDate(d.date) === op.date && Math.abs((d.montant || 0) - op.montant) < 0.011);
@@ -21005,10 +21010,10 @@ async function ctoImportAnalyser(r) {
   const titre = (isin, op, nom) => titres[isin] || (titres[isin] = { nom, classe: op.classe, ticker: "", candidats: [],
     prixPaye: null, date: "", depuis: op.date, nomLong: "", points: [] });
   r.operations.forEach(op => {
-    if (!op.isin || !["Achat", "Vente", "Dividende", "Division"].includes(op.type)) return;
+    if ((!op.isin && !op.nom) || !["Achat", "Vente", "Dividende", "Division"].includes(op.type)) return;
     // Une division concerne aussi l'ancienne ligne (ISIN d'avant)
     if (op.type === "Division") titre(op.isinAvant, op, op.nomAvant);
-    const t = titre(op.isin, op, op.nom);
+    const t = titre(_ctoImpCle(op), op, op.nom);
     if (!t.nom && op.nom) t.nom = op.nom;
     // Nom long de la description, bien écrit de préférence (« iShares Physical Gold ETC »
     // plutôt que « ISHARES PHYSICAL GOLD ») : la recherche de la cotation s'en sert
@@ -21021,7 +21026,7 @@ async function ctoImportAnalyser(r) {
   });
   // Déjà suivi dans ce compte (ISIN connu) : sa cotation ne change pas
   Object.entries(titres).forEach(([isin, t]) => {
-    const p = (S.positions || []).find(x => x.isin === isin);
+    const p = isin.startsWith("NOM:") ? null : (S.positions || []).find(x => x.isin === isin);
     if (p) { t.ticker = p.ticker; t.connu = true; }
   });
   await Promise.all(Object.entries(titres).filter(([, t]) => !t.connu).map(async ([isin, t]) => {
@@ -21029,7 +21034,7 @@ async function ctoImportAnalyser(r) {
     try {
       // Prix payés (40 derniers) et premier ordre : le serveur vérifie chaque
       // cotation sur son historique (server.cotations_euro)
-      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin)}&nom=${encodeURIComponent(t.nom || "")}`
+      const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin.startsWith("NOM:") ? "" : isin)}&nom=${encodeURIComponent(t.nom || "")}`
         + `&nom2=${encodeURIComponent(t.nomLong)}&points=${encodeURIComponent(t.points.slice(-40).join(","))}&depuis=${t.depuis}`;
       d = await (await fetch(url, { cache: "no-store" })).json();
       t.candidats = (d && d.ok && d.candidats) || [];
@@ -21037,7 +21042,13 @@ async function ctoImportAnalyser(r) {
     } catch (e) { t.candidats = []; }
     // La cotation vérifiée sur l'historique (le serveur la met en tête) ; sinon
     // la première dont le cours est à 20 % du dernier prix payé, sinon la première
-    const choix = t.candidats.find(c => c.ecart != null)
+    // Un ticker que ce compte utilise déjà (ligne ouverte, vendue, ou ordre)
+    // passe devant s'il colle aux prix payés : sans ISIN, Saint-Gobain partait
+    // sur GOB.DE quand le PEA le suit en EPA:SGO, et ses ventes auraient doublé
+    const dejaUtilises = new Set([...(S.positions || []).map(p => p.ticker), ...(S.closedPositions || []).map(c => c.ticker),
+      ...(S.transactions || []).map(x => x.asset)].filter(Boolean).map(normalizeTicker));
+    const choix = t.candidats.find(c => c.ecart != null && dejaUtilises.has(normalizeTicker(c.symbol)))
+      || t.candidats.find(c => c.ecart != null)
       || t.candidats.find(c => c.prix > 0 && t.prixPaye > 0 && Math.abs(c.prix / t.prixPaye - 1) < 0.2)
       || t.candidats[0];
     t.ticker = choix ? normalizeTicker(choix.symbol) : "";
@@ -21074,6 +21085,8 @@ function ctoImportRender() {
     <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}${I.ops.some(o => o.type === "Division") ? ", " + compte(o => o.type === "Division", "division(s)") : ""}${versements ? ", " + versements + " versement(s) ou retrait(s)" + (_estCto() ? " ignoré(s) : le CTO les déduit des ordres" : "") : ""}</span>
     ${I.ignores.especes ? `<span>${I.ignores.especes} ligne(s) d'espèces ignorée(s) (carte, virements, intérêts)</span>` : ""}
     ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) hors actions et ETF ignorée(s)</span>` : ""}
+    ${I.ignores.transferts ? `<span>${I.ignores.transferts} transfert(s) de titres depuis une autre banque ignoré(s) : leur achat d'origine vient de l'ancienne banque</span>` : ""}
+    ${I.ignores.detachements ? `<span>${I.ignores.detachements} détachement(s) de coupon ignoré(s) : le dividende est sur la ligne d'encaissement</span>` : ""}
     ${inc}
     ${docs.length > 1 || I.documents.some(d => d.erreur) ? `<span>Fichiers : ${docs.join(" · ")}</span>` : ""}`;
   document.getElementById("cto-imp-titres").innerHTML = Object.entries(I.titres).map(([isin, t]) => {
@@ -21083,16 +21096,16 @@ function ctoImportRender() {
     const ecart = (prixActuel && t.prixPaye) ? prixActuel / t.prixPaye - 1 : null;
     const sel = t.connu ? `<b>${escHtml(t.ticker)}</b> <span class="pac-dim">(déjà suivi)</span>`
       : `<span class="cto-imp-titres-sel">
-          <select onchange="ctoImportTicker('${isin}', this.value)">
+          <select data-cle="${escHtml(isin)}" onchange="ctoImportTicker(this.dataset.cle, this.value)">
             ${t.candidats.map(x => { const tk = normalizeTicker(x.symbol);
               return `<option value="${escHtml(tk)}"${tk === t.ticker ? " selected" : ""}>${escHtml(x.symbol)} · ${escHtml(x.place)}${x.prix ? " · " + eur(x.prix) : ""}${x.ecart != null ? " · vérifiée" : ""}</option>`; }).join("")}
             <option value=""${t.ticker && !t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? " selected" : ""}>Autre ticker…</option>
           </select>
           <input placeholder="ex : VWCE.DE" value="${t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? "" : escHtml(t.ticker)}"
-                 onchange="ctoImportTicker('${isin}', this.value)" style="width:110px">
+                 data-cle="${escHtml(isin)}" onchange="ctoImportTicker(this.dataset.cle, this.value)" style="width:110px">
         </span>`;
     return `<tr><td style="text-align:left;font-weight:600">${escHtml(t.nom)} <span class="badge ${t.classe === "etf" ? "be" : "ba"}">${t.classe === "etf" ? "ETF" : "Action"}</span></td>
-      <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(isin)}</td>
+      <td style="text-align:left;font-family:var(--mono);font-size:11px">${isin.startsWith("NOM:") ? "—" : escHtml(isin)}</td>
       <td style="text-align:left">${sel}${!t.ticker ? ` <span class="cto-ecart">à choisir</span>` : ""}</td>
       <td>${t.prixPaye ? eur(t.prixPaye) : "—"}</td>
       <td>${prixActuel ? eur(prixActuel) : "—"}${ecart != null && Math.abs(ecart) > 0.2 && !(c && c.ecart != null) ? ` <span class="cto-ecart" title="Loin du dernier prix payé : vérifie que c'est le bon titre">${ecart > 0 ? "+" : "−"}${Math.round(Math.abs(ecart) * 100)} %</span>` : ""}</td></tr>`;
@@ -21106,7 +21119,7 @@ function ctoImportRender() {
   document.getElementById("cto-imp-ops").innerHTML = I.ops.slice().reverse().map(o => `<tr class="${ctoImportAEnregistrer(o) ? "" : "cto-dup"}">
       <td style="text-align:left;font-family:var(--mono);font-size:11px">${escHtml(o.date)}</td>
       <td style="text-align:left">${LIB[o.type] || o.type}${ORIG[o.origine] ? " · " + ORIG[o.origine] : ""}</td>
-      <td style="text-align:left">${o.type === "Division" ? escHtml(o.nomAvant) + " → " : ""}${escHtml(o.nom || (I.titres[o.isin] || {}).nom || (o.type === "Versement" || o.type === "Retrait" ? "Espèces" : ""))}</td>
+      <td style="text-align:left">${o.type === "Division" ? escHtml(o.nomAvant) + " → " : ""}${escHtml(o.nom || (I.titres[_ctoImpCle(o)] || {}).nom || (o.type === "Versement" || o.type === "Retrait" ? "Espèces" : ""))}</td>
       <td>${o.type === "Division" ? fmtQte(o.qtyAvant) + " → " + fmtQte(o.qty) : o.qty ? fmtQte(o.qty) : "—"}</td>
       <td>${o.cours ? eur(o.cours) : "—"}</td>
       <td${o.taxe ? ` title="dont ${eur(o.taxe)} de taxe sur les transactions financières"` : ""}>${o.frais || o.taxe ? eur((o.frais || 0) + (o.taxe || 0)) : "—"}</td>
@@ -21126,19 +21139,20 @@ function ctoImportValider() {
   const I = _ctoImp;
   if (!I) return;
   const nouvelles = I.ops.filter(ctoImportAEnregistrer);
-  const isins = nouvelles.flatMap(o => o.type === "Division" ? [o.isinAvant, o.isin] : ["Achat", "Vente", "Dividende"].includes(o.type) ? [o.isin] : []);
+  const isins = nouvelles.flatMap(o => o.type === "Division" ? [o.isinAvant, o.isin] : ["Achat", "Vente", "Dividende"].includes(o.type) ? [_ctoImpCle(o)] : []);
   const sansTicker = [...new Set(isins.filter(i => !I.titres[i] || !I.titres[i].ticker).map(i => (I.titres[i] || {}).nom || i))];
   if (sansTicker.length) { showToastModern("Choisis la cotation de : " + sansTicker.join(", "), "warn"); return; }
   pushUndo();
   const posDe = isin => {
     const t = I.titres[isin];
-    let p = S.positions.find(x => x.isin === isin) || S.positions.find(x => normalizeTicker(x.ticker) === t.ticker);
+    const parNom = isin.startsWith("NOM:");
+    let p = (!parNom && S.positions.find(x => x.isin === isin)) || S.positions.find(x => normalizeTicker(x.ticker) === t.ticker);
     if (!p) {
       const c = t.candidats.find(x => normalizeTicker(x.symbol) === t.ticker);
       p = { id: NID.pos++, ticker: t.ticker, name: t.nom, type: t.classe === "etf" ? "etf" : "action",
-            sector: t.classe === "etf" ? "etf" : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, isin };
+            sector: t.classe === "etf" ? "etf" : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, ...(parNom ? {} : { isin }) };
       S.positions.push(p);
-    } else if (!p.isin) p.isin = isin;
+    } else if (!p.isin && !parNom) p.isin = isin;
     return p;
   };
   let n = 0, nTaxes = 0;
@@ -21153,7 +21167,7 @@ function ctoImportValider() {
       n++;
       return;
     }
-    const p = o.type === "Division" ? null : posDe(o.isin);
+    const p = o.type === "Division" ? null : posDe(_ctoImpCle(o));
     if (o.type === "Division") {
       /* Les parts d'avant deviennent les nouvelles, au même coût : une vente
          au PRU (plus-value nulle) puis un achat du même montant, sans frais.
