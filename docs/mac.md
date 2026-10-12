@@ -117,11 +117,11 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 | Coins arrondis de l'écran de chargement (DWM) | `splash.py` | sans effet |
 | Détection des clés USB (`GetLogicalDrives`, numéro de série) | `sauvegarde.py` | « Aucune clé USB détectée » |
 | OCR (`ocr_win.ps1`, Windows.Media.Ocr) | `sante.py`, `vocabulaire.py` | « OCR disponible uniquement sous Windows » |
-| Installation de la mise à jour (`.bat`, `cmd.exe`, Setup) | `updater.py` | jamais proposée (étape 1) |
+| Installation de la mise à jour (`.bat`, `cmd.exe`, Setup) | `updater.py` | jamais proposée (étape 1) ; Paramètres affiche pourtant « À jour (dernière : vX) » même en retard : à corriger avant de distribuer |
 | Raccourcis Ctrl, textes « Windows », « Win+Maj+S » | `index.html` | Ctrl au lieu de ⌘ |
 | ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | à gérer côté Python |
 | Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | seulement encodé en base64 (« b64: »), donc lisible dans `actus.json` et dans les sauvegardes : passer au Trousseau de macOS |
-| Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | non vérifié : le test Mac n'appelle encore aucun site en HTTPS |
+| Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | test du 12/10/2026 (annotation « HTTPS ») : l'app compilée cherche ses certificats dans `/Library/Frameworks/Python.framework/Versions/3.11/etc/openssl/cert.pem`, le Python installé sur la machine de GitHub. Yahoo, Gmail et GitHub y répondent, mais un Mac ordinaire n'a pas ce fichier. Avec `/etc/ssl/cert.pem` (fourni avec macOS), les trois répondent aussi : c'est la correction à poser, à vérifier en cachant l'autre fichier pendant le test |
 | Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | probablement sans effet : pywebview Mac ne remplace que le `window.print` de la page principale (`customize.js`), pas celui de l'iframe (vu le 12/10/2026, non essayé) |
 
 ## Gatekeeper (app non signée)
