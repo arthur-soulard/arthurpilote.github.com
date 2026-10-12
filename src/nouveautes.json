@@ -2,6 +2,19 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.9",
+      "date": "2026-10-12",
+      "titre": "25 tuiles de plus sur l'accueil, et un pense-bête",
+      "nouveau": [
+        "Accueil : 25 nouvelles tuiles, à ajouter avec « Modifier les tuiles » puis « Ajouter une tuile » (la liste est rangée par module). PEA : dividendes de l'année, prochain dividende, plafond des 150 000 €, prochain versement prévu, frais de l'année, compte à rebours de l'avantage fiscal, titre de la wishlist qui a le plus baissé. Bourse : toute ta bourse réunie (PEA et CTO), marchés du jour (CAC 40, S&P 500, Nasdaq, MSCI World). Actus : newsletters non lues.",
+        "Et aussi : répartition du patrimoine, son évolution sur un an et un objectif à atteindre (montant et date : la tuile dit combien mettre de côté chaque mois) ; sport de la semaine, cumul de l'année, dernière séance, kilomètres du mois ; prochaine mensualité du prêt et ce qu'il rapporte ; solde du mois ; rappel de la pesée du mois. Quatre raccourcis : ajouter une séance, une pesée (captures ou à la main), un revenu.",
+        "Pense-bête : une tuile pour ne rien oublier. Écris une note, avec une date si besoin : les trois plus proches s'affichent, une date dépassée en rouge. Un clic sur le rond quand c'est fait."
+      ],
+      "corrige": [
+        "La tuile des dépenses disait « Dépenses de octobre » : elle dit maintenant « d'octobre »."
+      ]
+    },
+    {
       "version": "4.4.8",
       "date": "2026-10-12",
       "titre": "Pilote existe aussi sur Mac, et la clé USB se règle",
