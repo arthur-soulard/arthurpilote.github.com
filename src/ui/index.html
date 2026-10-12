@@ -5172,6 +5172,13 @@ function eur(n, sign) {
   if (sign) return (n >= 0 ? "+" : "−") + a;
   return n < 0 ? "−" + a : a;
 }
+/* PRU au millième (demande d'Arthur, 12/10/2026) : les ETF du PEA cotent à
+   trois décimales (7,297 €) et un PRU de 6,9657 € se lisait 6,97 €. Tableau
+   des Positions (PEA et CTO) et onglet PEA du Prêt. */
+function eurPru(n) {
+  if (n == null || isNaN(n)) return "—";
+  return n.toLocaleString("fr-FR", {minimumFractionDigits: 3, maximumFractionDigits: 3}) + " €";
+}
 function pct(n) {
   if (n == null || isNaN(n)) return "—";
   return (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(2).replace(".",",") + " %";
@@ -5490,7 +5497,7 @@ function renderPositions() {
       </td>
       <td>${sectorBadgeHtml(p.sector)}</td>
       <td>${fmtQte(e.qty)}</td>
-      <td>${e.pru>0 ? eur(e.pru) : "—"}</td>
+      <td>${e.pru>0 ? eurPru(e.pru) : "—"}</td>
       <td>${p.cours!=null ? eur(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
       <td>${_renderSparkline(_wsSpark[p.ticker])}</td>
       ${avecPER ? `<td>${p.type === "action" ? _renderPER(p.ticker)   : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
@@ -17649,7 +17656,7 @@ function prRenderPEA(o) {
       <td><div class="tk">${escHtml(p.ticker)}${p.closed ? ' <span class="m-tag">soldée</span>' : ""}</div>
           <div class="tk2">${prNum(p.qte, 4)} parts</div></td>
       <td>${prEur(p.invest)}</td>
-      <td>${prEur(p.pru)}</td>
+      <td>${eurPru(p.pru)}</td>
       <td>${p.cours != null ? prEur(p.cours) : "—"}</td>
       <td>${p.valeur != null ? prEur(p.valeur) : "—"}</td>
       <td class="${prCls(p.pv)}">${p.pv != null ? prEur(p.pv) : "—"}</td>
@@ -18029,7 +18036,7 @@ function prVenteModal(id) {
 
   const cur = v ? (v.ticker || "").toUpperCase() : dispo[0].ticker;
   const opts = dispo.map(p => `<option value="${escHtml(p.ticker)}"${p.ticker === cur ? " selected" : ""}>
-      ${escHtml(p.ticker)} — ${prNum(p.qte, 4)} parts · PRU ${prEur(p.pru)}</option>`).join("");
+      ${escHtml(p.ticker)} — ${prNum(p.qte, 4)} parts · PRU ${eurPru(p.pru)}</option>`).join("");
 
   prOpenForm(v ? "Modifier la vente" : "Nouvelle vente", `
     <div class="fg"><label>Position</label><select name="ticker">${opts}</select></div>
