@@ -22326,6 +22326,13 @@ function _appReady() {
   try {
     if (window.pywebview && pywebview.api && pywebview.api.app_ready) pywebview.api.app_ready();
   } catch (e) {}
+  // Mac : lancé depuis Téléchargements, Pilote ne pourra pas se mettre à jour
+  if (EST_MAC && window.pywebview && pywebview.api && pywebview.api.mac_emplacement) {
+    Promise.resolve(pywebview.api.mac_emplacement()).then(r => {
+      if (r && r.aDeplacer) showToastModern("Glisse Pilote dans le dossier Applications, puis "
+        + "relance-le : sinon les mises à jour ne pourront pas s'installer.", "warn");
+    }).catch(() => {});
+  }
 }
 
 (async function boot() {

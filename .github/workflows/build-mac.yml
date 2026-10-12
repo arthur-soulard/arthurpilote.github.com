@@ -164,8 +164,14 @@ jobs:
             if pgrep -f "/Applications/Pilote.app/Contents/MacOS/Pilote" > /dev/null; then RELANCE="relancee"; break; fi
             sleep 1
           done
-          sleep 8
-          PING=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7438/ping || true)
+          # Premier lancement d'une app neuve : macOS la verifie, ca peut prendre
+          PING="000 apres 60 s"
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:7438/ping > /dev/null 2>&1; then PING="200 en $i s"; break; fi
+            sleep 1
+          done
+          sleep 3
+          screencapture -x capture-maj.png || true
           TEMOIN=$(test -f /Applications/Pilote.app/Contents/Resources/temoin-maj.txt && echo "nouvelle version en place" || echo "ancienne version")
           RESTE=$(ls -d /Applications/Pilote.app.ancienne 2>/dev/null && echo "ancienne app restee" || echo "ancienne app retiree")
           echo "::notice title=Mise a jour::$FIN ; $RELANCE (ping $PING) ; $TEMOIN ; $RESTE ; $(grep "\[maj\]" maj.log | tr '\n' ' ' | head -c 1500)"
@@ -179,8 +185,10 @@ jobs:
         # la capture sort en annotations, en base64 decoupe en morceaux
         if: always()
         run: |
-          test -f capture.png || exit 0
-          sips -s format jpeg -s formatOptions 25 -Z 720 capture.png --out cap.jpg > /dev/null
+          # La capture apres la mise a jour (app relancee) si elle existe, sinon la premiere
+          CAP=capture.png; test -f capture-maj.png && CAP=capture-maj.png
+          test -f "$CAP" || exit 0
+          sips -s format jpeg -s formatOptions 25 -Z 720 "$CAP" --out cap.jpg > /dev/null
           { base64 -i cap.jpg | tr -d '\n' | fold -w 3800; echo; } > cap.b64
           # 10 annotations au plus par etape : les morceaux 1 a 10 ici, la suite apres
           N=$(wc -l < cap.b64 | tr -d ' ')

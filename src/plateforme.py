@@ -86,6 +86,7 @@ def ocr_mac(image_path: str) -> dict:
     try:
         with Image.open(image_path) as im:
             largeur, hauteur = im.size
+            gris = im.convert("L")
         url = NSURL.fileURLWithPath_(str(image_path))
         lecteur = Vision.VNImageRequestHandler.alloc().initWithURL_options_(url, None)
         req = Vision.VNRecognizeTextRequest.alloc().init()
@@ -102,6 +103,24 @@ def ocr_mac(image_path: str) -> dict:
                     "w": int(r.size.width * largeur),
                     "h": int(r.size.height * hauteur)}
 
+        def serrer(b: dict) -> dict:
+            """Boite resserree sur les pixels du mot. Vision rend la hauteur de
+            toute la ligne (marges comprises), Windows une boite au ras des
+            lettres ; or sante.py regroupe lignes et libelles selon la hauteur
+            des mots (essai du 12/10/2026 : 18,5 % pris pour l'IMC sans ce
+            resserrement). Fond = teinte la plus frequente de la boite."""
+            x0, y0 = max(0, b["x"]), max(0, b["y"])
+            x1, y1 = min(largeur, b["x"] + b["w"]), min(hauteur, b["y"] + b["h"])
+            if x1 - x0 < 2 or y1 - y0 < 2:
+                return b
+            zone = gris.crop((x0, y0, x1, y1))
+            hist = zone.histogram()
+            fond = hist.index(max(hist))
+            bb = zone.point(lambda p: 255 if abs(p - fond) > 60 else 0).getbbox()
+            if not bb:
+                return b
+            return {"x": x0 + bb[0], "y": y0 + bb[1], "w": bb[2] - bb[0], "h": bb[3] - bb[1]}
+
         mots = []
         for li, obs in enumerate(req.results() or [], start=1):
             cands = obs.topCandidates_(1)
@@ -112,7 +131,8 @@ def ocr_mac(image_path: str) -> dict:
             for m in re.finditer(r"\S+", texte):
                 rect, _ = cand.boundingBoxForRange_error_((m.start(), m.end() - m.start()), None)
                 b = boite(rect.boundingBox()) if rect is not None else boite(obs.boundingBox())
-                mots.append(dict(t=m.group(0), l=li, **b))
+                s = serrer(b)
+                mots.append(dict(t=m.group(0), l=li, brut=[b["x"], b["y"], b["w"], b["h"]], **s))
         return {"ok": True, "lang": "fr-FR", "width": largeur, "height": hauteur,
                 "angle": 0, "words": mots}
     except Exception as e:

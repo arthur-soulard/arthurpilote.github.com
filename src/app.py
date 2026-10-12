@@ -27,6 +27,12 @@ import time as _time_lancement
 _T0 = _time_lancement.time()
 
 
+# Diagnostic (PILOTE_DIAG, tests des builds) dans l'exe Windows, qui n'a pas de
+# console (sys.stdout vaut None) : la sortie va dans pilote_diag.log, dossier courant
+if os.environ.get("PILOTE_DIAG") and sys.stdout is None:
+    sys.stdout = sys.stderr = open("pilote_diag.log", "a", encoding="utf-8", buffering=1)
+
+
 def _repere(etape: str) -> None:
     """Diagnostic du demarrage (PILOTE_DIAG seulement) : secondes depuis le lancement."""
     if os.environ.get("PILOTE_DIAG"):
@@ -596,6 +602,14 @@ class Api:
         _repere("page prete (app_ready)")
         reveal_main_window("page")
         return {"ok": True}
+
+    def mac_emplacement(self) -> dict:
+        """Mac : Pilote doit etre dans Applications pour se mettre a jour."""
+        try:
+            import updater
+            return {"ok": True, "aDeplacer": updater.mac_a_deplacer()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def ouvrir_rapport(self, html: str, nom: str = "Pilote_rapport") -> dict:
         """Mac : le rapport annuel s'ouvre dans le navigateur, qui sait l'imprimer
@@ -1424,9 +1438,12 @@ def main() -> int:
                 print(f"[ocr] disponible : {sante.ocr_available()}", flush=True)
                 r = plateforme.ocr_mac(str(img))
                 mots = " ".join(w["t"] for w in r.get("words", []))
-                boites = [(w["t"], w["x"], w["y"]) for w in r.get("words", [])[:3]]
-                print(f"[ocr] ok={r.get('ok')} {r.get('error', '')} mots : {mots} ; boites : {boites}",
-                      flush=True)
+                # Boites resserrees (x y w h) et brutes de Vision, a comparer a
+                # celles de Windows sur la meme image (docs/mac.md, etape 5)
+                boites = [f"{w['t']} {w['x']} {w['y']} {w['w']} {w['h']} (brut {w.get('brut')})"
+                          for w in r.get("words", [])]
+                print(f"[ocr] ok={r.get('ok')} {r.get('error', '')} mots : {mots}", flush=True)
+                print(f"[ocr] boites : {' | '.join(boites)}", flush=True)
                 lu = sante.read_screenshot(str(img))
                 print(f"[ocr] lecture Sante : {lu.get('values')}", flush=True)
             except Exception as e:

@@ -1,6 +1,6 @@
 # Pilote
 
-Application Windows de suivi personnel — bourse, budget, prêt, sport,
+Application Windows et Mac de suivi personnel — bourse, budget, prêt, sport,
 patrimoine, santé et newsletters réunis dans une seule app entièrement
 locale. Cours actualisés automatiquement via Yahoo Finance.
 
@@ -35,7 +35,7 @@ FitDays, objectifs.
 **Actus** — la boîte Gmail qui reçoit tes newsletters, lue dans Pilote : relevée toutes
 les 3 min, filtres par libellé, mails affichés avec leurs images. Connexion par un mot de
 passe d'application Google (une fiche dans l'onglet explique comment le créer), gardé
-chiffré par Windows.
+chiffré par Windows, ou dans le Trousseau sur Mac.
 
 Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 
@@ -55,7 +55,7 @@ Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 
 ## 📦 Installation
 
-### Pour les utilisateurs
+### Sur Windows
 
 1. Télécharger la dernière version : [Releases](../../releases/latest)
 2. Lancer **`Pilote_Setup.exe`**
@@ -63,10 +63,31 @@ Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 4. Suivre l'assistant d'installation
 5. Lancer depuis le menu Démarrer ou le raccourci bureau
 
+### Sur Mac
+
+1. Télécharger **`Pilote_Mac.zip`** depuis la dernière version : [Releases](../../releases/latest).
+   Le Mac le décompresse tout seul en **Pilote**.
+2. **Glisser Pilote dans le dossier Applications.** Indispensable : lancé depuis
+   Téléchargements, macOS le fait tourner depuis une copie en lecture seule, et Pilote ne
+   peut pas se mettre à jour.
+3. Ouvrir Pilote une première fois. Pilote n'est pas signé par Apple (pas de compte
+   développeur payant) : macOS refuse de l'ouvrir. Fermer le message.
+4. Ouvrir **Réglages Système → Confidentialité et sécurité**, descendre jusqu'au message
+   sur Pilote et cliquer sur **Ouvrir quand même**, puis confirmer avec le mot de passe
+   du Mac. Ce n'est à faire qu'une fois.
+5. Si macOS dit que Pilote « est endommagé », taper dans le Terminal :
+   `xattr -dr com.apple.quarantine /Applications/Pilote.app`, puis l'ouvrir.
+
+Les mises à jour suivantes sont faites par Pilote lui-même : il télécharge la nouvelle
+version, la met à la place de l'ancienne et se relance, sans repasser par l'étape 4.
+Les données vivent dans `~/Library/Application Support/Pilote/Donnees`, hors de l'app :
+la remplacer ne les touche pas.
+
 ### Compatibilité
 
-- **Windows 10 / 11** (64 bits)
-- Microsoft Edge WebView2 Runtime (pré-installé sur Windows 10+ depuis 2022)
+- **Windows 10 / 11** (64 bits) ; Microsoft Edge WebView2 Runtime (pré-installé sur
+  Windows 10+ depuis 2022)
+- **Mac à puce Apple** (M1 et suivants), essayé sur macOS 15 Sequoia
 - Connexion internet pour la mise à jour des cours (l'app fonctionne en mode hors-ligne avec le dernier cache)
 
 ## 🛠 Développement
