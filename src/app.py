@@ -593,6 +593,13 @@ class Api:
         reveal_main_window("page")
         return {"ok": True}
 
+    def fermeture_prete(self) -> dict:
+        """Mac : la page a ecrit ce qui attendait, la fenetre peut se fermer
+        (voir _on_closing dans main)."""
+        if _fermeture_prete is not None:
+            _fermeture_prete()
+        return {"ok": True}
+
     def minimize(self):
         try:
             webview.windows[0].minimize()
@@ -956,6 +963,7 @@ _main_window = None
 _splash_window = None
 _revealed = False
 _reveal_lock = threading.Lock()
+_fermeture_prete = None     # Mac : ferme pour de bon une fois la page videe (main)
 
 
 def _paint_accent_icon() -> None:
@@ -1056,8 +1064,12 @@ def main() -> int:
 
     # Recupere la work area du moniteur principal (ecran moins barre des taches)
     screen_w, screen_h = 1280, 720  # fallback
+    zone_mac = None                 # Mac : (x, y, largeur, hauteur) sans menus ni Dock
     try:
-        if sys.platform == "win32":
+        if sys.platform == "darwin":
+            zone_mac = plateforme.zone_ecran_mac()
+            screen_w, screen_h = zone_mac[2], zone_mac[3]
+        elif sys.platform == "win32":
             import ctypes
             user32 = ctypes.windll.user32
             class _RECT(ctypes.Structure):
@@ -1076,6 +1088,8 @@ def main() -> int:
     if saved_maximized or not (saved_size and isinstance(saved_size, (list, tuple)) and len(saved_size) == 2):
         w_, h_ = screen_w, screen_h
         pos = None  # pas de position sauvegardee en mode plein ecran
+        if zone_mac:
+            pos = list(zone_mac[:2])    # Mac : coin haut gauche, sous la barre des menus
     else:
         try:
             w_, h_ = int(saved_size[0]), int(saved_size[1])
@@ -1145,7 +1159,9 @@ def main() -> int:
         resizable=True,
         text_select=True,
         confirm_close=False,
-        frameless=True,         # titlebar custom dans l'UI
+        # Windows : titlebar custom dans l'UI. Mac : celle du systeme (boutons a
+        # gauche, deplacement, plein ecran), l'UI cache la sienne (html.os-mac)
+        frameless=sys.platform != "darwin",
         easy_drag=False,        # le drag est gere via -webkit-app-region: drag
         hidden=True,            # ouverte par reveal_main_window() une fois prete
     )
@@ -1273,6 +1289,37 @@ def main() -> int:
                   flush=True)
         threading.Thread(target=_diag_https, daemon=True).start()
 
+        # Mac : fenetre et fermeture (docs/mac.md, etape 3). 45 s apres le
+        # lancement : barre de titre, ⌘2, taille ; puis une ecriture laissee en
+        # attente et « Quitter » comme ⌘Q. Le test verifie ensuite qu'elle est
+        # sur le disque et que l'app s'est fermee seule.
+        def _diag_fenetre():
+            import time as _t
+            _t.sleep(45)
+            try:
+                lire = getattr(window, "run_js", None) or window.evaluate_js
+                print("[fenetre] " + str(lire(
+                    "JSON.stringify({mac: document.documentElement.classList.contains('os-mac'),"
+                    " barrePilote: !!document.getElementById('app-titlebar'),"
+                    " margeHaut: getComputedStyle(document.body).paddingTop,"
+                    " ongletApresCmd2: (function () { document.dispatchEvent(new KeyboardEvent("
+                    "'keydown', {key: '2', metaKey: true, bubbles: true}));"
+                    " return document.body.dataset.activeTab; })(),"
+                    " bulle: (document.querySelector('[title*=\"Actualiser\"]') || {}).title})")),
+                    flush=True)
+                print(f"[fenetre] {window.width}x{window.height} en ({window.x}, {window.y}),"
+                      f" zone utile {zone_mac}", flush=True)
+                if sys.platform == "darwin":
+                    lire("S.uiPrefs = S.uiPrefs || {}; S.uiPrefs.essaiMac = 'ecrit avant de quitter';"
+                         " persist(); 1")
+                    import AppKit
+                    from PyObjCTools import AppHelper
+                    AppHelper.callAfter(AppKit.NSApplication.sharedApplication().terminate_, None)
+                    print("[fenetre] Quitter demande (comme Cmd+Q)", flush=True)
+            except Exception as e:
+                print(f"[fenetre] KO : {e}", flush=True)
+        threading.Thread(target=_diag_fenetre, daemon=True).start()
+
         # Echantillonneur : toutes les 0,5 s pendant 15 s, ce que fait chaque fil
         # Python (fonction en cours la plus profonde du code de Pilote ou de ses
         # bibliotheques). Montre qui occupe Python quand le demarrage traine.
@@ -1301,7 +1348,7 @@ def main() -> int:
         threading.Thread(target=_echantillons, daemon=True).start()
 
     # Sauvegarde de la taille/position avant fermeture
-    def _on_closing():
+    def _sauver_fenetre():
         try:
             d = storage.load_data()
             d.setdefault("ui", {})
@@ -1349,6 +1396,9 @@ def main() -> int:
                         maximized = (actual_w >= wa_w * 0.95 and actual_h >= wa_h * 0.95)
             except Exception:
                 pass
+            # Mac : pas de ctypes, la zone utile vient de plateforme.zone_ecran_mac
+            if zone_mac and actual_w and actual_h:
+                maximized = (actual_w >= zone_mac[2] * 0.95 and actual_h >= zone_mac[3] * 0.95)
 
             d["ui"]["windowMaximized"] = maximized
             if maximized:
@@ -1368,6 +1418,43 @@ def main() -> int:
         except Exception as e:
             print(f"[app] Echec sauvegarde UI prefs : {e}", flush=True)
 
+    # Mac : bouton rouge, ⌘Q et ⌘W arrivent ici directement, sans passer par le
+    # bouton Fermer de la page, qui ecrit d'abord ce qui attend (0,4 s). La
+    # premiere fois, la fermeture est donc annulee : la page ecrit, rappelle
+    # Api.fermeture_prete(), et _fermer_mac() ferme pour de bon. Filet de 5 s.
+    # NSWindow.close (destroy) ne repasse pas par cet evenement.
+    fermeture_mac = {"demandee": False, "faite": False}
+
+    def _fermer_mac(origine: str = "page"):
+        if fermeture_mac["faite"]:
+            return
+        fermeture_mac["faite"] = True
+        print(f"[app] fermeture ({origine})", flush=True)   # lu par le test Mac
+        _sauver_fenetre()
+        try:
+            window.destroy()
+        except Exception as e:
+            print(f"[app] fermeture KO : {e}", flush=True)
+
+    def _vider_puis_fermer_mac():
+        try:
+            window.run_js("window._fermerApresVidange ? window._fermerApresVidange()"
+                          " : window.pywebview.api.fermeture_prete()")
+        except Exception as e:
+            print(f"[app] vidange avant fermeture KO : {e}", flush=True)
+        threading.Timer(5.0, _fermer_mac, args=("delai",)).start()
+
+    def _on_closing():
+        if sys.platform == "darwin" and not fermeture_mac["faite"]:
+            if not fermeture_mac["demandee"]:
+                fermeture_mac["demandee"] = True
+                threading.Thread(target=_vider_puis_fermer_mac, daemon=True).start()
+            return False
+        _sauver_fenetre()
+
+    global _fermeture_prete
+    _fermeture_prete = lambda: _fermer_mac("page")
+
     # L'icone a la couleur d'accent est posee par reveal_main_window(), quand
     # la fenetre apparait vraiment (et sur l'ecran de chargement avant elle)
     window.events.closing += _on_closing
@@ -1379,7 +1466,11 @@ def main() -> int:
 
     try:
         # debug=False pour la prod ; True pour ouvrir les devtools
-        webview.start(debug=False)
+        if sys.platform == "darwin":
+            # Menus et boites de dialogue de pywebview en francais
+            webview.start(debug=False, localization=plateforme.LOCALISATION_MAC)
+        else:
+            webview.start(debug=False)
     finally:
         # Apres fermeture de la fenetre : on coupe le serveur, on libere le port
         server.stop_server()
