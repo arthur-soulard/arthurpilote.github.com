@@ -1247,10 +1247,36 @@ def main() -> int:
     _reveal_timer.daemon = True
     _reveal_timer.start()
 
+    # Test du build Mac, mise a jour (build-mac.yml, PILOTE_MAJ_ESSAI) : la
+    # fausse release est trouvee au demarrage ; on clique « Installer » a la
+    # place de l'utilisateur, l'app doit se remplacer et se relancer seule.
+    if os.environ.get("PILOTE_DIAG") and os.environ.get("PILOTE_MAJ_ESSAI"):
+        def _diag_maj():
+            import time as _t
+            import updater
+            for _ in range(60):
+                _t.sleep(1)
+                res = updater.get_result()
+                if res.get("checked"):
+                    break
+            print(f"[maj] verification : {json.dumps({k: res.get(k) for k in ('hasUpdate', 'version', 'downloadUrl')})}",
+                  flush=True)
+            if res.get("hasUpdate"):
+                _t.sleep(8)               # que la page ait fini de s'ouvrir
+                updater.start_install_async()
+                print("[maj] installation demandee", flush=True)
+                for _ in range(60):
+                    _t.sleep(1)
+                    p = updater.get_progress()
+                    if p.get("step") in ("launching", "error"):
+                        print(f"[maj] progression : {p}", flush=True)
+                        break
+        threading.Thread(target=_diag_maj, daemon=True).start()
+
     # Test du build Mac (build-mac.yml) seulement : relit le journal de
     # demarrage de la page (window.__journal, index.html) et l'ecrit dans la
     # sortie, faute d'outils de developpement sur la machine de GitHub.
-    if os.environ.get("PILOTE_DIAG"):
+    if os.environ.get("PILOTE_DIAG") and not os.environ.get("PILOTE_MAJ_ESSAI"):
         def _diag():
             import time as _t
             _t.sleep(30)
@@ -1382,12 +1408,18 @@ def main() -> int:
             try:
                 from PIL import Image, ImageDraw, ImageFont
                 img = Path(tempfile.gettempdir()) / "pilote_essai_ocr.png"
-                im = Image.new("RGB", (900, 420), "white")
+                # Mise en page FitDays (libelles a gauche, valeurs a droite, un
+                # libelle sur deux lignes) ; la meme image sous Windows donne
+                # poids 72,4, imc 22,1, masse_musculaire 55,3 (essai du 12/10/2026)
+                im = Image.new("RGB", (900, 500), "white")
                 d = ImageDraw.Draw(im)
-                police = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 44)
-                for i, ligne in enumerate(("Poids 72,4 kg", "Graisse corporelle 18,5 %",
-                                           "IMC 22,1", "Masse musculaire 55,3 kg")):
-                    d.text((40, 30 + i * 95), ligne, fill=(20, 20, 20), font=police)
+                police = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 40)
+                for xy, t in (((40, 30), "Poids"), ((560, 30), "72,4 kg"),
+                              ((40, 130), "Graisse"), ((560, 165), "18,5 %"),
+                              ((40, 200), "corporelle"), ((40, 300), "IMC"),
+                              ((560, 300), "22,1"), ((40, 400), "Masse musculaire"),
+                              ((560, 400), "55,3 kg")):
+                    d.text(xy, t, fill=(20, 20, 20), font=police)
                 im.save(img)
                 print(f"[ocr] disponible : {sante.ocr_available()}", flush=True)
                 r = plateforme.ocr_mac(str(img))
@@ -1396,8 +1428,7 @@ def main() -> int:
                 print(f"[ocr] ok={r.get('ok')} {r.get('error', '')} mots : {mots} ; boites : {boites}",
                       flush=True)
                 lu = sante.read_screenshot(str(img))
-                print(f"[ocr] lecture Sante : { {k: v for k, v in lu.items() if k != 'debug'} }"[:600],
-                      flush=True)
+                print(f"[ocr] lecture Sante : {lu.get('values')}", flush=True)
             except Exception as e:
                 print(f"[ocr] KO : {e}", flush=True)
             try:

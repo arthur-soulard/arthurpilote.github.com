@@ -2,7 +2,9 @@
 updater.py — Verifieur et installateur de mise a jour avec progression et logs.
 
 Tous les evenements sont logges dans %APPDATA%\\Pilote\\update.log
-pour permettre de diagnostiquer toute panne d'auto-update.
+(Mac : ~/Library/Logs/Pilote/update.log) pour permettre de diagnostiquer
+toute panne d'auto-update. Windows installe le Setup ; Mac remplace son
+Pilote.app par celui de Pilote_Mac.zip (_installer_mac).
 """
 from __future__ import annotations
 
@@ -30,6 +32,10 @@ RELEASES_API = "https://api.github.com/repos/arthur-soulard/arthurpilote.github.
 # fixe (meme nom que dans release.yml et OutputBaseFilename de installer.iss).
 RELEASES_PAGE = "https://github.com/arthur-soulard/arthurpilote.github.com/releases"
 SETUP_ASSET   = "Pilote_Setup.exe"
+# Mac : l'app zippee, jointe a la meme release par release.yml (job mac). Pas
+# d'installeur : Pilote remplace lui-meme son Pilote.app (_installer_mac).
+MAC_ASSET     = "Pilote_Mac.zip"
+ASSET         = MAC_ASSET if sys.platform == "darwin" else SETUP_ASSET
 _UA = "Suivi-PEA-Updater/2"
 
 # Fiche des nouveautes : src/nouveautes.json, livre avec l'app (historique de
@@ -146,7 +152,8 @@ def _latest_from_api() -> tuple:
     html_url = data.get("html_url", "")
     download_url = None
     for asset in data.get("assets", []):
-        if asset.get("name", "").endswith("Setup.exe"):
+        nom = asset.get("name", "")
+        if (nom == MAC_ASSET) if sys.platform == "darwin" else nom.endswith("Setup.exe"):
             url = asset.get("browser_download_url")
             # Ce fichier sera EXECUTE avec les droits de l'utilisateur.
             # On n'accepte qu'une URL https servie par GitHub : une reponse
@@ -174,7 +181,7 @@ def _latest_from_page() -> tuple:
     # L'installeur doit exister vraiment : une release tout juste creee peut
     # encore attendre ses fichiers. Pas d'installeur -> pas de mise a jour
     # proposee, on reessaiera au prochain lancement.
-    download_url = f"{RELEASES_PAGE}/download/{urllib.parse.quote(tag)}/{SETUP_ASSET}"
+    download_url = f"{RELEASES_PAGE}/download/{urllib.parse.quote(tag)}/{ASSET}"
     try:
         present = bool(_redirect_target(download_url))   # 302 vers le stockage GitHub
     except urllib.error.HTTPError as e:
@@ -182,7 +189,7 @@ def _latest_from_page() -> tuple:
             raise
         present = False
     if not present:
-        _log(f"CHECK: {SETUP_ASSET} absent de la release {tag}")
+        _log(f"CHECK: {ASSET} absent de la release {tag}")
         download_url = None
     return latest, html_url, download_url
 
@@ -190,16 +197,19 @@ def _latest_from_page() -> tuple:
 def _fetch(current: str) -> None:
     try:
         _log(f"CHECK current_version={current}")
-        try:
-            latest, html_url, download_url = _latest_from_api()
-        except Exception as e:
-            _log(f"CHECK API KO ({e}) -> page publique des releases")
-            latest, html_url, download_url = _latest_from_page()
-            _log(f"CHECK via page publique : latest={latest}")
+        essai = _essai_mac()
+        if essai:
+            latest, html_url, download_url = essai
+        else:
+            try:
+                latest, html_url, download_url = _latest_from_api()
+            except Exception as e:
+                _log(f"CHECK API KO ({e}) -> page publique des releases")
+                latest, html_url, download_url = _latest_from_page()
+                _log(f"CHECK via page publique : latest={latest}")
 
-        # Le Setup est un installeur Windows : un Mac ne doit jamais se le voir
-        # proposer. Sa propre mise a jour viendra (docs/mac.md, etape 6).
-        if sys.platform != "win32":
+        # Ni Windows ni Mac : rien a installer, rien a proposer
+        if sys.platform not in ("win32", "darwin"):
             download_url = None
 
         # Sans installeur telechargeable, proposer la mise a jour ne menerait
@@ -321,9 +331,13 @@ def _do_install() -> None:
             return
 
         # Revalidation au moment d'executer : _state est partage entre threads
-        if not _is_github_https(download_url):
+        if not _url_permise(download_url):
             _log(f"INSTALL: URL refusee : {download_url}")
             _set_progress("error", 0, "URL de téléchargement refusée (hors GitHub)")
+            return
+
+        if sys.platform == "darwin":
+            _installer_mac(download_url, version)
             return
 
         exe_path = sys.executable
@@ -426,3 +440,119 @@ def _do_install() -> None:
     except Exception as e:
         _log(f"INSTALL FATAL: {e}\n{traceback.format_exc()}")
         _set_progress("error", 0, str(e))
+
+
+# ── Mac : Pilote remplace lui-meme son Pilote.app ───────────────────────────
+# Pas de compte developpeur Apple (docs/mac.md) : l'app n'est ni signee ni
+# notarisee. Un fichier telecharge par Pilote (et non par un navigateur) ne
+# porte pas la marque de quarantaine : la nouvelle version s'ouvre sans
+# repasser par « Ouvrir quand meme ». Les donnees vivent dans Application
+# Support, hors de l'app : la remplacer ne les touche pas.
+
+def _essai_mac():
+    """Test du build Mac seulement (PILOTE_DIAG et PILOTE_MAJ_ESSAI="<url>|<version>") :
+    une fausse release servie en local, pour essayer l'installation sans GitHub."""
+    v = os.environ.get("PILOTE_MAJ_ESSAI") if os.environ.get("PILOTE_DIAG") else None
+    if not v or sys.platform != "darwin":
+        return None
+    url, _, version = v.partition("|")
+    return version, "", url
+
+
+def _url_permise(url: str) -> bool:
+    if _is_github_https(url):
+        return True
+    return _essai_mac() is not None and str(url).startswith("http://127.0.0.1:")
+
+
+def _bundle_mac():
+    """Le Pilote.app qui tourne (sys.executable : .../Pilote.app/Contents/MacOS/Pilote)."""
+    if not getattr(sys, "frozen", False):
+        return None
+    for parent in Path(sys.executable).resolve().parents:
+        if parent.suffix == ".app":
+            return parent
+    return None
+
+
+def _installer_mac(download_url: str, version: str) -> None:
+    import shlex
+    import time as _time
+    bundle = _bundle_mac()
+    _log(f"INSTALL MAC: bundle={bundle}")
+    if bundle is None:
+        _set_progress("error", 0, "La mise à jour ne s'installe que dans l'app (pas en développement).")
+        return
+    # Lancee depuis Telechargements sans avoir ete deplacee, l'app tourne d'une
+    # copie en lecture seule (« App Translocation ») : rien a remplacer
+    if "AppTranslocation" in str(bundle) or not os.access(bundle.parent, os.W_OK):
+        _set_progress("error", 0, "Déplace Pilote dans le dossier Applications, puis relance-le : "
+                                  "la mise à jour pourra s'installer.")
+        return
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="pilote_maj_"))
+    zip_path = tmp_dir / MAC_ASSET
+    # Meme telechargement que sous Windows (0 -> 70 %), garde a part pour ne
+    # pas toucher au chemin Windows
+    req = urllib.request.Request(download_url, headers={"User-Agent": _UA})
+    with urllib.request.urlopen(req, timeout=300) as r:
+        total = int(r.headers.get("Content-Length", 0))
+        estimated = total or (40 * 1024 * 1024)
+        downloaded = 0
+        with open(zip_path, "wb") as f:
+            while True:
+                chunk = r.read(65536)
+                if not chunk:
+                    break
+                f.write(chunk)
+                downloaded += len(chunk)
+                _set_progress("downloading", max(1, min(69, int(downloaded / estimated * 70))))
+    size = zip_path.stat().st_size
+    _log(f"INSTALL MAC: zip {size} octets")
+    if size < 1024 * 1024:
+        _set_progress("error", 0, f"Téléchargement corrompu ({size} octets)")
+        return
+
+    _set_progress("installing", 75)
+    neuf_dir = tmp_dir / "neuf"
+    r = subprocess.run(["ditto", "-x", "-k", str(zip_path), str(neuf_dir)],
+                       capture_output=True, text=True, timeout=300)
+    neuf = neuf_dir / "Pilote.app"
+    if r.returncode != 0 or not (neuf / "Contents" / "MacOS" / "Pilote").exists():
+        _log(f"INSTALL MAC: decompression KO {r.stderr}")
+        _set_progress("error", 0, "Archive de la mise à jour illisible")
+        return
+
+    # Le script attend la fin de Pilote, met l'ancienne app de cote, pose la
+    # nouvelle (remet l'ancienne si ca rate), puis la relance
+    q = shlex.quote
+    ancienne = str(bundle) + ".ancienne"
+    journal = _log_path().parent / "update_sh.log"
+    script = tmp_dir / "maj.sh"
+    script.write_text(
+        "#!/bin/sh\n"
+        f"exec >> {q(str(journal))} 2>&1\n"
+        f"echo \"[$(date)] mise a jour v{version}\"\n"
+        f"while kill -0 {os.getpid()} 2>/dev/null; do sleep 0.5; done\n"
+        "sleep 1\n"
+        f"rm -rf {q(ancienne)}\n"
+        f"mv {q(str(bundle))} {q(ancienne)} || exit 1\n"
+        f"if ! mv {q(str(neuf))} {q(str(bundle))}; then mv {q(ancienne)} {q(str(bundle))}; exit 1; fi\n"
+        f"xattr -dr com.apple.quarantine {q(str(bundle))} 2>/dev/null\n"
+        f"rm -rf {q(ancienne)}\n"
+        f"open {q(str(bundle))}\n"
+        "echo \"[$(date)] relancee\"\n"
+        f"rm -rf {q(str(tmp_dir))}\n",
+        encoding="utf-8")
+    subprocess.Popen(["/bin/sh", str(script)], start_new_session=True, close_fds=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    _log("INSTALL MAC: script lance")
+    _set_progress("launching", 100)
+    _time.sleep(3.5)          # le temps pour la page d'afficher le dernier message
+    _log("INSTALL MAC: fermeture")
+    try:
+        import webview
+        if webview.windows:
+            webview.windows[0].destroy()
+    except Exception as e:
+        _log(f"INSTALL MAC: destroy KO {e}")
