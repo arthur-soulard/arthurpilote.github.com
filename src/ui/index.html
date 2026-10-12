@@ -5186,10 +5186,12 @@ function eur(n, sign) {
   if (sign) return (n >= 0 ? "+" : "−") + a;
   return n < 0 ? "−" + a : a;
 }
-/* PRU au millième (demande d'Arthur, 12/10/2026) : les ETF du PEA cotent à
-   trois décimales (7,297 €) et un PRU de 6,9657 € se lisait 6,97 €. Tableau
-   des Positions (PEA et CTO) et onglet PEA du Prêt. */
-function eurPru(n) {
+/* PRU et cours au millième (demande d'Arthur, 12/10/2026) : les ETF du PEA
+   cotent à trois décimales (7,297 €), un PRU de 6,9657 € se lisait 6,97 € et
+   un ordre à 6,789 € se lisait 6,79 €. Positions (PEA et CTO), Transactions,
+   aperçu d'import, onglet PEA du Prêt, bilan annuel. Les montants restent au
+   centime (eur). */
+function eur3(n) {
   if (n == null || isNaN(n)) return "—";
   return n.toLocaleString("fr-FR", {minimumFractionDigits: 3, maximumFractionDigits: 3}) + " €";
 }
@@ -5511,8 +5513,8 @@ function renderPositions() {
       </td>
       <td>${sectorBadgeHtml(p.sector)}</td>
       <td>${fmtQte(e.qty)}</td>
-      <td>${e.pru>0 ? eurPru(e.pru) : "—"}</td>
-      <td>${p.cours!=null ? eur(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
+      <td>${e.pru>0 ? eur3(e.pru) : "—"}</td>
+      <td>${p.cours!=null ? eur3(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
       <td>${_renderSparkline(_wsSpark[p.ticker])}</td>
       ${avecPER ? `<td>${p.type === "action" ? _renderPER(p.ticker)   : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
       ${avecDiv ? `<td>${p.type === "action" ? _renderYield(p.ticker) : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
@@ -7141,7 +7143,7 @@ function renderTx() {
       <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;min-width:86px">${t.date}</span>
       ${futureBadge}<span style="font-weight:600;font-size:12px;min-width:80px">${label}</span>
       ${typeBadge}${pretBadge}${txOrigineBadge(t)}${txFraisBadge(t)}${txSectorHtml}
-      <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?fmtQte(t.qty)+"\u00A0\u00D7\u00A0"+eur(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
+      <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?fmtQte(t.qty)+"\u00A0\u00D7\u00A0"+eur3(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
       <span style="font-family:var(--mono);font-weight:700;font-size:12px;min-width:80px;text-align:right">${tot?eur(tot):""}${pvHtml}</span>
       ${ebtn("editTx",t.id)}${dbtn("delTx",t.id)}
     </div>`;
@@ -9928,7 +9930,7 @@ ${depots.length ? depots.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><
 
 <h2>Transactions ${year}</h2>
 <table><thead><tr><th>Date</th><th>Type</th><th>Actif</th><th>Qté</th><th>Cours</th><th>Frais</th><th>Montant</th></tr></thead><tbody>
-${txs.length ? txs.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td>${t.asset}</td><td>${t.qty}</td><td>${(t.cours||0).toFixed(2)} €</td><td>${(t.frais||0).toFixed(2)} €</td><td>${((t.cours||0)*(t.qty||0)).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="7" style="text-align:center;color:#9ca3af">Aucune transaction</td></tr>'}
+${txs.length ? txs.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td>${t.asset}</td><td>${t.qty}</td><td>${(t.cours||0).toFixed(3)} €</td><td>${(t.frais||0).toFixed(2)} €</td><td>${((t.cours||0)*(t.qty||0)).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="7" style="text-align:center;color:#9ca3af">Aucune transaction</td></tr>'}
 </tbody></table>
 
 <h2>Dividendes reçus ${year}</h2>
@@ -17831,8 +17833,8 @@ function prRenderPEA(o) {
       <td><div class="tk">${escHtml(p.ticker)}${p.closed ? ' <span class="m-tag">soldée</span>' : ""}</div>
           <div class="tk2">${prNum(p.qte, 4)} parts</div></td>
       <td>${prEur(p.invest)}</td>
-      <td>${eurPru(p.pru)}</td>
-      <td>${p.cours != null ? prEur(p.cours) : "—"}</td>
+      <td>${eur3(p.pru)}</td>
+      <td>${p.cours != null ? eur3(p.cours) : "—"}</td>
       <td>${p.valeur != null ? prEur(p.valeur) : "—"}</td>
       <td class="${prCls(p.pv)}">${p.pv != null ? prEur(p.pv) : "—"}</td>
       <td class="${prCls(p.pv_pct)}">${prPct(p.pv_pct)}</td>
@@ -18211,7 +18213,7 @@ function prVenteModal(id) {
 
   const cur = v ? (v.ticker || "").toUpperCase() : dispo[0].ticker;
   const opts = dispo.map(p => `<option value="${escHtml(p.ticker)}"${p.ticker === cur ? " selected" : ""}>
-      ${escHtml(p.ticker)} — ${prNum(p.qte, 4)} parts · PRU ${eurPru(p.pru)}</option>`).join("");
+      ${escHtml(p.ticker)} — ${prNum(p.qte, 4)} parts · PRU ${eur3(p.pru)}</option>`).join("");
 
   prOpenForm(v ? "Modifier la vente" : "Nouvelle vente", `
     <div class="fg"><label>Position</label><select name="ticker">${opts}</select></div>
@@ -21318,7 +21320,7 @@ function ctoImportRender() {
       <td style="text-align:left">${LIB[o.type] || o.type}${ORIG[o.origine] ? " · " + ORIG[o.origine] : ""}</td>
       <td style="text-align:left">${o.type === "Division" ? escHtml(o.nomAvant) + " → " : ""}${escHtml(o.nom || (I.titres[_ctoImpCle(o)] || {}).nom || (o.type === "Versement" || o.type === "Retrait" ? "Espèces" : ""))}</td>
       <td>${o.type === "Division" ? fmtQte(o.qtyAvant) + " → " + fmtQte(o.qty) : o.qty ? fmtQte(o.qty) : "—"}</td>
-      <td>${o.cours ? eur(o.cours) : "—"}</td>
+      <td>${o.cours ? eur3(o.cours) : "—"}</td>
       <td${o.taxe ? ` title="dont ${eur(o.taxe)} de taxe sur les transactions financières"` : ""}>${o.frais || o.taxe ? eur((o.frais || 0) + (o.taxe || 0)) : "—"}</td>
       <td>${o.montant ? eur(o.montant) : "—"}</td>
       <td style="text-align:left">${etat(o)}</td>
