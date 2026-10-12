@@ -87,8 +87,8 @@ son montant frais compris, une vente et un dividende un retrait de ce qu'ils
 ont rapporté (mêmes montants que `computeCash` et `buildTwrSeries` :
 `brutOrdre`). Les espèces restent donc à zéro, et tout le calcul du PEA
 s'applique tel quel : plus-value = valeur − (achats − ventes − dividendes),
-courbe des titres, TWR coupé à chaque achat, comparaisons « et si chaque
-achat avait acheté l'indice ». Non énumérable : `pushUndo` ne le copie pas.
+courbe des titres, rendement des plages (gain ÷ argent engagé, chaque ordre
+étant un flux), comparaisons « et si chaque achat avait acheté l'indice ». Non énumérable : `pushUndo` ne le copie pas.
 La ligne pointillée de la courbe devient « Investi net » et descend à une
 vente (`buildDepositSeries` garde les retraits pour un CTO seulement).
 
@@ -209,6 +209,23 @@ du même fichier : rien de nouveau, PEA identique avant et après. Les
 plus-values réalisées par ligne diffèrent de quelques centimes du relevé
 (−110,83 € contre −110,87 €) : `computePos` multiplie parts × cours sans
 arrondir, comme pour le PEA ; l'investi net, lui, part de `brutOrdre`.
+
+### Courbe vérifiée sur le vrai relevé (12/10/2026)
+
+Arthur trouvait des « valeurs aberrantes ». Courbe rejouée hors de l'app :
+identique au centime (303 points, dernier 870,97 € le 09/10/2026). Les
+135 prix payés collent aux clôtures Yahoo (moins de 15 % d'écart), sauf le
+jour de la division de 3SIL.MI (183 € gardé, déjà écarté). Ce qui est normal :
+
+* une vente fait baisser la courbe (l'argent quitte le CTO, pas d'espèces) ;
+  la ligne « Investi net » baisse avec elle, seul l'écart compte ;
+* les gros mouvements viennent de l'argent x3 (3SIL.MI), réels : −26 % le
+  19/03/2026, jour d'achats.
+
+Ce qui était faux, et corrigé : le pourcentage des plages partielles (voir
+`docs/modules/pea.md`, « Pourcentage des plages »), les comparaisons
+tronquées sur le PEA après un passage dans le CTO, la note « portefeuille
+ouvert le 02 janv. » en YTD, l'infobulle qui disait « Versements ».
 
 ### ISIN → cotation en euros (`/isin`, `server.cotations_euro`)
 
