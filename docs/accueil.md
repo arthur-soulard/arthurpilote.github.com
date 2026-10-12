@@ -251,6 +251,19 @@ sous le titre au lieu du bas de la tuile ; `ready()` sur un widget remplace
 de `DASH_WIDGETS`. `dashDeMois()` écrit « d'octobre », « de novembre » :
 la tuile des dépenses disait « Dépenses de octobre ».
 
+**Hauteur des rangées à 1366 × 720** (4.4.13, demande d'Arthur) : une rangée
+prend la hauteur de sa tuile la plus haute, et deux rangées doivent tenir sous
+le bandeau (de 250 à 720 px : 228 px chacune au plus). Avec ses tuiles du
+12/10 (Performance, Marchés, Dépenses, Sport ; Objectif, Poids, Pense-bête), la
+2e rangée faisait 252 px et finissait à 733 px : c'était « Poids », dont
+« Comparer avec » prenait une ligne entière au-dessus de la courbe. Il est
+monté dans l'en-tête de la tuile, à droite de « Poids » (`coin` du rendu,
+placé par `dashCardHtml` dans `.dash-coin`), sous la forme « vs » + liste (le
+mot « Comparer avec » reste en infobulle et en `aria-label`). Rangée de
+222 px, dernière tuile à 703 px. La liste est bornée à 120 px pour tenir dans
+une tuile de 240 px (largeur minimale de la grille). Avant d'ajouter une tuile
+haute, la mesurer à 1366 × 720 avec ses vraies tuiles.
+
 ### Tuiles des CTO (4.4.0)
 
 Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de
