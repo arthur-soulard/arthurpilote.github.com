@@ -269,7 +269,8 @@ Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
   cet endpoint écrase le `pea_data.json` actif, il ne prend pas un chemin libre
 * `GET /vendor/<fichier>` → Chart.js, polices et icônes, liste blanche d'extensions
   (`.js`, `.css`, `.woff2`), confiné sous `ui/vendor/`
-* `GET /isin?isin=…&nom=…` → cotations en euros d'un ISIN, devise vérifiée, et secteur
+* `GET /isin?isin=…&nom=…[&nom2=…&points=date:prix,…&depuis=…]` → cotations en euros
+  d'un ISIN, devise vérifiée (et historique comparé aux prix payés), et secteur
   (import du CTO : `docs/modules/cto.md`)
 * `GET /actus/mail/<ticket>` → la page d'un mail du module Actus, pour son iframe
   (ticket créé par `Api.actus_ouvrir`, 10 min) : voir `docs/modules/actus.md`
