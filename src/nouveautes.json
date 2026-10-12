@@ -2,6 +2,17 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.11",
+      "date": "2026-10-12",
+      "titre": "La performance de chaque CTO sur l'accueil",
+      "nouveau": [
+        "Accueil : une tuile « Performance » pour chaque CTO, comme celle du PEA. Gain du jour, sur 1 semaine, sur 1 mois, depuis le 1er janvier ou depuis le premier achat, avec sa mini-courbe : les mêmes chiffres que la courbe du CTO. La période choisie est retenue pour chaque CTO. Elle s'ajoute avec « Modifier les tuiles » puis « Ajouter une tuile »."
+      ],
+      "ameliore": [
+        "Dans une fenêtre étroite, la tuile « Marchés du jour » garde le nom des indices en entier (les points d'indice s'effacent), et les libellés de la tuile « Plafond du PEA » tiennent sur une ligne."
+      ]
+    },
+    {
       "version": "4.4.10",
       "date": "2026-10-12",
       "titre": "Chaque compte a sa courbe, et les modules masqués ne se chargent plus",
