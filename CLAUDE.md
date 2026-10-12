@@ -216,8 +216,12 @@ dans les fiches) :
    texte pour l'utilisateur : nouveau / amélioré / corrigé). Elle doit être dans le
    commit du tag : c'est là que les installations existantes la lisent avant de
    proposer la mise à jour (`docs/mise-a-jour.md`, « Fiche des nouveautés »)
-5. `git add … && git commit && git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`
-6. GitHub Actions build `dist/Pilote/` puis `Pilote_Setup.exe`, et crée la release
+5. **Avant le tag, Mac et Windows** (règle d'Arthur) : mettre dans `tests/ecrans.txt`
+   les écrans que la version change, pousser sur la branche `mac`, puis lire les deux
+   tests et les captures sur données d'exemple : `python tests/lire_tests.py <sha>`
+   (`docs/mac.md`, « Captures sur données d'exemple »)
+6. `git add … && git commit && git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`
+7. GitHub Actions build `dist/Pilote/` puis `Pilote_Setup.exe`, et crée la release
    avec le Setup (un `Pilote.exe` seul ne tourne pas sans son `_internal/`) ; un
    second job, sur un Mac de GitHub, y joint ensuite `Pilote_Mac.zip` (s'il échoue,
    le Setup est déjà publié). Avant de fusionner du code propre à un système dans

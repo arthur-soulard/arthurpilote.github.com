@@ -275,3 +275,100 @@ jobs:
             pilote.log
             build.log
           if-no-files-found: ignore
+
+  # Captures des ecrans de tests/ecrans.txt (a mettre a jour a chaque
+  # fonctionnalite), sur les donnees d'exemple FICTIVES de
+  # tests/donnees_exemple.py : le premier job demarre sur un utilisateur
+  # vierge, qui ne montre que les Premiers pas. Un job a part, car GitHub
+  # garde 50 annotations au plus par job et le premier en emet une trentaine.
+  ecrans-mac:
+    needs: build-mac
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: App du build
+        uses: actions/download-artifact@v4
+        with:
+          name: pilote-mac
+          path: art
+
+      - name: Captures
+        run: |
+          ditto -x -k art/Pilote-mac.zip .
+          python3 tests/donnees_exemple.py "$HOME/Library/Application Support/Pilote/Donnees"
+          ECRANS=$(grep -v '^[[:space:]]*#' tests/ecrans.txt | sed '/^[[:space:]]*$/d' | paste -sd ';' -)
+          PILOTE_ECRANS="$ECRANS" Pilote.app/Contents/MacOS/Pilote > ecrans.log 2>&1 &
+          PID=$!
+          # Chaque « [ecran] n pret » de l'app : une capture de sa fenetre
+          # (cadre lu par System Events), sinon de tout l'ecran
+          FAITES=0
+          for i in $(seq 1 300); do
+            N=$(grep -c "\[ecran\] [0-9]* pret" ecrans.log || true)
+            while [ "$FAITES" -lt "$N" ]; do
+              FAITES=$((FAITES+1))
+              NOM=$(printf "ecran-%02d" $FAITES)
+              CADRE=$(osascript -e 'tell application "System Events" to tell process "Pilote" to get {position, size} of window 1' 2>/dev/null | tr -d ' ')
+              screencapture -x ${CADRE:+-R"$CADRE"} "$NOM.png" || echo "capture $FAITES impossible"
+            done
+            grep -q "\[ecran\] fin" ecrans.log && break
+            sleep 1
+          done
+          kill $PID 2>/dev/null || true
+          # Taille et qualite : les plus grandes qui tiennent en 45 morceaux
+          # de 3800 caracteres (5 etapes de 9 annotations)
+          for REGLAGE in "1024 45" "1024 35" "1024 27" "900 24" "800 20" "720 16" "600 12"; do
+            set -- $REGLAGE
+            TOTAL=0
+            for f in ecran-*.png; do
+              [ -f "$f" ] || continue
+              sips -s format jpeg -s formatOptions $2 -Z $1 "$f" --out "${f%.png}.jpg" > /dev/null
+              T=$(base64 -i "${f%.png}.jpg" | tr -d '\n' | wc -c | tr -d ' ')
+              TOTAL=$((TOTAL + (T + 3799) / 3800))
+            done
+            [ "$TOTAL" -le 45 ] && break
+          done
+          # Une ligne d'annotation par morceau : « Ecran n i/N »
+          : > ecrans.lignes
+          for f in ecran-*.jpg; do
+            [ -f "$f" ] || continue
+            K=$(echo "$f" | sed 's/[^0-9]//g' | sed 's/^0*//')
+            base64 -i "$f" | tr -d '\n' | fold -w 3800 > morceaux.txt
+            echo >> morceaux.txt
+            M=$(grep -c . morceaux.txt)
+            i=0
+            while read -r ligne; do
+              [ -n "$ligne" ] || continue
+              i=$((i+1))
+              echo "::notice title=Ecran $K $i/$M::$ligne" >> ecrans.lignes
+            done < morceaux.txt
+          done
+          echo "::notice title=Ecrans::$FAITES captures ($1 px, qualite $2, $TOTAL morceaux) ; $(grep -E '\[ecran\]|Traceback|Error' ecrans.log | tr '\n' ' ' | head -c 1500)"
+
+      - name: Ecrans (1)
+        if: always()
+        run: sed -n '1,9p' ecrans.lignes 2>/dev/null || true
+      - name: Ecrans (2)
+        if: always()
+        run: sed -n '10,18p' ecrans.lignes 2>/dev/null || true
+      - name: Ecrans (3)
+        if: always()
+        run: sed -n '19,27p' ecrans.lignes 2>/dev/null || true
+      - name: Ecrans (4)
+        if: always()
+        run: sed -n '28,36p' ecrans.lignes 2>/dev/null || true
+      - name: Ecrans (5)
+        if: always()
+        run: sed -n '37,45p' ecrans.lignes 2>/dev/null || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecrans-mac
+          path: |
+            ecran-*.png
+            ecrans.log
+          if-no-files-found: ignore

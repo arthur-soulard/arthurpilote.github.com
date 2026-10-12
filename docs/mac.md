@@ -138,6 +138,34 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
   GitHub en HTTPS (annotation « HTTPS », voir l'inventaire). Les constats sortent en annotations (lisibles sans compte via
   l'API publique des check-runs) ; capture, journal et app zippée sont en artefact.
 
+### Captures sur données d'exemple (job `ecrans-mac`, 12/10/2026)
+
+Règle d'Arthur : une fonctionnalité doit être vérifiée sur Mac **et** Windows
+avant d'être dite finie. Or le premier job démarre sur un utilisateur vierge :
+sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
+
+* **`tests/donnees_exemple.py`** écrit un utilisateur « Camille » entièrement
+  **fictif** (le dépôt est public) : PEA, un CTO, Mes comptes, Prêt, Sports,
+  Santé, Patrimoine, pense-bête, toutes les tuiles allumées. Dates relatives au
+  jour du test (un « prochain dividende » le reste). `nouveautesVues: 999.0.0`
+  et `premiersPas` : rien ne s'ouvre par-dessus l'écran.
+* **`tests/ecrans.txt`** : les écrans à photographier, une ligne par capture
+  (onglet, puis défilement en px). **À mettre à jour à chaque fonctionnalité.**
+* **`PILOTE_ECRANS`** (`app.py`, `_diag_ecrans`) : ouvre chaque écran
+  (`goTab`, puis défilement sans l'effet « en douceur » de la page) et écrit
+  « [ecran] n pret » ; le job prend alors la capture de la fenêtre (cadre lu
+  par System Events, sinon tout l'écran).
+* Job à part, qui reprend l'app du premier (artefact `pilote-mac`) : GitHub
+  garde **50 annotations au plus par job**, et le premier en émet déjà une
+  trentaine. Les captures sortent en morceaux « Ecran n i/N » (45 au plus,
+  5 étapes de 9) ; taille et qualité baissent seules pour tenir (1024 px en
+  qualité 45 au mieux).
+* **`python tests/lire_tests.py <sha> <dossier>`** relit les deux tests sans
+  compte (étapes, annotations) et recolle `capture-mac.jpg` et `ecran-<n>.jpg`.
+* La fenêtre du Mac de GitHub fait 1024 × 681 : plus étroite que l'écran
+  d'Arthur (1366). Premier constat, sur la tuile Marchés : les noms d'indices
+  y sont coupés (« S&P 5… »).
+
 ## Inventaire de ce qui reste propre à Windows
 
 | Quoi | Où | Sur Mac aujourd'hui |

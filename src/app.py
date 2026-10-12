@@ -1528,6 +1528,46 @@ def main() -> int:
                     print(f"[pile] {_time_lancement.time() - _T0:6.2f} s  " + " | ".join(vus), flush=True)
         threading.Thread(target=_echantillons, daemon=True).start()
 
+    # Test des builds (build-mac.yml, job « ecrans-mac ») : sur les donnees
+    # d'exemple (tests/donnees_exemple.py), ouvre un a un les ecrans de
+    # PILOTE_ECRANS (« home ; home 640 ; pa-vue » : onglet, puis defilement en
+    # px) et ecrit « [ecran] <n> pret » quand chacun est affiche. Le test prend
+    # alors la capture d'ecran, puis ferme l'app apres « [ecran] fin ».
+    if os.environ.get("PILOTE_ECRANS"):
+        def _diag_ecrans():
+            import time as _t
+            lire = getattr(window, "run_js", None) or window.evaluate_js
+            for _ in range(90):              # la page et ses modules
+                _t.sleep(1)
+                try:
+                    if str(lire("JSON.stringify(!!window._appShown)")) == "true":
+                        break
+                except Exception:
+                    pass
+            _t.sleep(10)                     # cours, historiques et graphiques
+            ecrans = [e.split() for e in os.environ["PILOTE_ECRANS"].split(";") if e.strip()]
+            for n, e in enumerate(ecrans, 1):
+                onglet = e[0]
+                defil = int(e[1]) if len(e) > 1 and e[1].isdigit() else 0
+                try:
+                    lire("goTab(%s); _setActiveSidebar(%s); 1" % (json.dumps(onglet), json.dumps(onglet)))
+                    _t.sleep(3)
+                    # Le premier parent qui defile (la page, ou la zone du
+                    # contenu), sans le defilement en douceur de la page
+                    lire("(function (y) { var el = document.querySelector('.pane.active');"
+                         " while (el && !(el.scrollHeight > el.clientHeight + 5"
+                         "   && /(auto|scroll)/.test(getComputedStyle(el).overflowY))) el = el.parentElement;"
+                         " el = el || document.scrollingElement; var b = el.style.scrollBehavior;"
+                         " el.style.scrollBehavior = 'auto'; el.scrollTop = y; el.style.scrollBehavior = b;"
+                         " return 1; })(%d)" % defil)
+                    _t.sleep(1)
+                    print(f"[ecran] {n} pret {onglet} {defil}", flush=True)
+                except Exception as ex:
+                    print(f"[ecran] {n} KO {onglet} : {ex}", flush=True)
+                _t.sleep(5)                  # le temps de la capture
+            print("[ecran] fin", flush=True)
+        threading.Thread(target=_diag_ecrans, daemon=True).start()
+
     # Sauvegarde de la taille/position avant fermeture
     def _sauver_fenetre():
         try:
