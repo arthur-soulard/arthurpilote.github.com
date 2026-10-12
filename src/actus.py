@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import base64
 import datetime
+import hashlib
 import email
 import email.policy
 import email.utils
@@ -33,6 +34,7 @@ import imaplib
 import re
 import socket
 import ssl
+import subprocess
 import sys
 import threading
 import time
@@ -123,16 +125,51 @@ if sys.platform == "win32":
             _kernel32.LocalFree(ctypes.cast(sortie.pbData, ctypes.c_void_p))
 
 
+# Mac : le code va dans le Trousseau de la session, actus.json ne garde que
+# « trousseau:<compte> ». Par l'outil `security` de macOS plutot que par
+# l'API : l'element appartient alors a /usr/bin/security (signe par Apple,
+# stable), et l'app, non signee donc d'une autre identite a chaque version,
+# ne redemande pas l'acces apres chaque mise a jour.
+_TROUSSEAU = "Pilote Actus"
+
+
+def _compte_trousseau() -> str:
+    """Un element par utilisateur Pilote (son dossier de donnees)."""
+    return "pilote-" + hashlib.sha256(str(storage.get_user_dir()).encode("utf-8")).hexdigest()[:16]
+
+
+def _security(*args) -> subprocess.CompletedProcess:
+    return subprocess.run(["security", *args], capture_output=True, text=True, timeout=15)
+
+
 def _chiffrer(mdp: str) -> str:
     brut = mdp.encode("utf-8")
     if sys.platform == "win32":
         return "dpapi:" + base64.b64encode(_dpapi(brut, True)).decode("ascii")
+    if sys.platform == "darwin":
+        compte = _compte_trousseau()
+        r = _security("add-generic-password", "-U", "-s", _TROUSSEAU, "-a", compte,
+                      "-l", "Pilote : code d'application Gmail (Actus)", "-w", mdp)
+        if r.returncode != 0:
+            raise OSError((r.stderr or "").strip() or "le Trousseau a refusé le code")
+        return "trousseau:" + compte
     return "b64:" + base64.b64encode(brut).decode("ascii")
+
+
+def _oublier(secret: str) -> None:
+    """Deconnexion : retire aussi le code du Trousseau (Mac)."""
+    if secret.startswith("trousseau:") and sys.platform == "darwin":
+        _security("delete-generic-password", "-s", _TROUSSEAU, "-a", secret[10:])
 
 
 def _dechiffrer(secret: str) -> str:
     if secret.startswith("dpapi:") and sys.platform == "win32":
         return _dpapi(base64.b64decode(secret[6:]), False).decode("utf-8")
+    if secret.startswith("trousseau:") and sys.platform == "darwin":
+        r = _security("find-generic-password", "-s", _TROUSSEAU, "-a", secret[10:], "-w")
+        if r.returncode != 0:
+            raise ValueError("code absent du Trousseau")
+        return r.stdout.rstrip("\n")
     if secret.startswith("b64:"):
         return base64.b64decode(secret[4:]).decode("utf-8")
     raise ValueError("secret illisible")
@@ -281,6 +318,7 @@ def deconnecter() -> dict:
     with _verrou:
         _fermer()
         data = _store.load()
+        _oublier(data.get("secret") or "")
         data["secret"] = ""
         _store.save(data)
     return config()

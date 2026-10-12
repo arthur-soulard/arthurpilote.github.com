@@ -69,6 +69,56 @@ LOCALISATION_MAC = {
 }
 
 
+def ocr_mac(image_path: str) -> dict:
+    """Mac : lecture du texte d'une image par Vision d'Apple (hors ligne).
+
+    Rend la meme chose qu'ocr_win.ps1 sous Windows, pour que sante.py lise les
+    deux pareil : {ok, lang, width, height, angle, words: [{t, l, x, y, w, h}]},
+    positions en pixels depuis le coin haut gauche. Vision rend des lignes : la
+    boite de chaque mot vient de boundingBoxForRange sur la ligne. Correction
+    linguistique coupee : elle « corrige » les nombres (72,4 kg, 18,5 %)."""
+    try:
+        import Vision
+        from Foundation import NSURL
+        from PIL import Image
+    except Exception as e:
+        return {"ok": False, "error": f"Vision indisponible : {e}"}
+    try:
+        with Image.open(image_path) as im:
+            largeur, hauteur = im.size
+        url = NSURL.fileURLWithPath_(str(image_path))
+        lecteur = Vision.VNImageRequestHandler.alloc().initWithURL_options_(url, None)
+        req = Vision.VNRecognizeTextRequest.alloc().init()
+        req.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
+        req.setRecognitionLanguages_(["fr-FR", "en-US"])
+        req.setUsesLanguageCorrection_(False)
+        ok, err = lecteur.performRequests_error_([req], None)
+        if not ok:
+            return {"ok": False, "error": str(err)}
+
+        def boite(r) -> dict:     # CGRect normalise, origine en bas a gauche
+            return {"x": int(r.origin.x * largeur),
+                    "y": int((1 - r.origin.y - r.size.height) * hauteur),
+                    "w": int(r.size.width * largeur),
+                    "h": int(r.size.height * hauteur)}
+
+        mots = []
+        for li, obs in enumerate(req.results() or [], start=1):
+            cands = obs.topCandidates_(1)
+            if not cands:
+                continue
+            cand = cands[0]
+            texte = str(cand.string())
+            for m in re.finditer(r"\S+", texte):
+                rect, _ = cand.boundingBoxForRange_error_((m.start(), m.end() - m.start()), None)
+                b = boite(rect.boundingBox()) if rect is not None else boite(obs.boundingBox())
+                mots.append(dict(t=m.group(0), l=li, **b))
+        return {"ok": True, "lang": "fr-FR", "width": largeur, "height": hauteur,
+                "angle": 0, "words": mots}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 def ouvrir(chemin: str) -> None:
     """Ouvre un fichier ou un dossier avec l'application par defaut du systeme
     (Explorateur sous Windows, Finder sur Mac). Leve une exception en cas d'echec."""
