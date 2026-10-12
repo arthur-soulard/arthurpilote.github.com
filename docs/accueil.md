@@ -219,7 +219,11 @@ Choix d'Arthur et pièges :
   pas celle du jour porte son jour (« ven. ») : New York ouvre à 15 h 30.
   Les quatre lignes partagent une seule grille (`.dash-mkt` en
   `display: contents`) : avec une grille par ligne, les chiffres ne
-  s'alignaient pas.
+  s'alignaient pas. Tuile étroite (moins de 215 px utiles, fenêtre de 1024 px
+  du test Mac) : les points d'indice disparaissent (requête de conteneur sur
+  `.dash-mkts-c`), sinon « S&P 5… » et « MSCI … » étaient coupés.
+* **Plafond du PEA** : libellés courts sous la barre (« 3,8 % », « reste
+  144 250 € ») : les longs passaient sur deux lignes à 1024 px.
 * **Objectif de patrimoine** : montant et date facultative, saisis depuis la
   tuile (`ov-dash-objectif`). Avec une date : ce qu'il reste ÷ les mois
   restants, arrondi à l'euro supérieur.
@@ -249,3 +253,25 @@ titres et plus-value depuis le début, lues dans `ctoResume` (le même calcul qu
 la vue d'ensemble du CTO). Son onglet `cto-dash@<id>` ouvre ce CTO-là.
 `dashRender()` ne fait rien pendant qu'un CTO est dans `S` : les tuiles du PEA
 le liraient (voir `docs/modules/cto.md`).
+
+**Performance d'un CTO** (`cto-perf:<id>`, demandée par Arthur le 12/10/2026,
+« comme pour le PEA ») : mêmes pastilles Jour · 1S · 1M · YTD · Max, période
+retenue par CTO (`S.uiPrefs.dashCtoRange`). Les deux tuiles passent par
+`dashPerfTuile` ; aucun calcul n'est recopié :
+
+* `dashAvecCto(id, fn)` met le CTO dans `S` (avec `_compteActif` et ses
+  versements déduits des ordres, `ctoDepotsDeduits`) le temps d'un calcul
+  **synchrone**, puis remet le PEA. `dashPeaDay`, `buildTwrSeries`,
+  `computePnl` et `buildDepositSeries` tournent ainsi tels quels sur le CTO.
+  Rien d'asynchrone ni d'écriture dans `fn` : JavaScript ne s'interrompt pas,
+  aucun autre code ne voit le CTO dans `S`.
+* Max = `ctoResume` (la carte « Plus-value ») ; 1S, 1M, YTD = la série du CTO,
+  tirée d'un historique demandé une fois par session (`_dashCtoHist`), à part
+  de `_perfHistory` qui est celui du compte affiché ; hors ligne, la copie
+  locale de la courbe du CTO.
+* Vérifié sur une copie du CTO TR d'Arthur (135 opérations) : 1S −12,22 €
+  (−1,39 %), 1M +7,52 €, YTD −44,38 €, Max −67,40 € (−7,17 %), au centime près
+  ce qu'affichent sa courbe et sa carte. Tuile du PEA identique avant et après
+  `dashPerfTuile` sur les cinq périodes.
+* Module CTO masqué : ses tuiles `cto:` et `cto-perf:` sont gardées dans la
+  configuration (`dashSaveConfig`) et reviennent avec lui.

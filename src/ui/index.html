@@ -2229,6 +2229,13 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 /* Une seule grille pour les quatre lignes : les colonnes s'alignent */
 .dash-mkts { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 26px; align-items: baseline; gap: 5px 10px; font-size: 13px; }
 .dash-mkt { display: contents; }
+/* Tuile étroite (fenêtre de 1024 px : « S&P 5… », « MSCI … ») : les points
+   d'indice laissent la place aux noms, la variation reste */
+.dash-mkts-c { container-type: inline-size; }
+@container (max-width: 215px) {
+  .dash-mkts { grid-template-columns: minmax(0, 1fr) auto 26px; }
+  .dash-mkt-v { display: none; }
+}
 .dash-mkt-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-mkt-v, .dash-mkt b { font-variant-numeric: tabular-nums; text-align: right; }
 .dash-mkt-v { color: var(--txt2); font-size: 12px; }
@@ -21298,7 +21305,7 @@ async function ctoLignesPatrimoine() {
 /* Une tuile d'accueil par CTO, éteinte tant qu'on ne l'ajoute pas */
 function ctoSyncWidgets() {
   for (let i = DASH_WIDGETS.length - 1; i >= 0; i--)
-    if (String(DASH_WIDGETS[i].id).startsWith("cto:")) DASH_WIDGETS.splice(i, 1);
+    if (/^cto(-perf)?:/.test(String(DASH_WIDGETS[i].id))) DASH_WIDGETS.splice(i, 1);
   ctoComptes().forEach(c => DASH_WIDGETS.push({
     id: "cto:" + c.id, label: "Valeur du CTO « " + c.nom + " »", module: "CTO", tab: "cto-dash@" + c.id,
     render() {
@@ -21307,6 +21314,10 @@ function ctoSyncWidgets() {
       return { lbl: k.nom, val: eur(r.valeur), go: "Voir le CTO",
                cls: "", sub: r.pv != null ? eur(r.pv, true) + (r.pvPct != null ? " (" + pct(r.pvPct) + ")" : "") + " au total" : "" };
     },
+  }, {
+    // Performance, comme la tuile du PEA (périodes Jour à Max) : dashCtoPerf
+    id: "cto-perf:" + c.id, label: "Performance du CTO « " + c.nom + " »", module: "CTO", tab: "cto-dash@" + c.id,
+    render() { return dashCtoPerf(c.id); },
   }));
 }
 
@@ -21948,8 +21959,10 @@ const DASH_WIDGETS = [
       const p = Math.min(100, verse / 150000 * 100);
       return { lbl: "Plafond du PEA", val: eur(verse),
                sub: "versés sur 150 000 €", go: "Voir les versements",
-               viz: dashProgress(p, p.toFixed(p < 10 ? 1 : 0).replace(".", ",") + " % du plafond",
-                                 "reste " + eur(Math.max(0, 150000 - verse))) };
+               // Courts : à 1024 px de large (fenêtre du test Mac), « 3,8 % du
+               // plafond » et « reste 144 250,00 € » passaient sur deux lignes
+               viz: dashProgress(p, p.toFixed(p < 10 ? 1 : 0).replace(".", ",") + " %",
+                                 "reste " + paEur(Math.max(0, 150000 - verse))) };
     },
   },
   {
@@ -22468,7 +22481,7 @@ async function dashSaveConfig(cfg) {
   // gardées telles quelles, elles reviennent avec le module
   if (!_ctoBootstrapped && Array.isArray(S.uiPrefs.dash)) {
     S.uiPrefs.dash.forEach(c => {
-      if (String(c.id).startsWith("cto:") && !cfg.some(x => x.id === c.id)) cfg.push(c);
+      if (/^cto(-perf)?:/.test(String(c.id)) && !cfg.some(x => x.id === c.id)) cfg.push(c);
     });
   }
   S.uiPrefs.dash = cfg;
@@ -22667,9 +22680,11 @@ function dashSetPeaRange(r) {
     Titres détenus la veille : quantité × (cours − clôture de la veille) ;
     achetés ou vendus aujourd'hui : comptés depuis leur prix d'exécution.
     Le % se rapporte à la valeur du PEA (titres + espèces) à la clôture
-    précédente. null tant que les cours de la séance ne sont pas arrivés. */
-function dashPeaDay() {
-  const pv = window._peaPv || {};
+    précédente. null tant que les cours de la séance ne sont pas arrivés.
+    total : la valeur du compte dans S (un CTO, par dashAvecCto) ; par défaut
+    celle du PEA. */
+function dashPeaDay(total = (window._peaPv || {}).total) {
+  const pv = { total };
   if (pv.total == null) return null;
   const today = todayISO();
   let gain = 0, t = 0, lignes = 0;
@@ -22704,37 +22719,56 @@ function dashPeaDay() {
 }
 
 function dashPeaPerf() {
-  const r = dashPeaRange();
+  return dashPerfTuile({
+    lbl: "Performance du PEA", range: dashPeaRange(), clic: k => `dashSetPeaRange('${k}')`,
+    jour: () => dashPeaDay(),
+    max: () => { const pv = window._peaPv || {};
+                 return pv.eur == null ? null : { eur: pv.eur, pct: pv.pct, quand: "depuis l'ouverture" }; },
+    serie: dashPeaSeries,
+    calcul: fn => fn(),
+  });
+}
+
+/** Contenu des tuiles « Performance » du PEA et des CTO : les pastilles de
+    période, puis le gain de la période choisie et sa mini-courbe.
+    o.clic(k) : l'appel JS d'une pastille ; o.jour(), o.max() ; o.serie() :
+    la série de la courbe du compte (undefined : en chargement, null : pas
+    d'historique) ; o.calcul(fn) : fn exécutée avec le compte de la tuile
+    dans S (le PEA y est déjà ; un CTO y passe par dashAvecCto). */
+function dashPerfTuile(o) {
+  const r = o.range;
   const pills = `<div class="rng dash-rng" role="group" aria-label="Période">${DASH_PEA_RANGES.map(([k, l]) =>
-    `<button type="button" aria-pressed="${k === r}" onclick="event.stopPropagation();dashSetPeaRange('${k}')">${l}</button>`
+    `<button type="button" aria-pressed="${k === r}" onclick="event.stopPropagation();${o.clic(k)}">${l}</button>`
   ).join("")}</div>`;
-  const base  = { lbl: "Performance du PEA", go: "Voir l'évolution" };
+  const base  = { lbl: o.lbl, go: "Voir l'évolution" };
   const vide  = sub => ({ ...base, val: "—", sub, viz: pills });
   const plein = (e, p, quand, spark) => ({ ...base, val: eur(e, true), cls: e >= 0 ? "c-g" : "c-r",
     sub: (p != null ? pct(p) + " · " : "") + quand, viz: pills + (spark || "") });
 
   if (r === "J") {
-    const d = dashPeaDay();
+    const d = o.calcul(o.jour);
     return d ? plein(d.eur, d.pct, d.quand) : vide("En attente des cours du jour");
   }
+  const full = o.serie();
   if (r === "MAX") {
-    const pv = window._peaPv || {};
-    return pv.eur == null ? vide("En attente des cours")
-                          : plein(pv.eur, pv.pct, "depuis l'ouverture", dashPeaSpark("pv"));
+    const m = o.max();
+    return !m ? vide("En attente des cours")
+              : plein(m.eur, m.pct, m.quand, full ? o.calcul(() => dashPeaSpark("pv", undefined, full)) : "");
   }
-  const full = dashPeaSeries();
   if (full === undefined) return vide("Chargement de l'historique…");
-  const serie = full ? filterByRange(full, r) : null;
-  const res = (serie && serie.length >= 2) ? computePnl(serie, r) : null;
+  const res = o.calcul(() => {
+    const serie = full ? filterByRange(full, r) : null;
+    return (serie && serie.length >= 2) ? computePnl(serie, r) : null;
+  });
   if (!res || res.pnlEur == null) return vide("Pas encore assez d'historique");
   const quand = r === "1W" ? "sur 7 jours" : r === "1M" ? "sur 1 mois" : "depuis le 1ᵉʳ janvier";
-  return plein(res.pnlEur, res.pnlPct, quand, dashPeaSpark("pv", r));
+  return plein(res.pnlEur, res.pnlPct, quand, o.calcul(() => dashPeaSpark("pv", r, full)));
 }
 
 /** Courbe du PEA sur six mois (ou sur `range`), tirée de la même série.
-    "pv" : plus-value (valeur − versements) ; "val" : valeur du portefeuille. */
-function dashPeaSpark(kind, range) {
-  const full = dashPeaSeries();
+    "pv" : plus-value (valeur − versements) ; "val" : valeur du portefeuille.
+    full : la série d'un CTO (dans dashAvecCto) ; par défaut celle du PEA. */
+function dashPeaSpark(kind, range, full = dashPeaSeries()) {
   if (!full) return "";
   let serie = filterByRange(full, range || "6M");
   if (!serie || serie.length < 2) serie = full;
@@ -22743,6 +22777,84 @@ function dashPeaSpark(kind, range) {
     return dashSpark(serie.map((p, i) => p.val - dep[i]));
   }
   return dashSpark(serie.map(p => p.val));
+}
+
+/* ── Tuile « Performance » d'un CTO (une par CTO, ctoSyncWidgets) ────────────
+   Mêmes pastilles et mêmes calculs que la tuile du PEA, sur le CTO :
+   - Jour : dashPeaDay sur ses lignes et ses ordres ;
+   - 1S, 1M, YTD : computePnl sur sa série, comme les pastilles de sa courbe ;
+   - Max : ctoResume, la carte « Plus-value » de sa vue d'ensemble. */
+
+/** fn() calculée avec le CTO `id` dans S, comme si sa section était ouverte,
+    puis le PEA remis. Les calculs de la courbe (buildTwrSeries, computePnl,
+    buildDepositSeries, dashPeaDay) lisent S et _estCto() : la tuile d'un CTO
+    les reprend tels quels au lieu de les recopier. Ses versements sont ceux
+    que sa vue d'ensemble déduit des ordres (ctoDepotsDeduits).
+    fn doit rester synchrone et ne rien écrire : JavaScript ne s'interrompt
+    pas pendant l'échange, aucun autre code ne voit le CTO dans S. */
+function dashAvecCto(id, fn) {
+  const c = ctoCompte(id);
+  if (!c || _estCto()) return null;
+  const vue = Object.assign({}, c, { depots: ctoDepotsDeduits(c) });
+  const sS = S, sA = _compteActif;
+  S = vue; _compteActif = id;
+  try { return fn(); }
+  finally { S = sS; _compteActif = sA; }
+}
+
+/* Historique des cours d'un CTO pour sa tuile, demandé une fois par session
+   (comme celui de la tuile du PEA), à part de _perfHistory qui est celui du
+   compte affiché. Hors ligne : la copie locale que garde la courbe du CTO. */
+const _dashCtoHist = {};     // id -> "attente" | historique | null
+
+function dashCtoChargerHist(id) {
+  const c = ctoCompte(id);
+  if (!c) return;
+  const copie = () => { try { return JSON.parse(localStorage.getItem(LS_HIST + "_" + id)).history || null; }
+                        catch (e) { return null; } };
+  const tickers = [...new Set([...(c.positions || []).map(p => p.ticker),
+                               ...(c.closedPositions || []).map(x => x.ticker)].filter(Boolean))];
+  if (!tickers.length) { _dashCtoHist[id] = null; return; }
+  _dashCtoHist[id] = "attente";
+  fetch(LOCAL_HIST_URL + "?tickers=" + tickers.map(encodeURIComponent).join(",")
+        + (dashAvecCto(id, _perfDepuisParam) || ""), { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { _dashCtoHist[id] = (d && d.ok && d.history && Object.keys(d.history).length) ? d.history : copie(); })
+    .catch(() => { _dashCtoHist[id] = copie(); })
+    .finally(() => dashRender());
+}
+
+/** Série de la courbe du CTO (undefined : en chargement ; null : pas d'historique). */
+function dashCtoSerie(id) {
+  const h = _dashCtoHist[id];
+  if (h === undefined) { dashCtoChargerHist(id); return _dashCtoHist[id] === null ? null : undefined; }
+  if (h === "attente") return undefined;
+  return h ? dashAvecCto(id, () => buildTwrSeries(h)) : null;
+}
+
+/* La période se retient par CTO : S.uiPrefs.dashCtoRange = {id: "1M"} */
+function dashCtoRange(id) {
+  const r = ((S.uiPrefs || {}).dashCtoRange || {})[id];
+  return DASH_PEA_RANGES.some(x => x[0] === r) ? r : "MAX";
+}
+function dashSetCtoRange(id, r) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.dashCtoRange = Object.assign({}, S.uiPrefs.dashCtoRange, { [id]: r });
+  dashRender();
+  dashSauverPrefs();
+}
+
+function dashCtoPerf(id) {
+  const c = ctoCompte(id), res = ctoResume(id);
+  if (!c || !res || !res.n) return null;    // CTO sans ligne : rien à dire
+  return dashPerfTuile({
+    lbl: "Performance du " + ctoNomSection(c), range: dashCtoRange(id),
+    clic: k => `dashSetCtoRange('${escHtml(id)}','${k}')`,
+    jour: () => dashPeaDay(res.valeur),
+    max: () => res.pv == null ? null : { eur: res.pv, pct: res.pvPct, quand: "depuis le premier achat" },
+    serie: () => dashCtoSerie(id),
+    calcul: fn => dashAvecCto(id, fn),
+  });
 }
 
 /** Bouton des tuiles « Ajouter une dépense » et « Ajouter un revenu » : la
@@ -22888,7 +23000,8 @@ function dashMarches() {
       <span class="dash-mkt-v">${x.v.cours.toLocaleString("fr-FR", { maximumFractionDigits: 0 })}</span>
       <b class="${x.v.d1 == null ? "" : x.v.d1 >= 0 ? "c-g" : "c-r"}">${x.v.d1 != null ? pct(x.v.d1) : "—"}</b>${jour}</div>`;
   }).join("");
-  return { lbl: "Marchés du jour", val: null, go: null, viz: `<div class="dash-mkts">${lignes}</div>`, vizCls: "dash-viz-haut" };
+  return { lbl: "Marchés du jour", val: null, go: null, vizCls: "dash-viz-haut",
+           viz: `<div class="dash-mkts-c"><div class="dash-mkts">${lignes}</div></div>` };
 }
 
 /* ── Tuile « Pense-bête » ────────────────────────────────────────────────────
