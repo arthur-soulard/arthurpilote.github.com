@@ -2131,7 +2131,10 @@ thead th, .wish-table thead th {
 .home-idee::before { width: 9px; height: 9px; left: -11px; bottom: -8px; }
 .home-idee::after  { width: 5px; height: 5px; left: -18px; bottom: -15px; }
 .home-idee .ph { font-size: 16px; }
-.home-idee:hover { background: var(--accent); color: #fff; }
+/* En sombre, fond moins teinté que --accent-soft (22 %) : texte à 4,7:1 au
+   lieu de 4,3 (mesuré sur l'accent #c026d3) */
+html[data-theme="dark"] .home-idee { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.home-idee:hover, html[data-theme="dark"] .home-idee:hover { background: var(--accent); color: #fff; }
 .home-idee:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .home-idee.vue { animation: none; }   /* pas de nouvelle apparition en revenant sur l'accueil */
 @keyframes home-idee-pop { from { opacity: 0; transform: scale(.6) translateY(6px); } }

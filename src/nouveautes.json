@@ -2,6 +2,15 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.15",
+      "date": "2026-10-13",
+      "titre": "Le pense-bête en entier, et une bulle pour tes idées",
+      "ameliore": [
+        "Pense-bête : une note trop longue passe à la ligne au lieu d'être coupée, tant que la tuile a la place. Seule, une note s'affiche en entier ; à plusieurs, chacune gagne une ligne à son tour. Le texte complet reste visible au survol et dans la fenêtre du pense-bête.",
+        "Accueil : « Suggérer une amélioration » devient une bulle « Une idée ? » à côté de ton prénom, plus facile à trouver. Elle ouvre la même fenêtre pour écrire à l'auteur de Pilote."
+      ]
+    },
+    {
       "version": "4.4.14",
       "date": "2026-10-13",
       "titre": "La performance de toute ta bourse sur l'accueil",
