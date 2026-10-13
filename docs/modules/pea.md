@@ -382,7 +382,7 @@ Fonctions `so*`, bloc juste après Prochain achat.
   de 20 €) non investi le dit dans son étiquette. Tous au même point : une phrase.
 * **Passer** (icône sur chaque carte, `soPasser`) : fenêtre avec les ordres de la
   carte, parts / cours exécuté / frais modifiables (avis d'opéré), date, case
-  « Payé avec le prêt » (4.5.0 : seulement s'il existe un prêt dont l'argent est
+  « Payé avec le prêt » (4.4.17 : seulement s'il existe un prêt dont l'argent est
   placé, avec le choix du prêt s'il y en a plusieurs ; `docs/modules/pret.md`).
   Chaque ligne cochée devient un « Achat » (et la position
   si besoin, comme « Saisir »). Alerte si les espèces réelles ne couvrent pas :

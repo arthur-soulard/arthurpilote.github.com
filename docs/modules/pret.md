@@ -2,7 +2,7 @@
 
 Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
-## Un ou plusieurs prêts, tous les contrats (4.5.0)
+## Un ou plusieurs prêts, tous les contrats (4.4.17)
 
 Jusqu'à la 4.4.16, le module était taillé pour le prêt d'Arthur : un seul prêt, à
 0 %, dont l'argent est placé, et un capital dû calculé « versé − remboursé ».
@@ -55,7 +55,7 @@ des données d'Arthur : versements, frais, assurance vie et livret identiques
 avant et après, enregistrement puis relecture identiques.
 
 **Ordres « payés avec l'argent du prêt »** : `t.pret` vaut l'id du prêt (`"p2"`),
-ou `true` pour un ordre coché avant la 4.5.0, qui désigne `p1` (`prOrdrePretId`).
+ou `true` pour un ordre coché avant la 4.4.17, qui désigne `p1` (`prOrdrePretId`).
 **Lignes du Patrimoine** : `auto: "pret"` (créée d'office par patrimoine.py) est le
 prêt `p1`, `auto: "pret:p2"` le prêt `p2` (`prDeLigne`, `prLignesPatrimoine`).
 
@@ -116,7 +116,7 @@ Patrimoine (`paValeurAuto`, via `prCrdPart`) et l'accueil le lisent tous.
   champ `echeance` = sa date dans l'échéancier, le montant vraiment payé à côté).
   Bouton « Pointer » sur chaque échéance passée (et la prochaine), « Tout pointer »,
   et « + Remboursement » dans Paramètres pointe la prochaine. Une échéance à 0 €
-  se règle seule. Les remboursements saisis avant la 4.5.0, sans `echeance`,
+  se règle seule. Les remboursements saisis avant la 4.4.17, sans `echeance`,
   comptent comme du capital rendu (l'ancienne règle).
 * **Contrat incomplet** (pas de montant, de durée ou de 1re échéance) : pas
   d'échéancier, et l'ancien calcul versé − remboursé.
@@ -172,7 +172,7 @@ prêt. Le bouton Retour annule les actions du prêt affiché et celles du PEA
 * **Fenêtres d'ordre du PEA et des CTO** : case « Payé avec l'argent du prêt »
   (`prCaseOrdre`, `prChoixPret`), cachée s'il n'existe aucun prêt dont l'argent
   est placé (un nouvel utilisateur ne la voit pas), avec le choix du prêt s'il y
-  en a plusieurs. Elle existe aussi dans un CTO depuis la 4.5.0 (plus `pea-seul`).
+  en a plusieurs. Elle existe aussi dans un CTO depuis la 4.4.17 (plus `pea-seul`).
   Même chose pour « Passer un scénario ». L'étiquette d'un ordre dans
   Transactions prend le nom du prêt s'il y en a plusieurs.
 * **Patrimoine** : une ligne de dette par prêt, à son nom, valeur `prCrdPart`.
@@ -219,7 +219,7 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
   → Contrats d'Arthur (08/10/2026) : « Afer Génération » (4,05 % en 2025) et
     « Afer Multisupport » (2,65 % en 2025), taux du communiqué Afer du 19/01/2026,
     0,5 % de frais sur versements sur les deux.
-* livrets (4.5.0, un seul « liv » avant) : `[{id, label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}]`.
+* livrets (4.4.17, un seul « liv » avant) : `[{id, label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}]`.
   Livret A, LDDS, LEP, livret jeune… : chacun ses taux et ses mouvements, intérêts
   par quinzaines (`prLivretState`) : un dépôt rapporte à partir de la quinzaine
   qui suit, un retrait cesse dès le début de la sienne, taux / 24 par quinzaine

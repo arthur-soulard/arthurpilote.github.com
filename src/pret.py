@@ -9,7 +9,7 @@ reste de Pilote. Le fichier appartient a l'utilisateur actif.
 Emplacement : <app_dir>/users/<slug>/pret.json
 Backup quotidien : <app_dir>/users/<slug>/backups_pret/pret_YYYY-MM-DD.json
 
-Modele (schema 7, 4.5.0)
+Modele (schema 7, 4.4.17)
 ------
 prets : [{id, pret, versements, remboursements, evenements, frais,
           frais_recurrents, frais_rembourses, pea, av, livrets}]
@@ -34,7 +34,7 @@ pret        : le contrat (_PRET_DEFAUT) : nom, montant, taux (% annuel),
 versements  : {id, date, montant} — tranches versees par la banque
 remboursements : {id, date, montant, echeance} — echeances pointees a la main
               (echeance = sa date dans l'echeancier ; absente pour une
-              saisie d'avant la 4.5.0 : du capital rembourse)
+              saisie d'avant la 4.4.17 : du capital rembourse)
 evenements  : {id, date, type: "anticipe" | "taux" | "report" | "modulation", ...}
               -> remboursement anticipe {montant, mode: "duree" | "mensualite"
                  | "total", ira}, changement de taux {taux, ajuste: "mensualite"

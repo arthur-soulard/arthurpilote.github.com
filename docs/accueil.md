@@ -215,7 +215,7 @@ jamais un second calcul :
 | Patrimoine | `pa-repartition`, `pa-an`, `pa-objectif` | `_paNet.detail` par type (couleurs de `PA_TYPES`), `_paSerie`, `S.uiPrefs.dashObjectif` |
 | Sports | `sport-semaine`, `sport-annee`, `sport-derniere`, `sport-km`, `sport-ajout` | `spMoyenneHebdo` (sortie de `spRenderStatsKpis`), `spTotals`, `spTrackStart` |
 | Santé | `sante-rappel`, `sante-ajout` | `saMesures`, `saLast` |
-| Prêt | `pret-mensualite`, `pret-gains`, `pret:<id>` (4.5.0, une par prêt) | `prEtat` (échéancier calculé), `prOverview().bilan`, `prCrdPart` |
+| Prêt | `pret-mensualite`, `pret-gains`, `pret:<id>` (4.4.17, une par prêt) | `prEtat` (échéancier calculé), `prOverview().bilan`, `prCrdPart` |
 | Comptes | `fin-solde`, `fin-revenu` | `finComputeMonthTotals` |
 | Pense-bête | `pense-bete` | `S.uiPrefs.penseBete` |
 
@@ -226,12 +226,12 @@ Choix d'Arthur et pièges :
 * **Rappel de pesée** : affiché tant que le mois n'a aucune pesée, comme le
   relevé de patrimoine (choix d'Arthur, plutôt que « 7 jours sans pesée »).
   Rien tant que le module Santé n'a jamais servi.
-* **Prochaine mensualité** (4.5.0 : « Prochaine échéance de prêt ») : la plus
+* **Prochaine mensualité** (4.4.17 : « Prochaine échéance de prêt ») : la plus
   proche de tous les prêts, tirée de leur échéancier calculé (`prEtat`), payée
   à sa date ou pointée à la main selon le réglage de chaque prêt ; « Échéance à
   pointer » si elle est passée sans être pointée. Avant la 1re, « Première
   mensualité » avec le délai. La tuile mène à l'échéancier de ce prêt
-  (`render()` règle son `tab`). Avant la 4.5.0, elle recalculait les dates à
+  (`render()` règle son `tab`). Avant la 4.4.17, elle recalculait les dates à
   partir de la configuration et affichait la mensualité saisie.
 * **Prêt** (`pret`) : le capital restant dû de tous les prêts (sa part pour un
   prêt à deux), « Mes prêts » s'il y en a plusieurs ; plus une tuile par prêt

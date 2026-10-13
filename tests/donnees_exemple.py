@@ -230,7 +230,7 @@ def sante():
 # ── Prêt ───────────────────────────────────────────────────────────────────
 
 def pret():
-    # Deux prets (schema 7, 4.5.0) : un pret etudiant place, en differe, avec
+    # Deux prets (schema 7, 4.4.17) : un pret etudiant place, en differe, avec
     # une tranche a venir et ses echeances pointees a la main ; un pret auto a
     # interets, echeances comptees a leur date.
     vide = {"frais": [], "frais_recurrents": [], "frais_rembourses": [], "evenements": [],
