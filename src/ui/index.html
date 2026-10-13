@@ -19422,7 +19422,9 @@ function prRenderParams(o) {
   let html = prCard("", "Contrat", `<div class="tw"><table class="pr-def"><tbody>
       ${lignes.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
     </tbody></table></div>`,
-    `<button class="btn btn-sm btn-primary" onclick="prConfigModal()"><i class="ph ph-pencil-simple"></i> Modifier</button>`);
+    `<div class="pr-ev-btns">
+      <button class="btn btn-sm btn-ghost" onclick="prNouveauPret()"><i class="ph ph-plus"></i> Nouveau prêt</button>
+      <button class="btn btn-sm btn-primary" onclick="prConfigModal()"><i class="ph ph-pencil-simple"></i> Modifier</button></div>`);
 
   html += prCard("", "Suivi dans Pilote", `
     <label class="pr-opt"><input type="checkbox"${c.placements ? " checked" : ""} onchange="prSuivi('placements', this.checked)">
