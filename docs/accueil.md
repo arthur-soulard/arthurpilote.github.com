@@ -215,7 +215,7 @@ jamais un second calcul :
 | Patrimoine | `pa-repartition`, `pa-an`, `pa-objectif` | `_paNet.detail` par type (couleurs de `PA_TYPES`), `_paSerie`, `S.uiPrefs.dashObjectif` |
 | Sports | `sport-semaine`, `sport-annee`, `sport-derniere`, `sport-km`, `sport-ajout` | `spMoyenneHebdo` (sortie de `spRenderStatsKpis`), `spTotals`, `spTrackStart` |
 | Santé | `sante-rappel`, `sante-ajout` | `saMesures`, `saLast` |
-| Prêt | `pret-mensualite`, `pret-gains` | configuration du prêt, `prOverview().benefice_net` |
+| Prêt | `pret-mensualite`, `pret-gains`, `pret:<id>` (4.5.0, une par prêt) | `prEtat` (échéancier calculé), `prOverview().bilan`, `prCrdPart` |
 | Comptes | `fin-solde`, `fin-revenu` | `finComputeMonthTotals` |
 | Pense-bête | `pense-bete` | `S.uiPrefs.penseBete` |
 
@@ -226,9 +226,18 @@ Choix d'Arthur et pièges :
 * **Rappel de pesée** : affiché tant que le mois n'a aucune pesée, comme le
   relevé de patrimoine (choix d'Arthur, plutôt que « 7 jours sans pesée »).
   Rien tant que le module Santé n'a jamais servi.
-* **Prochaine mensualité** : échéancier théorique tiré de la configuration
-  (1re mensualité, durée, mensualité). Avant la 1re, « Première mensualité »
-  avec le délai. Les remboursements restent saisis à la main.
+* **Prochaine mensualité** (4.5.0 : « Prochaine échéance de prêt ») : la plus
+  proche de tous les prêts, tirée de leur échéancier calculé (`prEtat`), payée
+  à sa date ou pointée à la main selon le réglage de chaque prêt ; « Échéance à
+  pointer » si elle est passée sans être pointée. Avant la 1re, « Première
+  mensualité » avec le délai. La tuile mène à l'échéancier de ce prêt
+  (`render()` règle son `tab`). Avant la 4.5.0, elle recalculait les dates à
+  partir de la configuration et affichait la mensualité saisie.
+* **Prêt** (`pret`) : le capital restant dû de tous les prêts (sa part pour un
+  prêt à deux), « Mes prêts » s'il y en a plusieurs ; plus une tuile par prêt
+  (`pret:p2`, `prSyncWidgets`, comme celles des CTO), avec la progression.
+  « Ce que rapporte le prêt » (`pret-gains`) : gains nets des placements moins
+  intérêts et assurance payés, pour les prêts dont l'argent est placé.
 * **Cumul de l'année (sport)** : comparé à l'an dernier *à la même date*, et
   jamais à une période d'avant le suivi. Les barres commencent au mois de la
   première séance : un mois d'avant n'était pas « zéro sport ».

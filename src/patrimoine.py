@@ -23,7 +23,8 @@ Backup quotidien : <app_dir>/users/<slug>/backups_patrimoine/
 
 Modele de donnees
 ─────────────────
-comptes : {id, label, type, icon, color, auto:""|"pea"|"pret", archived:false, note}
+comptes : {id, label, type, icon, color, auto:""|"pea"|"pret"|"pret:<id>"|"cto:<id>", archived:false, note}
+          -> "pret" : le premier pret (p1) ; "pret:p2" : un pret cree ensuite (4.5.0)
 releves : {id, compteId, date:"YYYY-MM-01", montant}
 """
 from __future__ import annotations
