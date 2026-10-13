@@ -7,11 +7,9 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 13/10/2026 : bulle « Une idée ? » à côté du prénom (1re capture) et notes
-# du pense-bête à la ligne (5e tuile, 2e rangée : 2e capture ; la note
-# « Appeler la banque… » des données d'exemple est faite pour passer à la ligne).
-# Décalages calés sur le haut des rangées de tuiles (2e rangée à 602 px, 4e
-# à 1153 px).
+# 13/10/2026 (4.4.16, Pilote neutre) : salutation de l'accueil (homeDisplayName,
+# Camille garde son prénom) et Patrimoine › Comptes (ligne PEA visible, son PEA
+# n'étant pas vide : paCompteVisible). Le reste (courtier d'un nouveau CTO,
+# textes d'écrans vides) ne se voit pas sur des données remplies : vu au banc.
 home
-home 560
-home 1110
+pa-comptes
