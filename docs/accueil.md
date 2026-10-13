@@ -10,10 +10,11 @@ Ouverte au démarrage. `homeGreeting()` renvoie « Bonjour » avant 18 h, « Bon
 Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 60px)`),
 écrite par `homeRenderGreeting()` avec le prénom dans un `<em>` (italique, couleur
 d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arrive.
-Puis la date en italique. **À droite de la salutation** (4.3.19), l'un sous l'autre :
+Puis la date en italique. Juste après le prénom, la bulle **« Une idée ? »**
+(voir plus bas). **À droite de la salutation** (4.3.19), l'un sous l'autre :
 les utilisateurs (`#home-users`, cliquables pour basculer + « Nouvel utilisateur »),
 les boutons Modifier les tuiles / Paramètres / Téléverser vers clé USB, puis
-« Suggérer une amélioration » et l'état de la clé (`#home-usb-state`). Dessous, directement les tuiles,
+l'état de la clé (`#home-usb-state`). Dessous, directement les tuiles,
 chacune avec l'icône de son module (`DASH_ICONS`). Sous 1150 px de large, tout s'empile.
 
 Pourquoi (03/10/2026) : en plein écran sur l'écran d'Arthur (1366 × 768, page de
@@ -29,18 +30,28 @@ fenêtre plus étroite, ce sont les boutons qui passent à la ligne, pas « Bonj
 `svPushToUsb()` sauve et restaure le libellé du bouton USB en `innerHTML`, pas en
 `textContent` : sinon l'icône disparaît après la première copie.
 
-**Suggérer une amélioration** (12/10/2026, demande d'Arthur) : bouton-texte à
-l'accent, sur la ligne de l'état de la clé (`.home-row3`), pas avec les cinq
-boutons. La ligne des boutons est pleine à 1366 px : un 6e y passait à la ligne
-et la dernière tuile finissait à 740 px pour 720 (704 sans lui, 706 avec le
-bouton-texte). Il ouvre `ov-suggestion` : l'adresse d'Arthur
+**Suggérer une amélioration** (12/10/2026, demande d'Arthur) : d'abord un
+bouton-texte à l'accent sur la ligne de l'état de la clé (`.home-row3`), pas
+avec les cinq boutons d'alors : un 6e passait à la ligne et la dernière tuile
+finissait à 740 px pour 720. **Depuis le 13/10/2026** (Arthur : « il faudrait
+le mettre plus en avant… à côté du prénom, en mode il a une idée ? ») : une
+bulle de pensée **« Une idée ? »** à droite du prénom (`.home-idee`, deux
+petits ronds la relient au nom), qui apparaît d'un petit rebond au lancement,
+une seule fois (`.vue` après l'animation ; pas d'animation si le système
+réduit les mouvements). Elle est hors de `#home-greet` (un `<span>` réécrit à
+chaque rendu), sinon elle rebondirait à chaque actualisation des cours. La
+place vient d'Exporter et Importer, retirés en 4.4.12 : à 1366 × 720 le
+bandeau reste à 109 px et la dernière tuile à 680 px avec ses vraies tuiles.
+Mesuré : jusqu'à un prénom de dix lettres (« Bonsoir Christophe ») rien ne
+bouge ; au-delà (« Maximilien »), les boutons passent sur deux lignes
+(bandeau de 145 px), comme dans une fenêtre étroite. Elle ouvre `ov-suggestion` : l'adresse d'Arthur
 (`SUGGESTION_ADRESSE`, arthur.economie@gmail.com) avec un bouton Copier,
 « Ouvrir ma messagerie » (lien `mailto:`) et « Écrire avec Gmail » (page de
 rédaction de Gmail dans le navigateur), objet « Suggestion pour Pilote » et
 version de Pilote déjà remplis, par `Api.open_url`. Rien ne part de Pilote :
 c'est la messagerie de l'utilisateur qui envoie. Le bouton Gmail existe parce
 qu'un `mailto:` sans messagerie installée n'ouvre rien d'utile (chez Arthur, le
-`mailto:` est confié à Brave). Place validée par Arthur : « garde-le comme ça ».
+`mailto:` est confié à Brave).
 
 **Exporter et Importer retirés de l'accueil** (4.4.12, demande d'Arthur) : ils
 faisaient doublon avec Paramètres → Données & application (`doExport`,
@@ -242,6 +253,19 @@ Choix d'Arthur et pièges :
   ajoutées coup sur coup partaient en même temps et la 4e écrasait la 5e (vu au
   banc d'essai). Jamais d'écriture avant la lecture réussie du PEA
   (`_hydrationDone`).
+  **Notes à la ligne** (13/10/2026, demande d'Arthur : « qu'ils retournent à
+  la ligne s'ils sont seuls, ou si la place de la case le permet ») : sur la
+  tuile, une note coupée gagne des lignes (`-webkit-line-clamp: var(--l)`)
+  tant que la tuile ne dépasse pas la hauteur de sa rangée, ou 222 px
+  (`DASH_TUILE_HAUT`) si sa rangée est plus basse. `dashNotesAjuster`, appelée
+  à la fin de `dashRender` et quand la fenêtre change de taille, donne les
+  lignes à tour de rôle (chaque note coupée en gagne une avant qu'une autre en
+  gagne deux) et s'arrête dès que la tuile grandirait. Une note seule a toute
+  la place (cinq lignes dans une tuile de 222 px). Coche et échéance restent
+  sur la première ligne (`align-items: baseline`). Mesuré sur une copie de ses
+  données : sa note « Virement Livret A -> Compte courant », coupée jusque-là
+  (224 px de texte pour 162), tient sur deux lignes ; trois notes longues en
+  1re rangée la font passer de 196 à 220 px, dernière tuile à 704 px.
 
 Mécanique ajoutée à `dashCardHtml` / `dashRender` : `val: null` = pas de grand
 chiffre (pense-bête, marchés) ; `vizCls: "dash-viz-haut"` = la liste juste

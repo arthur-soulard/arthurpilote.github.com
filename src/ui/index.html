@@ -2108,19 +2108,34 @@ thead th, .wish-table thead th {
 .home-user { box-shadow: none; font-weight: 500; }
 .home-user-add { background: transparent; }
 .home-actions { grid-column: 2; grid-row: 2; justify-content: flex-end; margin-top: 0; }
-/* 3e ligne, alignée à droite comme les boutons : « Suggérer une amélioration »
-   puis l'état de la clé */
+/* 3e ligne, alignée à droite comme les boutons : l'état de la clé */
 .home-row3 {
   grid-column: 2; grid-row: 3; margin-top: 2px;
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 18px;
 }
-.home-sug {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: none; border: 0; padding: 0; cursor: pointer;
-  font: inherit; font-size: 12px; color: var(--accent-text);
+/* « Une idée ? » : bulle de pensée à côté du prénom (13/10/2026). La place
+   vient des boutons Exporter et Importer retirés en 4.4.12 : à 1366 × 720,
+   la colonne des boutons garde de quoi tenir sur une ligne (bandeau de 109 px) */
+.home-idee {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative;
+  display: inline-flex; align-items: center; gap: 6px;
+  vertical-align: top; margin: -2px 0 0 24px; padding: 6px 14px 6px 11px; border-radius: 999px;
+  font-family: var(--font); font-style: normal; font-size: 13.5px; font-weight: 500;
+  letter-spacing: 0; line-height: 1.2; white-space: nowrap;
+  color: var(--accent-text); background: var(--accent-soft);
+  transform-origin: 0 100%; animation: home-idee-pop .45s cubic-bezier(.34, 1.56, .64, 1) .5s backwards;
+  transition: background .15s, color .15s;
 }
-.home-sug:hover { text-decoration: underline; }
-.home-sug .ph { font-size: 14px; align-self: center; }
+/* Les deux petits ronds qui la relient au prénom */
+.home-idee::before, .home-idee::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.home-idee::before { width: 9px; height: 9px; left: -11px; bottom: -8px; }
+.home-idee::after  { width: 5px; height: 5px; left: -18px; bottom: -15px; }
+.home-idee .ph { font-size: 16px; }
+.home-idee:hover { background: var(--accent); color: #fff; }
+.home-idee:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.home-idee.vue { animation: none; }   /* pas de nouvelle apparition en revenant sur l'accueil */
+@keyframes home-idee-pop { from { opacity: 0; transform: scale(.6) translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .home-idee { animation: none; } }
 .home-usb-state { margin: 0; text-align: right; font-size: 12px; color: var(--txt2); }
 .home-usb-state.vieux { color: var(--a); font-weight: 500; }
 @media (max-width: 1150px) {
@@ -2261,6 +2276,14 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .dash-note-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-note-d { flex: none; font-size: 11.5px; color: var(--txt2); font-variant-numeric: tabular-nums; }
 .dash-note-d.dash-note-auj { color: var(--accent-text); font-weight: 500; }
+/* Sur la tuile, une note passe à la ligne tant que la tuile a la place
+   (dashNotesAjuster, 13/10/2026) : --l = son nombre de lignes. Coche et
+   échéance restent sur la première ligne */
+.dash-notes .dash-note { align-items: baseline; }
+.dash-notes .dash-note-t {
+  white-space: normal; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--l, 1);
+}
 .dash-note-chk {
   all: unset; box-sizing: border-box; flex: none; cursor: pointer;
   width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--brd3);
@@ -2685,7 +2708,12 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 <div class="pane" id="pane-home">
   <div class="home-hero">
     <div class="home-hero-txt">
-      <div class="home-greet" id="home-greet">Bonjour</div>
+      <!-- « Une idée ? » : bulle à côté du prénom (13/10/2026, demande d'Arthur,
+           plus en avant que l'ancien lien sous les boutons). Hors de #home-greet,
+           réécrit à chaque rendu : la bulle n'apparaît qu'une fois au lancement -->
+      <div class="home-greet"><span id="home-greet">Bonjour</span><button type="button" class="home-idee"
+              onclick="homeSuggestion()" onanimationend="this.classList.add('vue')"
+              title="Proposer une amélioration à l'auteur de Pilote"><i class="ph ph-lightbulb"></i>Une idée ?</button></div>
       <div class="home-date"  id="home-date"></div>
     </div>
     <!-- Utilisateurs : on change de compte directement ici -->
@@ -2700,11 +2728,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <button class="btn btn-ghost btn-sm" id="home-usb-btn" onclick="svPushToUsb()"
               title="Copier toutes les données sur la clé USB"><i class="ph ph-usb"></i> Téléverser vers clé USB</button>
     </div>
-    <!-- Sous les boutons, place validée par Arthur (4.4.10). En 6e bouton dans
-         la rangée, il passait à la ligne et la 2e rangée de tuiles sortait de l'écran -->
+    <!-- « Suggérer une amélioration » était ici de la 4.4.10 à la 4.4.14 : il
+         est devenu la bulle « Une idée ? » à côté du prénom -->
     <div class="home-row3">
-      <button type="button" class="home-sug" onclick="homeSuggestion()"
-              title="Proposer une amélioration à l'auteur de Pilote"><i class="ph ph-lightbulb"></i> Suggérer une amélioration</button>
       <div class="home-usb-state" id="home-usb-state"></div>
     </div>
   </div>
@@ -23185,6 +23211,35 @@ function dashNotesTuile() {
                    onclick="event.stopPropagation();dashNotesOuvrir('nouvelle')"><i class="ph ph-plus"></i> Ajouter</button>${autres}</div>` };
 }
 
+/** Hauteur des tuiles de l'accueil : deux rangées tiennent sous le bandeau à
+    1366 × 720 (docs/accueil.md, « Hauteur des rangées »). */
+const DASH_TUILE_HAUT = 222;
+
+/** Pense-bête : une note trop longue pour sa ligne passe à la ligne, tant que
+    la tuile garde la hauteur de sa rangée (au moins DASH_TUILE_HAUT). Seule,
+    une note a toute la place ; à plusieurs, chaque note coupée gagne une ligne
+    à son tour. Ce qui ne tient pas reste dans l'infobulle et la fenêtre.
+    Rappelée par dashRender et quand la fenêtre change de taille. */
+function dashNotesAjuster() {
+  const liste = document.querySelector("#home-cards .dash-notes");
+  const tuile = liste && liste.closest(".home-card");
+  if (!tuile || !tuile.offsetHeight) return;      // accueil caché : refait à son retour
+  const textes = [...liste.querySelectorAll(".dash-note-t")];
+  textes.forEach(t => t.style.removeProperty("--l"));
+  const plafond = Math.max(tuile.offsetHeight, DASH_TUILE_HAUT);
+  for (let l = 2; l <= 8; l++) {
+    let change = false;
+    for (const t of textes) {
+      if (t.scrollHeight <= t.clientHeight + 1) continue;     // déjà entière
+      t.style.setProperty("--l", l);
+      if (tuile.offsetHeight > plafond) { t.style.setProperty("--l", l - 1); return; }
+      change = true;
+    }
+    if (!change) return;
+  }
+}
+window.addEventListener("resize", dashNotesAjuster);
+
 /** id : la note à modifier ; "nouvelle" : en écrire une ; rien : la liste. */
 function dashNotesOuvrir(id) {
   _dashNoteEdit = typeof id === "number" ? id : null;
@@ -23359,6 +23414,7 @@ function dashRender() {
          Aucune tuile active. Clique sur <b>✎ Modifier les tuiles</b> pour choisir
          ce que tu veux voir ici.</div>`;
   if (_dashEdit) dashWireHomeDnd(box);
+  dashNotesAjuster();
 }
 
 /* ── Choisir la tuile d'un emplacement ──────────────────────────── */
