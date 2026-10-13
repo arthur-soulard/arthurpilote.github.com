@@ -63,6 +63,12 @@ Autres pistes :
   en 4.3.29 à la demande d'Arthur le 08/10/2026 : il veut le montant déposé et le
   taux annuel. Seuls les frais sur versements sont revenus (4.3.30). Détail dans
   `docs/modules/pret.md`.
+- **Cours du soir pour le CTO (Stuttgart, 8 h - 22 h)** : écarté par Arthur le
+  13/10/2026 (« non, prends pas les cours de Stuttgart »). Trade Republic cote
+  jusqu'au soir, mais Pilote garde la cotation choisie à l'import (Xetra, Paris :
+  clôture de 17 h 30, dernier cours à 17 h 35). Écart mesuré le 12/10 au soir sur
+  son CTO : −0,32 € sur 870 €. Francfort (`.F`) ne conviendrait pas non plus
+  (D5BL.F à 28,40 € pour 49,75 €).
 
 **Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
