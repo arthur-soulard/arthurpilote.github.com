@@ -2200,8 +2200,12 @@ label.sa-cmp { display: inline-flex; align-items: center; gap: 8px; font-size: 1
 }
 .rng button:focus-visible, .rng .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* Sur la tuile « Performance du PEA » : plus serrées, pour tenir dans 240 px */
-.dash-rng { margin-bottom: 8px; }
+.dash-rng { margin-bottom: 6px; }
 .dash-rng button { padding: 2px 8px; font-size: 11.5px; }
+/* Pastilles + courbe (tuiles « Performance ») : courbe un peu plus basse, pour
+   la même hauteur que les autres tuiles (222 px). À 232 px, une tuile
+   Performance en 2e rangée la faisait finir à 728 px sur 720 (1366 × 720). */
+.dash-rng + .dash-spark { height: 26px; }
 .home-cards.dash-editing .dash-rng { pointer-events: none; opacity: .6; }
 /* Sur la tuile « Poids » : « Comparer avec », même taille que les pastilles */
 label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap: 4px; white-space: nowrap; }
