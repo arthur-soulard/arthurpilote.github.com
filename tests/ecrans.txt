@@ -7,9 +7,11 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 12/10/2026 : tuile « Performance de toute ma bourse » (3e tuile de la
-# 1re rangée, après Performance du PEA et du CTO). Décalages calés sur le
-# haut des rangées de tuiles (2e rangée à 602 px, 4e à 1153 px).
+# 13/10/2026 : bulle « Une idée ? » à côté du prénom (1re capture) et notes
+# du pense-bête à la ligne (5e tuile, 2e rangée : 2e capture ; la note
+# « Appeler la banque… » des données d'exemple est faite pour passer à la ligne).
+# Décalages calés sur le haut des rangées de tuiles (2e rangée à 602 px, 4e
+# à 1153 px).
 home
 home 560
 home 1110

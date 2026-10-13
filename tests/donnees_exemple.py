@@ -78,7 +78,7 @@ def pea():
 
     notes = [
         {"id": 1, "texte": "Renouveler la carte d'identité", "date": jour(4), "faite": False},
-        {"id": 2, "texte": "Appeler la banque pour le prêt", "date": jour(0), "faite": False},
+        {"id": 2, "texte": "Appeler la banque pour le prêt et demander l'échéancier définitif", "date": jour(0), "faite": False},
         {"id": 3, "texte": "Payer la cotisation du club", "date": jour(-2), "faite": False},
         {"id": 4, "texte": "Idée cadeau pour Léa", "date": "", "faite": False},
         {"id": 5, "texte": "Réserver le train des vacances", "date": jour(35), "faite": False},
