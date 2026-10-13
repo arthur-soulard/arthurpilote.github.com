@@ -17,8 +17,8 @@ Autres pistes :
 
 - Objectif d'heures hebdomadaire, avec jauge en haut de l'agenda sport
 - Courbe d'heures cumulées année N vs N−1 dans les statistiques sport
-- Échéancier prévisionnel du prêt, mois par mois jusqu'à la dernière mensualité
 - Simulateur de sortie : « si je vends tout et solde le prêt, il me reste X € »
+  (proposé de nouveau le 13/10/2026 avec le prêt générique, pas pris)
 - Recherche globale (Ctrl+K) sur transactions, séances, pesées, comptes
 - Import CSV du relevé bancaire pour « Mes comptes »
 - Onglet Stratégie (brainstorming du 03/10/2026, non retenues ce jour-là) :
@@ -70,7 +70,13 @@ Autres pistes :
   son CTO : −0,32 € sur 870 €. Francfort (`.F`) ne conviendrait pas non plus
   (D5BL.F à 28,40 € pour 49,75 €).
 
-**Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
+- **Prêt : simulateur « et si je remboursais X € », prêt entre proches sans
+  échéancier, argent prêté à quelqu'un** : proposés le 13/10/2026 avec le prêt
+  générique, pas pris par Arthur. L'aperçu de la fenêtre d'un remboursement
+  anticipé montre déjà son effet avant de l'enregistrer.
+
+**Traité depuis** : l'échéancier prévisionnel du prêt, mois par mois (4.5.0,
+onglet Échéancier, `docs/modules/pret.md`). L'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,
 lui, ne couvre toujours que `pea_data.json`.
