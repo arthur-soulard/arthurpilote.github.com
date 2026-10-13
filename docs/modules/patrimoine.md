@@ -67,7 +67,11 @@ quelqu'un qui installe Pilote sans prêt étudiant n'a pas à voir une dette à 
 Le compte existe toujours dans `patrimoine.json` : il réapparaît seul dès que le
 prêt est saisi. Un compte qui a des relevés reste visible pour que le tableau
 corresponde au total, calculé côté Python sur tous les comptes non archivés.
-Depuis la 4.3.34, elle **porte le nom donné au prêt** (`paLabel`) : son `label`
+**Même règle pour la ligne du PEA** (13/10/2026) : absente tant que le PEA est
+vide (ni position, ni ordre, ni dépôt, ni espèces) et sans relevé. Elle
+apparaissait d'office, à « — », chez qui ne se sert pas du PEA ; le premier
+dépôt la fait apparaître (vérifié sur le banc d'essai, données vierges).
+Depuis la 4.3.34, la ligne du prêt **porte le nom donné au prêt** (`paLabel`) : son `label`
 enregistré ne sert plus que de repli, et son nom se change dans les paramètres du
 prêt (champ en lecture seule dans la fenêtre du compte).
 

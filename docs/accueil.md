@@ -6,6 +6,10 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 Ouverte au démarrage. `homeGreeting()` renvoie « Bonjour » avant 18 h, « Bonsoir » après ;
 `homeDisplayName()` prend le nom de l'utilisateur actif (sinon `S.prenom`).
+Un nom donné d'office (« Moi » au premier lancement, « Mon PEA » ou « default »
+d'avant la 4.1.2) ne compte pas : « Bonsoir » seul plutôt que « Bonsoir Moi »
+(4.4.16, demande d'Arthur). Même règle pour « Bienvenue sur Pilote » des
+premiers pas et le titre du code PIN (« cet utilisateur »).
 
 Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 60px)`),
 écrite par `homeRenderGreeting()` avec le prénom dans un `<em>` (italique, couleur

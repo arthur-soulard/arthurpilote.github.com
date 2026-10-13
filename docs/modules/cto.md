@@ -135,6 +135,12 @@ Relevés le 11/10/2026 :
 | Interactive Brokers Tiered (CTO) | 0,05 %, min 1,25 €, max 29 €, frais de bourse en plus | interactivebrokers.ie |
 | Saxo Classic | 0,08 %, min 2 € | moneyvox.fr (la page de Saxo n'affichait pas ses chiffres) |
 
+* **Ordre alphabétique** dans `COURTIERS` et donc dans les listes (13/10/2026) :
+  Trade Republic et Fortuneo, les courtiers d'Arthur, venaient en tête.
+* **CTO** : à la création, aucun courtier n'est présélectionné (« Choisis ton
+  courtier… ») et l'enregistrement en exige un, ou « Autre ». Jusqu'à la
+  4.4.15, Trade Republic l'était : quiconque créait un CTO sans y prendre garde
+  recevait la grille d'Arthur.
 * **PEA** : « Réglage libre » (seuil + taux) reste le défaut, exactement le
   calcul d'avant. Choisir Fortuneo Starter redonne le même plan au centime
   (vérifié : mêmes ordres, mêmes frais, … €).

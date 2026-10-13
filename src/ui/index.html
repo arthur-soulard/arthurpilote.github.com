@@ -2768,8 +2768,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div class="cto-vide-ico"><i class="ph ph-briefcase"></i></div>
       <h2 class="cto-vide-t">Ton compte-titres, comme le PEA</h2>
       <p class="cto-vide-p">Positions, courbe du capital, dividendes, expositions et stratégie, pour chacun de
-        tes comptes-titres. Choisis ton courtier : les frais et la stratégie s'y adaptent. Chez Trade Republic,
-        tout ton historique s'importe depuis l'export CSV de l'appli.</p>
+        tes comptes-titres. Choisis ton courtier : les frais et la stratégie s'y adaptent. Ton historique
+        s'importe depuis les relevés de ta banque ou de ton courtier (PDF, CSV…).</p>
       <button class="btn btn-primary" onclick="ctoOuvrirCompte(null)"><i class="ph ph-plus"></i> Créer mon CTO</button>
       <p class="cto-vide-note" id="cto-vide-note"></p>
     </div>
@@ -4041,7 +4041,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </p>
     <div class="fg">
       <label>Nom</label>
-      <input id="user-f-label" placeholder="Arthur, Papa, Maman…" maxlength="24">
+      <input id="user-f-label" placeholder="Prénom, Papa, Maman…" maxlength="24">
     </div>
     <div class="fg">
       <label>Avatar</label>
@@ -4879,7 +4879,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <h2>Ajouter un dépôt</h2>
     <div class="fg"><label>Date du dépôt</label><input id="d-date" type="date"></div>
     <div class="fg"><label>Montant déposé (EUR)</label><input id="d-amt" type="number" step="0.01" placeholder="500"></div>
-    <div class="fg"><label>Note</label><input id="d-note" placeholder="virement Fortuneo…"></div>
+    <div class="fg"><label>Note</label><input id="d-note" placeholder="virement du compte courant…"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-dep')">Annuler</button>
       <button class="btn btn-primary" onclick="saveDepot()">Enregistrer</button>
@@ -10550,7 +10550,7 @@ const NAV_MODULES = {
     pas:  "Saisis tes dépôts, puis tes positions : les cours suivent tout seuls.",
     tab: "dep", tuiles: ["pea"] },
   "sec-cto": {
-    desc: "Tes comptes-titres, chacun avec son courtier : positions, courbe, dividendes, import Trade Republic.",
+    desc: "Tes comptes-titres, chacun avec son courtier : positions, courbe, dividendes, import des relevés.",
     pas:  "Crée ton CTO et choisis ton courtier, puis importe ton historique ou saisis tes positions.",
     // Ses tuiles d'accueil (une par CTO) n'existent qu'une fois un CTO créé
     tab: "cto-dash", tuiles: [] },
@@ -12346,24 +12346,10 @@ function pacPct(x, sign) {
    Les tarifs changent : chaque grille est datée, modifiable (« Personnalisé »),
    à revérifier à chaque version, et txFraisBadge signale dans Transactions un
    ordre dont les frais réels ne collent pas. Relevés le 11/10/2026 sur les pages
-   des courtiers (Saxo : MoneyVox, sa page n'affichait pas ses chiffres). */
+   des courtiers (Saxo : MoneyVox, sa page n'affichait pas ses chiffres).
+   Rangés par ordre alphabétique : Trade Republic et Fortuneo, les courtiers
+   d'Arthur, venaient en tête jusqu'à la 4.4.15. */
 const COURTIERS = [
-  { id: "trade-republic", nom: "Trade Republic", comptes: ["cto", "pea"], fractions: true,
-    resume: "1 € par ordre ponctuel, plans d'investissement sans frais",
-    source: "support.traderepublic.com", verifie: "2026-10-11",
-    tarif: { paliers: [{ max: null, fixe: 1, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: 0 } },
-  { id: "fortuneo-starter", nom: "Fortuneo · Starter", comptes: ["cto", "pea"],
-    resume: "1er ordre du mois jusqu'à 500 € gratuit, puis 0,35 %",
-    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
-    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.35 }], min: 0, max: 0, gratuit: 500, plan: null } },
-  { id: "fortuneo-progress", nom: "Fortuneo · Progress", comptes: ["cto", "pea"],
-    resume: "4,90 € jusqu'à 3 000 €, puis 0,15 %",
-    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
-    tarif: { paliers: [{ max: 3000, fixe: 4.9, pct: 0 }, { max: null, fixe: 0, pct: 0.15 }], min: 0, max: 0, gratuit: 0, plan: null } },
-  { id: "fortuneo-trader", nom: "Fortuneo · Trader Pro", comptes: ["cto", "pea"],
-    resume: "9,50 € jusqu'à 10 000 €, puis 0,10 %",
-    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
-    tarif: { paliers: [{ max: 10000, fixe: 9.5, pct: 0 }, { max: null, fixe: 0, pct: 0.1 }], min: 0, max: 0, gratuit: 0, plan: null } },
   { id: "bourse-direct", nom: "Bourse Direct", comptes: ["cto", "pea"],
     resume: "0,99 € jusqu'à 500 €, 1,90 € jusqu'à 1 000 €, 2,90 € jusqu'à 2 000 €, 3,80 € jusqu'à 4 400 €, puis 0,09 %",
     source: "boursedirect.fr, conditions tarifaires du 06/01/2026", verifie: "2026-10-11",
@@ -12377,6 +12363,18 @@ const COURTIERS = [
     resume: "2 € par ordre sur Euronext Paris (1 € de courtage + 1 € de traitement)",
     source: "degiro.fr/tarifs", verifie: "2026-10-11",
     tarif: { paliers: [{ max: null, fixe: 2, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "fortuneo-starter", nom: "Fortuneo · Starter", comptes: ["cto", "pea"],
+    resume: "1er ordre du mois jusqu'à 500 € gratuit, puis 0,35 %",
+    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.35 }], min: 0, max: 0, gratuit: 500, plan: null } },
+  { id: "fortuneo-progress", nom: "Fortuneo · Progress", comptes: ["cto", "pea"],
+    resume: "4,90 € jusqu'à 3 000 €, puis 0,15 %",
+    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: 3000, fixe: 4.9, pct: 0 }, { max: null, fixe: 0, pct: 0.15 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "fortuneo-trader", nom: "Fortuneo · Trader Pro", comptes: ["cto", "pea"],
+    resume: "9,50 € jusqu'à 10 000 €, puis 0,10 %",
+    source: "fortuneo.fr/bourse/tarifs", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: 10000, fixe: 9.5, pct: 0 }, { max: null, fixe: 0, pct: 0.1 }], min: 0, max: 0, gratuit: 0, plan: null } },
   { id: "ibkr", nom: "Interactive Brokers · Tiered", comptes: ["cto"],
     resume: "0,05 %, au moins 1,25 € et au plus 29 € (frais de bourse en plus)",
     source: "interactivebrokers.ie", verifie: "2026-10-11",
@@ -12385,6 +12383,10 @@ const COURTIERS = [
     resume: "0,08 %, au moins 2 €",
     source: "moneyvox.fr", verifie: "2026-10-11",
     tarif: { paliers: [{ max: null, fixe: 0, pct: 0.08 }], min: 2, max: 0, gratuit: 0, plan: null } },
+  { id: "trade-republic", nom: "Trade Republic", comptes: ["cto", "pea"], fractions: true,
+    resume: "1 € par ordre ponctuel, plans d'investissement sans frais",
+    source: "support.traderepublic.com", verifie: "2026-10-11",
+    tarif: { paliers: [{ max: null, fixe: 1, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: 0 } },
 ];
 const COURTIER_PERSO = "perso";   // grille saisie à la main
 
@@ -18675,8 +18677,8 @@ function prAvContratModal(id) {
   prOpenForm(c ? "Modifier le contrat" : "Nouveau contrat d'assurance vie", `
     ${prFg("Nom du contrat", "label", "text", c ? c.label : "", 'placeholder="Ex. Linxea Spirit, AV Crédit Agricole…" required')}
     ${prFg("Frais sur versements (%)", "frais_versement", "number", c && prN(c.frais_versement) ? c.frais_versement : "", 'step="0.01" min="0" max="99" placeholder="0"')}
-    <div class="m-note" style="margin-bottom:0">Pris sur chaque dépôt avant de placer l'argent. Afer : 0,5 % sur le
-      fonds euros, 0 % en unités de compte.${c ? "" : " Chaque contrat a ses propres taux annuels et ses propres dépôts."}</div>`,
+    <div class="m-note" style="margin-bottom:0">Pris sur chaque dépôt avant de placer l'argent : le taux figure dans
+      les conditions de ton contrat.${c ? "" : " Chaque contrat a ses propres taux annuels et ses propres dépôts."}</div>`,
     data => {
       const label = (data.label || "").trim();
       if (!label) { showToastModern("Donne un nom au contrat", "err"); return false; }
@@ -18993,11 +18995,14 @@ function homeRenderGreeting() {
   el.innerHTML = escHtml(homeGreeting()) + (nom ? " <em>" + escHtml(nom) + "</em>" : "");
 }
 
-/** Nom affiche : celui de l'utilisateur actif, sinon le prenom saisi dans le PEA. */
+/** Nom affiche : celui de l'utilisateur actif, sinon le prenom saisi dans le PEA.
+    Les noms donnés d'office (« Moi » au premier lancement, ceux d'avant la
+    4.1.2 : storage.ensure_migrated) n'en sont pas : « Bonsoir » plutôt que
+    « Bonsoir Moi » (4.4.16). */
 function homeDisplayName() {
   if (typeof USERS_STATE !== "undefined" && USERS_STATE) {
     const u = USERS_STATE.users.find(x => x.slug === USERS_STATE.active);
-    if (u && u.label) return u.label;
+    if (u && u.label && !["Moi", "Mon PEA", "default"].includes(u.label)) return u.label;
   }
   return (typeof S !== "undefined" && S && S.prenom) ? S.prenom : "";
 }
@@ -19297,7 +19302,7 @@ function saRenderKpis() {
   saRenderCompare();
   if (!last) {
     box.innerHTML = `<div class="m-empty" style="grid-column:1/-1">
-      Aucune pesée. Envoie tes captures FitDays pour commencer.</div>`;
+      Aucune pesée. Ajoute la première à la main, ou depuis des captures de l'app FitDays.</div>`;
     return;
   }
   const cards = [
@@ -19945,12 +19950,19 @@ function paReleves() { return (PA && PA.releves) ? PA.releves : []; }
 /** La ligne auto du prêt n'apparaît qu'une fois le prêt paramétré (montant
     emprunté saisi dans Prêt › Paramètres, même règle que la tuile d'accueil) :
     sans prêt, elle ne fait qu'encombrer. Une ligne qui a déjà des relevés reste
-    visible, puisqu'ils comptent dans le total calculé côté Python. */
+    visible, puisqu'ils comptent dans le total calculé côté Python. Même règle
+    pour celle du PEA (4.4.16) : rien tant qu'il est vide, pour qui ne s'en sert pas. */
 function paCompteVisible(c) {
   // Ligne d'un CTO : tant qu'il existe, ou qu'elle a des relevés à montrer
   if (String(c.auto || "").startsWith("cto:"))
     return !!(typeof ctoCompte === "function" && ctoCompte(c.auto.slice(4)))
         || paReleves().some(r => r.compteId === c.id);
+  if (c.auto === "pea") {
+    const p = (typeof _etatPea === "function" && _etatPea()) || {};
+    if ((p.positions || []).length || (p.transactions || []).length
+        || (p.depots || []).length || Number(p.cashSolde)) return true;
+    return paReleves().some(r => r.compteId === c.id);
+  }
   if (c.auto !== "pret") return true;
   if (typeof PR !== "undefined" && PR && PR.pret && Number(PR.pret.montant)) return true;
   return paReleves().some(r => r.compteId === c.id);
@@ -21250,19 +21262,23 @@ function ctoOuvrirCompte(id) {
   document.getElementById("cto-cpt-titre").textContent = c ? "Réglages du compte" : "Nouveau CTO";
   document.getElementById("cto-cpt-nom").value = c ? c.nom : "";
   const sel = document.getElementById("cto-cpt-courtier");
-  sel.innerHTML = COURTIERS.filter(x => x.comptes.includes("cto"))
+  // Création : aucun courtier présélectionné (c'était Trade Republic, celui
+  // d'Arthur, jusqu'à la 4.4.15) ; l'enregistrement demande d'en choisir un
+  sel.innerHTML = (c ? "" : `<option value="">Choisis ton courtier…</option>`)
+    + COURTIERS.filter(x => x.comptes.includes("cto"))
     .map(x => `<option value="${x.id}">${escHtml(x.nom)}</option>`).join("")
     + `<option value="${COURTIER_PERSO}">Autre : grille à saisir (Stratégie → Réglages)</option>`;
-  sel.value = c ? (c.courtier || COURTIER_PERSO) : "trade-republic";
+  sel.value = c ? (c.courtier || COURTIER_PERSO) : "";
   document.getElementById("cto-cpt-suppr").style.display = c ? "" : "none";
   ctoCompteResume();
   openOvTop("ov-cto-compte");
   setTimeout(() => document.getElementById("cto-cpt-nom").focus(), 50);
 }
 function ctoCompteResume() {
-  const k = courtierDe(document.getElementById("cto-cpt-courtier").value);
+  const v = document.getElementById("cto-cpt-courtier").value;
+  const k = courtierDe(v);
   const d = k ? new Date(k.verifie + "T00:00:00").toLocaleDateString("fr-FR") : "";
-  document.getElementById("cto-cpt-resume").textContent = k
+  document.getElementById("cto-cpt-resume").textContent = !v ? "" : k
     ? k.resume + (k.fractions ? ". Parts fractionnées et plans programmés : la Stratégie proposera le réglage des plans." : ".")
       + " Tarif relevé le " + d + " (" + k.source + ")."
     : "Tu saisiras la grille de frais dans Stratégie → Cibles et courtier.";
@@ -21271,6 +21287,7 @@ async function ctoEnregistrerCompte() {
   const nom = document.getElementById("cto-cpt-nom").value.trim();
   if (!nom) { showToastModern("Donne un nom au compte", "warn"); return; }
   const courtier = document.getElementById("cto-cpt-courtier").value;
+  if (!courtier) { showToastModern("Choisis ton courtier, ou « Autre » s'il n'est pas dans la liste", "warn"); return; }
   const k = courtierDe(courtier);
   let cible = _ctoEdition;
   if (_ctoEdition) {
