@@ -2,6 +2,27 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.17",
+      "date": "2026-10-13",
+      "titre": "Tous tes prêts, avec leur tableau d'amortissement",
+      "nouveau": [
+        "Prêt : plusieurs prêts à la fois (immobilier, auto, étudiant…), chacun avec sa section à son nom dans la barre latérale. Un nouveau prêt se crée depuis l'onglet Paramètres d'un prêt, ou depuis Paramètres → Prêts.",
+        "Prêt : le contrat se décrit en entier. Taux, assurance emprunteur (en % du capital emprunté, en % du restant dû ou en euros par mois), différé partiel ou total, prêt in fine, échéances trimestrielles ou annuelles, frais de dossier et garantie. Pilote retrouve aussi le taux à partir de la mensualité annoncée par ta banque.",
+        "Prêt : un onglet Échéancier, avec le tableau d'amortissement année par année (capital, intérêts, assurance, restant dû). Un remboursement anticipé, un nouveau taux, un report ou une modulation d'échéance s'y notent, et l'échéancier se recalcule : la fenêtre montre l'effet avant d'enregistrer.",
+        "Prêt : la vue d'ensemble montre le capital restant dû, la prochaine mensualité, le coût total du crédit, la date de fin et la courbe du restant dû.",
+        "Prêt à deux : indique ta part du prêt. Seule ta part compte dans le Patrimoine et sur l'accueil."
+      ],
+      "ameliore": [
+        "Prêt : chaque échéance compte comme payée à sa date ou, si tu préfères, une fois pointée à la main (onglet Paramètres du prêt, « Suivi dans Pilote »). Un prêt déjà suivi est repris tel quel et garde ses remboursements saisis à la main.",
+        "Prêt : si la mensualité annoncée par ta banque diffère du calcul, Pilote te le signale. C'est souvent l'assurance, à ajouter dans le contrat.",
+        "Prêt : les onglets Bourse, Assurance vie et Livrets n'apparaissent que pour un prêt dont l'argent est placé. Plusieurs livrets possibles, et la case « Payé avec l'argent du prêt » existe aussi dans les ordres d'un CTO.",
+        "Accueil : des tuiles pour tes prêts (restant dû de tous tes prêts, prochaine échéance, une tuile par prêt). Patrimoine : une ligne par prêt."
+      ],
+      "corrige": [
+        "Prêt : le capital restant dû d'un prêt avec intérêts était calculé comme « versé moins remboursé », ce qui le sous-estimait. Il suit désormais le tableau d'amortissement."
+      ]
+    },
+    {
       "version": "4.4.16",
       "date": "2026-10-13",
       "titre": "Un Pilote neutre pour chaque nouvel utilisateur",

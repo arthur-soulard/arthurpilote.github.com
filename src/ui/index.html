@@ -1375,7 +1375,7 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
   background: var(--bg3); color: var(--txt); font-size: 12px;
 }
 
-/* Prêt générique (4.5.0) : progression, échéancier, contrat */
+/* Prêt générique (4.4.17) : progression, échéancier, contrat */
 .pr-prog { display: flex; align-items: center; gap: 14px; margin: -2px 0 1rem; font-size: 12.5px; color: var(--txt2); }
 .pr-prog b { color: var(--txt); font-weight: 600; }
 .pr-prog-bar { flex: 1; height: 8px; min-width: 80px; background: var(--bg4); border-radius: 999px; overflow: hidden; }
@@ -3443,7 +3443,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
-<!-- ═══════════════ PRÊTS (un ou plusieurs, 4.5.0) ═══════════════ -->
+<!-- ═══════════════ PRÊTS (un ou plusieurs, 4.4.17) ═══════════════ -->
 
 <div class="pane" id="pane-pr-overview"><div id="pr-overview-body"></div></div>
 <div class="pane" id="pane-pr-ech"><div id="pr-ech-body"></div></div>
@@ -4799,7 +4799,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="fg-row">
       <div class="fg"><label>Date ex-dividende (optionnel)</label><input id="f-exdiv" placeholder="optionnel"></div>
     </div>
-    <!-- Aussi dans un CTO (4.5.0) ; cachée sans prêt dont l'argent est placé, et le
+    <!-- Aussi dans un CTO (4.4.17) ; cachée sans prêt dont l'argent est placé, et le
          choix du prêt seulement s'il y en a plusieurs : prCaseOrdre() -->
     <div class="fg pr-sans" id="f-pret-fg">
       <label class="pr-check" title="L'achat apparaîtra aussi dans l'onglet Bourse du prêt, sans y être saisi une seconde fois">
@@ -9765,7 +9765,7 @@ function savePos() {
     frais
   };
   // Payé avec un prêt : le module Prêt lit ce drapeau, l'id du prêt
-  // (prPeaOrdres ; true avant la 4.5.0), et pretMontant quand le prêt n'en a
+  // (prPeaOrdres ; true avant la 4.4.17), et pretMontant quand le prêt n'en a
   // payé qu'une partie
   if (pret) tx.pret = pret;
   if (pretMt !== undefined) tx.pretMontant = pretMt;
@@ -14076,7 +14076,7 @@ const NAV_SECTIONS = [
     { id: "fin-month", label: "Mois"   },
     { id: "fin-year",  label: "Année"  },
   ]},
-  // Prêts (4.5.0) : une section par prêt, à son nom (_navBlocs), onglets
+  // Prêts (4.4.17) : une section par prêt, à son nom (_navBlocs), onglets
   // « pr-ech@p2 » ; Bourse, Assurance vie et Livrets seulement pour un prêt
   // dont l'argent est placé. Sans prêt, cette section mène à sa création.
   { id: "sec-pret", label: "Prêt", children: [
@@ -14175,7 +14175,7 @@ function _updateCrumb(id) {
    clés des blocs (« sec-pea », « sec-cto@c2 »…) et « @perso », le second titre.
    Un CTO absent de cet ordre (tout juste créé) se range après le dernier CTO ;
    le premier CTO prend la place de la section CTO qui l'attendait, et celle-ci
-   revient à la place du dernier CTO supprimé. Les prêts font de même (4.5.0) :
+   revient à la place du dernier CTO supprimé. Les prêts font de même (4.4.17) :
    une section par prêt (« sec-pret@p2 »), rangées comme les CTO. */
 const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-actus", "@perso",
                           "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante"];
@@ -17732,7 +17732,7 @@ async function spBootstrap() {
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════
-   MODULE PRÊT : un ou plusieurs prêts (4.5.0 ; un seul, « Prêt étudiant »,
+   MODULE PRÊT : un ou plusieurs prêts (4.4.17 ; un seul, « Prêt étudiant »,
    jusqu'à la 4.4.16)
    Données : <app_dir>/users/<slug>/pret.json via pywebview (load_pret / save_pret)
    Cours   : serveur local /cours?tickers=… (même proxy Yahoo que le PEA)
@@ -17787,13 +17787,13 @@ function prActiver(id) {
   if (PRF) PRF.actif = PR ? PR.id : "";
 }
 /** Le prêt d'une ligne automatique du Patrimoine : « pret » (un seul prêt
-    avant la 4.5.0) est le premier prêt, p1 ; « pret:p2 » le prêt p2 */
+    avant la 4.4.17) est le premier prêt, p1 ; « pret:p2 » le prêt p2 */
 function prDeLigne(auto) {
   auto = String(auto || "");
   if (auto === "pret") return prPret("p1");
   return auto.startsWith("pret:") ? prPret(auto.slice(5)) : null;
 }
-/** Le prêt qui a payé un ordre du PEA ou d'un CTO : true (avant la 4.5.0)
+/** Le prêt qui a payé un ordre du PEA ou d'un CTO : true (avant la 4.4.17)
     désigne p1, sinon l'ordre porte l'id du prêt */
 function prOrdrePretId(t) {
   return t && t.pret === true ? "p1" : (t && typeof t.pret === "string" ? t.pret : "");
@@ -18094,7 +18094,7 @@ function prFraisPret(L, jusqua) {
 }
 
 
-/* ── Échéancier calculé (4.5.0) ──────────────────────────────────────────────
+/* ── Échéancier calculé (4.4.17) ──────────────────────────────────────────────
    Le tableau d'amortissement se déduit du contrat (L.pret), des versements de
    la banque (L.versements) et des événements (L.evenements) : rien ne se
    saisit échéance par échéance. Une échéance tombe tous les `periodicite`
@@ -18369,7 +18369,7 @@ function prDebloque(L, d) {
  * * Avant le début de l'amortissement, le capital dû est ce que la banque a
  *   déjà versé : une tranche pas encore reçue n'est pas une dette.
  * * Contrat incomplet (pas d'échéancier) : versé − remboursé, comme avant la
- *   4.5.0.
+ *   4.4.17.
  */
 function prEtat(L, t, ech) {
   t = t || prToday();
@@ -18378,7 +18378,7 @@ function prEtat(L, t, ech) {
   const auto = c.remboursements_auto !== false;
   const rembs = (L.remboursements || []).filter(r => r && r.date);
   const pointees = new Map(rembs.filter(r => r.echeance).map(r => [r.echeance, r]));
-  // Remboursements saisis avant la 4.5.0, sans échéance : du capital rendu
+  // Remboursements saisis avant la 4.4.17, sans échéance : du capital rendu
   const libres = auto ? 0 : prSumBy(rembs.filter(r => !r.echeance && r.date <= t), "montant");
   const base = prDebloque(L, t);
   const out = { ech, auto, incomplet: !!ech.erreur, crd: 0, rembourse: 0, totalDu: M + ech.capitalise,
@@ -18446,9 +18446,9 @@ function prYahoo(asset) {
 
 /**
  * Achats et ventes faits avec l'argent du prêt L (celui affiché par défaut),
- * dans le PEA et dans les CTO (4.5.0). Un tel ordre n'existe qu'UNE fois :
+ * dans le PEA et dans les CTO (4.4.17). Un tel ordre n'existe qu'UNE fois :
  * dans les transactions de son compte, case « argent du prêt » cochée
- * (`pret` : l'id du prêt ; true, avant la 4.5.0, pour p1). Ce module le lit
+ * (`pret` : l'id du prêt ; true, avant la 4.4.17, pour p1). Ce module le lit
  * sans le recopier : pas de doublon possible, et une modification ou une
  * suppression dans le compte se voit ici tout de suite. S'y ajoutent les
  * ordres saisis directement dans ce module avant qu'il lise le PEA
@@ -19448,7 +19448,7 @@ function prRenderParams(o) {
     : prEmpty("Aucun versement saisi : tout le montant compte comme versé au déblocage. Un prêt versé en plusieurs fois (tranches) se note ici, une ligne par versement."),
     `<button class="btn btn-sm btn-primary" onclick="prVersModal(null)"><i class="ph ph-plus"></i> Versement</button>`);
 
-  // Remboursements pointés à la main (et ceux saisis avant la 4.5.0)
+  // Remboursements pointés à la main (et ceux saisis avant la 4.4.17)
   const remb = (PR.remboursements || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   if (!o.auto || remb.length) {
     html += prCard("", "Remboursements saisis", remb.length
@@ -20460,7 +20460,7 @@ function prAvantOnglet(n, onglet) {
 
 /* ── Bootstrap ───────────────────────────────────────────────────────────── */
 
-/** Un prêt d'avant la 4.5.0 dont des ordres du PEA sont cochés « prêt » (true)
+/** Un prêt d'avant la 4.4.17 dont des ordres du PEA sont cochés « prêt » (true)
     garde ses onglets de placements, même sans assurance vie ni livret */
 function prAdopterOrdres() {
   const p1 = prPret("p1");
@@ -21663,7 +21663,7 @@ function paReleves() { return (PA && PA.releves) ? PA.releves : []; }
     prêt, elle ne fait qu'encombrer. Une ligne qui a déjà des relevés reste
     visible, puisqu'ils comptent dans le total calculé côté Python. Même règle
     pour celle du PEA (4.4.16) : rien tant qu'il est vide, pour qui ne s'en sert pas.
-    Une ligne par prêt (4.5.0) : « pret » est le premier, « pret:p2 » le prêt p2. */
+    Une ligne par prêt (4.4.17) : « pret » est le premier, « pret:p2 » le prêt p2. */
 function paCompteVisible(c) {
   // Ligne d'un CTO : tant qu'il existe, ou qu'elle a des relevés à montrer
   if (String(c.auto || "").startsWith("cto:"))

@@ -75,7 +75,7 @@ Autres pistes :
   générique, pas pris par Arthur. L'aperçu de la fenêtre d'un remboursement
   anticipé montre déjà son effet avant de l'enregistrer.
 
-**Traité depuis** : l'échéancier prévisionnel du prêt, mois par mois (4.5.0,
+**Traité depuis** : l'échéancier prévisionnel du prêt, mois par mois (4.4.17,
 onglet Échéancier, `docs/modules/pret.md`). L'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,

@@ -7,7 +7,7 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 13/10/2026 (4.5.0, prêt générique) : tuiles des prêts sur l'accueil, vue
+# 13/10/2026 (4.4.17, prêt générique) : tuiles des prêts sur l'accueil, vue
 # d'ensemble du prêt auto (courbe du restant dû, coût du crédit), échéancier du
 # prêt étudiant (différé, échéances pointées), lignes des deux prêts dans
 # Patrimoine › Comptes.
