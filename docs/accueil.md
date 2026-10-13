@@ -264,6 +264,13 @@ mot « Comparer avec » reste en infobulle et en `aria-label`). Rangée de
 une tuile de 240 px (largeur minimale de la grille). Avant d'ajouter une tuile
 haute, la mesurer à 1366 × 720 avec ses vraies tuiles.
 
+Les tuiles « Performance » (PEA, CTO, toute ma bourse) faisaient 232 px avec
+leur mini-courbe : la « Performance du CTO TR » d'Arthur, en 2e rangée, la
+faisait finir à 728 px (mesuré le 13/10/2026 avec ses huit tuiles). Courbe
+ramenée à 26 px sous les pastilles (`.dash-rng + .dash-spark`) et pastilles
+moins espacées : 222 px comme les autres, 2e rangée à 708 px, même avec trois
+tuiles Performance dedans (703 px).
+
 ### Tuiles des CTO (4.4.0)
 
 Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de
