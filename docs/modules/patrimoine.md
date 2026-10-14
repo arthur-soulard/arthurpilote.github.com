@@ -88,6 +88,36 @@ la courbe de ce CTO est chargée ; sinon la ligne reprend son dernier relevé. U
 CTO supprimé masque sa ligne, sauf si elle a des relevés. Détail :
 `docs/modules/cto.md`.
 
+## Biens immobiliers (4.4.18)
+
+Demandé par Arthur le 14/10/2026, en retirant le prêt générique de la 4.4.17 :
+un crédit immobilier ne se calcule pas dans Pilote, il se recopie. Bouton « Bien
+immobilier » de l'onglet Comptes (`paOpenBien`, `paSaveBien`) : nom, valeur
+estimée et, facultatif, ce qui reste à rembourser du crédit. Il crée deux lignes
+ordinaires, saisies à la main comme les autres :
+
+* le bien, type `immo` (le type existait déjà, sans raccourci) ;
+* s'il reste un crédit (montant > 0), sa dette, type `dette`, nommée
+  « Crédit · <nom> », avec le champ `bien` = id de la ligne du bien.
+
+Les montants saisis deviennent le relevé **du mois en cours** de ces deux lignes :
+si le relevé du mois n'était pas fait, le rappel de l'accueil et de la vue
+d'ensemble disparaît (le mois compte comme relevé, les autres lignes gardant leur
+dernière valeur, règle 2). Ensuite, chaque mois, « Relevé du mois » les reprend
+comme le reste : valeur estimée, et capital restant dû lu sur le relevé de prêt.
+Aucun calcul de prêt, aucun taux.
+
+`paComptes()` range le crédit juste après son bien, partout (liste, relevé du
+mois, tableau des relevés). Dans la liste, le crédit est en retrait
+(`.pa-cpt-lie`) et suivi de « Valeur nette du bien » (`paBienNet` : dernier relevé
+du bien moins ceux de ses crédits, rien tant qu'une ligne n'a jamais été relevée),
+alignée sur la colonne des montants. Ce chiffre n'existe que là : le patrimoine net
+reste calculé par Python, ligne par ligne. Supprimer le bien laisse son crédit en
+ligne ordinaire (la confirmation le dit) ; Python ne connaît pas le champ `bien`.
+Vérifié au banc le 14/10/2026 : 180 000 € et 142 300 € → valeur nette 37 700 €,
+patrimoine net augmenté de 37 700 € ; bien sans crédit = une seule ligne ; à
+1024 px et 1366 px, en thème clair et sombre (contraste 5,96:1 au plus bas).
+
 ## Onglet Simulateurs (4.4.2)
 
 Projection de versements, objectifs et comparateur d'actifs (`pane-sim`,

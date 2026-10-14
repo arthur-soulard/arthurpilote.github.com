@@ -183,9 +183,9 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/parametres.md` | sections de la fenêtre Paramètres | `openSettings`, `setGoSection` |
 | `docs/modules/pea.md` | Expositions, frais des ETF, Prochain achat, simulateur d'ordres, courbe du capital | `expositions.py`, `pac*`, `so*`, `renderPerf` |
 | `docs/modules/comptes.md` | Mes comptes | `finances.py`, `fin*` |
-| `docs/modules/pret.md` | Prêt (nom libre, « Prêt étudiant » jusqu'à la 4.3.33) | `pret.py`, `pr*` |
+| `docs/modules/pret.md` | Prêt (nom libre, « Prêt étudiant » jusqu'à la 4.3.33) : un seul prêt, le prêt générique de la 4.4.17 retiré en 4.4.18, retour du schéma 7 au schéma 6 | `pret.py`, `pr*` |
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
-| `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
+| `docs/modules/patrimoine.md` | Patrimoine, biens immobiliers (ligne du bien + ligne de son crédit, 4.4.18) | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
 | `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : formats, pièges par banque, exemples réels, pypdf | `releves.py`, `ctoImport*`, `/isin` |

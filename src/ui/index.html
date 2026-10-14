@@ -1467,6 +1467,15 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
 .pa-cpt-type { font-size: 10px; color: var(--txt3); }
 .pa-cpt-val { margin-left: auto; font-family: var(--mono); font-weight: 800; font-size: 13px; }
 .pa-cpt.dette .pa-cpt-val { color: var(--r); }
+/* Bien immobilier : son crédit en retrait dessous, puis sa valeur nette */
+.pa-cpt.pa-cpt-lie { margin-left: 28px; }
+.pa-bien-net {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: -1px 0 10px 28px; padding: 0 54px 0 12px;   /* 54 px : sous les montants, pas sous le crayon */
+  font-size: 11.5px; color: var(--txt2);
+}
+.pa-bien-net b { margin-left: auto; font-family: var(--mono); font-weight: 800; font-size: 12.5px; color: var(--txt); }
+.pa-bien-aide { font-size: 11.5px; color: var(--txt2); line-height: 1.5; margin: 2px 0 14px; }
 .pa-cpt-auto {
   font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
   color: var(--accent); border: 1px solid var(--accent); border-radius: 99px; padding: 1px 6px;
@@ -3408,6 +3417,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <span class="m-nav-lbl">Comptes et relevés</span>
     <div class="m-spacer"></div>
     <button class="btn btn-primary" onclick="paOpenCompte(null)"><i class="ph ph-plus"></i> Compte</button>
+    <button class="btn btn-ghost"   onclick="paOpenBien()"><i class="ph ph-house-line"></i> Bien immobilier</button>
     <button class="btn btn-ghost"   onclick="paOpenSaisie()"><i class="ph ph-note-pencil"></i> Relevé du mois</button>
   </div>
   <div class="card" id="card-pa-comptes">
@@ -4443,6 +4453,27 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="closeOv('ov-pa-compte')">Annuler</button>
       <button class="btn btn-primary" onclick="paSaveCompte()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Patrimoine : bien immobilier (une ligne pour le bien, une pour son crédit) -->
+<div class="ov" id="ov-pa-bien" onclick="if(event.target===this)closeOv('ov-pa-bien')">
+  <div class="modal" style="max-width:480px">
+    <h2>Bien immobilier</h2>
+    <div class="fg"><label>Nom du bien</label>
+      <input id="pa-bien-nom" maxlength="60" placeholder="ex : Appartement Toulon, maison"></div>
+    <div class="fg-row">
+      <div class="fg"><label>Valeur estimée (€)</label>
+        <input id="pa-bien-val" type="number" step="0.01" min="0" placeholder="ex : 180000"></div>
+      <div class="fg"><label>Reste à rembourser (€)</label>
+        <input id="pa-bien-crd" type="number" step="0.01" min="0" placeholder="vide : pas de crédit"></div>
+    </div>
+    <p class="pa-bien-aide">Pilote crée la ligne du bien et celle de son crédit. Chaque mois, le relevé
+      les remet à jour comme les autres : la valeur estimée, et le capital restant dû lu sur ton relevé de prêt.</p>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-pa-bien')">Annuler</button>
+      <button class="btn btn-primary" onclick="paSaveBien()">Ajouter</button>
     </div>
   </div>
 </div>
@@ -19944,7 +19975,19 @@ let _paMois = "";
 let _paEditCpt = null;
 
 function paType(id) { return PA_TYPES.find(t => t.id === id) || PA_TYPES[PA_TYPES.length - 1] || {}; }
-function paComptes() { return (PA && PA.comptes) ? PA.comptes.filter(c => !c.archived && paCompteVisible(c)) : []; }
+function paComptes() {
+  if (!PA || !PA.comptes) return [];
+  const cs = PA.comptes.filter(c => !c.archived && paCompteVisible(c));
+  // Le crédit d'un bien immobilier (champ `bien`, 4.4.18) suit toujours son bien :
+  // dans la liste, le relevé du mois et le tableau des relevés
+  const ids = new Set(cs.map(c => c.id));
+  const out = [];
+  cs.filter(c => !ids.has(c.bien)).forEach(c => {
+    out.push(c);
+    cs.forEach(x => { if (x.bien === c.id) out.push(x); });
+  });
+  return out;
+}
 function paReleves() { return (PA && PA.releves) ? PA.releves : []; }
 
 /** La ligne auto du prêt n'apparaît qu'une fois le prêt paramétré (montant
@@ -20191,10 +20234,13 @@ function paRenderComptes() {
   if (!box) return;
   const cs = paComptes();
   if (!cs.length) { box.innerHTML = `<div class="m-empty">Aucun compte.</div>`; return; }
-  box.innerHTML = cs.map(c => {
+  box.innerHTML = cs.map((c, i) => {
     const t = paType(c.type);
     const last = paDernier(c.id);
-    return `<div class="pa-cpt${t.dette ? " dette" : ""}">
+    const lie = c.bien && cs.some(x => x.id === c.bien);
+    // Après le dernier crédit d'un bien : sa valeur nette
+    const fin = lie && (cs[i + 1] || {}).bien !== c.bien;
+    return `<div class="pa-cpt${t.dette ? " dette" : ""}${lie ? " pa-cpt-lie" : ""}">
       <span class="pa-cpt-ico">${escHtml(c.icon || t.icon || "📦")}</span>
       <span>
         <span class="pa-cpt-name">${escHtml(paLabel(c))}</span>
@@ -20204,8 +20250,61 @@ function paRenderComptes() {
       <span class="pa-cpt-val">${last ? (t.dette ? "− " : "") + paEur(Math.abs(last.montant)) : "—"}</span>
       <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
               onclick="paOpenCompte('${escHtml(c.id)}')" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
-    </div>`;
+    </div>${fin ? paBienNet(c.bien, cs) : ""}`;
   }).join("");
+}
+
+/** Valeur nette d'un bien immobilier : son dernier relevé moins celui de ses
+    crédits. Rien tant qu'une des lignes n'a jamais été relevée. */
+function paBienNet(bienId, cs) {
+  const v = paDernier(bienId);
+  const ds = cs.filter(x => x.bien === bienId).map(x => paDernier(x.id));
+  if (!v || ds.some(d => !d)) return "";
+  const net = v.montant - ds.reduce((s, d) => s + Math.abs(d.montant), 0);
+  return `<div class="pa-bien-net"><span>Valeur nette du bien</span><b>${paEur(net)}</b></div>`;
+}
+
+/* ── Bien immobilier (4.4.18) ──────────────────────────────────────────────
+   Deux lignes saisies à la main, créées d'un coup : le bien (type immo) et,
+   s'il reste un crédit, sa dette (type dette, champ `bien` = id du bien).
+   Aucun calcul de prêt : chaque mois, le relevé reprend la valeur estimée et
+   le capital restant dû lu sur le relevé de la banque. */
+
+function paOpenBien() {
+  if (!PA) return;
+  ["pa-bien-nom", "pa-bien-val", "pa-bien-crd"].forEach(id => { document.getElementById(id).value = ""; });
+  document.getElementById("ov-pa-bien").classList.add("open");
+  setTimeout(() => document.getElementById("pa-bien-nom").focus(), 50);
+}
+
+async function paSaveBien() {
+  const nom = (document.getElementById("pa-bien-nom").value || "").trim();
+  if (!nom) { showToastModern("Donne un nom au bien", "warn"); return; }
+  const lire = id => {
+    const raw = (document.getElementById(id).value || "").trim();
+    const v = Math.abs(parseFloat(raw.replace(",", ".")));
+    return raw === "" || isNaN(v) ? null : v;
+  };
+  const val = lire("pa-bien-val"), crd = lire("pa-bien-crd");
+  // Les montants saisis sont le relevé de ce mois pour ces deux lignes
+  const iso = paMoisIso();
+  const ligne = (label, type, extra) => {
+    const c = Object.assign({ id: paNextId("compte"), label, type, note: "", auto: "",
+      icon: paType(type).icon || "📦", color: paType(type).color || "#888", archived: false }, extra);
+    PA.comptes.push(c);
+    return c;
+  };
+  const bien = ligne(nom, "immo");
+  if (val !== null) PA.releves.push({ id: paNextId("releve"), compteId: bien.id, date: iso, montant: val });
+  if (crd) {
+    const credit = ligne("Crédit · " + nom, "dette", { bien: bien.id });
+    PA.releves.push({ id: paNextId("releve"), compteId: credit.id, date: iso, montant: crd });
+  }
+  if (await paSave()) {
+    closeOv("ov-pa-bien");
+    showToastModern(crd ? "Bien et crédit ajoutés" : "Bien ajouté", "ok");
+    paRenderAll();
+  }
 }
 
 function paRenderReleves() {
@@ -20277,9 +20376,13 @@ async function paSaveCompte() {
 async function paDeleteCompte() {
   if (!_paEditCpt) return;
   const n = paReleves().filter(r => r.compteId === _paEditCpt).length;
-  if (!confirm(`Supprimer ce compte ?${n ? `\n\nSes ${n} relevé(s) seront également supprimés.` : ""}`)) return;
+  const credit = PA.comptes.some(x => x.bien === _paEditCpt);
+  if (!confirm(`Supprimer ce compte ?${n ? `\n\nSes ${n} relevé(s) seront également supprimés.` : ""}`
+    + (credit ? "\n\nLa ligne de son crédit reste dans tes dettes : supprime-la aussi s'il est remboursé." : ""))) return;
   PA.comptes = PA.comptes.filter(x => x.id !== _paEditCpt);
   PA.releves = PA.releves.filter(r => r.compteId !== _paEditCpt);
+  // Le crédit d'un bien supprimé reste, en ligne ordinaire
+  PA.comptes.forEach(x => { if (x.bien === _paEditCpt) delete x.bien; });
   if (await paSave()) {
     closeOv("ov-pa-compte");
     showToastModern("Compte supprimé", "ok");

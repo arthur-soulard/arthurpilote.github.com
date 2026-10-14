@@ -251,6 +251,7 @@ def patrimoine():
         ("cpt_pea", "PEA", "pea", "pea"), ("cpt_pret", "Prêt étudiant", "dette", "pret"),
         ("compte1", "Livret A", "livret", ""), ("compte2", "Assurance vie", "av", ""),
         ("compte3", "Compte courant", "courant", ""), ("compte4", "CTO Exemple", "cto", "cto:c1"),
+        ("compte5", "Studio Lyon", "immo", ""), ("compte6", "Crédit · Studio Lyon", "dette", ""),
     ]
     releves = []
     for n in range(-12, 1):
@@ -260,15 +261,18 @@ def patrimoine():
             "compte1": 3000 + 60 * k + (9000 if n >= -6 else 0),
             "compte2": (8000 + 25 * (n + 5)) if n >= -5 else 0, "compte3": 900 + (70 * k) % 400,
             "compte4": (60 + 150 * (n + 8)) if n >= -8 else 0,
+            # Bien immobilier (4.4.18) : acheté il y a trois mois, avec son crédit
+            "compte5": 95000 if n >= -3 else 0, "compte6": (72000 - 310 * (n + 3)) if n >= -3 else 0,
         }
         for cid, v in valeurs.items():
             if v:
                 releves.append({"id": "releve%d" % (len(releves) + 1), "compteId": cid,
                                 "date": mois(n), "montant": float(v)})
-    return {"_meta": dict(META, schema="patrimoine.v1"),
-            "comptes": [{"id": c, "label": l, "type": t, "auto": a, "icon": "", "color": "",
-                         "archived": False, "note": ""} for c, l, t, a in comptes],
-            "releves": releves, "_seeded": True, "_nid": {"compte": 5, "releve": len(releves) + 1}}
+    comptes = [{"id": c, "label": l, "type": t, "auto": a, "icon": "", "color": "",
+                "archived": False, "note": ""} for c, l, t, a in comptes]
+    comptes[-1]["bien"] = "compte5"   # le crédit du studio
+    return {"_meta": dict(META, schema="patrimoine.v1"), "comptes": comptes,
+            "releves": releves, "_seeded": True, "_nid": {"compte": 7, "releve": len(releves) + 1}}
 
 
 def ecrire(dossier):
