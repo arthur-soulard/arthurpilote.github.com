@@ -14,7 +14,7 @@ Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS ; 4.4.1 sous Win
 6.2.1 sur Mac), PyInstaller pour compiler en .exe et en Pilote.app, Inno Setup pour le
 Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.4.17**
+**Version actuelle : 4.4.18**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -31,7 +31,7 @@ Pilote/
 │   ├── storage.py      # Données PEA + multi-utilisateurs + migrations
 │   ├── finances.py     # Module « Mes comptes »   (finances.json)
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
-│   ├── pret.py         # Module « Prêt » : un ou plusieurs prêts (pret.json, schéma 7)
+│   ├── pret.py         # Module « Prêt », nom libre (pret.json)
 │   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
 │   ├── releves.py      # Import des relevés de banque (PDF, CSV, Excel, XML) pour le PEA et les CTO
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
@@ -80,7 +80,7 @@ Donnees/
 │   ├── pea_data.json         # PEA              (+ backups/)
 │   ├── finances.json         # Mes comptes      (+ backups_finances/)
 │   ├── sports.json           # Sports           (+ backups_sports/)
-│   ├── pret.json             # Prêts, un ou plusieurs (+ backups_pret/)
+│   ├── pret.json             # Prêt             (+ backups_pret/)
 │   ├── cto.json              # CTO, tous les comptes-titres (+ backups_cto/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
@@ -183,7 +183,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/parametres.md` | sections de la fenêtre Paramètres | `openSettings`, `setGoSection` |
 | `docs/modules/pea.md` | Expositions, frais des ETF, Prochain achat, simulateur d'ordres, courbe du capital | `expositions.py`, `pac*`, `so*`, `renderPerf` |
 | `docs/modules/comptes.md` | Mes comptes | `finances.py`, `fin*` |
-| `docs/modules/pret.md` | Prêts (un ou plusieurs depuis la 4.4.17) : échéancier calculé, différé, assurance, événements, échéances pointées, placements, migration du schéma 6 | `pret.py`, `pr*`, `prEcheancier`, `prEtat` |
+| `docs/modules/pret.md` | Prêt (nom libre, « Prêt étudiant » jusqu'à la 4.3.33) | `pret.py`, `pr*` |
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
@@ -258,14 +258,9 @@ Paramètres.
   l'autre (`_navBrancherGlisser`). Ordre dans `S.uiPrefs.navOrdre` (clés des
   sections et `@perso`), résolu par `_navOrdre` : un nouveau CTO se range après
   le dernier, une section masquée garde son voisin. Défaut : `NAV_ORDRE_DEFAUT`.
-* **Une section par prêt** (4.4.17) : à son nom (`prNom`), onglets `pr-ech@p2` ;
-  Bourse, Assurance vie et Livrets seulement si l'argent du prêt est placé. Sans
-  aucun prêt, une seule section « Prêt » mène à l'écran de création. Rangées
-  comme les CTO (`_navOrdre` : familles `sec-cto` et `sec-pret`). Détail :
-  `docs/modules/pret.md`.
 * Rebâtir la barre passe par `_reconstruireSidebar()` (pastille utilisateur et
-  non lus d'Actus compris) : après la lecture des CTO ou des prêts, leur création,
-  leur renommage ou leur suppression.
+  non lus d'Actus compris) : après la lecture des CTO, leur création, leur
+  renommage ou leur suppression.
 
 | Entrée          | Onglets (ids des panes : `pane-<id>`)                              |
 |-----------------|--------------------------------------------------------------------|
@@ -274,7 +269,7 @@ Paramètres.
 | CTO « nom » (un par CTO) | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 | Mes comptes     | fin-month, fin-year                                                |
-| Prêt « nom » (un par prêt) | pr-overview, pr-ech, pr-pea (Bourse), pr-av, pr-liv, pr-params ; les trois de placements si l'argent est placé |
+| Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
 | Patrimoine      | pa-vue, pa-comptes, sim (Simulateurs, dans le PEA jusqu'à la 4.4.1) |
 | Santé           | sa-suivi, sa-mesures, sa-goals                                     |
@@ -406,7 +401,7 @@ Corollaires à ne pas défaire :
   d'écriture s'appelle donc `save_<module>`, sinon elle échappe au gel. Un échec
   d'écriture s'affiche toujours (`_alerteEnregistrement`), jamais seulement en console.
 * Le JS garde l'état en mémoire (`S`, `SP`, `PR`, `SA`, `PA`) et Python ne fait que
-  persister. `PR` est le prêt affiché, `PRF` tout `pret.json` (4.4.17). Exception : `load_patrimoine` / `save_patrimoine` renvoient `net`, `serie`
+  persister. Exception : `load_patrimoine` / `save_patrimoine` renvoient `net`, `serie`
   et `moisSaisi` déjà calculés — l'UI ne refait pas ces calculs.
 * Ne jamais recalculer en parallèle un chiffre qu'un autre module produit déjà
   (`window._peaPv` pour le PEA, `ctoResume(id)` pour un CTO). Deux calculs = deux

@@ -13,7 +13,7 @@ Modale unique à colonne de sections (`setGoSection(id)`), plus « paramètres d
 | nav        | « Modules » : modules à cocher, puis onglets et blocs masqués       |
 | pea        | prénom, banque, date d'ouverture, récap fiscal, rapport annuel      |
 | comptes    | catégories & emoji, sources, récurrents                             |
-| pret       | « Prêts » : un bouton par prêt (son onglet Paramètres) et « Nouveau prêt » (`prRenderReglages`) |
+| pret       | renvoi vers l'onglet `pr-params`                                    |
 | sport      | mes sports, types de séance, routines                               |
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | sauvegarde | destination USB, sauvegarde auto, rotation, restauration            |
