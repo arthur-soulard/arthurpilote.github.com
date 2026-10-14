@@ -1620,15 +1620,44 @@ def _universel(entetes, lignes, lot, colonnes):
             lot.ajoute(sens, date, montant=_vers_eur(abs(mt), dev, date) or 0, origine="especes")
 
 
+def _deballer(lignes: list) -> list:
+    """Un CSV à virgules ouvert dans Excel en français tient dans UNE colonne
+    (« 2025-07-17,BUY,… ») ; réenregistré, chaque ligne devient une seule case
+    (CSV, .xlsx). Ces cases sont redécoupées comme le CSV d'origine. Vu sur
+    l'export Trade Republic d'Arthur repassé par Excel (14/10/2026)."""
+    debut = [l for l in lignes[:20] if any(c.strip() for c in l)]
+    if not debut:
+        return lignes
+    une_case = [l for l in debut if sum(1 for c in l if c.strip()) == 1]
+    if len(une_case) < 0.8 * len(debut):
+        return lignes
+    texte = "\n".join(next(c for c in l if c.strip()) for l in lignes if any(c.strip() for c in l))
+    if not any(s in texte[:2000] for s in (",", ";", "\t", "|")):
+        return lignes
+    relues = _lignes_csv(texte)
+    return relues if relues and max(len(l) for l in relues[:20]) > 1 else lignes
+
+
 def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
     """Un tableau (lignes de cellules, en-têtes en premier). Renvoie le format
     de lire_texte_pdf, ou {ok: False, besoinColonnes, entetes, apercu, proposition}
     quand les colonnes ne sont pas reconnues."""
     if not lignes:
         return {"ok": False, "erreur": "fichier vide"}
+    lignes = _deballer(lignes)
     lignes = lignes[_ligne_entetes(lignes):]
     entetes = [_norm(e) for e in lignes[0]]
     corps = lignes[1:]
+    if "transaction_id" in entetes and "asset_class" in entetes:
+        # Export Trade Republic passé par un tableur (.xlsx, CSV réenregistré)
+        tampon = io.StringIO()
+        csv.writer(tampon).writerows(lignes)
+        r = cto.lire_csv_tr(tampon.getvalue())
+        if r.get("ok"):
+            r["banque"] = "Trade Republic"
+            for o in r["operations"]:
+                o["banque"] = "Trade Republic"
+        return r
     if colonnes is None:
         if "buy/sell" in entetes or ("type" in entetes and "settledate" in entetes and "amount" in entetes):
             lot = _Lot("Interactive Brokers")
@@ -1779,7 +1808,10 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
             r["banque"] = "Trade Republic"
             for o in r["operations"]:
                 o["banque"] = "Trade Republic"
-        return r
+            return r
+        # Pas lu tel quel : réenregistré par un tableur ? (lire_tableau, _deballer)
+        r2 = lire_tableau(_lignes_csv(texte), nom, colonnes)
+        return r2 if r2.get("ok") else r
     if nom_l.endswith((".csv", ".txt", ".tsv", ".xls")) or any(c in texte[:5000] for c in ",;\t|"):
         return lire_tableau(_lignes_csv(texte), nom, colonnes)
     if nom_l.endswith((".png", ".jpg", ".jpeg", ".heic", ".webp")):

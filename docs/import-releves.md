@@ -105,6 +105,13 @@ d'Arthur, les CSV et XML de courtiers) sont restées **identiques**.
   colonnes reconnus (« Quantité exécutée », « Ticker », « Prix par action »…),
   jamais « Cours de change » pour un cours. Le cours du fichier est gardé tel
   quel (au millième).
+* **Fichier repassé par Excel** (`_deballer`) : un CSV à virgules ouvert
+  dans Excel en français tient dans une seule colonne ; réenregistré (CSV ou
+  .xlsx), chaque ligne n'est plus qu'une case. Ces cases sont redécoupées, et
+  l'export Trade Republic est reconnu aussi dans un tableur. Vérifié sur les
+  vrais fichiers d'Arthur repassés par Excel : CSV Trade Republic (CSV
+  réenregistré et .xlsx) et CSV Fortuneo (CSV, .xlsx, .xls), opérations
+  identiques à celles du fichier d'origine (134 et 13).
 * **Contrôle des chiffres** (`_Lot.ajoute`) : parts × cours doit donner le
   montant (à 0,5 % près) ; sinon l'aperçu affiche « chiffres à vérifier »
   (cas typique : « 10 250,00 » lu comme un seul nombre). Aucun des vrais
