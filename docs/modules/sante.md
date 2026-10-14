@@ -104,8 +104,13 @@ Contraste (13/09, la pesée de comparaison), sans rien signaler.
    refusé ; un entier pour une mesure à une décimale n'est accepté que si,
    tel quel, il sort des bornes et, divisé par 10, y rentre (« 759 » → 75,9,
    « 70 » → 7,0) ; « 14 » (1,4 ou 14,0 ?) et « 71 » (71,1 sans sa décimale)
-   sont refusés. Une unité qui ne va pas avec la mesure (« 1.4% » pour
-   l'IMC, « lb ») est refusée (`_unite_ok`).
+   sont refusés. Une valeur au point recomposé n'est **pas sûre** : en perdant
+   le point, le moteur écorche souvent le chiffre voisin (« 17.5 » lu « 173 »,
+   deux fois, sur une capture JPEG). Elle compte pour une demi-voix
+   (`_choisir`) et ne confirme rien seule : il faut au moins une lecture avec
+   son point, sinon la mesure est « à vérifier ». Le zoom commence à ×3 (lu
+   juste à ×3 et ×4, faux à ×2). Une unité qui ne va pas avec la mesure
+   (« 1.4% » pour l'IMC, « lb ») est refusée (`_unite_ok`).
 7. **Libellés écorchés** (`_match_metric`) : un mot long à une ou deux lettres
    près compte (« Coroorelle ») ; une mesure n'est retenue que si aucun mot du
    bloc n'appartient à une autre mesure (« Poids sans graisse » privé de

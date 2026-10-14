@@ -468,15 +468,18 @@ def _validate(mid: str, val: float) -> Optional[float]:
     return None
 
 
-def _valeur(mid: str, texte: str) -> Optional[float]:
+def _valeur(mid: str, texte: str):
     """
-    Le nombre d'un mot de la colonne des valeurs, pour la mesure `mid`.
+    Le nombre d'un mot de la colonne des valeurs, pour la mesure `mid` :
+    (valeur, sure) ou None.
 
     FitDays ecrit toujours le meme nombre de decimales par mesure (« 7.0 »,
     « 24.0 », « 1763 ») : un nombre qui en a PLUS est un « % » ou un « kg »
     pris pour des chiffres (« 20.396 » pour « 20.3 % ») et il est refuse ; un
     nombre a une decimale attendue qui n'en a AUCUNE a perdu son point
-    (« 759 » pour 75.9, « 70 » pour 7.0).
+    (« 759 » pour 75.9, « 70 » pour 7.0). Une valeur ainsi recomposee n'est
+    pas « sure » : en perdant le point, le moteur ecorche souvent le chiffre
+    voisin (« 173 » pour 17.5, 14/10/2026) ; elle ne suffit pas a confirmer.
     """
     s = _clean_value_text(texte)
     m = re.match(r"[-+]?(\d{1,5})(?:[.,](\d+))?", s)
@@ -493,9 +496,10 @@ def _valeur(mid: str, texte: str) -> Optional[float]:
         # bornes divise par 10, est sur : « 14 » (1.4 ou 14.0 ?) est refuse.
         lo, hi = metric(mid).get("range") or (float("-inf"), float("inf"))
         if not lo <= val <= hi and lo <= val / 10 ** dec <= hi:
-            return round(val / 10 ** dec, dec)
+            return round(val / 10 ** dec, dec), False
         return None
-    return _validate(mid, val)
+    v = _validate(mid, val)
+    return None if v is None else (v, v == val)
 
 
 # Unite ecrite a cote de la valeur : « kg », « % » (souvent lu « 0/0 »),
@@ -567,9 +571,10 @@ def _hors_bandes(words: list, bandes: list) -> list:
     return [w for w in words if not dedans(w)]
 
 
-def _dial_weight(words: list) -> Optional[float]:
+def _dial_weight(words: list):
     """
-    Poids affiche dans le grand cadran de l'ecran principal.
+    Poids affiche dans le grand cadran de l'ecran principal : (valeur, sure)
+    ou None.
 
     Il n'a pas de libelle a cote : on le reconnait a sa taille, tres superieure
     au reste de la page.
@@ -629,9 +634,10 @@ def _extract_datetime(rows: list) -> dict:
 
 def _lire_mots(words: list, width: int, height: int) -> dict:
     """
-    Ce que dit UNE lecture OCR d'une capture : {lectures: [(metrique, valeur)],
-    blocs: [(metrique, haut, bas, h)], bords, date, time, cadran} ; `bords` :
-    bord droit de chaque valeur lue avec son unite (_zoom s'en sert).
+    Ce que dit UNE lecture OCR d'une capture : {lectures: [(metrique,
+    (valeur, sure))], blocs: [(metrique, haut, bas, h)], bords, date, time,
+    cadran} ; `bords` : bord droit de chaque valeur lue avec son unite (_zoom
+    s'en sert) ; `sure` : voir _valeur.
     """
     out = {"lectures": [], "blocs": [], "bords": [], "date": "", "time": "", "cadran": False}
     if not words:
@@ -754,7 +760,8 @@ def _zoom(src: str, blocs: list, tmpdir: str, n: int, bord=None, echelle: float 
 
 
 # Echelle de _zoom a chaque tour : une valeur ratee a 2 est souvent lue a 3
-_ECHELLES_ZOOM = [2, 3, 1.5, 2.5, 2, 3]
+# (« 17.5 » lu « 173 » a 2, juste a 3 et 4 : essai du 14/10/2026)
+_ECHELLES_ZOOM = [3, 2, 4, 2.5, 3, 2]
 
 
 def _sombre(im) -> bool:
@@ -767,13 +774,29 @@ def _sombre(im) -> bool:
 
 
 def _confirmees(lectures: dict) -> set:
-    """Mesures lues au moins deux fois a l'identique."""
+    """Mesures lues au moins deux fois a l'identique, dont une fois « sure »
+    (lectures : {metrique: [(valeur, sure)]}, voir _valeur)."""
     out = set()
-    for mid, vals in lectures.items():
-        for v in set(vals):
-            if vals.count(v) >= 2:
+    for mid, lus in lectures.items():
+        for v in {v for v, _ in lus}:
+            memes = [s for x, s in lus if x == v]
+            if len(memes) >= 2 and any(memes):
                 out.add(mid)
     return out
+
+
+def _choisir(lus: list):
+    """La valeur d'une mesure parmi ses lectures [(valeur, sure)] : une
+    lecture sure compte une voix, une valeur au point recompose une demi.
+    -> (valeur, a_verifier) : a verifier si deux valeurs sont a egalite, ou
+    si la gagnante n'a jamais ete lue avec son point."""
+    voix = {}
+    for v, s in lus:
+        voix[v] = voix.get(v, 0) + (1 if s else 0.5)
+    ordre = [v for v, _ in lus]
+    best = max(voix, key=lambda v: (voix[v], -ordre.index(v)))
+    egalite = any(v != best and voix[v] == voix[best] for v in voix)
+    return best, egalite or not any(s for v, s in lus if v == best)
 
 
 def read_screenshot(path: str, cumul: Optional[dict] = None) -> dict:
@@ -782,10 +805,10 @@ def read_screenshot(path: str, cumul: Optional[dict] = None) -> dict:
     fois si possible (pleine page, puis valeurs agrandies : _zoom).
 
     `cumul` : lectures deja faites sur les autres captures de la meme pesee
-    ({metrique: [valeurs]}), pour savoir quand s'arreter.
+    ({metrique: [(valeur, sure)]}), pour savoir quand s'arreter.
 
-    Retourne {ok, values:{metrique: valeur}, lectures:{metrique: [valeurs]},
-    date, time, cadran, passes, engine}.
+    Retourne {ok, values:{metrique: valeur}, lectures:{metrique: [(valeur,
+    sure)]}, date, time, cadran, passes, engine}.
     """
     chk = ocr_available()
     if not chk["ok"]:
@@ -864,9 +887,7 @@ def read_screenshot(path: str, cumul: Optional[dict] = None) -> dict:
                              "Envoie la capture en PNG ou en JPG."}
         return {"ok": False, "values": {},
                 "error": "Le moteur OCR n'a pas répondu."}
-    values = {}
-    for mid, vals in lect.items():
-        values[mid] = max(set(vals), key=lambda v: (vals.count(v), -vals.index(v)))
+    values = {mid: _choisir(lus)[0] for mid, lus in lect.items()}
     # Date et heure : les plus souvent lues
     jours = [d for d, _ in dates]
     date = max(jours, key=lambda d: (jours.count(d), -jours.index(d))) if jours else ""
@@ -992,7 +1013,8 @@ def _read_images(paths: list) -> dict:
         date_, time_ = date_cadran
 
     values, doutes, conflicts = _voter(lectures)
-    doutes |= _coherence(values, lectures)
+    incoherentes, repris = _coherence(values, lectures)
+    doutes = (doutes - repris) | incoherentes
     manquants = [m["id"] for m in METRICS if m["id"] not in values]
     return {"ok": bool(values), "values": values, "date": date_, "time": time_,
             "missing": manquants, "conflicts": conflicts,
@@ -1003,22 +1025,21 @@ def _read_images(paths: list) -> dict:
 
 def _voter(lectures: dict):
     """
-    Une valeur par mesure : la plus souvent lue (deux passes, deux captures).
-    A egalite entre deux valeurs differentes, la mesure est « a verifier ».
-    Retourne (valeurs, doutes, conflits).
+    Une valeur par mesure : la plus souvent lue (deux passes, deux captures),
+    voir _choisir. A egalite entre deux valeurs, ou jamais lue avec son
+    point, la mesure est « a verifier ». Retourne (valeurs, doutes, conflits).
     """
     values, doutes, conflicts = {}, set(), {}
-    for mid, vals in lectures.items():
-        if not vals:
+    for mid, lus in lectures.items():
+        if not lus:
             continue
-        compte = {v: vals.count(v) for v in vals}
-        best = max(compte, key=lambda v: (compte[v], -vals.index(v)))
+        best, a_voir = _choisir(lus)
         values[mid] = best
-        autres = sorted(v for v in compte if v != best)
+        autres = sorted({v for v, _ in lus} - {best})
         if autres:
             conflicts[mid] = autres
-            if any(compte[v] == compte[best] for v in autres):
-                doutes.add(mid)
+        if a_voir:
+            doutes.add(mid)
     return values, doutes, conflicts
 
 
@@ -1060,11 +1081,13 @@ def _taille_habituelle() -> Optional[float]:
     return tailles[len(tailles) // 2] if tailles else None
 
 
-def _coherence(values: dict, lectures: dict) -> set:
+def _coherence(values: dict, lectures: dict):
     """
     Mesures qui ne collent pas avec les autres (_RELATIONS, et l'IMC avec la
     taille des pesees precedentes). Quand une mesure a ete lue de deux facons,
     la lecture qui fait tenir les relations l'emporte (values est modifie).
+    -> (doutes, repris) : `repris`, la mesure ainsi departagee, que les
+    relations confirment (elle n'est plus « a verifier »).
     """
     relations = list(_RELATIONS)
     taille = _taille_habituelle()
@@ -1083,21 +1106,25 @@ def _coherence(values: dict, lectures: dict) -> set:
         return out
 
     ko = fausses(values)
+    change = None
     if ko:
         # Une autre lecture d'une mesure en cause remet-elle tout d'aplomb ?
         en_cause = {i for ids in ko for i in ids}
         meilleur = (len(ko), None, None)
         for mid in sorted(en_cause):
-            for alt in sorted(set(lectures.get(mid, [])) - {values.get(mid)}):
+            for alt in sorted({v for v, _ in lectures.get(mid, [])} - {values.get(mid)}):
                 n = len(fausses(dict(values, **{mid: alt})))
                 if n < meilleur[0]:
                     meilleur = (n, mid, alt)
         if meilleur[1]:
-            values[meilleur[1]] = meilleur[2]
+            change = meilleur[1]
+            values[change] = meilleur[2]
             ko = fausses(values)
     tenues = {i for ids, tol, f in relations if all(values.get(x) for x in ids)
               and ids not in ko for i in ids}
-    return {i for ids in ko for i in ids} - tenues
+    en_cause = {i for ids in ko for i in ids}
+    repris = {change} if change and change in tenues and change not in en_cause else set()
+    return en_cause - tenues, repris
 
 
 # ─── Objectifs ────────────────────────────────────────────────────────────────
