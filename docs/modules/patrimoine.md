@@ -31,26 +31,20 @@ API Python : `load_patrimoine()` / `save_patrimoine()` — les deux renvoient
    d'octobre, fait le 02/10 avant la tranche de 15 000 € reçue le 07/10, gardait
    une dette à 0 € tout le mois. Un mois passé garde son relevé ; s'il n'en a
    pas, la ligne auto prend la valeur de la **fin de ce mois-là**
-   (`paValeurAuto(compte, iso)`) : prêt via `prCrdPart(prêt, fin du mois)`, PEA via
+   (`paValeurAuto(compte, iso)`) : prêt via `prCapitalDu(fin du mois)`, PEA via
    le dernier point du mois de la courbe du capital (`_perfFullSeries`), et rien
    tant qu'elle n'est pas chargée (la ligne reprend alors son dernier relevé).
    Jusqu'à la 4.3.24, rouvrir septembre proposait la dette et le PEA d'aujourd'hui.
 
-**Dette d'un prêt = son capital restant dû** (`prEtat`, module Prêt, 4.4.17) :
-avant le début de l'amortissement, les versements reçus (datés d'aujourd'hui ou
-avant) ; ensuite, l'échéancier calculé (échéances payées à leur date, ou pointées
-à la main selon le réglage du prêt). Changé le 28/09/2026 : le prêt d'Arthur
+**Dette du prêt = versements reçus − remboursements** (`PR.versements` et
+`PR.remboursements` datés d'aujourd'hui ou avant), et non plus le montant emprunté
+moins un échéancier calculé au calendrier. Changé le 28/09/2026 : le prêt d'Arthur
 (30 000 €, en deux tranches de 15 000 €) comptait 30 000 € de dette dès sa
 configuration, avant tout versement, et le patrimoine baissait d'un argent qui
 n'était encore sur aucun compte. Une tranche non reçue n'est ni une dette ni un
-avoir. Jusqu'à la 4.4.16, la dette était « versé − remboursé », faux dès qu'un prêt
-a des intérêts. Ce calcul n'existe qu'à un endroit, `prEtat` (écrans du prêt), que
-`paValeurAuto` appelle par `prCrdPart` : pour un prêt à deux, la part de
-l'utilisateur seulement. La tuile d'accueil lit la même valeur.
-
-**Une ligne par prêt** (4.4.17, `prLignesPatrimoine`, comme les CTO) : le premier
-prêt garde la ligne `auto: "pret"` créée d'office, les suivants ont
-`auto: "pret:p2"`. Chacune porte le nom de son prêt (`paLabel`, `prDeLigne`).
+avoir. La tuile d'accueil du prêt (capital restant dû) lit la même valeur.
+Depuis la 4.3.4, ce calcul n'existe qu'à un endroit, `prCapitalDu()` (onglet Prêt),
+que `paValeurAuto` appelle : le « Montant à rembourser » du module donne le même chiffre.
 
 **Pas de doublon avec le prêt.** L'argent du prêt est compté une fois en avoir, là
 où il se trouve (ligne PEA = PEA entier, parts du prêt comprises ; Livret A, AV,

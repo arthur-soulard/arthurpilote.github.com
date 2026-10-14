@@ -6,8 +6,8 @@ utilisateur. Les dates sont relatives au jour du test, pour qu'un « prochain
 dividende » ou un « versement prévu » le restent quel que soit le jour.
 
 Un utilisateur « Camille » qui a servi chaque module : PEA, un CTO, Mes
-comptes, deux prêts (étudiant placé en différé, auto), Sports, Santé,
-Patrimoine et un pense-bête, avec toutes les tuiles de l'accueil allumées. Les clés absentes sont complétées par les
+comptes, Prêt, Sports, Santé, Patrimoine et un pense-bête, avec toutes les
+tuiles de l'accueil allumées. Les clés absentes sont complétées par les
 valeurs par défaut de chaque module au chargement (jsonstore, storage).
 
 Usage : python3 tests/donnees_exemple.py <dossier Donnees>
@@ -230,41 +230,18 @@ def sante():
 # ── Prêt ───────────────────────────────────────────────────────────────────
 
 def pret():
-    # Deux prets (schema 7, 4.4.17) : un pret etudiant place, en differe, avec
-    # une tranche a venir et ses echeances pointees a la main ; un pret auto a
-    # interets, echeances comptees a leur date.
-    vide = {"frais": [], "frais_recurrents": [], "frais_rembourses": [], "evenements": [],
-            "pea": {"achats": [], "ventes": []}}
-    etudiant = dict(vide, id="p1", pret={
-        "nom": "Prêt étudiant", "montant": 20000, "taux": 0.9, "periodicite": 1, "type": "amortissable",
-        "date_deblocage": mois(-6, 10), "premiere_echeance": mois(-5, 10), "duree_remboursement": 60,
-        "differe": "partiel", "differe_mois": 36,
-        "assurance": {"mode": "crd", "taux": 0.3, "montant": 0, "incluse": True},
-        "frais_dossier": 0, "frais_garantie": 0, "mensualite": 0, "part": 100,
-        "placements": True, "remboursements_auto": False})
-    etudiant["versements"] = [{"id": "v1", "date": mois(-6, 10), "montant": 10000},
-                              {"id": "v2", "date": mois(6, 10), "montant": 10000}]
-    # Les echeances du differe passees, pointees, sauf la derniere
-    etudiant["remboursements"] = [{"id": "r%d" % k, "date": mois(k, 10), "montant": 10.0, "echeance": mois(k, 10)}
-                                  for k in range(-5, -1) if passe(mois(k, 10))]
-    etudiant["frais_recurrents"] = [{"id": "f1", "label": "Carte", "montant": 2.5, "date_debut": mois(-6, 1),
-                                     "frequence": "mensuelle", "nb_occurrences": 0}]
-    etudiant["av"] = {"contrats": [{"id": "av1", "label": "Assurance vie", "frais_versement": 0.5,
-                                    "taux_annuels": [{"annee": AUJ.year - 1, "taux": 3.2}],
-                                    "depots": [{"id": "d1", "date": mois(-5, 15), "montant": 4000, "note": ""}]}]}
-    etudiant["livrets"] = [{"id": "l1", "label": "Livret A", "taux_history": [{"id": "t1", "date": mois(-12), "taux": 2.4}],
-                            "mouvements": [{"id": "m1", "date": mois(-6, 12), "type": "depot", "montant": 5000, "note": ""}]}]
-    auto = dict(vide, id="p2", pret={
-        "nom": "Prêt auto", "montant": 12000, "taux": 4.5, "periodicite": 1, "type": "amortissable",
-        "date_deblocage": mois(-11, 5), "premiere_echeance": mois(-10, 5), "duree_remboursement": 48,
-        "differe": "", "differe_mois": 0, "assurance": {"mode": "fixe", "taux": 0, "montant": 8, "incluse": False},
-        "frais_dossier": 150, "frais_garantie": 0, "mensualite": 281.64, "part": 100,
-        "placements": False, "remboursements_auto": True})
-    auto.update(versements=[], remboursements=[], av={"contrats": []}, livrets=[],
-                evenements=[{"id": "e1", "type": "anticipe", "date": mois(14, 20), "montant": 2000,
-                             "mode": "duree", "ira": 0, "note": "Prime"}])
-    return {"_meta": dict(META, schema="pret.v1"), "schema": 7, "prets": [etudiant, auto],
-            "actif": "p1", "_nid": {"pret": 3}}
+    return {
+        "_meta": dict(META, schema="pret.v1"),
+        "pret": {"nom": "Prêt étudiant", "montant": 20000, "date_deblocage": mois(-6, 10),
+                 "date_premier_remboursement": mois(30, 10), "duree_remboursement": 60, "mensualite": 340.5},
+        "versements": [{"id": "v1", "date": mois(-6, 10), "montant": 20000}],
+        "remboursements": [],
+        "av": {"contrats": [{"id": "av1", "label": "Assurance vie", "frais_versement": 0.5,
+                             "taux_annuels": [{"annee": AUJ.year - 1, "taux": 3.2}],
+                             "depots": [{"id": "d1", "date": mois(-5, 15), "montant": 8000, "note": ""}]}]},
+        "liv": {"label": "Livret A", "taux_history": [{"id": "t1", "date": mois(-12), "taux": 2.4}],
+                "mouvements": [{"id": "m1", "date": mois(-6, 12), "type": "depot", "montant": 9000, "note": ""}]},
+    }
 
 
 # ── Patrimoine ─────────────────────────────────────────────────────────────
@@ -279,7 +256,7 @@ def patrimoine():
     for n in range(-12, 1):
         k = n + 12
         valeurs = {
-            "cpt_pea": 1000 + 430 * k, "cpt_pret": 10000 if n >= -6 else 0,   # 1re tranche du pret etudiant
+            "cpt_pea": 1000 + 430 * k, "cpt_pret": 20000 if n >= -6 else 0,
             "compte1": 3000 + 60 * k + (9000 if n >= -6 else 0),
             "compte2": (8000 + 25 * (n + 5)) if n >= -5 else 0, "compte3": 900 + (70 * k) % 400,
             "compte4": (60 + 150 * (n + 8)) if n >= -8 else 0,

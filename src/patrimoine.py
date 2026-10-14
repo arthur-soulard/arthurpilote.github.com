@@ -23,8 +23,7 @@ Backup quotidien : <app_dir>/users/<slug>/backups_patrimoine/
 
 Modele de donnees
 ─────────────────
-comptes : {id, label, type, icon, color, auto:""|"pea"|"pret"|"pret:<id>"|"cto:<id>", archived:false, note}
-          -> "pret" : le premier pret (p1) ; "pret:p2" : un pret cree ensuite (4.4.17)
+comptes : {id, label, type, icon, color, auto:""|"pea"|"pret", archived:false, note}
 releves : {id, compteId, date:"YYYY-MM-01", montant}
 """
 from __future__ import annotations
@@ -118,6 +117,12 @@ def load_data() -> dict:
             if c["auto"] not in existants:
                 data.setdefault("comptes", []).append(c)
         data["_seeded"] = True
+    # La 4.4.17 donnait une ligne auto « pret:p2 » a chaque pret cree apres le
+    # premier ; depuis la 4.4.18 il n'y a plus qu'un pret : ces lignes
+    # redeviennent des lignes saisies a la main, avec leurs releves.
+    for c in data.get("comptes", []):
+        if str(c.get("auto") or "").startswith("pret:"):
+            c["auto"] = ""
     return data
 
 

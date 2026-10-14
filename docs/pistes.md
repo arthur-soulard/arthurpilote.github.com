@@ -20,7 +20,6 @@ Autres pistes :
 - Simulateur de sortie : « si je vends tout et solde le prêt, il me reste X € »
   (proposé de nouveau le 13/10/2026 avec le prêt générique, pas pris)
 - Recherche globale (Ctrl+K) sur transactions, séances, pesées, comptes
-- Import CSV du relevé bancaire pour « Mes comptes »
 - Onglet Stratégie (brainstorming du 03/10/2026, non retenues ce jour-là) :
   projection sur 12 mois d'un scénario répété (écart à la cible et frais
   cumulés) ; rééquilibrage avec ventes, en calcul affiché seulement ; seuil de
@@ -70,13 +69,33 @@ Autres pistes :
   son CTO : −0,32 € sur 870 €. Francfort (`.F`) ne conviendrait pas non plus
   (D5BL.F à 28,40 € pour 49,75 €).
 
-- **Prêt : simulateur « et si je remboursais X € », prêt entre proches sans
-  échéancier, argent prêté à quelqu'un** : proposés le 13/10/2026 avec le prêt
-  générique, pas pris par Arthur. L'aperçu de la fenêtre d'un remboursement
-  anticipé montre déjà son effet avant de l'enregistrer.
+- **Épargne hors prêt (livrets et assurances vie calculés pour eux-mêmes)** :
+  proposée le 13/10/2026 (section Épargne réutilisant `prLivretState` et
+  `prAvContratTotals`, lignes du Patrimoine remplies seules), écartée par Arthur
+  le même jour : « laisser l'appli simple », moins de calculs, c'est moins
+  d'erreurs. Le taux d'une assurance vie est décidé par l'assureur, avec ses
+  frais, et celui du Livret A par l'État : Pilote tomberait faux sans qu'on le
+  voie. Livrets et assurances vie restent des lignes saisies à la main dans
+  Patrimoine ; les placements d'un prêt gardent leurs propres calculs.
+- **Import du relevé bancaire dans « Mes comptes »** : écarté par Arthur le
+  13/10/2026, même jour et même raison, y compris dans sa version minimale (CSV
+  de sa banque seule, catégorie reprise de l'historique, liste à cocher, pas de
+  doublon). Mes comptes reste en saisie à la main. `releves.py` ne lit que la
+  bourse (PEA et CTO).
 
-**Traité depuis** : l'échéancier prévisionnel du prêt, mois par mois (4.4.17,
-onglet Échéancier, `docs/modules/pret.md`). L'emoji par défaut des catégories créées par l'utilisateur est
+- **Prêt générique (plusieurs prêts, échéancier calculé)** : publié en 4.4.17 le
+  13/10/2026 (taux, assurance, différé, in fine, remboursements anticipés, prêt à
+  deux, une section par prêt), retiré en 4.4.18 le 14/10/2026 à la demande
+  d'Arthur : « on s'est perdu », un prêt est trop personnel pour une appli faite
+  pour tous, et plus il y a de calculs, plus il y a d'erreurs. Le module Prêt est
+  revenu à celui de la 4.4.16 (son prêt étudiant). Un bien immobilier et son
+  crédit se suivent dans Patrimoine, saisis à la main (« Ajouter un bien
+  immobilier », 4.4.18). Le code vit dans l'historique git (commits `327c5c5` à
+  `06f4253`). Avec lui, ni simulateur « et si je remboursais X € », ni prêt entre
+  proches, ni argent prêté à quelqu'un (proposés le 13/10, pas pris), ni
+  échéancier prévisionnel mois par mois.
+
+**Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,
 lui, ne couvre toujours que `pea_data.json`.
