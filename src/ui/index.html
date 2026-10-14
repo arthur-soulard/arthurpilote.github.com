@@ -6683,7 +6683,13 @@ function drawPerfChart() {
 
   /* ── Construction du graphique ───────────────────────────────────────────── */
   const c = _perfCanvas();
-  if (_ch.perf) { _ch.perf.destroy(); _ch.perf = null; }
+  // Remplacer la courbe de CE compte (celle qui occupe ce canvas), pas _ch.perf :
+  // de retour sur l'accueil après un CTO, le PEA est revenu dans S mais _ch.perf
+  // visait encore la courbe du CTO. Un changement de thème ou d'accent détruisait
+  // celle-ci et butait sur celle du PEA (« Canvas is already in use ») : courbe
+  // restée aux anciennes couleurs, plus aucun redessin jusqu'à la vue d'ensemble.
+  if (_perfCharts[_compteActif]) _perfCharts[_compteActif].destroy();
+  _perfCompteVu = _compteActif;   // ce canvas est désormais celui qu'on voit
   _ch.perf = _perfCharts[_compteActif] = new Chart(c, {
     type: "line",
     data: {
