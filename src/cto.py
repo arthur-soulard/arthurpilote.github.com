@@ -141,18 +141,36 @@ _DESCRIPTION = re.compile(r"(?i)^(?:savings plan execution|buy trade|sell trade)
 
 
 def _nombre(txt: str):
-    """« 1.2345 », « -124.97 », « 1 234,56 » -> float ; vide -> None."""
-    t = (txt or "").strip().replace(" ", "").replace(" ", "")
+    """« 1.2345 », « -124.97 », « 1 234,56 » -> float ; vide -> None.
+
+    Aussi (4.4.19) : « 1,234.56 » (a l'americaine : le separateur le plus a
+    droite est la decimale), « 1.234.567 », « −12,50 » (signe moins
+    typographique), « (12,50) » et « 12,50- » (negatifs comptables), « 12,50 € »,
+    « USD 1,234.56 », espaces insecables ou fines entre les milliers."""
+    t = re.sub(r"[\s    '’]", "", str(txt if txt is not None else ""))
+    t = t.replace("−", "-").replace("–", "-")
+    devise = r"(?i)^(?:[A-Z]{3}|[€$£])|(?:[A-Z]{3}|[€$£])$"
+    t = re.sub(devise, "", t)
+    neg = False
+    if t.startswith("(") and t.endswith(")"):
+        t, neg = t[1:-1], True
+    elif len(t) > 1 and t.endswith("-") and t[-2].isdigit():
+        t, neg = t[:-1], True
+    t = re.sub(devise, "", t)
     if not t:
         return None
-    if "," in t and "." not in t:
-        t = t.replace(",", ".")
-    elif "," in t and "." in t:          # 1.234,56 (milliers a l'allemande)
-        t = t.replace(".", "").replace(",", ".")
+    virg, point = t.rfind(","), t.rfind(".")
+    if virg >= 0 and point >= 0:
+        t = t.replace(".", "").replace(",", ".") if virg > point else t.replace(",", "")
+    elif virg >= 0:
+        t = t.replace(",", ".") if t.count(",") == 1 else t.replace(",", "")
+    elif t.count(".") > 1:               # 1.234.567 : milliers
+        t = t.replace(".", "")
     try:
-        return float(t)
+        v = float(t)
     except ValueError:
         return None
+    return -v if neg else v
 
 
 def _date(txt: str) -> str:

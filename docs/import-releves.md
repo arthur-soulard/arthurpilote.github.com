@@ -68,6 +68,69 @@ vrais documents.
 * Bourse Direct : la taxe sur les transactions et les versements sont des
   opérations à part chez Pilote (rattachée à l'ordre, ou versement du PEA).
 
+## Lecture rendue plus sûre (14/10/2026, demande d'Arthur : « infaillible »)
+
+Banc d'essai de la session du 14/10/2026 : vrais documents anonymisés de
+Portfolio Performance (Trade Republic en français, Keytrade, Scalable,
+Swissquote, Hello bank, UBS, PostFinance, KBC, Linxea en plus des banques
+déjà lues), fichiers fabriqués par **LibreOffice et Excel** (vrais .xlsx,
+.xls, .ods, « Texte Unicode », CSV), et 100 avis d'opéré fabriqués en PDF par
+LibreOffice (4 mises en page, 9 banques de réseau, 5 polices). Les lectures
+d'avant (tous les exemples PDF, le CSV Trade Republic et le .zip Fortuneo
+d'Arthur, les CSV et XML de courtiers) sont restées **identiques**.
+
+* **Nombres** (`cto._nombre`) : « 1,234.56 » à l'américaine (le séparateur le
+  plus à droite est la décimale ; avant, lu 1,23456 !), « 1.234.567 »,
+  « −12,50 » (signe moins typographique), « (12,50) » et « 12,50- »,
+  « 12,50 € », « USD 1,234.56 », espaces insécables ou fines.
+* **Dates** (`_date_fr`) : jour et mois sur un chiffre, année sur deux
+  (« 08/10/24 », c'est ce qu'écrit Excel en « Texte Unicode »), « Mar 26,
+  2024 », « 01 juil. 2024 », date impossible refusée. Une colonne de dates à
+  l'américaine (03/26/2024) est reconnue (`_ordre_dates`) : avant, ses dates
+  étaient lues fausses (2024-26-03) sans rien dire.
+* **Texte des PDF** (`_norm_texte`) : espaces insécables et fines, signe
+  moins, apostrophe courbe, accents décomposés, ligatures. Un PDF est relu en
+  mode `layout` de pypdf (mots replacés d'après leur position) quand le
+  premier texte ne donne rien. PDF sans texte (scanné, photo) : message clair.
+* **Tableaux** : séparateur choisi sur les 30 premières lignes ; ligne
+  d'en-tête cherchée parmi elles (titre, numéro de compte, période au-dessus :
+  avant, rien n'était reconnu) ; UTF-16 (« Texte Unicode » d'Excel) ; page
+  HTML livrée en « .xls » ; **.xlsx avec de vraies cellules date** (avant,
+  « 45377 » au lieu d'une date : aucune ligne lue) ; **.xls d'Excel 97-2003**
+  (`_lignes_xls` : conteneur OLE2 et format BIFF8 lus sans bibliothèque,
+  textes partagés coupés entre enregistrements compris ; 2 500 lignes avec
+  accents, grec et japonais relues à l'identique, fichiers d'Excel et de
+  LibreOffice) ; **.ods** de LibreOffice (`_lignes_ods`) ; zip dans un zip,
+  zip protégé (message), fichiers cachés de macOS ignorés. Plus de noms de
+  colonnes reconnus (« Quantité exécutée », « Ticker », « Prix par action »…),
+  jamais « Cours de change » pour un cours. Le cours du fichier est gardé tel
+  quel (au millième).
+* **Contrôle des chiffres** (`_Lot.ajoute`) : parts × cours doit donner le
+  montant (à 0,5 % près) ; sinon l'aperçu affiche « chiffres à vérifier »
+  (cas typique : « 10 250,00 » lu comme un seul nombre). Aucun des vrais
+  documents ne déclenche ce message.
+* **Trade Republic en PDF** (`_traderepublic`) : relevé de transaction d'un
+  ordre, investissement programmé (origine « plan »), vente, dividende ou
+  distribution (net en euros, date de paiement), versement. 12 avis réels sur
+  12 conformes au corrigé. Le relevé de compte mensuel n'est pas lu (ni cours
+  ni frais par ordre) : un message renvoie vers l'export CSV.
+* **Lecteur universel d'avis d'opéré** (`_avis_generique`), pour une banque
+  sans règle propre : un seul ISIN, avis en français, rubriques cherchées par
+  leur nom (« Quantité : 10 », tableau dont les noms de colonnes sont sur une
+  ligne et les nombres sur la suivante, « ACHAT de 25 … au cours de … »,
+  ligne « titre parts cours montant »). Quand les espaces séparent à la fois
+  les milliers et les colonnes (« 12 332,181 3 986,17 »), c'est l'accord des
+  chiffres qui choisit le découpage (`_decoupages`, `_accord`). **Rien n'est
+  repris si parts × cours ≠ brut ou brut ± frais ± taxe ≠ net** ; l'opération
+  porte l'alerte « lu par le lecteur universel ». Dividende : date de
+  paiement (jamais celle du détachement) et net nommé comme tel, en euros.
+  Résultat : 100 avis fabriqués sur 100 justes, Keytrade et Scalable en
+  français lus justes, **aucune** lecture fausse sur les documents d'autres
+  banques (allemand, néerlandais, assurance vie : « non reconnu »).
+* **Documents qui ne sont pas des opérations** : relevé de compte Trade
+  Republic, IFU, relevé de portefeuille : un message dit ce que c'est et quoi
+  importer à la place.
+
 ## Sortie de `releves.lire`
 
 Celle de `cto.lire_csv_tr` (`trId, date, quand, type, origine, isin, nom, nomLong,
@@ -89,7 +152,9 @@ Les opérations de plusieurs fichiers sont fusionnées sans doublon (même `trId
 et triées par date puis heure.
 
 Fichiers : PDF (`%PDF-`), Excel `.xlsx` (lu sans bibliothèque : `zipfile` + XML),
-XML Flex d'IBKR, sinon texte (UTF-8, puis cp1252) lu comme CSV, séparateur deviné.
+Excel `.xls` (OLE2 + BIFF8, sans bibliothèque), LibreOffice `.ods`, page HTML
+contenant un tableau, XML Flex d'IBKR, sinon texte (UTF-16, UTF-8, puis cp1252)
+lu comme CSV, séparateur deviné. Un .zip est ouvert (deux niveaux au plus).
 
 ## Règles par banque, et pièges vus
 

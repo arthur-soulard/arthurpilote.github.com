@@ -10,12 +10,15 @@ Performance et d'Export-To-Ghostfolio, voir docs/import-releves.md).
       transactions financières, relevé des liquidités du PEA), BoursoBank
       (opérations de bourse et sur OPC, coupons), Bourse Direct (relevés
       d'opérations), Saxo (rapports de trade, de dividende, de virement, en
-      anglais ou en allemand), Degiro (rapport des transactions).
-  CSV / Excel / XML : Trade Republic (cto.lire_csv_tr), Degiro (relevé de
-      compte), Interactive Brokers (Flex Query CSV ou XML), Saxo
-      (transactions), Trading 212, et tout autre tableau par le lecteur
-      « universel » : colonnes reconnues par leur nom, ou choisies par
-      l'utilisateur.
+      anglais ou en allemand), Degiro (rapport des transactions), Trade
+      Republic (avis en français), et l'avis d'opéré d'une autre banque par
+      le lecteur universel (_avis_generique : repris seulement si ses
+      chiffres tiennent ensemble).
+  CSV / Excel (.xlsx, .xls) / LibreOffice (.ods) / HTML / XML : Trade
+      Republic (cto.lire_csv_tr), Degiro (relevé de compte), Interactive
+      Brokers (Flex Query CSV ou XML), Saxo (transactions), Trading 212, et
+      tout autre tableau par le lecteur « universel » : colonnes reconnues
+      par leur nom, ou choisies par l'utilisateur.
 
 Sortie : la même que cto.lire_csv_tr, avec en plus les types « Versement »,
 « Retrait » (espèces du PEA) et « Taxe » (taxe sur les transactions
@@ -44,7 +47,8 @@ _MOIS = {"jan": 1, "janv": 1, "janvier": 1, "feb": 2, "fev": 2, "fevr": 2, "fevr
          "mar": 3, "mars": 3, "mrz": 3, "apr": 4, "avr": 4, "avril": 4, "may": 5, "mai": 5,
          "jun": 6, "juin": 6, "jul": 7, "juil": 7, "juillet": 7, "aug": 8, "aou": 8, "aout": 8,
          "sep": 9, "sept": 9, "septembre": 9, "oct": 10, "okt": 10, "octobre": 10,
-         "nov": 11, "novembre": 11, "dec": 12, "dez": 12, "decembre": 12}
+         "nov": 11, "novembre": 11, "dec": 12, "dez": 12, "decembre": 12,
+         "maa": 3, "mrt": 3, "mei": 5}
 _ETF = re.compile(r"(?i)\b(etf|ucits|tracker|opcvm|fcp|sicav|opc|fund|index|indice|msci|s&p|stoxx)\b")
 
 
@@ -60,26 +64,59 @@ def _sans_accents(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFD", s or "") if unicodedata.category(c) != "Mn")
 
 
-def _date_fr(txt: str) -> str:
+def _date_fr(txt: str, ordre: str = "jm") -> str:
     """« 26-03-2024 », « 26/03/2024 », « 2024-03-26 », « 20230522 »,
-    « 09-Apr-2025 », « 8 octobre 2021 » -> 2024-03-26 ; sinon ""."""
+    « 09-Apr-2025 », « 8 octobre 2021 » -> 2024-03-26 ; sinon "".
+
+    Aussi (4.4.19) : jour et mois sur un chiffre (« 1/3/2024 »), annee sur deux
+    (« 26/03/24 »), « Mar 26, 2024 », « 01 juil. 2024 » ; `ordre` « mj » lit
+    « 03/26/2024 » a l'americaine (choisi par colonne : _ordre_dates). Une date
+    impossible (31/02) est refusee."""
     t = (txt or "").strip()
-    m = re.search(r"(\d{4})-(\d{2})-(\d{2})", t)
+
+    def ok(a, m, j):
+        try:
+            return datetime.date(int(a), int(m), int(j)).isoformat()
+        except ValueError:
+            return ""
+
+    def an(a):
+        a = int(a)
+        return a + (2000 if a < 70 else 1900) if a < 100 else a
+
+    m = re.search(r"(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})", t)
     if m:
-        return "-".join(m.groups())
-    m = re.search(r"(\d{2})[-/.](\d{2})[-/.](\d{4})", t)
+        return ok(m.group(1), m.group(2), m.group(3))
+    m = re.search(r"(?<!\d)(\d{1,2})[-/.](\d{1,2})[-/.](\d{4}|\d{2})(?!\d)", t)
     if m:
-        return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+        j, mo = (m.group(1), m.group(2)) if ordre != "mj" else (m.group(2), m.group(1))
+        return ok(an(m.group(3)), mo, j)
     m = re.fullmatch(r"(\d{4})(\d{2})(\d{2})", t)
     if m:
-        return "-".join(m.groups())
-    m = re.search(r"(\d{1,2})[- ]([A-Za-zéûÉÛ]{3,9})\.?[- ](\d{4})", t)
-    if m:
-        mois = _MOIS.get(_sans_accents(m.group(2)).lower()[:9]) or _MOIS.get(_sans_accents(m.group(2)).lower()[:4]) \
-            or _MOIS.get(_sans_accents(m.group(2)).lower()[:3])
-        if mois:
-            return f"{m.group(3)}-{mois:02d}-{int(m.group(1)):02d}"
+        return ok(*m.groups())
+
+    def mois(nom):
+        n = _sans_accents(nom).lower().rstrip(".")
+        return _MOIS.get(n[:9]) or _MOIS.get(n[:4]) or _MOIS.get(n[:3])
+    m = re.search(r"(?<!\d)(\d{1,2})\.?[- ]([A-Za-zÀ-ÿ]{3,9})\.?[- ,]+(\d{4}|\d{2})(?!\d)", t)
+    if m and mois(m.group(2)):
+        return ok(an(m.group(3)), mois(m.group(2)), m.group(1))
+    m = re.search(r"([A-Za-zÀ-ÿ]{3,9})\.? (\d{1,2}),? (\d{4})", t)
+    if m and mois(m.group(1)):
+        return ok(m.group(3), mois(m.group(1)), m.group(2))
     return ""
+
+
+def _ordre_dates(valeurs: list) -> str:
+    """« mj » si une colonne de dates est a l'americaine (03/26/2024 : le
+    second nombre depasse 12 quelque part, jamais le premier), sinon « jm »."""
+    premiers, seconds = [], []
+    for v in valeurs:
+        m = re.search(r"(?<!\d)(\d{1,2})[-/.](\d{1,2})[-/.](\d{4}|\d{2})(?!\d)", v or "")
+        if m:
+            premiers.append(int(m.group(1)))
+            seconds.append(int(m.group(2)))
+    return "mj" if seconds and max(seconds) > 12 and max(premiers) <= 12 else "jm"
 
 
 def _classe(*textes) -> str:
@@ -114,6 +151,13 @@ class _Lot:
             op["cours"] = round(op["montant"] / op["qty"], 6)
         if type_ in ("Achat", "Vente") and op["cours"] and op["qty"] and not op["montant"]:
             op["montant"] = round(op["cours"] * op["qty"], 2)
+        # Les chiffres lus doivent tenir ensemble : parts x cours = montant (a
+        # 0,5 % pres : cours arrondi, part de fonds). Sinon un nombre a ete mal
+        # decoupe (« 10 250,00 » lu comme un seul nombre) : l'apercu le dit.
+        if type_ in ("Achat", "Vente") and op["cours"] and op["qty"] and op["montant"] \
+                and abs(op["qty"] * op["cours"] - op["montant"]) > max(0.02, 0.005 * op["montant"]):
+            op["alerte"] = ", ".join(x for x in (op["alerte"], "chiffres à vérifier : %g × %g ≠ %.2f"
+                                                 % (op["qty"], op["cours"], op["montant"])) if x)
         self.ops.append(op)
         return op
 
@@ -147,15 +191,42 @@ def _vers_eur(montant, devise, date):
 
 # ─── PDF ──────────────────────────────────────────────────────────────────────
 
-def texte_pdf(data: bytes) -> str:
-    from pypdf import PdfReader   # bibliothèque ajoutée en 4.5.0 (requirements.txt)
+def texte_pdf(data: bytes, mode: str = "plain") -> str:
+    """Texte d'un PDF. `mode` « layout » : pypdf replace chaque mot a sa place
+    sur la page (lignes reconstituees d'apres les positions), utile quand le
+    document ecrit ses colonnes l'une apres l'autre."""
+    from pypdf import PdfReader   # bibliothèque ajoutée en 4.4.3 (requirements.txt)
     lecteur = PdfReader(io.BytesIO(data))
     if lecteur.is_encrypted:
         try:
-            lecteur.decrypt("")
+            if not lecteur.decrypt(""):
+                raise ValueError
         except Exception:
-            raise ValueError("PDF protégé par un mot de passe")
-    return "\n".join((p.extract_text() or "") for p in lecteur.pages)
+            raise ValueError("PDF protégé par un mot de passe : ouvre-le et enregistre-le sans mot de passe")
+    pages = []
+    for p in lecteur.pages:
+        try:
+            pages.append(p.extract_text(extraction_mode=mode) or "")
+        except Exception:
+            pages.append("")
+    return _norm_texte("\n".join(pages))
+
+
+# Ce que les PDF de banque glissent dans leurs nombres et leurs mots : espaces
+# insecables ou fines entre les milliers (« 1 234,56 »), signe moins
+# typographique (« −12,50 »), apostrophe courbe (« d’opéré »), accents
+# decomposes (« e » + accent), ligatures (« ﬁ »), cesures invisibles.
+_ESPACES = re.compile("[\u00a0\u202f\u2007\u2009\u2002-\u2006\u2008\u200a]")
+
+
+def _norm_texte(t: str) -> str:
+    t = unicodedata.normalize("NFC", t or "")
+    t = _ESPACES.sub(" ", t)
+    t = t.replace("\u00ad", "").replace("\u2019", "'").replace("\u2018", "'")
+    t = re.sub("[\u2212\u2013](?=\\s?\\d)", "-", t)
+    for lig, rem in (("\ufb00", "ff"), ("\ufb01", "fi"), ("\ufb02", "fl"), ("\ufb03", "ffi"), ("\ufb04", "ffl")):
+        t = t.replace(lig, rem)
+    return t
 
 
 def _montants(ligne: str) -> list:
@@ -440,65 +511,750 @@ def _degiro_pdf(t: str, lot: _Lot):
     return True
 
 
+# Trade Republic (avis en français) ───────────────────────────────────────────
+
+# Nombre d'un avis : « 1 234,56 », « 0,3773 », « 53.703679652 », « -1,00 »
+_NB = r"-?\d[\d .]*(?:,\d+)?|-?\d+(?:\.\d+)?"
+
+
+def _traderepublic(t: str, lot: _Lot):
+    """Avis de Trade Republic en français (exemples réels anonymisés de
+    Portfolio Performance) : relevé de transaction d'un ordre, confirmation
+    d'un investissement programmé (plan), confirmation d'exécution d'une
+    vente, dividende ou distribution. Le relevé de compte mensuel n'est pas
+    lu (ni cours ni frais par ordre) : l'export CSV le remplace."""
+    if not re.search(r"RÉCAPITULATIF|RELEVÉ DE TRANSACTION|CONFIRMATION D", t):
+        return False
+    if "RÈGLEMENT DU VERSEMENT" in t:
+        # Versement sur le compte (utile pour un PEA ; ignoré sur un CTO)
+        total = re.findall(r"^TOTAL\s+(" + _NB + r")\s+EUR\s*$", t, re.M)
+        date = re.search(r"COMPTE-ESPÈCES[^\n]*\n\S+\s+(\d{2}[./]\d{2}[./]\d{4})", t)
+        if total and date:
+            lot.ajoute("Versement", _date_fr(date.group(1)), montant=abs(_n(total[-1])), origine="especes")
+        return True
+    isin = re.search(r"(?:ISIN\s*:?\s*)?\b(" + _ISIN + r")\b", t)
+    if not isin:
+        return False
+    # Ligne du titre : « Apple Inc. 0,92086 titre(s) 156,18 EUR 143,82 EUR »,
+    # « Nemetschek 0,487012 123,20 EUR 60,00 EUR », ou, pour un dividende sur
+    # plusieurs lignes, « US5949181045 0.561914 unit. 0.75 USD »
+    ligne = re.search(r"^(.*?)\s*(" + _NB + r")\s*(?:titre\(s\)|unit\.|Stk\.|pc\.)?\s+(" + _NB + r")\s+([A-Z]{3})\s+("
+                      + _NB + r")\s+([A-Z]{3})\s*$", t, re.M)
+    qte = re.search(r"(" + _NB + r")\s*(?:titre\(s\)|unit\.)", t)
+    nom = ""
+    if ligne and not re.fullmatch(_ISIN, ligne.group(1).strip()):
+        nom = ligne.group(1).strip()
+    if not nom:
+        avant = re.search(r"(?:POSITION|TITRE) QUANTITÉ[^\n]*\n([^\n]+)", t)
+        nom = re.sub(r"\s+" + _NB + r".*$", "", avant.group(1)).strip() if avant else ""
+    devise = (ligne.group(6) if ligne else "EUR").upper()
+    if re.search(r"\bDIVIDENDE\b|\bDISTRIBUTION\b", t[:1500]) and not re.search(r"-Order (?:Achat|Vente)", t):
+        nets = re.findall(r"^TOTAL\s+(" + _NB + r")\s+EUR\s*$", t, re.M)
+        date = re.search(r"(?:COMPTE-ESPÈCES|COMPTE DE RÈGLEMENT)[^\n]*\n\S+\s+(\d{2}[./]\d{2}[./]\d{4})", t)
+        if nets and date:
+            lot.ajoute("Dividende", _date_fr(date.group(1)), isin.group(1), nom,
+                       _n(qte.group(1)) if qte else 0, montant=abs(_n(nets[-1])))
+        return True
+    plan = "INVESTISSEMENT PROGRAMMÉ" in t.upper()
+    sens = re.search(r"-Order\s+(Achat|Vente)", t)
+    if not (ligne and (plan or sens)):
+        return True
+    vente = bool(sens and sens.group(1) == "Vente")
+    d = re.search(r"(?:le|exécuté le)\s+(\d{2}[./]\d{2}[./]\d{4})(?:\s+à\s+(\d{2}:\d{2}))?", t)
+    if not d:
+        return True
+    date = _date_fr(d.group(1))
+    qty, cours, brut = abs(_n(ligne.group(2))), _n(ligne.group(3)), abs(_n(ligne.group(5)))
+    frais = sum(abs(_n(x) or 0) for x in re.findall(r"^Frais[^\n]*?\s(" + _NB + r")\s+EUR\s*$", t, re.M))
+    taxe = sum(abs(_n(x) or 0) for x in re.findall(r"^Taxe sur les transactions[^\n]*?\s(" + _NB + r")\s+EUR\s*$", t, re.M | re.I))
+    if devise != "EUR":
+        brut, cours = _vers_eur(brut, devise, date), None
+        if brut is None:
+            lot.inconnues.append({"type": "devise " + devise, "categorie": "Trade Republic", "nom": nom, "date": date})
+            return True
+    ref = re.search(r"EXÉCUTION\s+([0-9a-f]{4}-[0-9a-f]{4})", t)
+    lot.ajoute("Vente" if vente else "Achat", date, isin.group(1), nom, qty, cours, brut, frais, taxe,
+               quand=date + ("T" + d.group(2) + ":00" if d.group(2) else ""),
+               ref="tr:" + ref.group(1) if ref else "", origine="plan" if plan else "ordre")
+    return True
+
+
+# Avis d'opéré d'une autre banque : lecteur universel ──────────────────────────
+
+# Rubriques d'un avis d'opéré, sous leurs noms habituels (ordre = priorité)
+_RUBRIQUES = [
+    ("qty", r"quantit[ée] ex[ée]cut[ée]e|quantit[ée]|qt[ée]|nombre de titres|nombre de parts|nb de titres|nombre"),
+    ("cours", r"cours d'ex[ée]cution|cours ex[ée]cut[ée]|prix d'ex[ée]cution|cours moyen|prix moyen|prix unitaire|"
+              r"valeur liquidative|cours unitaire|au cours de|cours|prix"),
+    ("brut", r"montant brut|montant de la transaction|montant transaction brut|montant n[ée]goci[ée]|"
+             r"montant de l'op[ée]ration|brut"),
+    ("taxe", r"taxe sur les transactions financi[eè]res|t\.t\.f\.?|ttf"),
+    ("frais", r"frais de courtage|frais de bourse|frais de transaction|frais externes|courtage|commissions?|frais"),
+    ("net", r"montant net (?:au (?:d[ée]bit|cr[ée]dit) de votre compte|[àa] (?:d[ée]biter|cr[ée]diter)|d[ée]bit[ée]|"
+            r"cr[ée]dit[ée])|net [àa] (?:d[ée]biter|cr[ée]diter)|montant net|total net|net|d[ée]bit|cr[ée]dit"),
+]
+# Dans un en-tete de tableau seulement : « Montant » seul est le brut
+_RUBRIQUES_TABLEAU = _RUBRIQUES + [("brut", r"montant")]
+_NUM = r"-?\d{1,3}(?:[ .]\d{3})+(?:,\d+)?|-?\d+(?:[.,]\d+)?"
+_DEV = r"(?:\s*(?:EUR|€|USD|\$|GBP|£|CHF))?"
+
+
+def _motif(m: str) -> str:
+    """Un nom de rubrique peut etre coupe en fin de ligne (« Taxe sur les
+    transactions » / « financières 31,23 EUR ») : une espace vaut toute suite
+    d'espaces ou de retours a la ligne."""
+    return m.replace(" ", r"\s+")
+
+
+def _accord(v: dict) -> bool:
+    """Les rubriques lues tiennent-elles ensemble ? parts x cours = brut, et
+    brut ± frais ± taxe = net (achat ou vente)."""
+    q, c, b, n = v.get("qty"), v.get("cours"), v.get("brut"), v.get("net")
+    f, tx = abs(v.get("frais") or 0), abs(v.get("taxe") or 0)
+    if q and c and b and abs(abs(q) * abs(c) - abs(b)) > max(0.02, 0.005 * abs(b)):
+        return False
+    if b and n and min(abs(abs(n) - (abs(b) + f + tx)), abs(abs(n) - (abs(b) - f - tx))) > 0.02:
+        return False
+    return True
+
+
+def _decoupages(ligne: str, n: int) -> list:
+    """Les façons de lire `n` nombres dans une ligne ou l'espace separe a la
+    fois les milliers (« 3 986,17 ») et les colonnes : « 12 332,181 3 986,17 »
+    est « 12 | 332,181 | 3 986,17 » ou « 12 332,181 | 3 986,17 ». Seul
+    l'accord des chiffres (_accord) tranche ensuite."""
+    toks = [re.sub(r"(?i)(eur|€|usd|\$)$", "", x) for x in ligne.split()]
+    toks = [x for x in toks if x]
+    if not toks or not all(re.fullmatch(r"-?\d+(?:[.,]\d+)?", x) for x in toks) or len(toks) > 14:
+        return []
+    res = []
+
+    def suite(i, groupes):
+        if len(groupes) > n:
+            return
+        if i == len(toks):
+            if len(groupes) == n:
+                res.append([_n(g) for g in groupes])
+            return
+        x = toks[i]
+        # Collé au nombre precedent comme groupe de milliers ?
+        if groupes and re.fullmatch(r"\d{3}(?:[.,]\d+)?", x) and re.fullmatch(r"-?\d{1,3}(?: \d{3})*", groupes[-1]):
+            suite(i + 1, groupes[:-1] + [groupes[-1] + " " + x])
+        suite(i + 1, groupes + [x])
+    suite(0, [])
+    return res
+
+
+def _rubriques_avis(t: str) -> dict:
+    """{rubrique: nombre} d'un avis : « Quantité : 10 », « Cours 52,30 EUR »,
+    et aussi un tableau dont les noms de colonnes sont sur une ligne et les
+    nombres sur une suivante (« Quantité  Cours  Montant brut » / « 10  52,30
+    523,00 »), courant chez les banques de réseau."""
+    res = {}
+    tout = "|".join("(?P<%s%d>%s)" % (k, i, _motif(m)) for i, (k, m) in enumerate(_RUBRIQUES_TABLEAU))
+    lignes = t.splitlines()
+    for i, l in enumerate(lignes):
+        # Tableau : au moins deux rubriques sur la ligne et aucun nombre
+        trouves = [m.lastgroup.rstrip("0123456789")
+                   for m in re.finditer(r"(?i)(?<![a-zà-ÿ])(?:" + tout + r")(?![a-zà-ÿ])", l)]
+        if len(trouves) < 2 or re.search(r"\d", l) or len(set(trouves)) != len(trouves):
+            continue
+        suite = next((x for x in lignes[i + 1:i + 5] if x.strip()), "")
+        bons = [dict(zip(trouves, d)) for d in _decoupages(suite, len(trouves))]
+        bons = [v for v in bons if all(x is not None for x in v.values()) and _accord(v)]
+        if bons:
+            for k, v in bons[0].items():
+                res.setdefault(k, v)
+    # Ligne du titre : « Acheter iShares Physical Gold ETC 1.002416 pc. 78.61
+    # EUR 78.80 EUR » (parts, cours, montant : retenue si parts x cours = montant)
+    if not ("qty" in res and ("cours" in res or "brut" in res)):
+        for m in re.finditer(r"(?m)^[^\n]*?\s(" + _NUM + r")\s*(?:pc\.|titre\(s\)|titres|parts?|unit\.|actions?)?\s+("
+                             + _NUM + r")\s*(?:EUR|€)\s+(" + _NUM + r")\s*(?:EUR|€)\s*$", t):
+            q, c, mt = (_n(x) for x in m.groups())
+            if q and c and mt and abs(abs(q) * c - abs(mt)) <= max(0.02, 0.005 * abs(mt)):
+                res.setdefault("qty", abs(q))
+                res.setdefault("cours", c)
+                res.setdefault("brut", abs(mt))
+                break
+    # Rubrique suivie de son nombre (meme ligne, ou ligne suivante)
+    for k, motif in _RUBRIQUES:
+        if k in res:
+            continue
+        m = re.search(r"(?im)(?:^|[\s|(])(?:" + _motif(motif) + r")(?![a-zà-ÿ])[^\S\n]*(?:\([^)]{0,40}\))?[^\S\n]*(?::|\.{2,})?\s*("
+                      + _NUM + ")" + _DEV + r"(?![\d/])", t)
+        if m:
+            res[k] = _n(m.group(1))
+    # « ACHAT de 25 BNP PARIBAS … au cours de 61,08 EUR »
+    if "qty" not in res:
+        m = re.search(r"(?:ACHAT|VENTE|SOUSCRIPTION|RACHAT|Achat|Vente|Souscription|Rachat)\s+(?:de\s+)?(" + _NUM
+                      + r")\s+(?:titres?\s+|parts?\s+|actions?\s+)?[A-Za-z]", t)
+        if m:
+            res["qty"] = _n(m.group(1))
+    return res
+
+
+def _avis_generique(t: str, lot: _Lot):
+    """Avis d'opéré d'une banque sans règle propre (Crédit Agricole, BNP,
+    Société Générale, LCL, Caisse d'Épargne, Banque Populaire, La Banque
+    Postale, CIC, Crédit Mutuel… : aucun exemple public). Un seul titre par
+    avis ; les rubriques sont cherchées par leur nom habituel
+    (_rubriques_avis).
+
+    Rien n'est repris si les chiffres ne tiennent pas ensemble : parts x
+    cours = montant brut, et brut ± frais = net quand le net est donné. Un
+    avis mal compris est ainsi « non lu » plutôt qu'importé faux."""
+    isins = set(re.findall(r"\b(" + _ISIN + r")\b", t))
+    if len(isins) != 1:
+        return False
+    isin = isins.pop()
+    # Un avis en français seulement (deux mots du métier au moins) : un avis
+    # en néerlandais ou en allemand n'a ni les mêmes rubriques ni les mêmes dates
+    francais = {m.lower() for m in re.findall(r"(?i)(?<![a-zà-ÿ])(montant|quantit[ée]|courtage|commission|frais|achat|"
+                                              r"vente|dividende|souscription|cours)(?![a-zà-ÿ])", t)}
+    if len(francais) < 2:
+        return False
+
+    def date_de(motifs):
+        for motif in motifs:
+            m = re.search(r"(?i)" + motif + r"\s*:?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{1,2} [a-zéû]+\.? \d{4})", t)
+            if m and _date_fr(m.group(1)):
+                return _date_fr(m.group(1))
+        return None
+    nom = ""
+    m = re.search(r"(?im)^\s*(?:valeur|titre|libell[ée]|d[ée]signation|instrument|nom de la valeur)\s*:?\s*([^\n]+)", t)
+    if m:
+        nom = re.sub(r"(?i)\(?\s*(?:code\s*)?(?:isin\s*:?\s*)?" + isin + r"\s*\)?", "", m.group(1)).strip(" -:")
+    if not nom:
+        m = re.search(r"(?m)^\s*([^\n:]{3,60}?)\s*[(\[]?\s*(?:ISIN\s*:?\s*)?" + isin, t)
+        nom = (m.group(1) if m else "").strip(" -:(")
+    nom = re.sub(r"(?i)^(?:code\s*)?isin\s*:?", "", nom).strip()
+    r = _rubriques_avis(t)
+    haut = t[:3000]
+    achat = re.search(r"(?<![A-Za-zà-ÿ])(?:ACHAT|Achat|achat|Acheter|ACHETER|SOUSCRIPTION|Souscription)(?![A-Za-zà-ÿ])", haut)
+    vente = re.search(r"(?<![A-Za-zà-ÿ])(?:VENTE|Vente|vente|Vendre|VENDRE|RACHAT|Rachat|CESSION|Cession)(?![A-Za-zà-ÿ])", haut)
+    est_div = re.search(r"(?i)(?<![a-zà-ÿ])(dividende|coupon|distribution|acompte sur dividende)(?![a-zà-ÿ])", haut)
+    if est_div and not achat and not vente:
+        # Date du paiement (pas celle du détachement), net en euros nommé comme tel
+        date = date_de((r"date de paiement", r"pay[ée] le", r"cr[ée]dit[ée] le", r"date de r[èe]glement",
+                        r"date de valeur", r"date d'op[ée]ration"))
+        m = re.search(r"(?i)(?:montant net|net [àa] cr[ée]diter|net cr[ée]dit[ée]|montant cr[ée]dit[ée])[^\S\n]*"
+                      r"(?:\([^)]{0,40}\))?[^\S\n]*:?\s*(" + _NUM + r")\s*(EUR|€|[A-Z]{3})?", t)
+        net = _n(m.group(1)) if m and (m.group(2) or "EUR") in ("EUR", "€") else None
+        brut = r.get("brut")
+        if not date or not net or net <= 0 or (brut and net > brut + 0.01):
+            return False
+        lot.ajoute("Dividende", date, isin, nom, abs(r.get("qty") or 0), montant=net,
+                   alerte="lu par le lecteur universel : vérifie les chiffres")
+        return True
+    # Date de l'exécution de l'ordre (pas celle du règlement, deux jours après)
+    date = date_de((r"date d'ex[ée]cution", r"ex[ée]cut[ée]e? le", r"ex[ée]cution", r"date de n[ée]gociation",
+                    r"date de l'op[ée]ration", r"date d'op[ée]ration", r"date de l'ordre", r"\ble",
+                    r"date(?! de (?:r[èe]glement|valeur|livraison|paiement))"))
+    if not date:
+        return False
+    if bool(achat) == bool(vente):
+        m = re.search(r"(?i)(?:sens|nature|type d'op[ée]ration|op[ée]ration)\s*:?\s*(achat|vente|souscription|rachat)", t)
+        if not m:
+            return False
+        est_vente = m.group(1).lower() in ("vente", "rachat")
+    else:
+        est_vente = bool(vente)
+    qty, cours, brut, net = r.get("qty"), r.get("cours"), r.get("brut"), r.get("net")
+    frais, taxe = abs(r.get("frais") or 0), abs(r.get("taxe") or 0)
+    if not qty:
+        return False
+    qty = abs(qty)
+    cours = abs(cours) if cours else None
+    if brut is None and cours:
+        brut = round(qty * cours, 2)
+    if not brut:
+        return False
+    brut = abs(brut)
+    if cours and abs(qty * cours - brut) > max(0.02, 0.005 * brut):
+        return False
+    if net:
+        attendu = brut + frais + taxe if not est_vente else brut - frais - taxe
+        if abs(abs(net) - attendu) > 0.02:
+            # Frais lus de travers ou absents : le net les donne
+            ecart = abs(net) - brut - taxe if not est_vente else brut - abs(net) - taxe
+            # (pas si l'avis parle d'une taxe qui n'a pas ete lue : elle serait
+            # comptee dans les frais)
+            if 0 <= ecart <= max(50.0, 0.05 * brut) and (taxe or not re.search(
+                    r"(?i)taxe\s+sur\s+les\s+transactions|T\.?T\.?F", t)):
+                frais = round(ecart, 2)
+            else:
+                return False
+    heure = re.search(r"(?i)(?:heure d'ex[ée]cution|heure)\s*:?\s*(\d{1,2}[:h]\d{2}(?::\d{2})?)", t)
+    lot.ajoute("Vente" if est_vente else "Achat", date, isin, nom, qty, cours, brut, frais, taxe,
+               quand=date + ("T" + heure.group(1).replace("h", ":") if heure else ""),
+               alerte="lu par le lecteur universel : vérifie les chiffres")
+    return True
+
+
 _LECTEURS_PDF = [("Fortuneo", _fortuneo, r"Fortuneo|Arkéa Direct Bank|ARKEA"),
                  # Le nom de la banque est au pied de page ; la forme de l'avis suffit aussi
                  ("BoursoBank", _boursobank, r"Boursorama|BoursoBank|boursobank|OPERATION (?:DE BOURSE|SUR OPC)[\s\S]*Code ISIN :|COUPONS REMBOURSEMENTS"),
                  ("Bourse Direct", _boursedirect, r"Bourse Direct"),
                  ("Saxo", _saxo, r"Saxo Bank"),
-                 ("Degiro", _degiro_pdf, r"DEGIRO|flatex")]
+                 ("Degiro", _degiro_pdf, r"DEGIRO|flatex"),
+                 ("Trade Republic", _traderepublic, r"TRADE REPUBLIC|Trade Republic")]
 
 
 def lire_pdf(data: bytes, nom: str = "") -> dict:
+    """Lu deux fois si besoin : texte dans l'ordre du document, puis texte
+    replace d'apres la position des mots (`layout`) quand le premier ne donne
+    rien. Certaines banques ecrivent tous les libelles d'un tableau, puis
+    toutes les valeurs : « Quantité » et « 10 » ne sont alors plus cote a cote
+    dans le premier texte, mais le sont dans le second."""
     t = texte_pdf(data)
     if not t.strip():
-        return {"ok": False, "erreur": "aucun texte dans ce PDF (document scanné ?)"}
-    return lire_texte_pdf(t)
+        return {"ok": False, "erreur": "aucun texte dans ce PDF (document scanné ou photo) : "
+                                       "Pilote ne lit que les PDF téléchargés depuis l'espace client"}
+    r = lire_texte_pdf(t)
+    if r.get("ok") and r.get("operations"):
+        return r
+    try:
+        r2 = lire_texte_pdf(texte_pdf(data, "layout"))
+    except Exception:
+        return r
+    if r2.get("ok") and (r2.get("operations") or not r.get("ok")):
+        return r2
+    return r
 
 
 def lire_texte_pdf(t: str) -> dict:
     """Le texte d'un PDF (séparé pour les essais sur les exemples)."""
+    t = _norm_texte(t)
     for banque, lecteur, signe in _LECTEURS_PDF:
         if re.search(signe, t):
             lot = _Lot(banque)
             lot.inconnues = []
             if lecteur(t, lot):
                 return {"ok": True, "banque": banque, "operations": lot.ops, "inconnues": lot.inconnues}
+    # Aucune banque connue : un avis d'opéré ordinaire, lu s'il tient debout
+    lot = _Lot("Autre banque")
+    lot.inconnues = []
+    if _avis_generique(t, lot) and lot.ops:
+        return {"ok": True, "banque": "Autre banque", "operations": lot.ops, "inconnues": lot.inconnues}
+    # Documents qui ne sont pas des opérations : dire lesquels plutôt que « non reconnu »
+    if re.search(r"SYNTHÈSE DU RELEVÉ DE COMPTE", t) and re.search(r"(?i)trade republic", t):
+        return {"ok": False, "erreur": "relevé de compte Trade Republic : il ne donne ni le cours ni les frais "
+                                       "de chaque ordre. Importe plutôt l'export CSV (Profil → Relevés → "
+                                       "Export des transactions)"}
+    if re.search(r"(?i)imprim[ée] fiscal unique|\bIFU\b", t):
+        return {"ok": False, "erreur": "imprimé fiscal unique (IFU) : il résume l'année pour les impôts, "
+                                       "sans les opérations. Importe les avis d'opéré ou l'historique des opérations"}
+    if len(set(re.findall(r"\b(" + _ISIN + r")\b", t))) > 1 and \
+            re.search(r"(?i)relev[ée] de portefeuille|[ée]valuation (?:de|du) portefeuille|relev[ée] de titres|"
+                      r"inventaire|valorisation", t) and not re.search(r"(?i)\bachat\b|\bvente\b", t):
+        return {"ok": False, "erreur": "relevé de portefeuille (positions à une date) : Pilote importe les "
+                                       "opérations, pas les positions. Importe les avis d'opéré ou l'historique"}
     return {"ok": False, "erreur": "document non reconnu (banque ou type d'avis que Pilote ne sait pas lire)"}
 
 
 # ─── Tableaux : CSV, Excel, XML ──────────────────────────────────────────────
 
 def _lignes_csv(texte: str) -> list:
-    premiere = texte.splitlines()[0] if texte.strip() else ""
-    sep = max([",", ";", "\t", "|"], key=premiere.count)
+    """Lignes d'un CSV. Le separateur est celui qui decoupe le mieux les 30
+    premieres lignes en un meme nombre de colonnes : la premiere ligne seule
+    ne suffit pas (titre « Relevé du compte n° … » avant l'en-tete)."""
+    debut = [l for l in texte.splitlines()[:30] if l.strip()]
+
+    def score(sep):
+        try:
+            lignes = list(csv.reader(io.StringIO("\n".join(debut)), delimiter=sep))
+        except csv.Error:
+            return 0
+        nb = [len(r) for r in lignes if len(r) > 1]
+        if not nb:
+            return 0
+        frequent = max(set(nb), key=nb.count)
+        return nb.count(frequent) * frequent
+    sep = max([";", ",", "\t", "|"], key=score)
     return [r for r in csv.reader(io.StringIO(texte), delimiter=sep) if any(c.strip() for c in r)]
 
 
-def _lignes_xlsx(data: bytes) -> list:
-    """Première feuille d'un .xlsx, sans bibliothèque : texte partagé + cellules."""
-    z = zipfile.ZipFile(io.BytesIO(data))
-    ns = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-    partages = []
-    if "xl/sharedStrings.xml" in z.namelist():
-        for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(ns + "si"):
-            partages.append("".join(x.text or "" for x in si.iter(ns + "t")))
-    feuille = sorted(n for n in z.namelist() if n.startswith("xl/worksheets/sheet"))[0]
+def _lignes_html(texte: str) -> list:
+    """Tableau d'une page HTML : beaucoup de banques livrent sous le nom
+    « .xls » une page web contenant un tableau."""
+    from html.parser import HTMLParser
+
+    class Lecteur(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.lignes, self.ligne, self.cell = [], None, None
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "tr":
+                self.ligne = []
+            elif tag in ("td", "th") and self.ligne is not None:
+                self.cell = []
+            elif tag == "br" and self.cell is not None:
+                self.cell.append(" ")
+
+        def handle_endtag(self, tag):
+            if tag in ("td", "th") and self.cell is not None and self.ligne is not None:
+                self.ligne.append(" ".join("".join(self.cell).split()))
+                self.cell = None
+            elif tag == "tr" and self.ligne is not None:
+                if any(c for c in self.ligne):
+                    self.lignes.append(self.ligne)
+                self.ligne = None
+
+        def handle_data(self, data):
+            if self.cell is not None:
+                self.cell.append(data)
+    lec = Lecteur()
+    lec.feed(texte)
+    return lec.lignes
+
+
+def _lignes_ods(z) -> list:
+    """Premiere feuille d'un classeur LibreOffice (.ods) : content.xml. Les
+    dates y sont ecrites en clair (office:date-value), les nombres aussi."""
+    O = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}"
+    T = "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}"
+    racine = ET.fromstring(z.read("content.xml"))
+    feuille = next(racine.iter(T + "table"), None)
     lignes = []
-    for row in ET.fromstring(z.read(feuille)).iter(ns + "row"):
+    if feuille is None:
+        return lignes
+    for row in feuille.iter(T + "table-row"):
+        cells = []
+        for c in row:
+            if c.tag not in (T + "table-cell", T + "covered-table-cell"):
+                continue
+            n = min(int(c.get(T + "number-columns-repeated", "1") or 1), 200)
+            typ = c.get(O + "value-type")
+            if typ == "date":
+                val = (c.get(O + "date-value") or "")[:19]
+            elif typ in ("float", "currency", "percentage"):
+                val = c.get(O + "value") or ""
+            else:
+                val = " ".join("".join(p.itertext()) for p in c if p.tag.endswith("}p"))
+            cells += [val] * n
+        while cells and not cells[-1]:
+            cells.pop()
+        if cells:
+            lignes.append(cells)
+        if len(lignes) > 100000:
+            break
+    return lignes
+
+
+def _xml_local(el, nom):
+    """Elements `nom` sous `el`, quel que soit l'espace de noms (le format
+    « strict » d'Excel n'a pas le meme que le format courant)."""
+    return [x for x in el.iter() if x.tag.rsplit("}", 1)[-1] == nom]
+
+
+# Formats de nombre d'Excel qui sont des dates (identifiants predefinis)
+_XLSX_DATES = set(range(14, 23)) | set(range(27, 37)) | set(range(45, 48)) | set(range(50, 59))
+
+
+def _lignes_xlsx(data: bytes) -> list:
+    """Première feuille d'un .xlsx, sans bibliothèque : texte partagé + cellules.
+
+    Une date est rangee par Excel en nombre de jours depuis 1900 (« 45377 ») :
+    les cellules au format date sont rendues en AAAA-MM-JJ (styles.xml),
+    sinon aucune ligne n'avait de date et rien n'etait lu."""
+    z = zipfile.ZipFile(io.BytesIO(data))
+    noms = z.namelist()
+    partages = []
+    if "xl/sharedStrings.xml" in noms:
+        for si in _xml_local(ET.fromstring(z.read("xl/sharedStrings.xml")), "si"):
+            partages.append("".join(x.text or "" for x in _xml_local(si, "t")))
+    # Styles « date » : formats predefinis ou personnalises contenant j/m/a
+    dates_styles, base1904 = set(), False
+    try:
+        st = ET.fromstring(z.read("xl/styles.xml"))
+        perso = {f.get("numFmtId"): f.get("formatCode", "") for f in _xml_local(st, "numFmt")}
+        xfs = _xml_local(st, "cellXfs")
+        for i, xf in enumerate(_xml_local(xfs[0], "xf") if xfs else []):
+            fid = int(xf.get("numFmtId", "0") or 0)
+            code = re.sub(r'"[^"]*"|\[[^\]]*\]', "", perso.get(str(fid), "")).lower()
+            if fid in _XLSX_DATES or (str(fid) in perso and re.search(r"[dy]|mm?[-/.]", code)):
+                dates_styles.add(i)
+    except Exception:
+        pass
+    try:
+        wb = ET.fromstring(z.read("xl/workbook.xml"))
+        base1904 = any(x.get("date1904") in ("1", "true") for x in _xml_local(wb, "workbookPr"))
+    except Exception:
+        wb = None
+    # Premiere feuille du classeur (ordre du classeur, pas du nom de fichier)
+    feuille = None
+    try:
+        rid = _xml_local(wb, "sheet")[0].get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
+        for rel in _xml_local(ET.fromstring(z.read("xl/_rels/workbook.xml.rels")), "Relationship"):
+            if rel.get("Id") == rid:
+                cible = rel.get("Target", "").lstrip("/")
+                feuille = cible if cible.startswith("xl/") else "xl/" + cible
+    except Exception:
+        feuille = None
+    if feuille not in noms:
+        feuilles = sorted((n for n in noms if n.lower().startswith("xl/worksheets/") and n.lower().endswith(".xml")),
+                          key=lambda n: (len(n), n.lower()))
+        if not feuilles:
+            raise ValueError("classeur Excel sans feuille lisible")
+        feuille = feuilles[0]
+    origine = datetime.date(1904, 1, 1) if base1904 else datetime.date(1899, 12, 30)
+    lignes = []
+    for row in _xml_local(ET.fromstring(z.read(feuille)), "row"):
         cells = {}
-        for c in row.iter(ns + "c"):
-            ref = re.match(r"([A-Z]+)", c.get("r", "A"))
-            col = 0
-            for ch in ref.group(1):
-                col = col * 26 + ord(ch) - 64
-            v = c.find(ns + "v")
-            val = v.text if v is not None else "".join(x.text or "" for x in c.iter(ns + "t"))
+        for n, c in enumerate(_xml_local(row, "c")):
+            ref = re.match(r"([A-Z]+)", c.get("r", "") or "")
+            if ref:
+                col = 0
+                for ch in ref.group(1):
+                    col = col * 26 + ord(ch) - 64
+                col -= 1
+            else:
+                col = max(cells) + 1 if cells else 0
+            v = _xml_local(c, "v")
+            val = v[0].text if v else "".join(x.text or "" for x in _xml_local(c, "t"))
             if c.get("t") == "s" and val is not None:
                 val = partages[int(val)]
-            cells[col - 1] = val or ""
+            elif c.get("t") in (None, "n") and val and int(c.get("s", "0") or 0) in dates_styles:
+                try:
+                    j = float(val)
+                    val = (origine + datetime.timedelta(days=int(j))).isoformat()
+                    if j % 1:
+                        sec = round((j % 1) * 86400)
+                        val += "T%02d:%02d:%02d" % (sec // 3600, sec % 3600 // 60, sec % 60)
+                except (ValueError, OverflowError):
+                    pass
+            cells[col] = val or ""
         if cells:
             lignes.append([cells.get(i, "") for i in range(max(cells) + 1)])
     return lignes
+
+
+def _flux_ole(data: bytes, noms=("Workbook", "Book")) -> bytes:
+    """Contenu d'un flux d'un fichier OLE2 (le conteneur des .xls d'Excel 97
+    à 2003), sans bibliothèque. None si absent."""
+    import struct
+    if data[:8] != b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
+        return None
+    taille = 1 << struct.unpack_from("<H", data, 0x1E)[0]
+    mini = 1 << struct.unpack_from("<H", data, 0x20)[0]
+    nb_fat, rep0 = struct.unpack_from("<II", data, 0x2C)
+    seuil, minifat0, nb_minifat, difat0, nb_difat = struct.unpack_from("<IIIII", data, 0x38)
+
+    def secteur(n):
+        return data[(n + 1) * taille:(n + 2) * taille]
+    difat = list(struct.unpack_from("<109I", data, 0x4C))
+    n, vus = difat0, 0
+    while n < 0xFFFFFFFA and vus < nb_difat:
+        s = secteur(n)
+        difat += struct.unpack_from("<%dI" % (taille // 4 - 1), s)
+        n = struct.unpack_from("<I", s, taille - 4)[0]
+        vus += 1
+    fat = []
+    for f in difat[:nb_fat]:
+        if f < 0xFFFFFFFA:
+            fat += struct.unpack_from("<%dI" % (taille // 4), secteur(f))
+
+    def chaine(n, table, lire, limite):
+        out, vus = [], set()
+        while n < 0xFFFFFFFA and n < len(table) and n not in vus and len(out) < limite:
+            vus.add(n)
+            out.append(lire(n))
+            n = table[n]
+        return b"".join(out)
+    repertoire = chaine(rep0, fat, secteur, 100000)
+    entrees = []
+    for i in range(0, len(repertoire) - 127, 128):
+        e = repertoire[i:i + 128]
+        lg = struct.unpack_from("<H", e, 0x40)[0]
+        nom = e[:max(0, lg - 2)].decode("utf-16-le", "replace")
+        typ = e[0x42]
+        debut, longueur = struct.unpack_from("<II", e, 0x74)
+        entrees.append((nom, typ, debut, longueur))
+    racine = next((x for x in entrees if x[1] == 5), None)
+    minifat = []
+    if nb_minifat:
+        minifat = list(struct.unpack_from("<%dI" % (nb_minifat * taille // 4), chaine(minifat0, fat, secteur, nb_minifat)))
+    flux_mini = chaine(racine[2], fat, secteur, 1000000) if racine else b""
+    for voulu in noms:
+        for nom, typ, debut, longueur in entrees:
+            if typ == 2 and nom == voulu:
+                if longueur < seuil:
+                    brut = chaine(debut, minifat, lambda k: flux_mini[k * mini:(k + 1) * mini], 1000000)
+                else:
+                    brut = chaine(debut, fat, secteur, 1000000)
+                return brut[:longueur]
+    return None
+
+
+def _lignes_xls(data: bytes) -> list:
+    """Première feuille d'un classeur Excel 97-2003 (.xls, BIFF8), sans
+    bibliothèque : textes partagés (SST), nombres, dates (formats date des
+    cellules), résultats de formules. Une banque le donne parfois tel quel."""
+    import struct
+    flux = _flux_ole(data)
+    if not flux:
+        raise ValueError("classeur .xls illisible")
+    # Enregistrements : (type, contenu), les CONTINUE recollés à leur parent
+    recs, i = [], 0
+    while i + 4 <= len(flux):
+        typ, lg = struct.unpack_from("<HH", flux, i)
+        recs.append((typ, flux[i + 4:i + 4 + lg], i))
+        i += 4 + lg
+
+    def chaine_u(b, pos, lg_octets=2):
+        """XLUnicodeString : longueur, drapeau, caractères -> (texte, fin)."""
+        n = struct.unpack_from("<H" if lg_octets == 2 else "<B", b, pos)[0]
+        pos += lg_octets
+        f = b[pos]
+        pos += 1
+        if f & 1:
+            return b[pos:pos + 2 * n].decode("utf-16-le", "replace"), pos + 2 * n
+        return b[pos:pos + n].decode("latin-1"), pos + n
+    formats, xfs, base1904, sst, feuilles = {}, [], False, [], []
+    for k, (typ, b, debut) in enumerate(recs):
+        if typ == 0x041E and len(b) > 4:          # FORMAT
+            formats[struct.unpack_from("<H", b, 0)[0]] = chaine_u(b, 2)[0]
+        elif typ == 0x00E0 and len(b) >= 4:       # XF
+            xfs.append(struct.unpack_from("<H", b, 2)[0])
+        elif typ == 0x0022 and len(b) >= 2:       # DATEMODE
+            base1904 = struct.unpack_from("<H", b, 0)[0] == 1
+        elif typ == 0x0085 and len(b) >= 8:       # BOUNDSHEET
+            feuilles.append((struct.unpack_from("<I", b, 0)[0], b[4], b[5]))
+        elif typ == 0x00FC:                       # SST (+ CONTINUE)
+            morceaux = [b]
+            for t2, b2, _ in recs[k + 1:]:
+                if t2 != 0x003C:
+                    break
+                morceaux.append(b2)
+            sst = _sst_xls(morceaux)
+    dates = set()
+    for i, fid in enumerate(xfs):
+        code = re.sub(r'"[^"]*"|\[[^\]]*\]', "", formats.get(fid, "")).lower()
+        if fid in _XLSX_DATES or (fid in formats and re.search(r"[dy]|mm?[-/.]", code)):
+            dates.add(i)
+    origine = datetime.date(1904, 1, 1) if base1904 else datetime.date(1899, 12, 30)
+
+    def valeur(nb, xf):
+        if xf in dates:
+            try:
+                d = (origine + datetime.timedelta(days=int(nb))).isoformat()
+                if nb % 1:
+                    sec = round((nb % 1) * 86400)
+                    d += "T%02d:%02d:%02d" % (sec // 3600, sec % 3600 // 60, sec % 60)
+                return d
+            except (ValueError, OverflowError):
+                pass
+        return ("%d" % nb) if float(nb).is_integer() and abs(nb) < 1e15 else repr(nb)
+
+    def rk(v):
+        """Nombre compressé d'Excel : entier sur 30 bits, ou haut d'un double ;
+        divisé par 100 si le bit 0 le dit."""
+        if v & 2:
+            nb = float(struct.unpack("<i", struct.pack("<I", v & 0xFFFFFFFC))[0] >> 2)
+        else:
+            nb = struct.unpack("<d", struct.pack("<Q", (v & 0xFFFFFFFC) << 32))[0]
+        return nb / 100 if v & 1 else nb
+    debut_feuille = next((o for o, vis, sorte in feuilles if sorte == 0 and vis == 0), feuilles[0][0] if feuilles else None)
+    cells, dans, attente = {}, debut_feuille is None, None
+    for typ, b, debut in recs:
+        if not dans:
+            dans = debut == debut_feuille
+            continue
+        if typ == 0x000A:                          # EOF de la feuille
+            break
+        if typ in (0x00FD, 0x0203, 0x027E, 0x0204, 0x0006) and len(b) >= 6:
+            r, c, xf = struct.unpack_from("<HHH", b, 0)
+            if typ == 0x00FD and len(b) >= 10:     # LABELSST
+                n = struct.unpack_from("<I", b, 6)[0]
+                cells[(r, c)] = sst[n] if n < len(sst) else ""
+            elif typ == 0x0203 and len(b) >= 14:   # NUMBER
+                cells[(r, c)] = valeur(struct.unpack_from("<d", b, 6)[0], xf)
+            elif typ == 0x027E and len(b) >= 10:   # RK
+                cells[(r, c)] = valeur(rk(struct.unpack_from("<I", b, 6)[0]), xf)
+            elif typ == 0x0204:                    # LABEL
+                cells[(r, c)] = chaine_u(b, 6)[0]
+            elif typ == 0x0006 and len(b) >= 14:   # FORMULA : résultat gardé
+                if b[12:14] == b"\xff\xff":
+                    attente = (r, c) if b[6] == 0 else None
+                else:
+                    cells[(r, c)] = valeur(struct.unpack_from("<d", b, 6)[0], xf)
+        elif typ == 0x00BD and len(b) >= 6:        # MULRK
+            r, c0 = struct.unpack_from("<HH", b, 0)
+            for j in range((len(b) - 6) // 6):
+                xf, v = struct.unpack_from("<HI", b, 4 + 6 * j)
+                cells[(r, c0 + j)] = valeur(rk(v), xf)
+        elif typ == 0x0207 and attente:            # STRING (résultat texte d'une formule)
+            cells[attente] = chaine_u(b, 0)[0]
+            attente = None
+    if not cells:
+        return []
+    nb_lignes = max(r for r, _ in cells) + 1
+    lignes = []
+    for r in range(min(nb_lignes, 100000)):
+        cols = [c for (rr, c) in cells if rr == r]
+        if cols:
+            lignes.append([cells.get((r, c), "") for c in range(max(cols) + 1)])
+    return lignes
+
+
+def _sst_xls(morceaux: list) -> list:
+    """Table des textes partagés d'un .xls (SST), y compris les textes coupés
+    entre deux enregistrements CONTINUE (chaque suite recommence par un octet
+    disant si les caractères sont sur un ou deux octets)."""
+    import struct
+    out = []
+    if not morceaux or len(morceaux[0]) < 8:
+        return out
+    uniques = struct.unpack_from("<I", morceaux[0], 4)[0]
+    m, pos = 0, 8
+
+    def octets(n):
+        nonlocal m, pos
+        res = b""
+        while n > 0 and m < len(morceaux):
+            dispo = len(morceaux[m]) - pos
+            if dispo <= 0:
+                m, pos = m + 1, 0
+                continue
+            pris = min(n, dispo)
+            res += morceaux[m][pos:pos + pris]
+            pos += pris
+            n -= pris
+        return res
+    for _ in range(uniques):
+        if m >= len(morceaux) or (m == len(morceaux) - 1 and pos >= len(morceaux[m])):
+            break
+        if pos >= len(morceaux[m]):
+            m, pos = m + 1, 0
+        tete = octets(3)
+        if len(tete) < 3:
+            break
+        cch, f = struct.unpack("<HB", tete)
+        runs = struct.unpack("<H", octets(2))[0] if f & 8 else 0
+        ext = struct.unpack("<I", octets(4))[0] if f & 4 else 0
+        texte, reste, large = "", cch, f & 1
+        while reste > 0 and m < len(morceaux):
+            dispo = len(morceaux[m]) - pos
+            if dispo <= 0:
+                # Suite dans le CONTINUE suivant : nouvel octet d'options
+                m, pos = m + 1, 0
+                if m >= len(morceaux):
+                    break
+                large = morceaux[m][0] & 1
+                pos = 1
+                continue
+            n = min(reste, dispo // 2 if large else dispo)
+            if n == 0:
+                m, pos = m + 1, 0
+                continue
+            b = morceaux[m][pos:pos + n * (2 if large else 1)]
+            texte += b.decode("utf-16-le", "replace") if large else b.decode("latin-1")
+            pos += len(b)
+            reste -= n
+        octets(4 * runs + ext)
+        out.append(texte)
+    return out
 
 
 def _norm(s: str) -> str:
@@ -743,29 +1499,38 @@ def _degiro_compte(entetes, lignes, lot):
 CHAMPS = ["date", "heure", "sens", "isin", "nom", "qty", "cours", "devise", "montant", "frais", "ref"]
 _SYNONYMES = {
     "date": ["date", "datum", "trade date", "date d'execution", "date d'operation", "date operation",
-             "date de l'operation", "tradedate", "date execution", "date/time", "date et heure"],
+             "date de l'operation", "tradedate", "date execution", "date/time", "date et heure",
+             "date de negociation", "date d'ordre", "date de l'ordre", "transaction date", "date de transaction"],
     "heure": ["heure", "time", "tijd", "zeit", "uhrzeit"],
     "sens": ["sens", "type", "type d'operation", "operation", "nature", "buy/sell", "b/s", "action",
              "transaction", "type de transaction", "libelle", "description", "omschrijving"],
     "isin": ["isin", "code isin", "instrument isin", "isin code"],
     "nom": ["produit", "product", "nom", "valeur", "titre", "instrument", "name", "designation",
-            "libelle", "nom de la valeur", "description"],
-    "qty": ["quantite", "quantity", "qty", "nombre", "nb", "aantal", "anzahl", "no. of shares", "parts", "shares"],
+            "libelle", "nom de la valeur", "description", "libelle valeur", "nom du titre", "support",
+            "ticker", "symbol", "symbole", "code valeur", "security", "titre financier"],
+    "qty": ["quantite", "quantity", "qty", "nombre", "nb", "aantal", "anzahl", "no. of shares", "parts", "shares",
+            "qte", "quantite executee", "nombre de titres", "nombre de parts", "nb titres", "qte executee"],
     "cours": ["cours", "price", "prix", "koers", "kurs", "prix unitaire", "price / share", "tradeprice",
-              "cours d'execution", "prix d'execution"],
+              "cours d'execution", "prix d'execution", "cours execute", "price per share", "prix par action",
+              "cours net", "cours brut", "prix moyen", "cours moyen", "prix d'achat", "prix d'exe"],
     "devise": ["devise", "currency", "currencyprimary", "monnaie"],
     "montant": ["montant eur", "value eur", "waarde eur", "total eur", "totaal eur", "montant net", "net",
-                "montant", "total", "montant negocie", "amount", "net amount", "valeur eur", "montant brut"],
+                "montant", "total", "montant negocie", "amount", "net amount", "valeur eur", "montant brut",
+                "total amount", "montant total", "montant de l'operation", "montant operation",
+                "montant (eur)", "montant en euros", "montant net (eur)"],
     "frais": ["frais", "frais de courtage", "courtage", "commission", "fees", "fee", "transactiekosten",
               "kosten", "transaction and/or third party fees eur", "frais de courtage et/ou de parties tierces eur",
-              "ibcommission", "frais eur"],
+              "ibcommission", "frais eur", "commissions", "frais de transaction", "frais (eur)", "frais totaux"],
     "ref": ["id ordre", "order id", "reference", "id", "numero d'ordre", "order-id"],
 }
 
 
 def colonnes_auto(entetes: list) -> dict:
     """{champ: indice} pour les colonnes reconnues par leur nom ; une colonne
-    ne sert qu'à un champ. « montant » préfère une colonne en euros."""
+    ne sert qu'à un champ. « montant » préfère une colonne en euros. Un
+    en-tête plus long qu'un nom connu (« Quantité exécutée », « Date de
+    valeur ») ne compte qu'en second, et jamais pour un taux de change
+    (« Cours de change »)."""
     pris, res = set(), {}
     for champ in CHAMPS:
         for nm in _SYNONYMES[champ]:
@@ -775,13 +1540,42 @@ def colonnes_auto(entetes: list) -> dict:
                 res[champ] = idx[0]
                 pris.add(idx[0])
                 break
+    for champ in ("date", "qty", "cours", "isin", "devise"):
+        if champ in res:
+            continue
+        for nm in _SYNONYMES[champ]:
+            idx = [i for i, e in enumerate(entetes) if i not in pris and e.startswith(nm + " ")
+                   and not re.search(r"change|fx|taux|rate|valeur$", e)]
+            if idx:
+                res[champ] = idx[0]
+                pris.add(idx[0])
+                break
     return res
+
+
+# Noms de colonnes qui font reconnaitre la ligne d'en-tete d'un tableau
+_ENTETES_CONNUS = {nm for noms in _SYNONYMES.values() for nm in noms} | {
+    "buy/sell", "libelle", "courtage/prelevement", "instrument isin", "event", "no. of shares",
+    "settledate", "fx", "mouvements", "mutatie", "change", "solde", "debit", "credit", "qte"}
+
+
+def _ligne_entetes(lignes: list) -> int:
+    """Indice de la ligne d'en-tete : la premiere ne l'est pas toujours (titre,
+    numero de compte, periode au-dessus). Celle qui a le plus de noms de
+    colonnes connus parmi les 30 premieres, si elle en a au moins deux."""
+    meilleur, score = 0, 1
+    for i, l in enumerate(lignes[:30]):
+        n = sum(1 for c in l if _norm(c) in _ENTETES_CONNUS)
+        if n > score:
+            meilleur, score = i, n
+    return meilleur
 
 
 def _universel(entetes, lignes, lot, colonnes):
     g = lambda r, k: r[colonnes[k]].strip() if k in colonnes and 0 <= colonnes[k] < len(r) else ""
+    ordre = _ordre_dates([g(r, "date") for r in lignes])
     for r in lignes:
-        date = _date_fr(g(r, "date"))
+        date = _date_fr(g(r, "date"), ordre)
         if not date:
             continue
         qty = _n(g(r, "qty"))
@@ -815,7 +1609,9 @@ def _universel(entetes, lignes, lot, colonnes):
                 brut = abs(mt) if mt and en_eur else _vers_eur(brut, dev, date)
             if not brut:
                 continue
-            lot.ajoute(sens, date, g(r, "isin").upper(), g(r, "nom"), qty, None, brut, frais, quand=quand,
+            # Cours du fichier tel quel (au millieme) quand il est en euros
+            lot.ajoute(sens, date, g(r, "isin").upper(), g(r, "nom"), qty, cours if dev == "EUR" and cours else None,
+                       brut, frais, quand=quand,
                        ref=("u:" + ref) if ref else "", classe=_classe(g(r, "nom")))
         elif sens == "Dividende" and mt:
             lot.ajoute("Dividende", date, g(r, "isin").upper(), g(r, "nom"), abs(qty or 0),
@@ -830,6 +1626,7 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
     quand les colonnes ne sont pas reconnues."""
     if not lignes:
         return {"ok": False, "erreur": "fichier vide"}
+    lignes = lignes[_ligne_entetes(lignes):]
     entetes = [_norm(e) for e in lignes[0]]
     corps = lignes[1:]
     if colonnes is None:
@@ -890,6 +1687,21 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
 # ─── Entrée ───────────────────────────────────────────────────────────────────
 
 def _texte(data: bytes) -> str:
+    # UTF-16 : « Texte Unicode » d'Excel, avec ou sans marque d'ordre
+    if data[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        try:
+            return data.decode("utf-16")
+        except UnicodeDecodeError:
+            pass
+    debut = data[:2000]
+    if len(debut) > 20 and debut.count(b"\x00") > len(debut) // 4:
+        for enc in ("utf-16-le", "utf-16-be"):
+            try:
+                t = data.decode(enc)
+                if t[:200].isprintable() or "\n" in t[:2000]:
+                    return t
+            except UnicodeDecodeError:
+                continue
     for enc in ("utf-8-sig", "cp1252", "latin-1"):
         try:
             return data.decode(enc)
@@ -898,24 +1710,49 @@ def _texte(data: bytes) -> str:
     return data.decode("latin-1", "replace")
 
 
-def lire_fichier(nom: str, data: bytes, colonnes: dict = None) -> dict:
+def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0) -> dict:
     nom_l = (nom or "").lower()
-    if data[:5] == b"%PDF-":
-        return lire_pdf(data, nom)
+    if not data:
+        return {"ok": False, "erreur": "fichier vide"}
+    if b"%PDF-" in data[:1024]:
+        return lire_pdf(data[data.index(b"%PDF-"):], nom)
+    if data[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
+        # Excel 97-2003 (.xls)
+        try:
+            lignes = _lignes_xls(data)
+        except Exception:
+            lignes = None
+        if lignes:
+            return lire_tableau(lignes, nom, colonnes)
+        return {"ok": False, "erreur": "fichier Excel à l'ancien format (.xls) illisible : ouvre-le dans Excel ou "
+                                       "LibreOffice et enregistre-le en .xlsx ou en .csv, puis importe ce fichier"}
     if data[:2] == b"PK":
-        z = zipfile.ZipFile(io.BytesIO(data))
+        try:
+            z = zipfile.ZipFile(io.BytesIO(data))
+        except zipfile.BadZipFile:
+            return {"ok": False, "erreur": "archive .zip abîmée ou incomplète (téléchargement interrompu ?)"}
         if any(n.startswith("xl/") for n in z.namelist()):   # un .xlsx est un zip
             return lire_tableau(_lignes_xlsx(data), nom, colonnes)
+        if "content.xml" in z.namelist() and b"spreadsheet" in (z.read("mimetype") if "mimetype" in z.namelist() else b""):
+            return lire_tableau(_lignes_ods(z), nom, colonnes)   # classeur LibreOffice (.ods)
         # Archive (Fortuneo livre son CSV dans un .zip) : chaque fichier lu
         # comme s'il avait été choisi seul, résultats réunis
         res = {"ok": False, "operations": [], "inconnues": [], "ignores": {}, "erreur": "archive vide"}
         for info in z.infolist():
             membre = info.filename
             # 20 Mo au plus par fichier : un relevé n'en fait que quelques Ko
-            if membre.endswith("/") or info.file_size > 20_000_000 \
-                    or not membre.lower().endswith((".csv", ".pdf", ".xlsx", ".xml", ".txt")):
+            base = membre.rsplit("/", 1)[-1]
+            if membre.endswith("/") or info.file_size > 20_000_000 or membre.startswith("__MACOSX/") \
+                    or base.startswith(".") \
+                    or not membre.lower().endswith((".csv", ".pdf", ".xlsx", ".xml", ".txt", ".tsv", ".xls", ".ods",
+                                                    ".htm", ".html", ".zip")) \
+                    or (membre.lower().endswith(".zip") and _niveau >= 2):
                 continue
-            r = lire_fichier(membre, z.read(membre), colonnes)
+            try:
+                contenu = z.read(membre)
+            except RuntimeError:      # archive chiffree
+                return {"ok": False, "erreur": "archive protégée par un mot de passe : extrais-en les fichiers, puis importe-les"}
+            r = lire_fichier(membre, contenu, colonnes, _niveau + 1)
             if not r.get("ok"):
                 if r.get("besoinColonnes"):
                     return r
@@ -927,7 +1764,9 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None) -> dict:
             for k, v in (r.get("ignores") or {}).items():
                 res["ignores"][k] = res["ignores"].get(k, 0) + v
         return res
-    texte = _texte(data)
+    texte = _texte(data).lstrip("\ufeff")
+    if texte.lstrip().startswith("<") and re.search(r"(?i)<table", texte[:200000]) and "FlexQueryResponse" not in texte[:2000]:
+        return lire_tableau(_lignes_html(texte), nom, colonnes)
     if texte.lstrip().startswith("<") and "FlexQueryResponse" in texte[:2000]:
         lot = _Lot("Interactive Brokers")
         lot.inconnues = []
@@ -941,8 +1780,10 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None) -> dict:
             for o in r["operations"]:
                 o["banque"] = "Trade Republic"
         return r
-    if nom_l.endswith((".csv", ".txt", ".tsv")) or "," in premiere or ";" in premiere:
+    if nom_l.endswith((".csv", ".txt", ".tsv", ".xls")) or any(c in texte[:5000] for c in ",;\t|"):
         return lire_tableau(_lignes_csv(texte), nom, colonnes)
+    if nom_l.endswith((".png", ".jpg", ".jpeg", ".heic", ".webp")):
+        return {"ok": False, "erreur": "c'est une image : Pilote lit les relevés en PDF, CSV ou Excel téléchargés depuis l'espace client"}
     return {"ok": False, "erreur": "format non reconnu (PDF, CSV, Excel ou XML attendu)"}
 
 

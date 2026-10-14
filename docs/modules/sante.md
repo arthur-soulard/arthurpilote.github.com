@@ -55,10 +55,80 @@ Quatre pièges, tous traités — ne pas « simplifier » :
    L'alias le plus spécifique gagne, sinon « Poids sans graisse » devient
    « Poids ».
 4. **L'écran principal est piégé.** Son bloc « Contraste » affiche les ÉCARTS
-   depuis la pesée précédente (+1.2 kg, +0.4 %) avec le libellé SOUS le
-   chiffre : sans `_contraste_cutoff()`, un écart de 0.4 % est enregistré comme
-   une valeur. Le gros cadran, lui, n'a pas de libellé : `_dial_weight()` le
-   reconnaît à sa taille (repli quand seul cet écran est fourni).
+   depuis une pesée précédente (+1.2 kg, +0.4 %) avec le libellé SOUS le
+   chiffre : sans `_bandes_contraste()`, un écart de 0.4 % est enregistré comme
+   une valeur. Jusqu'en 4.4.18, tout ce qui suivait le titre était ignoré, ce
+   qui a fait perdre le tableau Détails le 14/10/2026 (voir plus bas). Le gros
+   cadran, lui, n'a pas de libellé : `_dial_weight()` le reconnaît à sa taille.
+
+### Lecture refaite le 14/10/2026 (pesée du jour lue 9 sur 14)
+
+**La panne.** Ce matin-là, la 2ᵉ capture commençait par le bloc « Contraste »
+(Arthur avait moins défilé que d'habitude). Or `_contraste_cutoff` ignorait
+**tout ce qui était sous le mot « Contraste »** : le tableau Détails entier
+disparaissait (Poids, IMC, Graisse, Taux musculaire, Poids sans graisse,
+Graisse sous-cutanée). Second défaut trouvé en reproduisant : si les captures
+Détails passaient avant l'écran principal, la pesée prenait la date du bloc
+Contraste (13/09, la pesée de comparaison), sans rien signaler.
+
+**Ce qui a changé (sante.py), à ne pas « simplifier » :**
+
+1. **Bandes Contraste** (`_bandes_contraste`) : le bloc est ignoré du titre
+   « Contraste » jusqu'au titre « Détails » qui le suit, ou jusqu'en bas
+   s'il n'y en a pas. Et une valeur n'est rattachée à un libellé que si elle
+   occupe sa hauteur (à 0,6 ligne près) : les tuiles du Contraste, où le
+   chiffre est AU-DESSUS de son libellé, ne peuvent plus être prises même si
+   le titre n'est pas lu.
+2. **Date** : seulement une ligne « HH:MM JJ/MM/AAAA » sans aucun mot
+   (`_extract_datetime`). La date de l'écran principal (celui du cadran)
+   passe devant les autres. FitDays écrit toujours deux chiffres : un « 5:53 »
+   (le « 1 » de 15:53 perdu par le moteur) n'est pas retenu, l'heure reste vide.
+3. **Chaque valeur lue au moins deux fois** : la pleine page, puis `_zoom`,
+   qui découpe la case de chaque valeur, la contraste, l'agrandit et l'empile
+   dans une image à part. Mesuré : le chevron « v » à côté d'un nombre isolé
+   suffit à ce que Windows ne lise plus « 8.0 » ou « 50 » ; la case s'arrête
+   donc au bord droit des valeurs mesuré sur la page. Une capture s'arrête
+   quand chaque libellé vu a sa valeur confirmée (deux lectures identiques).
+4. **Vote** (`_voter`) : la valeur la plus souvent lue gagne ; à égalité
+   entre deux valeurs, la mesure part dans `doutes`.
+5. **Relations de FitDays** (`_coherence`, `_RELATIONS`), vérifiées sur les 7
+   vraies pesées : poids sans graisse = poids × (1 − graisse) ; taux
+   musculaire = masse musculaire ÷ poids ; poids sans graisse = masse
+   musculaire + masse osseuse ; graisse + eau + protéine + os = 100 % ;
+   métabolisme à 30 % de Katch-McArdle ; IMC avec la taille des pesées déjà
+   enregistrées. Quand une mesure a deux lectures, celle qui fait tenir les
+   relations l'emporte ; sinon les mesures en cause vont dans `doutes`.
+   **Rien n'est corrigé ni calculé d'office.**
+6. **Nombres** (`_valeur`) : FitDays écrit toujours le même nombre de
+   décimales par mesure. « 20.396 » (le « % » lu comme des chiffres) est
+   refusé ; un entier pour une mesure à une décimale n'est accepté que si,
+   tel quel, il sort des bornes et, divisé par 10, y rentre (« 759 » → 75,9,
+   « 70 » → 7,0) ; « 14 » (1,4 ou 14,0 ?) et « 71 » (71,1 sans sa décimale)
+   sont refusés. Une unité qui ne va pas avec la mesure (« 1.4% » pour
+   l'IMC, « lb ») est refusée (`_unite_ok`).
+7. **Libellés écorchés** (`_match_metric`) : un mot long à une ou deux lettres
+   près compte (« Coroorelle ») ; une mesure n'est retenue que si aucun mot du
+   bloc n'appartient à une autre mesure (« Poids sans graisse » privé de
+   « sans » n'est pas le poids).
+8. Mode sombre inversé, HEIC lu par le moteur de Windows quand Pillow ne sait
+   pas l'ouvrir (sinon message « envoie la capture en PNG ou en JPG »),
+   `.webp` accepté, chemin absolu donné à `ocr_win.ps1` (un chemin relatif
+   faisait échouer `GetFileFromPathAsync`).
+
+**Interface** : `res.doutes` surligne les champs en orange (`.sa-field.doute`,
+couleur `--a`) avec « À vérifier sur ta capture : … » ; une date non lue est
+signalée (aujourd'hui par défaut). Rouge = non lu, orange = à comparer.
+
+**Banc d'essai** (scratchpad de la session du 14/10/2026) : les 6 vraies
+captures (pesées du 08/10 et du 14/10, dans tous les ordres, avec et sans
+écran principal) et 70 pesées fabriquées à partir de ces captures (valeurs
+repeintes au hasard dans 10 polices et 6 couleurs, défilements variés,
+JPEG réduit, largeur Android, demi-taille). Résultat : vraies pesées 14 sur
+14 et bonne date dans tous les cas (avant : 9 sur 14 et date du 13/09) ;
+fabriquées, 13 valeurs fausses non signalées avant, **0** après (une valeur
+douteuse est surlignée, une illisible reste vide). Limite connue : le moteur
+de Windows lit parfois « 11:44 » comme « 1:44 » ; l'heure reste alors vide.
+Durée : environ 10 s pour trois captures.
 
 `_preprocess` écrit ses PNG avec `compress_level=1` (30/09/2026) : au réglage par
 défaut, une photo de 12 Mpx prenait 6,5 s à écrire, pour un fichier qui ne vit que
