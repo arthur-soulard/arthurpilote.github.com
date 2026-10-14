@@ -23,7 +23,9 @@ Backup quotidien : <app_dir>/users/<slug>/backups_patrimoine/
 
 Modele de donnees
 ─────────────────
-comptes : {id, label, type, icon, color, auto:""|"pea"|"pret", archived:false, note}
+comptes : {id, label, type, icon, color, auto:""|"pea"|"pret"|"cto:<id>", archived:false, note, bien}
+          -> bien : sur le credit d'un bien immobilier, l'id de la ligne du bien
+             (4.4.18, « Ajouter un bien immobilier ») ; absent ailleurs
 releves : {id, compteId, date:"YYYY-MM-01", montant}
 """
 from __future__ import annotations

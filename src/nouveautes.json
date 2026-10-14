@@ -2,6 +2,17 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.18",
+      "date": "2026-10-14",
+      "titre": "Un prêt plus simple, et tes biens immobiliers dans le Patrimoine",
+      "nouveau": [
+        "Patrimoine : un bouton « Bien immobilier » dans l'onglet Comptes. Donne le nom du bien, sa valeur estimée et, s'il y en a un, ce qui reste à rembourser de son crédit : Pilote crée la ligne du bien et celle du crédit, rangées ensemble, avec la valeur nette du bien en dessous. Chaque mois, le relevé les met à jour comme les autres lignes."
+      ],
+      "ameliore": [
+        "Prêt : retour au suivi simple de la version 4.4.16, un seul prêt : versements reçus, remboursements, frais et argent placé. Les prêts multiples et le tableau d'amortissement calculé de la 4.4.17 sont retirés : plus il y a de calculs, plus il y a de risques d'erreur. Ton prêt est repris tel quel, et une copie de son fichier de la 4.4.17 est gardée dans ton dossier de données."
+      ]
+    },
+    {
       "version": "4.4.17",
       "date": "2026-10-13",
       "titre": "Tous tes prêts, avec leur tableau d'amortissement",

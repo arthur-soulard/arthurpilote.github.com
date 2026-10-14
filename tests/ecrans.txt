@@ -7,11 +7,10 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 13/10/2026 (4.4.17, prêt générique) : tuiles des prêts sur l'accueil, vue
-# d'ensemble du prêt auto (courbe du restant dû, coût du crédit), échéancier du
-# prêt étudiant (différé, échéances pointées), lignes des deux prêts dans
-# Patrimoine › Comptes.
+# 14/10/2026 (4.4.18) : retour au prêt de la 4.4.16 (accueil et vue
+# d'ensemble du prêt étudiant), bien immobilier de Camille dans Patrimoine ›
+# Comptes (Studio Lyon, son crédit en retrait, valeur nette ; la ligne du
+# studio commence à 615 px).
 home
-pr-overview@p2
-pr-ech@p1
-pa-comptes
+pr-overview
+pa-comptes 380
