@@ -81,6 +81,13 @@ barre est dessinée avant, avec la seule section « CTO ».
   déjà chargé de ce compte (`_ctoCaches`), sinon l'écran reste vide sous
   « Chargement… ». Redessiner plutôt que réafficher l'ancien graphique : il
   prend le thème et l'accent du moment.
+  `drawPerfChart` détruit la courbe du compte qu'il redessine
+  (`_perfCharts[_compteActif]`), jamais `_ch.perf`, et note ce compte dans
+  `_perfCompteVu` (14/10/2026) : de retour sur l'accueil après un CTO, le PEA est
+  revenu dans `S` mais `_ch.perf` visait encore la courbe du CTO ; changer de thème
+  ou d'accent (`carnetRedrawCharts`) détruisait celle-ci et butait sur celle du PEA
+  (« Canvas is already in use » : courbe aux anciennes couleurs, plus aucun
+  redessin jusqu'à la vue d'ensemble).
 * **`dashRender()` ne fait rien pendant qu'un CTO est dans `S`** : les tuiles du
   PEA (Jour, Performance, Prochain achat) le liraient. L'accueil remet le PEA.
 * **`renderMetrics()` passe la main à `ctoRenderMetrics()`** pour un CTO : rien
