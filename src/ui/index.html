@@ -1636,8 +1636,12 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
   font-size: 10px; color: var(--txt3); font-family: var(--mono); pointer-events: none;
 }
 /* Valeur que l'OCR n'a pas su lire : a completer a la main */
-.sa-field.missing input { border-color: var(--r); background: color-mix(in srgb, var(--r) 7%, var(--bg3)); }
+.sa-field.missing input { border-color: var(--r); background: color-mix(in srgb, var(--r) 7%, var(--bg3)); color: var(--txt); }
 .sa-field.missing label { color: var(--r); }
+/* Valeur lue mais qui ne colle pas avec les autres mesures : a comparer a la capture */
+.sa-field.doute input { border-color: var(--a); background: color-mix(in srgb, var(--a) 8%, var(--bg3)); color: var(--txt); }
+.sa-field.doute label { color: var(--a); }
+.sa-summary .sa-doute { color: var(--a); }
 
 /* Objectifs */
 .sa-goal {
@@ -4512,8 +4516,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <div class="fg"><label>Heure</label><input id="sa-imp-time" type="time"></div>
       </div>
       <p class="m-note" style="margin:2px 0 10px">
-        Vérifie les valeurs avant d'enregistrer : un champ surligné n'a pas été lu
-        et reste à compléter.
+        Vérifie les valeurs avant d'enregistrer : en rouge, une valeur non lue à
+        compléter ; en orange, une valeur à comparer à ta capture.
       </p>
       <div class="sa-fields" id="sa-imp-fields"></div>
     </div>
@@ -4781,13 +4785,14 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div id="cto-imp-etape1">
       <p class="cto-imp-aide-p">Choisis un ou plusieurs fichiers de ta banque ou de ton courtier : Pilote reconnaît la banque tout seul.</p>
       <ul class="cto-imp-aide">
-        <li><b>PDF</b> : avis d'opéré, avis de dividende et relevés de <b>Fortuneo</b> (avec l'avis de taxe sur les transactions et le relevé des liquidités du PEA pour les versements), <b>BoursoBank</b>, <b>Bourse Direct</b>, <b>Saxo</b>, et le rapport des transactions de <b>Degiro</b>.</li>
-        <li><b>CSV, Excel ou XML</b> : <b>Fortuneo</b> (historique des opérations de bourse, le .zip tel quel), <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>.</li>
+        <li><b>PDF</b> : avis d'opéré, avis de dividende et relevés de <b>Fortuneo</b> (avec l'avis de taxe sur les transactions et le relevé des liquidités du PEA pour les versements), <b>BoursoBank</b>, <b>Bourse Direct</b>, <b>Trade Republic</b>, <b>Saxo</b>, et le rapport des transactions de <b>Degiro</b>.</li>
+        <li><b>Avis d'opéré d'une autre banque</b> (Crédit Agricole, BNP, Société Générale, LCL…) : lu s'il tient debout (parts × cours = montant), à vérifier dans l'aperçu.</li>
+        <li><b>CSV, Excel (.xlsx ou .xls), LibreOffice ou XML</b> : <b>Fortuneo</b> (historique des opérations de bourse, le .zip tel quel), <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>.</li>
         <li><b>Tout autre tableau</b> : Pilote reconnaît ses colonnes, ou te demande lesquelles prendre.</li>
       </ul>
       <p class="pac-dim">Pilote te montre tout avant d'enregistrer quoi que ce soit, et un document importé deux fois ne compte rien en double.</p>
       <label class="btn btn-primary cto-imp-fichier"><i class="ph ph-files"></i> Choisir les fichiers
-        <input type="file" id="cto-imp-input" accept=".csv,.pdf,.xlsx,.xml,.txt,.zip,text/csv,application/pdf,application/zip" multiple onchange="ctoImportLire(this)" hidden></label>
+        <input type="file" id="cto-imp-input" accept=".csv,.pdf,.xlsx,.xls,.ods,.xml,.txt,.tsv,.htm,.html,.zip,text/csv,application/pdf,application/zip" multiple onchange="ctoImportLire(this)" hidden></label>
       <p class="pac-dim" id="cto-imp-msg"></p>
     </div>
     <div id="cto-imp-colonnes" style="display:none">
@@ -19587,29 +19592,36 @@ async function saRunOcr() {
       html += ` Non reconnue${_saImport.missing.length > 1 ? "s" : ""} : `
             + _saImport.missing.map(id => escHtml(saMetric(id).label || id)).join(", ") + ".";
     }
-    if (res.conflicts && Object.keys(res.conflicts).length) {
-      html += `<br><span style="color:var(--r)">⚠ Deux captures donnent des valeurs différentes pour : `
-            + Object.keys(res.conflicts).map(id => escHtml(saMetric(id).label || id)).join(", ")
-            + `. Vérifie ces champs.</span>`;
+    // Valeurs lues de deux façons, ou qui ne collent pas avec les autres
+    // mesures (sante._coherence) : rien n'est corrigé d'office
+    if ((res.doutes || []).length) {
+      html += `<br><span class="sa-doute">À vérifier sur ta capture : `
+            + res.doutes.map(id => escHtml(saMetric(id).label || id)).join(", ")
+            + ` (lu de deux façons, ou ne colle pas avec les autres mesures).</span>`;
+    }
+    if (!res.date) {
+      html += `<br>Date non lue sur les captures (il faut l'écran principal) : `
+            + `aujourd'hui par défaut, vérifie-la.`;
     }
     sum.innerHTML = html;
   }
   document.getElementById("sa-imp-date").value = _saImport.date;
   document.getElementById("sa-imp-time").value = _saImport.time;
-  saFillFields("sa-imp-fields", _saImport.values, _saImport.missing);
+  saFillFields("sa-imp-fields", _saImport.values, _saImport.missing, res.doutes || []);
   document.getElementById("sa-imp-step3").style.display = "";
   document.getElementById("sa-imp-save").style.display = "";
 }
 
 /** Grille de saisie des 14 mesures, partagée par l'import et la saisie manuelle. */
-function saFillFields(boxId, values, missing) {
+function saFillFields(boxId, values, missing, doutes) {
   const box = document.getElementById(boxId);
   if (!box) return;
   const abs = missing || [];
+  const aVoir = doutes || [];
   box.innerHTML = SA_METRICS.map(m => {
     const v = values[m.id];
     const vide = (v === undefined || v === null || v === "");
-    return `<div class="sa-field${(vide && abs.includes(m.id)) ? " missing" : ""}">
+    return `<div class="sa-field${(vide && abs.includes(m.id)) ? " missing" : (!vide && aVoir.includes(m.id)) ? " doute" : ""}">
       <label>${escHtml(m.label)}</label>
       <div class="sa-inwrap">
         <input type="number" step="any" id="${boxId}-${m.id}"

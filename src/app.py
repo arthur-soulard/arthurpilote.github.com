@@ -69,7 +69,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.18"
+APP_VERSION = "4.4.19"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -337,7 +337,7 @@ class Api:
             result = win.create_file_dialog(
                 webview.OPEN_DIALOG,
                 allow_multiple=True,
-                file_types=("Captures ou zip (*.png;*.jpg;*.jpeg;*.heic;*.zip)",
+                file_types=("Captures ou zip (*.png;*.jpg;*.jpeg;*.heic;*.webp;*.zip)",
                             "All files (*.*)"),
             )
             if not result:
@@ -1422,18 +1422,28 @@ def main() -> int:
             try:
                 from PIL import Image, ImageDraw, ImageFont
                 img = Path(tempfile.gettempdir()) / "pilote_essai_ocr.png"
-                # Mise en page FitDays (libelles a gauche, valeurs a droite, un
-                # libelle sur deux lignes) ; la meme image sous Windows donne
-                # poids 72,4, imc 22,1, masse_musculaire 55,3 (essai du 12/10/2026)
-                im = Image.new("RGB", (900, 500), "white")
+                # Ecran Details de FitDays comme celui d'Arthur le 14/10/2026 :
+                # bloc « Contraste » EN HAUT (ecarts, libelle sous le chiffre,
+                # date d'une autre pesee), libelles sur deux lignes, valeurs
+                # colorees. Attendu (4.4.19) : poids 75.9, imc 24.0, graisse
+                # 20.3, graisse_viscerale 7.0, age_corporel 24, pas de date.
+                im = Image.new("RGB", (1170, 1500), "white")
                 d = ImageDraw.Draw(im)
-                police = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 40)
-                for xy, t in (((40, 30), "Poids"), ((560, 30), "72,4 kg"),
-                              ((40, 130), "Graisse"), ((560, 165), "18,5 %"),
-                              ((40, 200), "corporelle"), ((40, 300), "IMC"),
-                              ((560, 300), "22,1"), ((40, 400), "Masse musculaire"),
-                              ((560, 400), "55,3 kg")):
-                    d.text(xy, t, fill=(20, 20, 20), font=police)
+                police = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 46)
+                turq, gris, vert, pale, orange = (102, 204, 204), (120, 120, 120), (55, 142, 40), (80, 212, 58), (255, 144, 0)
+                for xy, t, c in (((98, 40), "Contraste 08:48 13/09/2026", turq),
+                                 ((150, 150), "3.4 kg", turq), ((470, 150), "1.4%", turq), ((900, 150), "1.0", turq),
+                                 ((180, 250), "Poids", gris), ((480, 230), "Graisse", gris),
+                                 ((480, 280), "corporelle", gris), ((900, 250), "IMC", gris),
+                                 ((225, 420), "Détails", turq),
+                                 ((242, 560), "Poids", gris), ((780, 560), "75.9 kg", vert),
+                                 ((242, 740), "IMC", gris), ((850, 740), "24.0", vert),
+                                 ((242, 895), "Graisse", gris), ((800, 925), "20.3 %", vert),
+                                 ((242, 955), "corporelle", gris),
+                                 ((242, 1075), "Graisse", gris), ((880, 1105), "7.0", pale),
+                                 ((242, 1135), "Viscérale", gris),
+                                 ((242, 1290), "Âge corporel", gris), ((900, 1290), "24", orange)):
+                    d.text(xy, t, fill=c, font=police)
                 im.save(img)
                 print(f"[ocr] disponible : {sante.ocr_available()}", flush=True)
                 r = plateforme.ocr_mac(str(img))
@@ -1444,8 +1454,9 @@ def main() -> int:
                           for w in r.get("words", [])]
                 print(f"[ocr] ok={r.get('ok')} {r.get('error', '')} mots : {mots}", flush=True)
                 print(f"[ocr] boites : {' | '.join(boites)}", flush=True)
-                lu = sante.read_screenshot(str(img))
-                print(f"[ocr] lecture Sante : {lu.get('values')}", flush=True)
+                lu = sante.read_screenshots([str(img)])
+                print(f"[ocr] lecture Sante : {lu.get('values')} date={lu.get('date')!r} "
+                      f"doutes={lu.get('doutes')} manquent={len(lu.get('missing') or [])}", flush=True)
             except Exception as e:
                 print(f"[ocr] KO : {e}", flush=True)
             try:
