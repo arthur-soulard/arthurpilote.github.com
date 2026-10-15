@@ -143,7 +143,7 @@ _DESCRIPTION = re.compile(r"(?i)^(?:savings plan execution|buy trade|sell trade)
 def _nombre(txt: str):
     """« 1.2345 », « -124.97 », « 1 234,56 » -> float ; vide -> None.
 
-    Aussi (4.4.19) : « 1,234.56 » (a l'americaine : le separateur le plus a
+    Aussi (14/10/2026) : « 1,234.56 » (a l'americaine : le separateur le plus a
     droite est la decimale), « 1.234.567 », « −12,50 » (signe moins
     typographique), « (12,50) » et « 12,50- » (negatifs comptables), « 12,50 € »,
     « USD 1,234.56 », espaces insecables ou fines entre les milliers."""
