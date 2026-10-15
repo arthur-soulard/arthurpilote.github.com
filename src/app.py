@@ -69,7 +69,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.19"
+APP_VERSION = "4.4.18"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -1425,7 +1425,7 @@ def main() -> int:
                 # Ecran Details de FitDays comme celui d'Arthur le 14/10/2026 :
                 # bloc « Contraste » EN HAUT (ecarts, libelle sous le chiffre,
                 # date d'une autre pesee), libelles sur deux lignes, valeurs
-                # colorees. Attendu (4.4.19) : poids 75.9, imc 24.0, graisse
+                # colorees. Attendu (14/10/2026) : poids 75.9, imc 24.0, graisse
                 # 20.3, graisse_viscerale 7.0, age_corporel 24, pas de date.
                 im = Image.new("RGB", (1170, 1500), "white")
                 d = ImageDraw.Draw(im)
