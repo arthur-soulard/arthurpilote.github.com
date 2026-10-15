@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.19",
+      "date": "2026-10-15",
+      "titre": "Des captures et des relevés lus sans erreur",
+      "corrige": [
+        "Santé : quand la 2e capture commençait par le bloc « Contraste », Pilote ignorait tout le tableau en dessous (9 mesures lues sur 14). Et si les captures du détail passaient avant l'écran principal, la pesée prenait la date de la pesée de comparaison. Les deux sont corrigés, quel que soit l'endroit où tu t'arrêtes de défiler.",
+        "Courbe du capital : plus d'erreur au changement de thème après avoir ouvert un CTO."
+      ],
+      "ameliore": [
+        "Santé : chaque mesure est lue au moins deux fois, et Pilote vérifie qu'elles collent entre elles (poids sans graisse, taux musculaire, masses, métabolisme). Une valeur douteuse est surlignée en orange « à vérifier », une valeur illisible reste vide en rouge : rien de faux n'est rempli sans te le dire.",
+        "Santé : lecture des captures deux fois plus rapide ; captures en mode sombre, en .webp ou en HEIC acceptées ; une date absente des captures est signalée.",
+        "Import des relevés (PEA et CTO) : avis PDF de Trade Republic, avis d'opéré des autres banques (Crédit Agricole, BNP, Société Générale…) repris quand leurs chiffres tiennent ensemble, fichiers Excel anciens (.xls) et LibreOffice (.ods), pages web enregistrées en .xls, zip dans un zip.",
+        "Import des relevés : nombres et dates de tous les formats (1,234.56, −12,50, 08/10/24, dates à l'américaine), tableau qui ne commence pas à la première ligne, « Texte Unicode » d'Excel, vraies dates des fichiers Excel, fichier ouvert puis réenregistré dans Excel. Un ordre dont les chiffres ne collent pas est marqué « à vérifier » dans l'aperçu."
+      ]
+    },
+    {
       "version": "4.4.18",
       "date": "2026-10-14",
       "titre": "Un prêt plus simple, et tes biens immobiliers dans le Patrimoine",
