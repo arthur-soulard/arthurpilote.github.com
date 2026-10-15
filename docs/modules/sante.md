@@ -115,7 +115,15 @@ Contraste (13/09, la pesée de comparaison), sans rien signaler.
    près compte (« Coroorelle ») ; une mesure n'est retenue que si aucun mot du
    bloc n'appartient à une autre mesure (« Poids sans graisse » privé de
    « sans » n'est pas le poids).
-8. Mode sombre inversé, HEIC lu par le moteur de Windows quand Pillow ne sait
+8. **Un seul PowerShell par import** (`_ServeurOcr`, `ocr_win.ps1 -Serveur`) :
+   démarrer PowerShell et charger le moteur coûte environ 3 s, lire une image
+   0,3 s, et une pesée demande une dizaine de lectures (30 s sans lui, 10 à
+   15 s avec, mesuré le 15/10/2026, y compris dans un programme compilé sans
+   console comme Pilote.exe). Au moindre accroc (pas de réponse, PowerShell
+   fermé, démarrage raté), chaque lecture relance un PowerShell comme avant :
+   essayé en cassant le serveur en cours d'import, même résultat. Sur Mac,
+   rien ne change (Vision tourne dans Pilote).
+9. Mode sombre inversé, HEIC lu par le moteur de Windows quand Pillow ne sait
    pas l'ouvrir (sinon message « envoie la capture en PNG ou en JPG »),
    `.webp` accepté, chemin absolu donné à `ocr_win.ps1` (un chemin relatif
    faisait échouer `GetFileFromPathAsync`).
@@ -126,14 +134,16 @@ signalée (aujourd'hui par défaut). Rouge = non lu, orange = à comparer.
 
 **Banc d'essai** (scratchpad de la session du 14/10/2026) : les 6 vraies
 captures (pesées du 08/10 et du 14/10, dans tous les ordres, avec et sans
-écran principal) et 70 pesées fabriquées à partir de ces captures (valeurs
+écran principal) et 110 pesées fabriquées à partir de ces captures (valeurs
 repeintes au hasard dans 10 polices et 6 couleurs, défilements variés,
-JPEG réduit, largeur Android, demi-taille). Résultat : vraies pesées 14 sur
-14 et bonne date dans tous les cas (avant : 9 sur 14 et date du 13/09) ;
-fabriquées, 13 valeurs fausses non signalées avant, **0** après (une valeur
-douteuse est surlignée, une illisible reste vide). Limite connue : le moteur
-de Windows lit parfois « 11:44 » comme « 1:44 » ; l'heure reste alors vide.
-Durée : environ 10 s pour trois captures.
+JPEG réduit, largeur Android, demi-taille ; un jeu de 40 jamais vu pendant
+les réglages). Résultat : vraies pesées 84 valeurs sur 84 et bonne date dans
+tous les cas (avant : 9 sur 14 et date du 13/09) ; jeu neuf, 558 sur 560
+justes, **aucune fausse**, 2 laissées vides ; avant, sur 30 pesées, 13 valeurs
+fausses non signalées. Les seules valeurs fausses restantes (« 850 » pour
+1850 kcal, le « 1 » perdu à chaque lecture) sont surlignées par la relation
+du métabolisme. Limite connue : le moteur de Windows lit parfois « 11:44 »
+comme « 1:44 » ; l'heure reste alors vide.
 
 `_preprocess` écrit ses PNG avec `compress_level=1` (30/09/2026) : au réglage par
 défaut, une photo de 12 Mpx prenait 6,5 s à écrire, pour un fichier qui ne vit que
