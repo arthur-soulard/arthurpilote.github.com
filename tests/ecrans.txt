@@ -7,7 +7,7 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 14/10/2026 (4.4.19) : lecture des captures Santé et des relevés. Les
+# 14/10/2026 : lecture des captures Santé et des relevés. Les
 # fenêtres d'import ne sont pas des onglets : on photographie l'onglet Santé
 # de Camille (rien n'y change) et les Transactions du PEA (bouton
 # « Importer des relevés »). La lecture elle-même est essayée sous Vision par

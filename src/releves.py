@@ -68,7 +68,7 @@ def _date_fr(txt: str, ordre: str = "jm") -> str:
     """« 26-03-2024 », « 26/03/2024 », « 2024-03-26 », « 20230522 »,
     « 09-Apr-2025 », « 8 octobre 2021 » -> 2024-03-26 ; sinon "".
 
-    Aussi (4.4.19) : jour et mois sur un chiffre (« 1/3/2024 »), annee sur deux
+    Aussi (14/10/2026) : jour et mois sur un chiffre (« 1/3/2024 »), annee sur deux
     (« 26/03/24 »), « Mar 26, 2024 », « 01 juil. 2024 » ; `ordre` « mj » lit
     « 03/26/2024 » a l'americaine (choisi par colonne : _ordre_dates). Une date
     impossible (31/02) est refusee."""
