@@ -43,6 +43,7 @@ import shutil
 import zipfile
 import datetime
 import tempfile
+import threading
 import subprocess
 import unicodedata
 from pathlib import Path
@@ -254,25 +255,89 @@ def ocr_available() -> dict:
     return {"ok": True}
 
 
+def _commande_ocr() -> list:
+    return ["powershell.exe", "-NoProfile", "-NonInteractive",
+            "-ExecutionPolicy", "Bypass", "-File", _ocr_script_path()]
+
+
+class _ServeurOcr:
+    """
+    Un seul PowerShell pour toutes les lectures d'un import (ocr_win.ps1
+    -Serveur). Lancer PowerShell et charger le moteur coute environ 3 s, lire
+    une image 0,3 s : une pesee demande une dizaine de lectures (passes et
+    zooms), d'ou 30 s au lieu de 6 sans lui (mesure du 14/10/2026). Au moindre
+    accroc (pas de reponse, PowerShell ferme), il s'arrete et chaque lecture
+    relance un PowerShell, comme avant.
+    """
+
+    def __init__(self):
+        import queue
+        self.p = subprocess.Popen(_commande_ocr() + ["-Serveur"], stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                  creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        self.q = queue.Queue()
+        self.vide = queue.Empty
+
+        def lire():
+            for ligne in self.p.stdout:
+                self.q.put(ligne.decode("utf-8", "replace").strip())
+            self.q.put(None)
+        threading.Thread(target=lire, daemon=True).start()
+        if self._reponse(60) != "pret":
+            self.fermer()
+            raise RuntimeError("serveur OCR indisponible")
+
+    def _reponse(self, delai):
+        try:
+            return self.q.get(timeout=delai)
+        except self.vide:
+            return None
+
+    def lire(self, image: str, sortie: str, delai: int = 90) -> bool:
+        try:
+            self.p.stdin.write((image + "\t" + sortie + "\n").encode("utf-8"))
+            self.p.stdin.flush()
+        except OSError:
+            return False
+        return self._reponse(delai) == "fait"
+
+    def fermer(self):
+        try:
+            self.p.stdin.write(b"\n")
+            self.p.stdin.close()
+            self.p.wait(timeout=5)
+        except Exception:
+            try:
+                self.p.kill()
+            except Exception:
+                pass
+
+
+_serveur = None   # le PowerShell de l'import en cours (read_screenshots)
+
+
 def _run_ocr(image_path: str, timeout: int = 90) -> dict:
     """
     Lance ocr_win.ps1 et retourne {ok, words:[{t,x,y,w,h}], ...}.
     Sur Mac : Vision d'Apple, meme resultat (plateforme.ocr_mac).
     """
+    global _serveur
     if sys.platform == "darwin":
         import plateforme
         return plateforme.ocr_mac(image_path)
     out_fd, out_path = tempfile.mkstemp(prefix="pilote_ocr_", suffix=".json")
     os.close(out_fd)
     try:
-        cmd = ["powershell.exe", "-NoProfile", "-NonInteractive",
-               "-ExecutionPolicy", "Bypass", "-File", _ocr_script_path(),
-               "-ImagePath", os.path.abspath(str(image_path)), "-JsonPath", out_path]
-        flags = 0
-        if sys.platform == "win32":
-            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        subprocess.run(cmd, timeout=timeout, capture_output=True,
-                       creationflags=flags)
+        image = os.path.abspath(str(image_path))
+        if _serveur is not None:
+            if _serveur.lire(image, out_path, timeout):
+                with open(out_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            _serveur.fermer()      # accroc : retour a un PowerShell par lecture
+            _serveur = None
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
+        subprocess.run(_commande_ocr() + ["-ImagePath", image, "-JsonPath", out_path],
+                       timeout=timeout, capture_output=True, creationflags=flags)
         with open(out_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except subprocess.TimeoutExpired:
@@ -965,6 +1030,26 @@ def read_screenshots(paths: list) -> dict:
     ou qui ne colle pas avec les autres mesures (_coherence), est rendue dans
     `doutes` et surlignee « a verifier » par l'interface.
     """
+    global _serveur
+    with _verrou_import:
+        if sys.platform == "win32" and _serveur is None:
+            try:
+                _serveur = _ServeurOcr()
+            except Exception as e:
+                print(f"[sante] serveur OCR indisponible : {e}", flush=True)
+                _serveur = None
+        try:
+            return _read_screenshots(paths)
+        finally:
+            if _serveur is not None:
+                _serveur.fermer()
+                _serveur = None
+
+
+_verrou_import = threading.Lock()   # un import de captures a la fois
+
+
+def _read_screenshots(paths: list) -> dict:
     tmpdir = tempfile.mkdtemp(prefix="pilote_zip_")
     try:
         images, erreurs_zip = [], []
