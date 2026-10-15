@@ -1745,6 +1745,10 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
         return {"ok": False, "erreur": "fichier vide"}
     if b"%PDF-" in data[:1024]:
         return lire_pdf(data[data.index(b"%PDF-"):], nom)
+    if data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff" or data[4:12] in (b"ftypheic", b"ftypmif1") \
+            or (data[:4] == b"RIFF" and data[8:12] == b"WEBP"):
+        return {"ok": False, "erreur": "c'est une image : Pilote lit les relevés en PDF, CSV ou Excel "
+                                       "téléchargés depuis l'espace client"}
     if data[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
         # Excel 97-2003 (.xls)
         try:
@@ -1764,9 +1768,13 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
             return lire_tableau(_lignes_xlsx(data), nom, colonnes)
         if "content.xml" in z.namelist() and b"spreadsheet" in (z.read("mimetype") if "mimetype" in z.namelist() else b""):
             return lire_tableau(_lignes_ods(z), nom, colonnes)   # classeur LibreOffice (.ods)
+        if any(n.startswith("Index/") and n.endswith(".iwa") for n in z.namelist()):
+            return {"ok": False, "erreur": "fichier Numbers (Mac) : dans Numbers, Fichier → Exporter vers → "
+                                           "CSV ou Excel, puis importe ce fichier"}
         # Archive (Fortuneo livre son CSV dans un .zip) : chaque fichier lu
         # comme s'il avait été choisi seul, résultats réunis
-        res = {"ok": False, "operations": [], "inconnues": [], "ignores": {}, "erreur": "archive vide"}
+        res = {"ok": False, "operations": [], "inconnues": [], "ignores": {},
+               "erreur": "aucun relevé dans cette archive (PDF, CSV, Excel ou XML attendu)"}
         for info in z.infolist():
             membre = info.filename
             # 20 Mo au plus par fichier : un relevé n'en fait que quelques Ko
@@ -1814,8 +1822,6 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
         return r2 if r2.get("ok") else r
     if nom_l.endswith((".csv", ".txt", ".tsv", ".xls")) or any(c in texte[:5000] for c in ",;\t|"):
         return lire_tableau(_lignes_csv(texte), nom, colonnes)
-    if nom_l.endswith((".png", ".jpg", ".jpeg", ".heic", ".webp")):
-        return {"ok": False, "erreur": "c'est une image : Pilote lit les relevés en PDF, CSV ou Excel téléchargés depuis l'espace client"}
     return {"ok": False, "erreur": "format non reconnu (PDF, CSV, Excel ou XML attendu)"}
 
 
