@@ -452,6 +452,14 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def data_folder_path(self) -> dict:
+        """Chemin du dossier ouvert par open_data_folder, sans l'ouvrir : les
+        Premiers pas et Parametres -> Donnees l'ecrivent en clair."""
+        try:
+            return {"ok": True, "path": str(storage.get_user_dir())}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # -- Cours / historique ------------------------------------------------
 
     def get_prices(self, tickers: list) -> dict:

@@ -2528,6 +2528,18 @@ button.pp-first:focus-visible { outline: 2px solid var(--accent); outline-offset
   transition: color .15s, transform .15s; }
 button.pp-first:hover .pp-first-go { color: var(--accent-text); transform: translate(2px, -2px); }
 .pp-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); margin-top: 1rem; }
+/* Chemin du dossier des données, en clair (Premiers pas, Paramètres → Données) :
+   un clic sur le chemin le sélectionne, « Ouvrir » ouvre le dossier. Une seule
+   ligne : l'étape 1 des Premiers pas tient à 1366 × 720 (643 px sur 646 avec un
+   2e utilisateur et une ancienne installation détectée) */
+.dossier-chemin { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.dossier-chemin > span { font-size: 12px; line-height: 1.5; color: var(--txt); background: var(--bg3);
+  border-radius: 6px; padding: 1px 7px; overflow-wrap: anywhere; user-select: all; }
+.dossier-chemin > button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--accent-text); }
+.dossier-chemin > button:hover { text-decoration: underline; }
+.dossier-chemin > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.pp-points .dossier-chemin { margin-top: 3px; }
 
 /* ── Fiche des nouveautés : avant la mise à jour, après, et l'historique ── */
 .maj-fiche + .maj-fiche { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--brd); }
@@ -4368,9 +4380,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
             class="txt-mac">ce Mac</span>, un dossier par utilisateur.</p>
           <div class="fg">
             <label>Dossier</label>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="openDataFolder()" style="font-size:11px"><i class="ph ph-folder-open"></i> Ouvrir le dossier Données</button>
-              <span style="font-size:10px;color:var(--txt3);font-family:var(--mono)">Backups + JSON</span>
+            <div class="dossier-chemin">
+              <span id="cfg-dossier">Dossier Données</span>
+              <button type="button" onclick="openDataFolder()"><i class="ph ph-folder-open"></i> Ouvrir</button>
             </div>
           </div>
           <div class="fg">
@@ -10713,6 +10725,9 @@ async function _showWelcomeIfFirstRun() {
     }
   } catch(e) {}
 
+  // Où vont ses données : le chemin en clair, et de quoi ouvrir le dossier
+  const dossier = await _cheminDonnees();
+
   // Version installée : un nouvel utilisateur n'a pas à lire la fiche des
   // nouveautés de la version qu'il découvre
   const hist = await _majCharger();
@@ -10763,8 +10778,11 @@ async function _showWelcomeIfFirstRun() {
         ${identitySection}
         <ul class="pp-points">
           <li><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
-            Pas de compte, pas de serveur : tes données vivent dans le dossier Données,
-            avec une sauvegarde chaque jour.</span></li>
+            ${dossier ? `Sans compte ni serveur. Tes données sont ici, sauvegardées chaque jour&nbsp;:
+            <span class="dossier-chemin"><span>${escHtml(dossier)}</span>
+              <button type="button" onclick="openDataFolder()"><i class="ph ph-folder-open"></i> Ouvrir</button></span>`
+            : `Pas de compte, pas de serveur : tes données vivent dans le dossier Données,
+            avec une sauvegarde chaque jour.`}</span></li>
           <li><i class="ph ph-squares-four"></i><span><b>Tu choisis tes modules.</b>
             Chacun est indépendant, et ceux que tu ne prends pas restent masqués.</span></li>
           <li><i class="ph ph-users"></i><span><b>Un espace par personne.</b>
@@ -10931,6 +10949,18 @@ function _wireThemeButtons() {
   });
 }
 
+/** Chemin du dossier de données de l'utilisateur actif, celui qu'ouvre
+    openDataFolder() ; "" hors de l'app. Écrit en clair dans les Premiers pas et
+    Paramètres → Données : un nouvel utilisateur sait où vont ses données. */
+async function _cheminDonnees() {
+  try {
+    const api = window.pywebview && window.pywebview.api;
+    if (!api || !api.data_folder_path) return "";
+    const r = await api.data_folder_path();
+    return (r && r.ok && r.path) || "";
+  } catch (e) { return ""; }
+}
+
 /* ─── Ouverture du dossier de donnees (Explorer Windows) ─── */
 async function openDataFolder() {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.open_data_folder) {
@@ -11054,6 +11084,10 @@ function setGoSection(id) {
   if (id === "accueil" && typeof dashRenderConfig === "function") dashRenderConfig();
   if (id === "nav") { cfgRenderModules(); _cfgRenderMasques(); }
   if (id === "maj") majRenderSection();
+  if (id === "donnees") _cheminDonnees().then(c => {
+    const el = document.getElementById("cfg-dossier");
+    if (el && c) el.textContent = c;
+  });
 }
 
 /* ─── Paramètres → Modules : un module coché = tous ses onglets affichés ─── */

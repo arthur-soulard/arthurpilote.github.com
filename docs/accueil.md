@@ -91,9 +91,17 @@ de `NAV_SECTIONS` y ajoute son entrée** (sinon sa carte reste sans texte).
   tant que le PEA restait vide, même pour qui ne s'en sert pas. Un utilisateur déjà
   installé (PEA rempli) ne le voit jamais. Importer ou récupérer un fichier ne pose
   pas le drapeau : si l'import échoue, l'assistant revient.
+* **Chemin des données en clair** (4.4.20, 19/10/2026, demande d'Arthur : un nouvel
+  utilisateur ne veut pas que ses données aillent « n'importe où ») : le point
+  « Tout reste sur ce PC » donne le chemin du dossier de l'utilisateur
+  (`_cheminDonnees()` → `Api.data_folder_path`, le dossier qu'ouvre
+  `openDataFolder()`), avec « Ouvrir ». Même ligne dans Paramètres → Données
+  (`docs/parametres.md`). Hors de l'app (pas de pont), l'ancienne phrase revient.
 * Tient sans défiler à 1366 × 720 dans les deux cas les plus chargés, mesurés :
   étape 1 avec l'espace d'un 2e utilisateur **et** une installation extérieure
-  (644 px pour 646), étape 3 avec les huit modules (620 px, deux colonnes).
+  (644 px pour 646 ; 643 px avec le chemin, qui a fait passer la phrase sur une
+  ligne et le chemin en ligne fine, sans boîte), étape 3 avec les huit modules
+  (620 px, deux colonnes).
 * Paramètres → Modules reprend les mêmes cartes (`_modCarteHtml`) : voir
   `docs/parametres.md`. Une tuile dont l'onglet appartient à un module décoché ne
   s'affiche plus (`dashRender`). Un accueil dont les tuiles actives sont toutes vides

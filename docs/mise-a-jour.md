@@ -119,6 +119,34 @@ données**, tous utilisateurs confondus.
   installation neuve sur un PC vierge → `Programs\Pilote`. Seule la mise à jour
   vers la 4.3.14 protège : désinstaller une 4.3.13 efface encore tout.
 
+## Toujours « pour moi seulement » (4.4.20, 19/10/2026)
+
+Jusqu'ici, `PrivilegesRequiredOverridesAllowed=dialog` faisait poser au Setup, en
+premier écran d'une installation neuve, la question « Installer seulement pour
+moi / pour tous les utilisateurs ». Arthur ne comprenait pas la différence, et un
+nouvel utilisateur non plus. Surtout, « pour tous » installe dans
+`C:\Program Files\Pilote`, où Pilote, lancé sans droits d'administrateur, ne peut
+pas créer `Donnees\` à côté de son exe : `storage.get_app_dir()` se rabat alors sur
+`AppData\Roaming\Pilote` (repli jamais essayé), loin du programme, et un dossier par
+compte Windows.
+
+* La ligne est retirée : le Setup installe toujours dans
+  `%LocalAppData%\Programs\Pilote` (ou `Suivi PEA`, voir `DossierParDefaut`), sans
+  mot de passe administrateur. La page « Dossier de destination » reste : on peut
+  choisir un autre dossier, et les données suivent le programme.
+* Le chemin des données est maintenant écrit dans les Premiers pas et dans
+  Paramètres → Données (`docs/accueil.md`, `docs/parametres.md`).
+* Essai du 19/10/2026 : deux Setup de test compilés avec l'Inno Setup du PC (autre
+  AppId, autre nom, faux fichiers, jamais installés), ouverts puis fermés. Avant :
+  premier écran « Choix du Mode d'Installation ». Après : directement le choix de
+  la langue, puis « Dossier de destination » sur
+  `C:\Users\<nom>\AppData\Local\Programs\<nom de l'app>`.
+* Pas essayé : la mise à jour d'une installation déjà faite « pour tous » (aucune
+  connue). Le Setup de mise à jour tourne en `/VERYSILENT` sans `/ALLUSERS`, comme
+  avant ; si une telle installation existe, ses données sont dans
+  `AppData\Roaming\Pilote`. `scan_orphan_data` y regarde, mais ne propose de
+  récupérer que le `pea_data.json` (le PEA), pas les autres modules.
+
 ## L'ancienne entrée « Suivi PEA 1.0.0 » (piège retiré par le Setup)
 
 Vu le 11/10/2026 sur le PC d'Arthur : les Paramètres de Windows listaient encore

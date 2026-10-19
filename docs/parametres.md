@@ -17,7 +17,7 @@ Modale unique à colonne de sections (`setGoSection(id)`), plus « paramètres d
 | sport      | mes sports, types de séance, routines                               |
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | sauvegarde | destination USB, sauvegarde auto, rotation, restauration            |
-| donnees    | dossier, export/import, réinitialisation, version                   |
+| donnees    | dossier (chemin en clair + Ouvrir), export/import, réinitialisation, version |
 | maj        | version installée, vérification, version proposée, historique       |
 
 `openConfig()` reste le point d'entrée historique (ouvre sur `general`). Les onglets
@@ -37,6 +37,12 @@ dès qu'un de ses onglets est visible. Dessous, la liste « Onglets masqués » 
 plus que les onglets des modules affichés (ceux d'un module décoché reviennent par sa
 case). Restaurer un onglet ou un bloc redessine la liste sur place
 (`_cfgRenderMasques`) : avant, `openConfig()` renvoyait sur Général.
+
+**Données & app (section `donnees`).** Depuis la 4.4.20 (19/10/2026), le chemin du dossier
+de l'utilisateur actif s'écrit en clair (`#cfg-dossier`, rempli par `setGoSection`
+via `_cheminDonnees()`, relu à chaque ouverture : il suit un changement
+d'utilisateur), avec « Ouvrir » (`openDataFolder()`). Un clic sur le chemin le
+sélectionne en entier. Même ligne dans les Premiers pas (`docs/accueil.md`).
 
 **Mises à jour (section `maj`, 4.3.37).** Le bouton « Vérifier les mises à jour »
 quitte « Données & app ». `majRenderSection()` : version installée, la version

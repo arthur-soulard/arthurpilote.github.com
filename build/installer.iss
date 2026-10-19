@@ -27,8 +27,11 @@ UninstallDisplayName={#AppName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
+; Toujours "pour moi seulement", sans la question "pour moi / pour tous" : dans
+; Program Files, Pilote ne peut pas ecrire Donnees a cote de son exe et les
+; rangeait ailleurs (repli de storage.get_app_dir, AppData\Roaming). Retiree en
+; 4.4.20 (19/10/2026) : PrivilegesRequiredOverridesAllowed=dialog.
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesInstallIn64BitMode=x64
 MinVersion=10.0
 LanguageDetectionMethod=uilanguage

@@ -7,10 +7,8 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 14/10/2026 : lecture des captures Santé et des relevés. Les
-# fenêtres d'import ne sont pas des onglets : on photographie l'onglet Santé
-# de Camille (rien n'y change) et les Transactions du PEA (bouton
-# « Importer des relevés »). La lecture elle-même est essayée sous Vision par
-# _diag_mac_divers (annotation « Divers », attendu dans docs/mac.md).
-sa-suivi
-tx
+# 19/10/2026 : chemin du dossier des données écrit en clair. Il s'affiche
+# dans les Premiers pas, que montre déjà la capture du premier job (utilisateur
+# vierge), et dans Paramètres → Données, qui n'est pas un onglet : rien à
+# photographier ici, on garde l'accueil de Camille comme témoin.
+home
