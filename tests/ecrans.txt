@@ -7,8 +7,9 @@
 # fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
 # passent en 45 annotations au plus).
 #
-# 19/10/2026 : chemin du dossier des données écrit en clair. Il s'affiche
-# dans les Premiers pas, que montre déjà la capture du premier job (utilisateur
-# vierge), et dans Paramètres → Données, qui n'est pas un onglet : rien à
-# photographier ici, on garde l'accueil de Camille comme témoin.
+# 20/10/2026 : correctifs de l'audit. Noms des titres échappés (Positions),
+# carte Plus-value et barre d'état des cours (vue d'ensemble), tuiles de
+# l'accueil (% du CTO et de toute la bourse).
 home
+pos
+dash

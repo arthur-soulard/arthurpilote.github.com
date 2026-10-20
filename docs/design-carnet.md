@@ -72,8 +72,8 @@ plutôt qu'un logiciel de bureau.
   1 600 px, rien de coupé. Un `font-size: 30px` précède la règle en `cqw`, en
   repli pour un moteur qui ne la connaîtrait pas.
 * **Carte « Valeur du PEA » = titres + espèces (4.2.6).** Elle affichait les titres
-  seuls (… €) quand la courbe, la tuile de l'accueil et le module Patrimoine
-  affichaient titres + espèces (… €) : … € d'écart, le solde espèces.
+  seuls quand la courbe, la tuile de l'accueil et le module Patrimoine
+  affichaient titres + espèces : l'écart était le solde espèces.
   Calculs revérifiés à la main sur les vraies données, tous justes ; seule la
   définition différait. La bonne est titres + espèces : c'est la valeur à laquelle
   se mesure le rendement (valeur − versements) et celle d'un PEA pour la banque.
@@ -81,9 +81,8 @@ plutôt qu'un logiciel de bureau.
 * **« Prix de revient des lignes », pas « Investi » (4.4.6).** La 3e ligne de la
   carte Valeur (PEA et CTO, `ligneRevient`) est le coût des lignes détenues, frais
   compris (somme des `computePos().inv`). Appelée « Investi » jusqu'en 4.4.5, elle
-  a été lue comme l'argent versé : … € sous un « Total déposé » de
-  … € avec … € d'espèces, l'écart (… €) étant le réalisé des lignes
-  vendues et les dividendes, réinvestis (12/10/2026, chiffres vrais au centime).
+  a été lue comme l'argent versé, alors que l'écart avec le « Total déposé » est le
+  réalisé des lignes vendues et les dividendes, réinvestis (vérifié au centime le 12/10/2026).
   Le latent (titres − prix de revient) suit entre parenthèses, absent tant qu'un
   cours manque. Montant et latent sont insécables : à 147 px (fenêtre de 1 280 px)
   la ligne passe sur trois lignes propres. La colonne « Investi » des Positions

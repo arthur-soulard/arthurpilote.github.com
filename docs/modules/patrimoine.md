@@ -28,7 +28,7 @@ API Python : `load_patrimoine()` / `save_patrimoine()` — les deux renvoient
    Sur le **mois en cours**, la valeur actuelle d'une ligne auto passe avant le
    relevé déjà saisi ce mois-là (`paBuildSaisie`) : refaire le relevé suffit à la
    remettre à jour, rien n'est réécrit sans lui. Corrigé le 08/10/2026 : le relevé
-   d'octobre, fait le 02/10 avant la tranche de … € reçue le 07/10, gardait
+   d'octobre, fait le 02/10 avant une tranche du prêt reçue quelques jours plus tard, gardait
    une dette à 0 € tout le mois. Un mois passé garde son relevé ; s'il n'en a
    pas, la ligne auto prend la valeur de la **fin de ce mois-là**
    (`paValeurAuto(compte, iso)`) : prêt via `prCapitalDu(fin du mois)`, PEA via
@@ -38,8 +38,8 @@ API Python : `load_patrimoine()` / `save_patrimoine()` — les deux renvoient
 
 **Dette du prêt = versements reçus − remboursements** (`PR.versements` et
 `PR.remboursements` datés d'aujourd'hui ou avant), et non plus le montant emprunté
-moins un échéancier calculé au calendrier. Changé le 28/09/2026 : le prêt d'Arthur
-(… €, en deux tranches de … €) comptait … € de dette dès sa
+moins un échéancier calculé au calendrier. Changé le 28/09/2026 : un prêt
+versé en deux tranches comptait toute sa dette dès sa
 configuration, avant tout versement, et le patrimoine baissait d'un argent qui
 n'était encore sur aucun compte. Une tranche non reçue n'est ni une dette ni un
 avoir. La tuile d'accueil du prêt (capital restant dû) lit la même valeur.

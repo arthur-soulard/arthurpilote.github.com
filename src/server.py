@@ -908,7 +908,7 @@ def fetch_yahoo_search(query: str, limit: int = 6):
 # aussi par symbole et par nom, on garde les places europeennes, puis on
 # verifie la devise reelle de chaque candidat : le suffixe ne suffit pas
 # (CSPX.AS cote en dollars a Amsterdam). L'interface propose le premier, et
-# l'utilisateur valide (mesure le 11/10/2026 : APC.DE, IWDA.AS, NVD.DE, MSF.DE).
+# l'utilisateur valide (mesure le 11/10/2026 sur un vrai releve).
 
 # Places en euros, dans l'ordre de preference : Xetra d'abord (le marche
 # allemand de reference, proche des places ou Trade Republic execute)

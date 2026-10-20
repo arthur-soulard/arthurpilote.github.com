@@ -12,7 +12,7 @@ Six lots de questions avant d'écrire une ligne. Ses choix :
   CTO », donc **une section par CTO** dans la barre latérale, à son nom
   (« CTO » + nom du compte) ; en créer un agrandit la barre (« + » du titre
   Bourse). La liste déroulante a disparu. Détail : `CLAUDE.md`, « Navigation ».
-* Son CTO : **Trade Republic**. ETF en euros, actions européennes, titres américains.
+* Courtier de référence : **Trade Republic**. ETF en euros, actions européennes, titres américains.
 * **Cours en euros** : Trade Republic exécute en euros sur des places
   européennes (LS Exchange, puis « Best Price » depuis la fin du paiement pour
   flux d'ordres en juillet 2026). Pilote suit la cotation en euros d'un titre
@@ -143,7 +143,7 @@ Relevés le 11/10/2026 :
 | Saxo Classic | 0,08 %, min 2 € | moneyvox.fr (la page de Saxo n'affichait pas ses chiffres) |
 
 * **Ordre alphabétique** dans `COURTIERS` et donc dans les listes (13/10/2026) :
-  Trade Republic et Fortuneo, les courtiers d'Arthur, venaient en tête.
+  Trade Republic et Fortuneo venaient en tête.
 * **CTO** : à la création, aucun courtier n'est présélectionné (« Choisis ton
   courtier… ») et l'enregistrement en exige un, ou « Autre ». Jusqu'à la
   4.4.15, Trade Republic l'était : quiconque créait un CTO sans y prendre garde
@@ -208,7 +208,7 @@ essais du 11/10 avaient porté sur un fichier construit. Ce qui différait :
 * **Saveback** : une ligne CASH `BENEFITS_SAVEBACK` (ISIN, montant) **plus**
   l'achat. L'ancien lecteur prenait la ligne CASH pour un achat sans parts.
   L'achat du même titre et du même montant, à trois jours au plus, devient
-  « Saveback ». Depuis décembre 2025, le Saveback d'Arthur va au Bitcoin.
+  « Saveback ».
 * **Action offerte** (« stock perk ») : une ligne CASH `GIFT` (21 €), puis à la
   même seconde un ordre de 19,99 € + 1 € de frais (Amazon, Tesla) → « offert ».
 * **Taxe** : colonne `tax` = TTF française (0,4 %) sur les actions françaises,
@@ -228,11 +228,9 @@ essais du 11/10 avaient porté sur un fichier construit. Ce qui différait :
 * `amount` = parts × cours, sans frais ni taxe. Aucun dividende sur la
   période : le contenu d'une ligne de dividende reste à voir.
 
-Résultat vérifié au centime contre un calcul indépendant fait sur le CSV :
-5 positions (or physique … parts pour … €, HSBC Emerging …
-pour … €, Xtrackers Europe Value … pour … €, Amazon … €,
-Tesla … €), investi net … €, frais … € dont … € de taxe,
-offert … €, aucun « frais ≠ grille », 12 lignes clôturées, second import
+Résultat vérifié au centime contre un calcul indépendant fait sur un vrai CSV :
+positions (parts fractionnées comprises), investi net, frais et taxe, montant
+offert, aucun « frais ≠ grille », lignes clôturées, second import
 du même fichier : rien de nouveau, PEA identique avant et après. Les
 plus-values réalisées par ligne diffèrent de quelques centimes du relevé
 (… € contre … €) : `computePos` multiplie parts × cours sans
@@ -241,7 +239,7 @@ arrondir, comme pour le PEA ; l'investi net, lui, part de `brutOrdre`.
 ### Courbe vérifiée sur le vrai relevé (12/10/2026)
 
 Arthur trouvait des « valeurs aberrantes ». Courbe rejouée hors de l'app :
-identique au centime (303 points, dernier … € le 09/10/2026). Les
+identique au centime (303 points). Les
 135 prix payés collent aux clôtures Yahoo (moins de 15 % d'écart), sauf le
 jour de la division de 3SIL.MI (183 € gardé, déjà écarté). Ce qui est normal :
 
@@ -329,3 +327,10 @@ _nid}`. Positions avec `isin` quand elles viennent d'un import ; transactions
 avec `origine` (plan, saveback, arrondi, offert) et `trId`. Un état sans aucun
 compte n'écrase pas un fichier qui en a (`save_data(…, vide_voulu)`), comme
 la défense « PEA vierge ».
+
+## Pourcentage de plus-value (4.4.21, audit du 20/10/2026)
+
+`ctoResume().pvPct` se mesure sur le total des achats frais compris
+(`achats`), comme le PEA sur tous ses versements ; « Toute ma bourse » prend la
+même base. Sur l'« investi net » (achats − ventes − dividendes), il gonflait après
+une vente : 10 000 € achetés, ligne à +20 %, 3 000 € vendus donnaient +28,57 %.

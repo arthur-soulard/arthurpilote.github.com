@@ -204,11 +204,14 @@ class Api:
     def save_ui_prefs(self, prefs: dict) -> dict:
         """
         Methode dediee : ecrit UNIQUEMENT uiPrefs dans le fichier sans toucher
-        au reste. Utilisee pour le PIN, l'accent, etc. — robuste contre les
-        ecrasements concurrents.
+        au reste. Utilisee pour le PIN, l'accent, etc. Elle relit puis
+        reecrit tout le fichier : jamais apres une lecture ratee, sinon un
+        pea_data.json illisible serait remplace par un backup ou un PEA vide.
         """
         try:
             d = storage.load_data()
+            if storage.get_last_load_info().get("error"):
+                return {"ok": False, "error": "pea_data.json illisible : rien n'est ecrit"}
             d["uiPrefs"] = prefs or {}
             storage.save_data(d)
             return {"ok": True, "uiPrefs": d["uiPrefs"]}
@@ -871,6 +874,12 @@ class Api:
 
     def open_url(self, url: str) -> dict:
         try:
+            # Seulement des adresses web ou mail : sous Windows, webbrowser.open
+            # passe par os.startfile, qui lancerait aussi un programme ou un
+            # chemin reseau (audit du 20/10/2026, SEC-02)
+            import urllib.parse
+            if urllib.parse.urlparse(str(url)).scheme.lower() not in ("http", "https", "mailto"):
+                return {"ok": False, "error": "Adresse refusee"}
             import webbrowser
             webbrowser.open(url)
             return {"ok": True}
@@ -1591,6 +1600,9 @@ def main() -> int:
     def _sauver_fenetre():
         try:
             d = storage.load_data()
+            if storage.get_last_load_info().get("error"):
+                # Fichier illisible : on n'ecrit rien par-dessus (regle n. 3)
+                return
             d.setdefault("ui", {})
 
             # Taille reelle via ctypes (gere le maximize ctypes qui bypass window.width)

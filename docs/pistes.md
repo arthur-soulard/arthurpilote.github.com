@@ -52,7 +52,8 @@ Autres pistes :
   seulement, `_fetch()` et le téléchargement) ; sur un dépôt privé cet endpoint
   répond 404, indistinguable d'une absence de nouvelle version — l'app se croirait
   à jour pour toujours, et la panne serait silencieuse. Le gain serait par ailleurs
-  nul : aucune donnée n'est exposée, `.gitignore` écarte `Donnees/`, `pea_data*.json`,
+  nul : aucun fichier de données n'est exposé (les textes, eux, ne doivent
+  contenir aucun montant réel : règle de `CLAUDE.md`), `.gitignore` écarte `Donnees/`, `pea_data*.json`,
   `pin.hash` et `profiles.json`, et **aucun fichier de données n'apparaît dans
   l'historique complet** (vérifié sur les 71 commits, pas seulement sur l'état
   courant). Si la question revient, le prérequis serait un second dépôt public dédié
@@ -66,7 +67,7 @@ Autres pistes :
   13/10/2026 (« non, prends pas les cours de Stuttgart »). Trade Republic cote
   jusqu'au soir, mais Pilote garde la cotation choisie à l'import (Xetra, Paris :
   clôture de 17 h 30, dernier cours à 17 h 35). Écart mesuré le 12/10 au soir sur
-  son CTO : … € sur … €. Francfort (`.F`) ne conviendrait pas non plus
+  un vrai CTO : moins de 0,1 %. Francfort (`.F`) ne conviendrait pas non plus
   (D5BL.F à 28,40 € pour 49,75 €).
 
 - **Épargne hors prêt (livrets et assurances vie calculés pour eux-mêmes)** :

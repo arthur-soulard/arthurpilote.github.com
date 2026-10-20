@@ -77,20 +77,19 @@ le module suit les versements reçus, les remboursements et l'argent placé.
     tableau des frais Multisupport de juin 2025) : 0,5 % sur un versement en fonds
     euros (EuroGénération, Fonds Garanti), 0 % en unités de compte ; 20 000 € versés
     → 19 900 € investis. Droit d'adhésion de 20 € payé une seule fois par adhérent,
-    tous contrats Afer confondus : rien à compter pour Arthur, déjà adhérent. Les
+    tous contrats Afer confondus : rien à compter pour un adhérent. Les
     frais de gestion annuels ne s'ajoutent pas : le taux publié par l'Afer, celui
     qu'on saisit, en est déjà net.
-  → Contrats d'Arthur (08/10/2026) : « Afer Génération » (… % en 2025) et
-    « Afer Multisupport » (… % en 2025), taux du communiqué Afer du 19/01/2026,
-    0,5 % de frais sur versements sur les deux.
+  → Vérifié le 08/10/2026 sur deux contrats réels, avec les taux du communiqué
+    de l'assureur et leurs frais sur versements.
 * liv         : `{label, taux_history:[{id,date,taux}], mouvements:[{id,date,type,montant,note}]}`
 * frais_recurrents : prélevés le MÊME JOUR chaque mois (jour pris sur `date_debut`,
   ramené au dernier jour du mois quand il n'existe pas — voir `prAddMonths`)
 * frais_rembourses : `{id, date, montant, label}`, frais que la banque a rendus
   (ex. un mois de carte offert), déduits des frais (4.3.4)
 
-**Les frais se comptent au fil des mois (4.3.4).** Jusque-là, les 120 prélèvements de
-la carte (… €) comptaient dès le premier jour : … € de frais, et autant en moins
+**Les frais se comptent au fil des mois (4.3.4).** Jusque-là, tous les prélèvements
+mensuels de la carte comptaient dès le premier jour : des centaines d'euros de frais, et autant en moins
 dans les liquidités et les gains. Désormais `prAllFrais(jusqua)` ne prend que ce qui
 est daté d'aujourd'hui ou avant ; le reste s'affiche « à venir » dans Paramètres.
 * **Changement de tarif** : `paliers: [{id, date, montant}]` sur le frais récurrent,
@@ -104,7 +103,7 @@ est daté d'aujourd'hui ou avant ; le reste s'affiche « à venir » dans Param�
 **Tout au réel, à sa date (4.3.4, audit du module).** Versements, remboursements, dépôts
 d'assurance vie, mouvements du Livret A et ordres du PEA ne comptent qu'à partir de
 leur date (`prPasse` / `prAVenir`) ; ce qui est daté plus tard s'affiche « à venir ».
-Le versement de … € annoncé pour le 05/10 comptait déjà comme reçu le 28/09.
+Un versement annoncé pour une date future comptait déjà comme reçu.
 * `capital_du = prCapitalDu()` (versé − remboursé). `mensualites_restantes` reste
   calculé sur le **montant emprunté** : sur le capital dû, il tomberait à 30 au lieu
   de 60 avant la 2e tranche.
@@ -145,9 +144,9 @@ modification, un décochage, une suppression ou le bouton Retour se voient parto
   `t-pret-mt`, enregistré dans `pretMontant`. Vide ou égal à l'ordre : l'ordre
   entier, pas de `pretMontant`. Le prêt détient alors la même part des parts et
   des frais (`prPartOrdre` = `pretMontant` / montant de l'ordre, `prTotalOrdre`) :
-  … € d'un achat de … € → … parts sur 25. Cas d'origine : le
-  07/10, … € d'ETF achetés avec … € du prêt et … € déjà en espèces ;
-  tout coché, le prêt comptait … € placés pour … € reçus.
+  par exemple … € d'un achat de … € → … parts sur 25. Cas
+  d'origine : des ETF achetés en partie avec l'argent du prêt et en partie avec
+  des espèces déjà sur le compte ; tout coché, le prêt comptait plus d'argent placé que reçu.
   Fenêtre « Passer un scénario » : un seul montant (`sop-pret-mt`), réparti entre
   les ordres au prorata, le dernier prend le reste (somme juste au centime).
   Le champ n'apparaît que case cochée, en CSS (`label:has(…:not(:checked)) + .pr-part`),

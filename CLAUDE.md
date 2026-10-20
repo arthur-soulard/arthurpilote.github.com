@@ -113,6 +113,16 @@ l'irremplaçable. Sans ça, 200 Ko de cache régénérable étaient recopiés se
 par utilisateur, puis embarqués dans chaque archive de sauvegarde USB. Backup du
 jour : 10 Ko au lieu de 418 Ko. Ne pas « simplifier » en resérialisant `data` tel quel.
 
+### Fichier illisible : rien n'est réécrit par-dessus (4.4.21)
+
+Côté Python aussi : `Api.save_ui_prefs` et l'enregistrement de la fenêtre à la
+fermeture n'écrivent rien si `storage.get_last_load_info()["error"]` est posé.
+Chaque écriture fait `fsync` avant le renommage, le backup du jour s'écrit par
+temporaire, et la lecture essaie les backups du plus récent au plus ancien jusqu'au
+premier lisible. Les copies faites avant un import vivent dans
+`backups/avant_import/` (hors rotation). Un `users.json` illisible est gardé à côté
+(`users.illisible-<date>.json`) et la liste est refaite à partir des dossiers.
+
 ### `crash.log` : seulement les vrais plantages
 
 `install_crash_handler()` (app.py) écarte les erreurs connues et sans conséquence des
@@ -356,6 +366,15 @@ Corollaires à ne pas défaire :
   reste libre : il n'y a rien à prouver.
 * `/pin/check` est ralenti (0,25 s) et bloqué 60 s après 10 échecs, **côté serveur**.
   Le compteur de l'écran de verrouillage est purement cosmétique et ne protège rien.
+
+## Aucune donnée réelle dans le dépôt
+
+Le dépôt est **public**. Jamais un montant, une ligne de portefeuille, un nom de
+contrat, une mesure de santé ou un relevé d'Arthur dans un fichier, un commentaire
+ou un message de commit : écrire « vérifié sur un vrai relevé, au centime », ou
+prendre les données fictives de Camille (`tests/donnees_exemple.py`). Des montants
+réels étaient écrits dans `docs/` jusqu'à la 4.4.20 (audit du 20/10/2026) : retirés
+des fichiers, l'historique git les garde.
 
 ## Conventions de code
 

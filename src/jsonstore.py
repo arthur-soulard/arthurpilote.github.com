@@ -97,6 +97,8 @@ class JsonStore:
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
             os.replace(tmp_path, path)
         except Exception:
             try:
@@ -113,8 +115,20 @@ class JsonStore:
         today = datetime.date.today().isoformat()
         backup_dir = self.backup_dir()
         try:
-            with open(backup_dir / f"{self.stem}_{today}.json", "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            # Temporaire puis renommage (voir storage._daily_backup)
+            fd, tmp = tempfile.mkstemp(prefix=f".{self.stem}_bak_", suffix=".tmp", dir=str(backup_dir))
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, backup_dir / f"{self.stem}_{today}.json")
+            except Exception:
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+                raise
         except Exception as e:
             print(f"[{self.stem}] backup quotidien KO: {e}", flush=True)
             return
@@ -129,7 +143,14 @@ class JsonStore:
 
     def _latest_backup(self) -> Optional[Path]:
         try:
-            backups = sorted(self.backup_dir().glob(f"{self.stem}_*.json"))
-            return backups[-1] if backups else None
+            # Le plus recent qui se lit (voir storage._latest_backup)
+            for b in reversed(sorted(self.backup_dir().glob(f"{self.stem}_*.json"))):
+                try:
+                    with open(b, "r", encoding="utf-8") as f:
+                        json.load(f)
+                    return b
+                except Exception:
+                    continue
+            return None
         except Exception:
             return None

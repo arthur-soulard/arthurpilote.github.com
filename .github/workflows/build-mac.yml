@@ -130,8 +130,10 @@ jobs:
           sleep 2
           sudo mv "$CERT.cache" "$CERT" 2>/dev/null || true
 
-          # Echecs bloquants : serveur muet, donnees au mauvais endroit
+          # Echecs bloquants : serveur muet, erreur JavaScript au demarrage de
+          # la page (journal [diag]), donnees au mauvais endroit
           test -n "$UP"
+          if grep "\[diag\]" pilote.log | grep -q "ERREUR "; then echo "::error title=Diag::erreur JavaScript au demarrage"; exit 1; fi
           test -d "$DONNEES"
           test ! -e dist/Pilote.app/Contents/MacOS/Donnees
 

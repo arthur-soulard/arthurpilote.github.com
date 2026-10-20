@@ -72,3 +72,4 @@ jobs:
           if ($err) { Write-Output "::notice title=Erreurs::$(($err -replace "`r?`n", ' ').Substring(0, [Math]::Min(1500, $err.Length)))" }
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
           if (-not $up) { exit 1 }
+          if ($diag -match "ERREUR ") { Write-Output "::error title=Diag::erreur JavaScript au demarrage"; exit 1 }

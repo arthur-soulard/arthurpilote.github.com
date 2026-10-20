@@ -397,17 +397,21 @@ def _do_install() -> None:
         exe_name = Path(exe_path).name if getattr(sys, "frozen", False) else "Pilote.exe"
 
         bat_path = tmp_dir / "update.bat"
+        # Aucun chemin ecrit dans le batch : %~dp0 (son propre dossier, ou sont
+        # aussi le Setup et le journal) est resolu par cmd lui-meme. Le fichier
+        # est en ASCII : jusqu'a la 4.4.20, un accent dans %TEMP% (compte
+        # « Hélène ») devenait « ? » et la mise a jour echouait, Pilote ferme.
         bat_content = (
             f'@echo off\r\n'
-            f'echo [%TIME%] Update batch started >> "{tmp_dir / "update_bat.log"}"\r\n'
+            f'echo [%TIME%] Update batch started >> "%~dp0update_bat.log"\r\n'
             f':wait\r\n'
             f'tasklist /FI "IMAGENAME eq {exe_name}" 2>nul | find /I "{exe_name}" > nul\r\n'
             f'if not errorlevel 1 ( timeout /t 1 /nobreak > nul & goto wait )\r\n'
-            f'echo [%TIME%] App process gone, waiting 5s for file handle release >> "{tmp_dir / "update_bat.log"}"\r\n'
+            f'echo [%TIME%] App process gone, waiting 5s for file handle release >> "%~dp0update_bat.log"\r\n'
             f'timeout /t 5 /nobreak > nul\r\n'
-            f'echo [%TIME%] Running installer >> "{tmp_dir / "update_bat.log"}"\r\n'
-            f'"{setup_path}" /VERYSILENT /NORESTART /SUPPRESSMSGBOXES\r\n'
-            f'echo [%TIME%] Installer finished (errorlevel=%errorlevel%) >> "{tmp_dir / "update_bat.log"}"\r\n'
+            f'echo [%TIME%] Running installer >> "%~dp0update_bat.log"\r\n'
+            f'"%~dp0{setup_path.name}" /VERYSILENT /NORESTART /SUPPRESSMSGBOXES\r\n'
+            f'echo [%TIME%] Installer finished (errorlevel=%errorlevel%) >> "%~dp0update_bat.log"\r\n'
             f'(goto) 2>nul & del "%~f0"\r\n'
         )
         bat_path.write_text(bat_content, encoding="ascii", errors="replace")

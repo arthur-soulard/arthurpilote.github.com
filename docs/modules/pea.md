@@ -13,8 +13,8 @@ fait l'arrondi (avec `toPrecision`, comme `pacR2` : 7,297 × n vaut
 qui sort ou entre : `computeCash`, les espèces rejouées de la courbe
 (`buildTwrSeries`, pour finir sur le même solde), le montant d'une ligne de
 Transactions, le total de « Passer un scénario », le prêt (`prTotalOrdre`).
-Vérifié sur les 22 ordres saisis au 08/10/2026 : … €, le solde du relevé
-(… € sans l'arrondi), et … / … / … € pour les achats du 07/10.
+Vérifié le 08/10/2026 sur un vrai PEA : le solde d'espèces calculé est celui du
+relevé au centime, et chaque achat a le montant du relevé.
 
 * Seul cas observé : un achat. Pour une vente, demi-centime supposé vers le haut
   aussi (arrondi commercial) ; à revoir si un relevé dit le contraire.
@@ -254,7 +254,7 @@ mois ≤ 500 € gratuit, sinon 0,35 % sans minimum ; toujours plafonné à 0,5 
 maximum légal en ligne pour un PEA). Un nouvel utilisateur part de `PAC_DEFAUT` :
 aucune cible, pas d'ordre gratuit (la case « Ordre gratuit » se masque quand le
 seuil vaut 0 €), courtage à 0,5 %. Jusqu'au 11/10/2026, c'était l'allocation et
-les frais d'Arthur (70/20/10, 500 €, 0,35 %) : quiconque installait l'app les
+les réglages d'Arthur (répartition, montant, frais) : quiconque installait l'app les
 recevait. Les siens sont enregistrés dans `S.uiPrefs.prochainAchat`. Algorithme
 en 8 étapes écrit par Arthur, appliqué à la lettre dans `pacCalcul()` (pur : ni
 écran ni `S`). **`testsProchainAchat()`** (console) vérifie ses six cas chiffrés :
@@ -464,7 +464,7 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   la part de la plage où il a travaillé). Toujours du même signe que le gain.
   Avant : un TWR qui repartait du premier point du jour de chaque flux et perdait
   le rendement de ce jour-là. Faux sur un CTO, où chaque ordre est un flux
-  (« YTD » : … % pour … €). Choix d'Arthur contre un TWR corrigé
+  (un « YTD » positif en % pour une perte en euros). Choix d'Arthur contre un TWR corrigé
   (… % ce jour-là), qui peut être de signe opposé au gain. Sur son PEA :
   YTD … % → … %, 6M … % → … %. La tuile « Performance du PEA »
   de l'accueil lit le même calcul. Max ne change pas.
@@ -472,8 +472,8 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   `since` de son chargement et n'est repris que s'il remonte jusqu'au premier
   ordre du compte affiché ; `_initBenchmarkUi` complète les indices cochés à
   chaque `renderPerf()`. Avant, un indice chargé d'abord sur un CTO (août 2025)
-  restait tronqué sur le PEA (janvier 2025) : CAC 40 à … € au lieu de
-  … €, les versements d'avant août n'achetant rien.
+  restait tronqué sur le PEA (janvier 2025) : CAC 40 très en dessous de sa
+  vraie valeur, les versements d'avant août n'achetant rien.
 * « portefeuille ouvert le … » (YTD) : seulement si toute la courbe commence
   cette année. Le 1er janvier étant férié, la note s'affichait toujours.
 
@@ -483,3 +483,18 @@ Points critiques :
 * Le fallback < 2 points reset TOUS les boutons (pas seulement YTD/MAX)
 * La plage préférée est persistée dans `S.uiPrefs.perfRange` via
   `pywebview.api.save_ui_prefs()`
+
+## Versements manquants (4.4.21, audit du 20/10/2026)
+
+Quand les achats dépassent les versements saisis, le solde d'espèces brut
+(`computeCashBrut`) est négatif. Les espèces s'affichent toujours 0 € (`computeCash`),
+mais la carte Plus-value montre « — » et « Versements manquants : X € », et
+`window._peaPv.eur` vaut `null` (les tuiles de l'accueil affichent « — »). Jusqu'à la
+4.4.20, l'argent manquant comptait comme un gain (+500 € de plus-value pour un
+versement de 500 € oublié). Le contrôle des transactions (`_txErreur`) refuse
+une vente de plus de parts que détenues à la date, une quantité ou un cours vide
+ou nul, des frais négatifs. Le nom des titres passe par `escHtml` partout où il
+entre dans du HTML : un nom piégé (relevé importé, recherche Yahoo) s'affiche en
+texte. Un cours que Yahoo ne rend plus pour une ligne détenue fait passer la barre
+d'état en « partiel » (`_coursPerimes`) : « Dernière actualisation HH:MM · cours
+ancien : TTE ».

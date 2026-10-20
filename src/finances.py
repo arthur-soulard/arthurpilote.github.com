@@ -221,6 +221,8 @@ def save_data(data: dict) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp_path, path)
     except Exception:
         try:
@@ -237,8 +239,20 @@ def _daily_backup(data: dict) -> None:
     backup_dir = get_backup_dir()
     backup_path = backup_dir / f"finances_{today}.json"
     try:
-        with open(backup_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        # Temporaire puis renommage (voir storage._daily_backup)
+        fd, tmp = tempfile.mkstemp(prefix=".fin_bak_", suffix=".tmp", dir=str(backup_dir))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, backup_path)
+        except Exception:
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+            raise
     except Exception as e:
         print(f"[finances] backup quotidien KO: {e}", flush=True)
         return
@@ -253,5 +267,12 @@ def _daily_backup(data: dict) -> None:
 
 
 def _latest_backup() -> Optional[Path]:
-    backups = sorted(get_backup_dir().glob("finances_*.json"))
-    return backups[-1] if backups else None
+    """Le plus recent qui se lit (voir storage._latest_backup)."""
+    for b in reversed(sorted(get_backup_dir().glob("finances_*.json"))):
+        try:
+            with open(b, "r", encoding="utf-8") as f:
+                json.load(f)
+            return b
+        except Exception:
+            continue
+    return None

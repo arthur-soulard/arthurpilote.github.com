@@ -26,12 +26,50 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Garde-fous avant publication (audit du 20/10/2026) : jusqu'a la 4.4.20,
+      # chaque tag partait chez tous les utilisateurs sans aucun essai
+      - name: Check versions
+        run: python tests/verifier_release.py ${{ github.ref_name }}
+
       - name: Generate icon
         run: python assets/make_icon.py
         continue-on-error: true
 
       - name: Build exe (PyInstaller)
         run: python -m PyInstaller build/pilote.spec --clean --noconfirm
+
+      - name: Check bundle
+        shell: pwsh
+        run: |
+          foreach ($f in "dist/Pilote/Pilote.exe", "dist/Pilote/_internal/ocr_win.ps1",
+                         "dist/Pilote/_internal/ui/vendor", "dist/Pilote/_internal/nouveautes.json") {
+            if (-not (Test-Path $f)) { Write-Output "::error title=Bundle::$f absent"; exit 1 }
+          }
+
+      # L'exe doit demarrer, servir la page et la page tourner sans erreur
+      # JavaScript (journal [diag] de app.py, comme build-windows.yml)
+      - name: Launch and check
+        shell: pwsh
+        run: |
+          $env:PILOTE_DIAG = "1"
+          $p = Start-Process -FilePath "dist/Pilote/Pilote.exe" -PassThru `
+                 -RedirectStandardOutput sortie.log -RedirectStandardError pilote.err
+          $up = $null
+          for ($i = 1; $i -le 60; $i++) {
+            try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:7438/ping -TimeoutSec 2 | Out-Null; $up = $i; break } catch { Start-Sleep 1 }
+          }
+          for ($i = 1; $i -le 50; $i++) {
+            if (((Get-Content sortie.log, pilote_diag.log -Raw -ErrorAction SilentlyContinue) -join " ") -match "\[diag\]") { break }
+            Start-Sleep 1
+          }
+          $log = ((Get-Content sortie.log, pilote_diag.log -Raw -ErrorAction SilentlyContinue) -join " ") -replace "`r?`n", " "
+          $diag = [regex]::Match($log, "\[diag\] \{.*?\}\}?").Value
+          Write-Output "::notice title=Diag::$($diag.Substring(0, [Math]::Min(3000, $diag.Length)))"
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          if (-not $up) { Write-Output "::error title=Lancement::le serveur ne repond pas"; exit 1 }
+          if (-not $diag) { Write-Output "::error title=Lancement::journal [diag] absent"; exit 1 }
+          if ($diag -match "ERREUR ") { Write-Output "::error title=Lancement::erreur JavaScript au demarrage"; exit 1 }
+          if ($diag -match "REJET ") { Write-Output "::warning title=Lancement::promesse rejetee au demarrage" }
 
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress

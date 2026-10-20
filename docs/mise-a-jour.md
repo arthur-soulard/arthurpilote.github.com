@@ -167,3 +167,17 @@ probablement effacé tout le dossier, `Donnees` compris. Non essayé, évidemmen
   `Donnees` intact ; une entrée visant un autre dossier est laissée ; la vraie
   entrée d'Arthur n'a pas été touchée par l'essai. Le journal du Setup (`/LOG`)
   écrit « Ancienne entree … retiree » ou « … laissee : elle vise … ».
+
+## Audit du 20/10/2026 (4.4.21)
+
+* Le batch de mise à jour n'écrit plus aucun chemin : `%~dp0` (son propre dossier,
+  où sont le Setup et `update_bat.log`) est résolu par cmd. Jusqu'à la 4.4.20, un
+  accent dans `%TEMP%` (compte « Hélène ») devenait « ? » dans le fichier ASCII :
+  la mise à jour échouait et Pilote restait fermé. Essayé dans « Hélène François ».
+* `release.yml` ne publie plus sans essai : `tests/verifier_release.py` (même
+  numéro dans `app.py`, `installer.iss`, `nouveautes.json` et le tag ; `src/*.py`
+  compilent), « Check bundle », puis lancement de l'exe : échec si le serveur ne
+  répond pas, si le journal `[diag]` manque ou contient `ERREUR`. Les tests de la
+  branche `mac` échouent aussi sur une erreur JavaScript au démarrage.
+* `Api.open_url` n'ouvre plus que `http`, `https` et `mailto` (sous Windows,
+  `webbrowser.open` passe par `os.startfile`, qui lançait aussi un programme).

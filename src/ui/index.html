@@ -5675,7 +5675,7 @@ function brutOrdre(t) {
   return Math.round(Number(((t.qty || 0) * (t.cours || 0) * 100).toPrecision(12))) / 100;
 }
 
-function computeCash() {
+function computeCashBrut() {
   // cashSolde = depots - achats nets + ventes nettes (transactions passees uniquement)
   const cut = todayISO();
   const depSum  = (S.depots||[]).reduce((s,d)=>s+(d.amount||0),0);
@@ -5696,14 +5696,18 @@ function computeCash() {
     if (!d.date) return false;
     return new Date(d.date+"T00:00:00") <= now;
   }).reduce((s,d)=>s+(d.montant||0),0);
-  return Math.max(0, depSum - spent + earned + divRec + divFutPast);
+  return depSum - spent + earned + divRec + divFutPast;
 }
+/* Solde négatif = des achats payés par des versements que Pilote ne connaît
+   pas : affiché 0 €, et la plus-value n'est pas calculée tant qu'il manque
+   (jusqu'en 4.4.20, l'argent manquant comptait comme un gain). */
+function computeCash() { return Math.max(0, computeCashBrut()); }
 
 /* Ligne « Prix de revient des lignes » de la carte Valeur (PEA et CTO) : ce
    qu'ont coûté les lignes détenues, frais compris, et leur plus-value latente
    (null tant qu'un cours manque). Elle s'appelait « Investi » jusqu'en 4.4.5,
-   lu comme l'argent versé : … € pour … € déposés sur le PEA
-   d'Arthur (12/10/2026), l'écart étant le réalisé des lignes vendues et les
+   lu comme l'argent versé, alors que l'écart avec le total déposé est le
+   réalisé des lignes vendues et les
    dividendes, réinvestis. Montant et latent insécables : la carte fait
    147 px de large dans la fenêtre par défaut (1280 px), la ligne y passe
    sur trois lignes sans couper « (… € latents) ». */
@@ -5745,8 +5749,9 @@ function renderMetrics() {
     return fromReceived + fromFuture;
   })();
   const cash = computeCash();
+  const manque = Math.round(Math.max(0, -computeCashBrut()) * 100) / 100;
   // P&L = valeur des lignes + solde especes - total des versements
-  const pv  = all ? Math.round((tv + cash - depSum) * 100) / 100 : null;
+  const pv  = (all && !(manque > 0)) ? Math.round((tv + cash - depSum) * 100) / 100 : null;
   const pvP = (pv != null && depSum > 0) ? (pv / depSum) * 100 : null;
   document.getElementById("m-dep").textContent     = depSum>0 ? eur(depSum) : "—";
   document.getElementById("m-dep-sub").textContent = "";
@@ -5762,7 +5767,8 @@ function renderMetrics() {
   const pvEl = document.getElementById("m-pv");
   pvEl.textContent = pv!=null ? eur(pv,true) : "—";
   pvEl.className   = "mc-val " + (pv==null ? "" : pv>=0 ? "c-g" : "c-r");
-  document.getElementById("m-pv-sub").textContent = pvP!=null ? pct(pvP) : "";
+  document.getElementById("m-pv-sub").textContent = manque > 0
+    ? "Versements manquants : " + eur(manque) : pvP!=null ? pct(pvP) : "";
   document.getElementById("mc-pv-acc").style.background = pv==null ? "transparent" : pv>=0 ? "var(--g)" : "var(--r)";
   // Partage avec la page d'accueil pour qu'elle affiche exactement le meme chiffre
   // `total` = valorisation du PEA (lignes + especes). Le module Patrimoine
@@ -5835,8 +5841,8 @@ function renderPositions() {
     const aVenir = e.qty <= 0.0001 ? _achatAVenir(p) : "";
     return `<tr data-id="${p.id}" draggable="true">
       <td>
-        <div class="tk">${p.name}</div>
-        <div class="tk2">${p.ticker}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
+        <div class="tk">${escHtml(p.name)}</div>
+        <div class="tk2">${escHtml(p.ticker)}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
         <span class="badge ${p.type==="etf"?"be":"ba"}">${p.type==="etf"?"ETF":"Action"}</span>
       </td>
       <td>${sectorBadgeHtml(p.sector)}</td>
@@ -6335,7 +6341,7 @@ async function _loadBenchHistory(bench) {
      pour un compte ne sert à un autre que s'il remonte jusqu'à son premier
      ordre (même règle que le cache du serveur). Jusqu'à la 4.4.2, un indice
      chargé d'abord sur un CTO (depuis août 2025) restait tronqué sur le PEA
-     (depuis janvier 2025) : CAC 40 à … € au lieu de … € (12/10/2026). */
+     (depuis janvier 2025) : CAC 40 très en dessous de sa vraie valeur (12/10/2026). */
   const depuis = _perfDepuisParam();   // "&since=AAAA-MM-JJ", "" = aucun ordre
   const deja   = _benchHistory[bench];
   if (deja && (!deja.depuis || !depuis || deja.depuis <= depuis)) return deja;
@@ -7090,7 +7096,7 @@ function openAddDivFuture(editId) {
 
   const sel = document.getElementById("df-asset");
   sel.innerHTML = "<option value=''>— Choisir —</option>" +
-    S.positions.map(p=>`<option value="${p.ticker}">${p.name} (${p.ticker})</option>`).join("");
+    S.positions.map(p=>`<option value="${escHtml(p.ticker)}">${escHtml(p.name)} (${escHtml(p.ticker)})</option>`).join("");
 
   if (editId!=null) {
     const d = (S.divFuture||[]).find(x=>x.id===editId);
@@ -7185,7 +7191,7 @@ function openAddDiv() {
   document.getElementById("dv-date").value = new Date().toISOString().slice(0,10);
   const sel = document.getElementById("dv-asset");
   sel.innerHTML = "<option value=''>— Choisir —</option>" +
-    S.positions.map(p=>`<option value="${p.ticker}">${p.name} (${p.ticker})</option>`).join("");
+    S.positions.map(p=>`<option value="${escHtml(p.ticker)}">${escHtml(p.name)} (${escHtml(p.ticker)})</option>`).join("");
   ["dv-qty","dv-ppa","dv-montant","dv-note"].forEach(id=>{ const el=document.getElementById(id); if(el) { el.value=""; delete el.dataset.manual; } });
   document.getElementById("dv-recap").style.display="none";
   document.getElementById("ov-div").classList.add("open");
@@ -7393,7 +7399,7 @@ function renderRealizedPnl() {
     const rows  = ys.map(s => `
       <tr>
         <td style="font-family:var(--mono);color:var(--txt2);font-size:11px;white-space:nowrap">${s.date}</td>
-        <td style="text-align:left;font-family:var(--font);font-weight:600">${s.name}</td>
+        <td style="text-align:left;font-family:var(--font);font-weight:600">${escHtml(s.name)}</td>
         <td>${s.qty}</td>
         <td>${eur(s.sellPrice)}</td>
         <td>${eur(s.proceeds)}</td>
@@ -8381,7 +8387,7 @@ function renderWishlist() {
       const cours = v?.cours!=null ? `<span style="font-family:var(--mono)">${v.cours.toFixed(2).replace(".",",")} €</span>` : `<span class="vz">—</span>`;
       const extraCells = (wtype === "action") ? `<td>${_renderPER(w.ticker)}</td><td>${_renderYield(w.ticker)}</td>` : `<td>${_renderTer(w)}</td>`;
       return `<tr>
-        <td><div style="font-weight:600;font-size:13px">${w.name}</div></td>
+        <td><div style="font-weight:600;font-size:13px">${escHtml(w.name)}</div></td>
         <td style="text-align:left"><span style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${w.ticker}</span></td>
         <td style="text-align:left">${sectorBadgeHtml(w.sector)}</td>
         <td style="text-align:center"><div class="star-row" id="sr-${w.id}">${[1,2,3,4,5].map(n=>`<span class="star${n<=w.stars?" on":""}" onclick="setStars(${w.id},${n})">★</span>`).join("")}</div></td>
@@ -8604,18 +8610,25 @@ async function fetchLocalCours() {
   // dans `stale`. `frais` = cours vraiment actualises ; 0 = rien de neuf.
   const stale = new Set(data.stale || []);
   const frais = Object.keys(data.prices).filter(tk => !stale.has(tk)).length;
-  return { prices, variations, frais, demandes: unique.length };
+  // Lignes détenues (tous comptes) dont le cours n'est pas neuf : un seul titre
+  // que Yahoo ne rend plus faussait la valeur sans que rien ne le dise
+  const detenus = new Set(S.positions.map(p => p.ticker));
+  if (typeof ctoAutresTickers === "function") ctoAutresTickers().forEach(t => detenus.add(t));
+  const perimes = [...stale].filter(tk => detenus.has(tk));
+  return { prices, variations, frais, demandes: unique.length, perimes };
 }
 
 /* Etat de la derniere actualisation des cours, lu par le hook de
    applyCoursData : "ok", "perime" (Yahoo injoignable, derniers cours connus)
    ou "erreur" (serveur local en panne). */
 let _coursEtat = "ok";
+let _coursPerimes = [];   // "partiel" : tickers détenus servis depuis le cache
 
 async function applyCoursData() {
   try {
-    const { prices, variations, frais, demandes } = await fetchLocalCours();
-    _coursEtat = (frais === 0 && demandes > 0) ? "perime" : "ok";
+    const { prices, variations, frais, demandes, perimes } = await fetchLocalCours();
+    _coursPerimes = perimes || [];
+    _coursEtat = (frais === 0 && demandes > 0) ? "perime" : _coursPerimes.length ? "partiel" : "ok";
 
     let changed = false;
     S.positions.forEach(p => {
@@ -8930,7 +8943,7 @@ function renderReco() {
     return `<div class="reco-card">
       <div class="reco-top">
         <span class="reco-badge ${badgeCls(score)}">${badgeLbl(score)}</span>
-        <span class="reco-name">${w.name} <span style="color:var(--a);font-size:11px">${stars(w.stars||3)}</span></span>
+        <span class="reco-name">${escHtml(w.name)} <span style="color:var(--a);font-size:11px">${stars(w.stars||3)}</span></span>
         <span class="reco-meta">${w.ticker} · ${w.wtype==="etf"?"ETF":"Action"}</span>
         <span class="reco-score">${score} / 100</span>
       </div>
@@ -9498,12 +9511,12 @@ function _wireTickerSearch(opts) {
       const parts = [r.symbol];
       if (r.exchange) parts.push(r.exchange);
       if (type)       parts.push(type);
-      return `<div class="sg-item" data-sym="${r.symbol}" data-name="${(r.shortname||"").replace(/"/g,'&quot;')}" data-type="${(r.type||"").toLowerCase()}"
+      return `<div class="sg-item" data-sym="${escHtml(r.symbol)}" data-name="${escHtml(r.shortname)}" data-type="${escHtml((r.type||"").toLowerCase())}"
           style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--brd);font-size:12px">
           <div style="font-weight:600;display:flex;align-items:center">
-            <span style="flex:1">${r.shortname || r.symbol}</span>${badge}
+            <span style="flex:1">${escHtml(r.shortname || r.symbol)}</span>${badge}
           </div>
-          <div style="font-size:10px;color:var(--txt2);font-family:var(--mono);margin-top:2px">${parts.join(" · ")}</div>
+          <div style="font-size:10px;color:var(--txt2);font-family:var(--mono);margin-top:2px">${escHtml(parts.join(" · "))}</div>
         </div>`;
     });
     if (loading) rows.push('<div style="padding:6px 10px;font-size:10px;color:var(--txt3);font-style:italic">Recherche Yahoo…</div>');
@@ -9807,13 +9820,45 @@ function openAddTx() {
   // Populate ticker select
   const sel = document.getElementById("t-asset");
   sel.innerHTML = '<option value="">— Choisir —</option>' +
-    S.positions.map(p=>`<option value="${p.ticker}">${p.ticker} – ${p.name}</option>`).join("");
+    S.positions.map(p=>`<option value="${escHtml(p.ticker)}">${escHtml(p.ticker)} – ${escHtml(p.name)}</option>`).join("");
   document.getElementById("ov-tx").classList.add("open");
+}
+/* Contrôle d'une transaction avant de l'enregistrer : jusqu'en 4.4.20, un champ
+   vide devenait 0 et une vente de plus de parts que détenues passait sans un
+   mot (la ligne disparaissait, une moins-value fausse apparaissait). Rend le
+   message d'erreur, ou "" si tout va bien. `ignoreId` : la transaction modifiée. */
+function _txErreur(ignoreId) {
+  const date  = document.getElementById("t-date").value;
+  const asset = document.getElementById("t-asset").value;
+  const type  = document.getElementById("t-type").value;
+  const val = id => document.getElementById(id).value.trim();
+  const cours = parseFloat(val("t-cours")), qty = parseFloat(val("t-qty"));
+  const frais = val("t-frais") === "" ? 0 : parseFloat(val("t-frais"));
+  if (!date)  return "Indique la date de l'opération.";
+  if (!asset) return "Choisis le titre.";
+  if (type === "Achat" || type === "Vente") {
+    if (!(qty > 0))   return "La quantité doit être un nombre supérieur à 0.";
+    if (!(cours > 0)) return "Le cours doit être un nombre supérieur à 0.";
+  }
+  if (!(frais >= 0)) return "Les frais ne peuvent pas être négatifs.";
+  if (type === "Vente") {
+    let detenu = 0;
+    S.transactions.forEach(t => {
+      if (t.id === ignoreId || t.asset !== asset || normDate(t.date) > normDate(date)) return;
+      if (t.type === "Achat") detenu += t.qty || 0;
+      else if (t.type === "Vente") detenu -= t.qty || 0;
+    });
+    if (qty > detenu + 1e-6)
+      return "Tu ne détenais que " + fmtQte(Math.round(detenu * 1e6) / 1e6) + " part(s) de ce titre le " +
+        new Date(date + "T00:00").toLocaleDateString("fr-FR") + " : vente impossible de " + fmtQte(qty) + ".";
+  }
+  return "";
 }
 function saveTx() {
   const date  = document.getElementById("t-date").value;
   const asset = document.getElementById("t-asset").value;
-  if (!date||!asset) return;
+  const err = _txErreur(null);
+  if (err) { showToastModern(err, "warn"); return; }
   const pret = _txPretInput(asset, null);
   if (pret === null) return;
   pushUndo();
@@ -9852,7 +9897,8 @@ function editTx(id) {
 function saveEditTx(id) {
   const date  = document.getElementById("t-date").value;
   const asset = document.getElementById("t-asset").value;
-  if (!date||!asset) return;
+  const err = _txErreur(id);
+  if (err) { showToastModern(err, "warn"); return; }
   const idx = S.transactions.findIndex(x=>x.id===id); if(idx<0) return;
   const pret = _txPretInput(asset, id);
   if (pret === null) return;
@@ -9996,7 +10042,7 @@ function openCours() {
     <div class="crow">
       <div>
         <div style="font-weight:600;font-size:13px">${p.ticker}</div>
-        <div style="font-size:10px;color:var(--txt2)">${p.name}</div>
+        <div style="font-size:10px;color:var(--txt2)">${escHtml(p.name)}</div>
       </div>
       <input class="cinp" id="ci-${p.id}" type="number" step="0.01" value="${p.cours!=null?p.cours:""}" placeholder="ex: 69.12">
     </div>`).join("");
@@ -14574,9 +14620,14 @@ applyCoursData = async function(opts) {
     // L'original attrape ses propres erreurs : c'est _coursEtat qui dit si les
     // cours sont neufs. Avant la 4.3.14, hors ligne, le libellé affichait
     // « Dernière actualisation » à l'heure du jour sur des cours inchangés.
-    if (_coursEtat !== "ok") throw new Error(_coursEtat);
+    if (_coursEtat !== "ok" && _coursEtat !== "partiel") throw new Error(_coursEtat);
     _yahooDownSignale = false;
     const t = new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"});
+    if (_coursEtat === "partiel") {
+      const noms = _coursPerimes.map(tk => tk.includes(":") ? tk.split(":")[1] : tk);
+      _setCoursHealth("warn", "Dernière actualisation " + t + " · cours ancien : " + noms.slice(0, 3).join(", ")
+        + (noms.length > 3 ? "…" : ""));
+    } else
     _setCoursHealth("ok", "Dernière actualisation " + t);
     if (manual) showToastModern("✓ Cours actualisés à " + t, "ok");
   } catch(e) {
@@ -21339,8 +21390,12 @@ function ctoResume(id) {
   const investiNet = Math.round(ctoDepotsDeduits(e).reduce((s, d) => s + d.amount, 0) * 100) / 100;
   const valeur = complet ? Math.round(titres * 100) / 100 : null;
   const pv = valeur != null ? Math.round((valeur - investiNet) * 100) / 100 : null;
-  return { valeur, titres, investi, investiNet, pv, n, frais, dividendes, offert,
-           pvPct: (pv != null && investiNet > 0) ? pv / investiNet * 100 : null };
+  // Le % se mesure sur tout ce qui a été acheté (frais compris), comme celui
+  // du PEA sur tous les versements : sur l'« investi net », d'où chaque vente
+  // est retirée, il gonflait après une vente (+28,57 % au lieu de +20 %)
+  const achats = Math.round(ctoDepotsDeduits(e).filter(d => d.amount > 0).reduce((s, d) => s + d.amount, 0) * 100) / 100;
+  return { valeur, titres, investi, investiNet, achats, pv, n, frais, dividendes, offert,
+           pvPct: (pv != null && achats > 0) ? pv / achats * 100 : null };
 }
 
 /* Les cartes de la vue d'ensemble (renderMetrics, CTO affiché) */
@@ -23104,7 +23159,7 @@ function dashBourseComptes() {
     if (!res || !res.n) return;
     l.push({ calcul: fn => dashAvecCto(c.id, fn), serie: () => dashCtoSerie(c.id),
              jour: () => dashPeaDay(res.valeur),
-             max: () => res.valeur == null ? null : { eur: res.pv, base: res.investiNet, valeur: res.valeur } });
+             max: () => res.valeur == null ? null : { eur: res.pv, base: res.achats, valeur: res.valeur } });
   });
   return l;
 }

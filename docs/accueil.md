@@ -134,7 +134,7 @@ Aucun chiffre recalculé à part :
   (cours − clôture précédente, déduite de `d1`) ; achetés ou vendus aujourd'hui :
   depuis leur prix d'exécution, frais déduits. Le % se rapporte à la valeur du PEA
   (titres + espèces) à la clôture précédente, versements du jour exclus. Vérifié à
-  la main sur les vraies données (… €, … %).
+  la main sur des données réelles, au centime.
 * `/cours` renvoie maintenant `t` (= `regularMarketTime`, heure de la séance) :
   le week-end ou avant l'ouverture, `d1` est la variation de la dernière séance, et
   la tuile écrit « séance du ven. 19 sept. » au lieu d'« aujourd'hui ». Une variation
@@ -331,8 +331,7 @@ retenue par CTO (`S.uiPrefs.dashCtoRange`). Les deux tuiles passent par
   tirée d'un historique demandé une fois par session (`_dashCtoHist`), à part
   de `_perfHistory` qui est celui du compte affiché ; hors ligne, la copie
   locale de la courbe du CTO.
-* Vérifié sur une copie du CTO TR d'Arthur (135 opérations) : 1S … €
-  (… %), 1M … €, YTD … €, Max … € (… %), au centime près
+* Vérifié sur une copie d'un vrai CTO : les quatre périodes (1S, 1M, YTD, Max), au centime près
   ce qu'affichent sa courbe et sa carte. Tuile du PEA identique avant et après
   `dashPerfTuile` sur les cinq périodes.
 * Module CTO masqué : ses tuiles `cto:` et `cto-perf:` sont gardées dans la
@@ -354,8 +353,7 @@ n'est recalculé à part :
   calcul de la plus-value totale) ;
 * mini-courbe : la plus-value de chaque compte (`dashPvPoints`) additionnée
   date par date ; un compte sans cotation un jour garde sa dernière valeur.
-* Vérifié sur une copie des données d'Arthur : 1S … € (PEA) − … €
-  (CTO TR) = … € (… %, entre … % et … %) ; 1M … € ;
-  YTD … € ; Max … € (… %), comme « Toute ma bourse ».
+* Vérifié sur une copie de données réelles : chaque période est la somme du PEA et
+  du CTO, et le % tombe entre ceux des deux comptes, comme « Toute ma bourse ».
 * Titre court sur la tuile (« Performance de ma bourse ») : le nom complet
   passait sur deux lignes à 1024 px.

@@ -37,7 +37,7 @@ vrais documents.
   Crédit Agricole. Exemples XML d'Interactive Brokers : `datatransfer/ibflex/`.
 * **Export-To-Ghostfolio** (Apache-2.0) : `samples/` contient de vrais exports
   CSV (Degiro relevé de compte en néerlandais, IBKR, Saxo, Trading 212…).
-* **Fortuneo, vrai fichier d'Arthur (12/10/2026, 4.4.5)** : son espace client
+* **Fortuneo, vrai fichier (12/10/2026, 4.4.5)** : son espace client
   donne en fait un **CSV** de l'historique des opérations de bourse, dans un
   .zip (« HistoriqueOperationsBourse_<compte>.zip », contenant
   « …_du_03_09_2025_au_12_10_2026.csv »). Voir « Fortuneo » plus bas.
@@ -55,8 +55,8 @@ vrais documents.
 | Degiro, rapport des transactions (3 PDF) | 246 lignes sur 246, 6 sur 6, 215 sur 215 ; frais identiques au corrigé |
 | IBKR CSV, Trading 212, Saxo CSV, Degiro relevé de compte | contrôlés à la main ligne à ligne |
 | IBKR XML (9 exemples) | autant d'ordres que de `<Trade>` d'actions ou de fonds |
-| Trade Republic (relevé d'Arthur) | les mêmes 134 opérations qu'en 4.4.1 ; CTO : … € investis, … € de frais, 0 « frais ≠ grille » |
-| Fortuneo CSV (relevé d'Arthur, .zip) | 13 opérations, chiffres identiques au fichier ; dans son PEA saisi à la main : 13 sur 13 « déjà dans Pilote », 0 à importer, 3 transferts et 1 détachement écartés, chaque titre sur son ticker (PNAS, WPEA, PEMS, EPA:SGO, ESE, PANX) |
+| Trade Republic (vrai relevé) | les mêmes opérations qu'en 4.4.1, montants identiques au centime, 0 « frais ≠ grille » |
+| Fortuneo CSV (vrai relevé, .zip) | chiffres identiques au fichier ; sur un PEA déjà saisi à la main : toutes les opérations « déjà dans Pilote », 0 à importer, transferts et détachement écartés, chaque titre sur son ticker |
 
 Écarts voulus avec Portfolio Performance :
 

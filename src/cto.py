@@ -87,7 +87,7 @@ def save_data(data: dict, vide_voulu: bool = False) -> None:
 # d'especes (negatif a l'achat), `fee` est negatif. Prix en `currency` (EUR) :
 # Trade Republic execute en euros sur des places europeennes.
 #
-# Constate sur le premier vrai releve d'Arthur (11/10/2026, 732 lignes) :
+# Constate sur un vrai releve (11/10/2026) :
 #   - un plan d'investissement est un `BUY` comme un autre : seule la
 #     description le distingue (« Savings plan execution <ISIN> <nom>,
 #     quantity: … » ; « Buy trade … » pour un ordre) ;

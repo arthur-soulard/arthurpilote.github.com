@@ -259,8 +259,30 @@ def get_users_state() -> dict:
                 return d
         except Exception as e:
             print(f"[storage] users.json illisible : {e}", flush=True)
-    state = {"active": "default",
-             "users": [{"slug": "default", "label": "Moi", "emoji": "", "color": ""}]}
+        # Illisible ou vide : le fichier abime est garde a cote, et la liste est
+        # refaite a partir des dossiers users/ (jusqu'a la 4.4.20, il etait
+        # remplace par un seul « Moi » : les autres utilisateurs disparaissaient)
+        try:
+            ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            shutil.copyfile(p, p.with_name(f"users.illisible-{ts}.json"))
+        except Exception:
+            pass
+    users = []
+    racine = get_app_dir() / "users"
+    for dossier in sorted(racine.iterdir()) if racine.is_dir() else []:
+        if not dossier.is_dir():
+            continue
+        label = dossier.name
+        try:
+            with open(dossier / DATA_FILE, "r", encoding="utf-8") as f:
+                label = (json.load(f).get("config") or {}).get("prenom") or label
+        except Exception:
+            pass
+        users.append({"slug": dossier.name, "label": label, "emoji": "", "color": ""})
+    if not users:
+        users = [{"slug": "default", "label": "Moi", "emoji": "", "color": ""}]
+    slugs = [u["slug"] for u in users]
+    state = {"active": "default" if "default" in slugs else slugs[0], "users": users}
     save_users_state(state)
     return state
 
@@ -597,6 +619,10 @@ def save_data(data: dict) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            # Sur le disque avant le renommage : apres une coupure de courant,
+            # un fichier renomme mais jamais ecrit pourrait ne contenir que des zeros
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp_path, path)
     except Exception:
         try:
@@ -606,6 +632,13 @@ def save_data(data: dict) -> None:
         raise
 
     _daily_backup(data)
+
+
+# Backups du jour seulement : les copies faites avant un import vivent dans
+# backups/avant_import/ (jusqu'a la 4.4.20, elles etaient a cote et passaient,
+# par ordre alphabetique, devant les backups dates : restauration sur la plus
+# vieille, et backup du jour supprime par la rotation)
+_BACKUP_GLOB = "pea_data_????-??-??.json"
 
 
 def _daily_backup(data: dict) -> None:
@@ -621,14 +654,27 @@ def _daily_backup(data: dict) -> None:
     # de sauvegarde USB. Un backup ne doit contenir que l'irremplacable.
     sans_cache = {k: v for k, v in data.items() if k != "_cache"}
     try:
-        with open(backup_path, "w", encoding="utf-8") as f:
-            json.dump(sans_cache, f, ensure_ascii=False, indent=2)
+        # Temporaire puis renommage, comme le fichier principal : une coupure
+        # pendant l'ecriture ne doit pas abimer le backup en meme temps
+        fd, tmp = tempfile.mkstemp(prefix=".pea_bak_", suffix=".tmp", dir=str(backup_dir))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(sans_cache, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, backup_path)
+        except Exception:
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+            raise
     except Exception as e:
         print(f"[storage] Backup quotidien impossible : {e}", flush=True)
         return
 
     # Rotation : on ne garde que les BACKUP_KEEP_DAYS plus recents
-    backups = sorted(backup_dir.glob("pea_data_*.json"))
+    backups = sorted(backup_dir.glob(_BACKUP_GLOB))
     while len(backups) > BACKUP_KEEP_DAYS:
         old = backups.pop(0)
         try:
@@ -638,8 +684,17 @@ def _daily_backup(data: dict) -> None:
 
 
 def _latest_backup() -> Optional[Path]:
-    backups = sorted(get_backup_dir().glob("pea_data_*.json"))
-    return backups[-1] if backups else None
+    """Le backup lisible le plus recent : si celui du jour est abime, on
+    essaie la veille, et ainsi de suite (jusqu'a la 4.4.20, seul le plus
+    recent etait essaye, puis on passait aux valeurs par defaut)."""
+    for b in reversed(sorted(get_backup_dir().glob(_BACKUP_GLOB))):
+        try:
+            with open(b, "r", encoding="utf-8") as f:
+                json.load(f)
+            return b
+        except Exception:
+            continue
+    return None
 
 
 # ─── Export / import (boutons dans l'UI) ──────────────────────────────────────
@@ -680,7 +735,9 @@ def import_from(source_path: str) -> Tuple[bool, str]:
     # Backup de securite avant ecrasement
     if get_data_path().exists():
         ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        safe = get_backup_dir() / f"pea_data_avant_import_{ts}.json"
+        dossier = get_backup_dir() / "avant_import"
+        dossier.mkdir(parents=True, exist_ok=True)
+        safe = dossier / f"pea_data_avant_import_{ts}.json"
         try:
             shutil.copyfile(get_data_path(), safe)
         except Exception:
