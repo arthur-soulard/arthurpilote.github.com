@@ -17,5 +17,5 @@
 home
 pos
 dash
-js:openSettings('general')
 ac-boite
+js:openSettings('general')

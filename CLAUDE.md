@@ -241,9 +241,8 @@ dans les fiches) :
    montrent s'il démarre des deux côtés (`docs/mac.md`)
 
 Avant le tag : `python tests/verifier_release.py vX.Y.Z` et `python -m unittest discover -s tests`
-(la CI les relance de toute façon : un tag qui échoue n'est pas publié). Une version par jour au
-plus, hors correctif urgent : 21 versions en 8 jours (octobre 2026) laissaient trop peu de recul
-avant chaque diffusion à tous les utilisateurs (audit du 20/10/2026).
+(la CI les relance de toute façon : un tag qui échoue n'est pas publié). Pas de limite du nombre
+de versions par jour (Arthur a retiré la règle « une version par jour au plus » le 21/10/2026).
 
 Règle importante : le numéro de version ne peut qu'augmenter (comparaison sémantique).
 Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.
