@@ -1,57 +1,46 @@
 # Pilote
 
-Application Windows et Mac de suivi personnel — bourse, budget, prêt, sport,
-patrimoine, santé et newsletters réunis dans une seule app entièrement
-locale. Cours actualisés automatiquement via Yahoo Finance.
+Application Windows et Mac de suivi personnel : bourse (PEA et comptes-titres), budget,
+prêt, sport, patrimoine, santé et newsletters réunis dans une seule app, sans compte ni
+serveur. Les cours sont actualisés automatiquement depuis Yahoo Finance.
 
-![icon](assets/icon_512.png)
+## ✨ Les huit modules
 
-## ✨ Les sept modules
+**PEA** : positions, transactions, versements, dividendes, wishlist, expositions sectorielle
+et géographique, courbe du capital comparée à des indices, prochain achat et simulateur
+d'ordres, règles de stratégie vérifiées automatiquement, rapport annuel imprimable.
 
-**PEA** — positions, transactions, dépôts, dividendes, wishlist, expositions sectorielle
-et géographique, performance TWR comparée au CAC 40 / S&P 500 / ETF World, simulateurs
-(projection DCA, objectifs, comparateur d'actifs), règles de stratégie vérifiées
-automatiquement, rapport annuel imprimable.
+**CTO** (comptes-titres) : une section par compte, avec les mêmes écrans que le PEA, le
+courtier et sa grille de frais, et l'import des relevés (Trade Republic, Fortuneo et
+d'autres banques).
 
-**Mes comptes** — budget perso mois par mois : dépenses et revenus catégorisés (chaque
-catégorie et sous-catégorie porte son emoji), sources, échéances récurrentes à valider,
-récap annuel.
+**Mes comptes** : budget mois par mois, dépenses et revenus catégorisés, échéances
+récurrentes, récapitulatif annuel.
 
-**Prêt** (nom libre) — suivi d'un prêt, par exemple un prêt étudiant à 0 % placé :
-versements et remboursements, PEA dédié (achats, ventes, PRU, plus-values latentes et
-réalisées), assurance vie multi-contrats à capitalisation annuelle, livret A, frais
-ponctuels et récurrents.
+**Prêt** (nom libre) : suivi d'un prêt, par exemple un prêt étudiant placé : versements et
+remboursements, PEA dédié, assurance vie, livret, frais.
 
-**Sports** — agenda mensuel des séances (course, vélo, natation, muscu, foot, randonnée…),
-sports personnalisés dont tu choisis les informations à saisir, objectifs de performance
-et événements datés, statistiques d'heures et carte de régularité.
+**Sports** : agenda des séances, sports personnalisés, objectifs, statistiques d'heures.
 
-**Patrimoine** — tous tes comptes relevés une fois par mois (le PEA et le prêt se
-remplissent seuls), valeur nette et son évolution.
+**Patrimoine** : tous tes comptes relevés une fois par mois (le PEA, les CTO et le prêt se
+remplissent seuls), biens immobiliers et leur crédit, valeur nette et son évolution.
 
-**Santé** — pesées et mesures saisies à la main ou lues sur des captures de l'app
-FitDays, objectifs.
+**Santé** : pesées et mesures saisies à la main ou lues sur des captures de l'app FitDays.
 
-**Actus** — la boîte Gmail qui reçoit tes newsletters, lue dans Pilote : relevée toutes
-les 3 min, filtres par libellé, mails affichés avec leurs images. Connexion par un mot de
-passe d'application Google (une fiche dans l'onglet explique comment le créer), gardé
-chiffré par Windows, ou dans le Trousseau sur Mac.
+**Actus** : la boîte Gmail qui reçoit tes newsletters, lue dans Pilote, avec un mot de passe
+d'application Google gardé chiffré par Windows, ou dans le Trousseau sur Mac.
 
-Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
+Chaque module se masque s'il ne sert pas.
 
 ## ⚙ Transverse
 
-- **Page d'accueil** avec les chiffres qui comptent, et une salutation selon l'heure
-- **Multi-utilisateurs** : chacun a son propre PEA, ses comptes, son prêt et son sport —
-  on change d'utilisateur directement depuis l'accueil
-- **Cours auto-actualisés** toutes les 3 min via Yahoo Finance (zéro clé API)
-- **Sécurité** : un code PIN à 4 chiffres par utilisateur, demandé à l'ouverture de son espace
-- **Personnalisation** : couleur d'accent libre, thèmes clair / sombre — l'icône de la
-  fenêtre et de la barre des tâches prend la couleur choisie
-- **Paramètres par domaine** : une section par onglet (Général, Utilisateurs, Navigation,
-  PEA, Mes comptes, Prêt, Sports, Données)
+- **Accueil** avec les chiffres qui comptent, en tuiles à choisir
+- **Multi-utilisateurs** : chaque utilisateur a tous ses modules à lui, rien n'est partagé
+- **Code PIN** à 4 chiffres par utilisateur. Il sépare les espaces dans Pilote ; il ne
+  chiffre pas les fichiers, lisibles par quiconque ouvre ta session Windows ou macOS
+- **Thèmes** clair et sombre, couleur d'accent au choix
+- **Sauvegarde** sur clé USB ou dans un dossier, avec restauration
 - **Mise à jour automatique** depuis les releases GitHub
-- **100 % local** : aucune donnée envoyée nulle part (sauf à Yahoo pour les cours publics)
 
 ## 📦 Installation
 
@@ -59,14 +48,17 @@ Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 
 1. Télécharger la dernière version : [Releases](../../releases/latest)
 2. Lancer **`Pilote_Setup.exe`**
-3. Si Windows SmartScreen affiche un avertissement : "Plus d'infos" → "Exécuter quand même"
-4. Suivre l'assistant d'installation
-5. Lancer depuis le menu Démarrer ou le raccourci bureau
+3. Si Windows SmartScreen affiche un avertissement : « Informations complémentaires »,
+   puis « Exécuter quand même » (Pilote n'est pas signé : un certificat est payant)
+4. Suivre l'assistant, puis lancer Pilote depuis le menu Démarrer ou le raccourci du bureau
 
-### Sur Mac
+Si Pilote ne démarre plus après une mise à jour, relance le Setup de la dernière version :
+tes données sont conservées.
+
+### Sur Mac (puce Apple uniquement, M1 et suivants)
 
 1. Télécharger **`Pilote_Mac.zip`** depuis la dernière version : [Releases](../../releases/latest).
-   Le Mac le décompresse tout seul en **Pilote**.
+   Le Mac le décompresse tout seul en **Pilote**. Il ne fonctionne pas sur un Mac Intel.
 2. **Glisser Pilote dans le dossier Applications.** Indispensable : lancé depuis
    Téléchargements, macOS le fait tourner depuis une copie en lecture seule, et Pilote ne
    peut pas se mettre à jour.
@@ -78,114 +70,60 @@ Chaque onglet se masque d'un clic (icône œil) : on ne garde que ce qui sert.
 5. Si macOS dit que Pilote « est endommagé », taper dans le Terminal :
    `xattr -dr com.apple.quarantine /Applications/Pilote.app`, puis l'ouvrir.
 6. Si macOS demande d'autoriser Pilote à « trouver des appareils sur les réseaux
-   locaux », réponds **Ne pas autoriser** : Pilote n'en a pas besoin, tout fonctionne
-   après un refus (cours, Actus, mises à jour).
+   locaux », réponds **Ne pas autoriser** : Pilote n'en a pas besoin.
 
-Les mises à jour suivantes sont faites par Pilote lui-même : il télécharge la nouvelle
-version, la met à la place de l'ancienne et se relance, sans repasser par l'étape 4.
-Les données vivent dans `~/Library/Application Support/Pilote/Donnees`, hors de l'app :
-la remplacer ne les touche pas.
+Les mises à jour suivantes sont faites par Pilote lui-même. Les données vivent dans
+`~/Library/Application Support/Pilote/Donnees`, hors de l'app : la remplacer ne les touche pas.
 
 ### Compatibilité
 
-- **Windows 10 / 11** (64 bits) ; Microsoft Edge WebView2 Runtime (pré-installé sur
-  Windows 10+ depuis 2022)
+- **Windows 10 / 11 x64**, avec Microsoft Edge WebView2 Runtime (préinstallé sur Windows 11
+  et sur Windows 10 à jour). Windows sur processeur ARM : non essayé.
 - **Mac à puce Apple** (M1 et suivants), essayé sur macOS 15 Sequoia
-- Connexion internet pour la mise à jour des cours (l'app fonctionne en mode hors-ligne avec le dernier cache)
-
-## 🛠 Développement
-
-### Prérequis
-
-- Python 3.10+
-- pip
-
-### Setup
-
-```bash
-git clone https://github.com/arthur-soulard/arthurpilote.github.com.git
-cd arthurpilote.github.com
-pip install -r requirements.txt
-python src/app.py
-```
-
-### Build
-
-```bash
-# Génère l'icône
-python assets/make_icon.py
-
-# Build l'exécutable Windows
-python -m PyInstaller build/pilote.spec --clean --noconfirm
-
-# Build l'installateur (nécessite Inno Setup 6)
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" build/installer.iss
-```
-
-Les fichiers générés sont dans `dist/`.
-
-## 📂 Stockage des données
-
-Les données utilisateur sont stockées localement dans le dossier `Donnees/` à côté de l'exécutable :
-
-```
-Pilote/
-├── Pilote.exe
-├── _internal/                # Python, bibliothèques et interface (installés par le Setup)
-└── Donnees/
-    ├── users.json            # liste des utilisateurs + utilisateur actif
-    ├── users/
-    │   └── <utilisateur>/
-    │       ├── pea_data.json # PEA              (+ backups/)
-    │       ├── finances.json # Mes comptes      (+ backups_finances/)
-    │       ├── sports.json   # Sports           (+ backups_sports/)
-    │       ├── pret.json     # Prêt             (+ backups_pret/)
-    │       └── pin.hash      # hash du code PIN de cet utilisateur (si configuré)
-    └── icones/               # icônes générées à la couleur d'accent
-```
-
-Migration automatique : une installation antérieure à la 4.1.2 (`profiles.json` +
-fichiers de modules à la racine) est déplacée au premier lancement vers
-`users/<slug>/`, sans perte. L'ancien `profiles.json` est conservé sous le nom
-`profiles.legacy.json`. Le code PIN, global jusqu'à la 4.1.3, est attribué au
-premier utilisateur ; les comptes créés ensuite démarrent sans code.
-
-Sur installation via Setup.exe : `%LocalAppData%\Programs\Pilote\Donnees\`
-
-## 🏗 Architecture
-
-```
-src/
-├── app.py              # Point d'entrée pywebview, fenêtre native, bridge Python/JS
-├── server.py           # Serveur HTTP local (proxy Yahoo + endpoints data)
-├── storage.py          # Données PEA, multi-utilisateurs, migration, backups
-├── appicon.py          # Icône recolorée selon l'accent (fenêtre + raccourcis)
-├── finances.py         # Module Mes comptes
-├── sports.py           # Module Sports (+ catalogue des sports)
-├── pret.py             # Module Prêt
-├── jsonstore.py        # Socle commun : écriture atomique + backup quotidien
-├── updater.py          # Mise à jour automatique
-├── notifications.py    # Notifications Windows natives
-└── ui/
-    └── index.html      # UI complète (HTML + CSS + JS)
-```
-
-- **Backend Python** : serveur HTTP local sur 127.0.0.1 + bridge pywebview pour les actions critiques (PIN, save_data)
-- **Frontend** : HTML/CSS/JS vanilla, Chart.js pour les graphiques
-- **Persistance** : JSON simple, pas de base de données
-- **Yahoo Finance** : authentification crumb + cookie pour les endpoints quoteSummary
+- Connexion internet pour les cours ; sans elle, Pilote montre les derniers cours connus
 
 ## 🔒 Confidentialité
 
-- Aucune donnée n'est envoyée vers un serveur tiers
-- Seules les requêtes vers `query1.finance.yahoo.com` sont effectuées (cours publics)
-- Le code PIN est haché en SHA-256 + salt avant stockage
-- Aucun tracker, aucune analytique
+Tes données restent sur ton ordinateur, en fichiers JSON **non chiffrés**. Pilote n'a ni
+compte, ni serveur, ni mesure d'audience. Il contacte seulement :
+
+| Site | Quand | Ce qui part |
+|---|---|---|
+| Yahoo Finance | au lancement, puis toutes les 3 min ; recherche d'un titre | la liste de tes titres (tickers), jamais les quantités ni les montants, et ton adresse IP |
+| GitHub | au lancement, et pour une mise à jour | ton adresse IP et la version installée |
+| justETF, Euronext, iShares, Amundi | quand un ETF détenu n'a pas encore de composition connue, ou sur « Mettre à jour les données » | l'identifiant public de l'ETF (ISIN) |
+| Gmail | si tu actives Actus | ton adresse et ton mot de passe d'application, pour lire ta boîte |
+| Expéditeurs des newsletters | à l'ouverture d'un mail, si tu affiches ses images | ton adresse IP et l'heure d'ouverture |
+
+Sources des données : cours de Yahoo Finance ; compositions d'ETF d'iShares, d'Amundi et de
+justETF. Ce sont des sources non officielles, utilisées sans garantie.
+
+Pilote calcule à partir de tes saisies et de tes règles. Il ne donne pas de conseil en
+investissement.
+
+Pour signaler une faille de sécurité : voir [SECURITY.md](SECURITY.md).
+
+## 🛠 Développement
+
+- Python 3.8 sur le poste de développement, 3.11 pour l'app fabriquée par GitHub Actions
+- `pip install -r requirements.txt`, puis `python src/app.py`
+- Build Windows : `python -m PyInstaller build/pilote.spec --clean --noconfirm`, puis
+  `ISCC.exe build/installer.iss` (Inno Setup 6) ; build Mac : `build/pilote-mac.spec`
+- Avant une version : `python tests/verifier_release.py vX.Y.Z` et `python -m unittest discover tests`
+
+L'architecture, les données sur disque et les règles du projet sont décrites dans
+[CLAUDE.md](CLAUDE.md) et les fiches de [docs/](docs/).
+
+## 📂 Où sont les données
+
+- Windows : `%LocalAppData%\Programs\Suivi PEA\Donnees\` (nom historique du dossier
+  d'installation), un dossier par utilisateur dans `users/`
+- Mac : `~/Library/Application Support/Pilote/Donnees/`
+
+Le chemin exact s'affiche aussi dans Pilote : Paramètres → Données.
 
 ## 📜 Licence
 
-Voir [LICENSE](LICENSE).
-
----
-
-*Made with [Claude](https://claude.ai) as pair-programmer.*
+Pilote est sous licence MIT : voir [LICENSE](LICENSE). Les licences des composants
+embarqués (Python, pywebview, Pillow, pypdf, Chart.js, Phosphor, polices…) sont dans
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt), aussi installé avec l'app.

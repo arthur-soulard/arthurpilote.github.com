@@ -117,3 +117,11 @@ sur un dossier de test, jamais `Donnees/` : 34 vérifications côté Python
 dans une vraie fenêtre pywebview (WebView2). Le navigateur intégré de Claude
 refuse les iframes locales (`ERR_BLOCKED_BY_CLIENT`) : le mail ne s'y affiche
 pas, ce n'est pas un défaut de Pilote.
+
+## Images distantes masquées par défaut (4.4.21)
+
+Un mail s'ouvre sans ses images distantes (`_CSP_MAIL_SANS_IMAGES` : `img-src data:`) : les
+images de suivi préviendraient l'expéditeur de l'ouverture, de l'heure et de l'adresse IP.
+Le bouton « Afficher les images » rouvre le même ticket avec `?images=1` (`_CSP_MAIL`),
+pour ce mail seulement. Choix d'Arthur du 20/10/2026, qui remplace « laisse les images »
+du 11/10.

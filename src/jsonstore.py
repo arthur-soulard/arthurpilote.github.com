@@ -34,6 +34,10 @@ class JsonStore:
         self.schema         = schema
         self.default_factory = default_factory
         self.keep_days      = keep_days
+        # Fichier illisible (et aucun backup lisible) ou ecrit par une version
+        # plus recente : chemin -> message. Tant qu'il est pose, save() refuse
+        # d'ecrire par-dessus (DAT-03, DAT-19).
+        self._bloque: dict = {}
         # Prefixe des backups et des fichiers temporaires : "sports.json" -> "sports"
         self.stem = Path(filename).stem
 
@@ -52,10 +56,17 @@ class JsonStore:
     def load(self) -> dict:
         """Charge le fichier. Si absent ou illisible, retourne les defauts."""
         path = self.path()
+        self._bloque.pop(str(path), None)
         if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                if not isinstance(data, dict):
+                    raise ValueError("contenu inattendu (%s)" % type(data).__name__)
+                v = (data.get("_meta") or {}).get("version", 1)
+                if isinstance(v, int) and v > storage.DATA_VERSION:
+                    self._bloque[str(path)] = ("%s a ete ecrit par une version plus recente de Pilote : "
+                                               "il n'est pas modifie" % self.filename)
                 return self._merge_defaults(data)
             except Exception as e:
                 print(f"[{self.stem}] lecture KO: {e}", flush=True)
@@ -66,7 +77,15 @@ class JsonStore:
                             return self._merge_defaults(json.load(f))
                     except Exception:
                         pass
+                # Ni le fichier ni un backup : les valeurs par defaut ne doivent
+                # jamais remplacer le fichier abime, peut-etre recuperable
+                self._bloque[str(path)] = ("%s est illisible : rien n'est ecrit par-dessus "
+                                           "(dossier %s)" % (self.filename, path.parent))
         return self.default_factory()
+
+    def erreur(self) -> Optional[str]:
+        """Le message de blocage du fichier de l'utilisateur actif, ou None."""
+        return self._bloque.get(str(self.path()))
 
     def _merge_defaults(self, data: dict) -> dict:
         """Conserve les valeurs sauvegardees, complete les cles manquantes."""
@@ -84,7 +103,15 @@ class JsonStore:
     def save(self, data: dict) -> None:
         """Ecriture atomique (.tmp -> rename) + backup quotidien."""
         path = self.path()
-        data = data or {}
+        if str(path) in self._bloque:
+            raise RuntimeError(self._bloque[str(path)])
+        if not isinstance(data, dict) or not data:
+            # Un etat vide n'arrive que par un bug de la page (DAT-20)
+            raise ValueError("etat vide refuse : %s n'est pas modifie" % self.filename)
+        with storage.verrou(path):
+            self._save(path, data)
+
+    def _save(self, path: Path, data: dict) -> None:
         data.setdefault("_meta", {})
         data["_meta"]["lastSavedAt"] = datetime.datetime.now().isoformat(timespec="seconds")
         data["_meta"].setdefault("schema",    self.schema)
@@ -99,7 +126,7 @@ class JsonStore:
                 json.dump(data, f, ensure_ascii=False, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp_path, path)
+            storage.remplacer(tmp_path, path)
         except Exception:
             try:
                 os.remove(tmp_path)
@@ -122,7 +149,7 @@ class JsonStore:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                     f.flush()
                     os.fsync(f.fileno())
-                os.replace(tmp, backup_dir / f"{self.stem}_{today}.json")
+                storage.remplacer(tmp, backup_dir / f"{self.stem}_{today}.json")
             except Exception:
                 try:
                     os.remove(tmp)
@@ -145,6 +172,8 @@ class JsonStore:
         try:
             # Le plus recent qui se lit (voir storage._latest_backup)
             for b in reversed(sorted(self.backup_dir().glob(f"{self.stem}_*.json"))):
+                if not storage.date_backup_ok(b.name):
+                    continue
                 try:
                     with open(b, "r", encoding="utf-8") as f:
                         json.load(f)

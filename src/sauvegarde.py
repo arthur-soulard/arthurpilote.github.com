@@ -317,6 +317,14 @@ def set_destination(path: str) -> dict:
     """
     cfg = load_config()
     p = Path(path)
+    # Une destination dans Donnees/ s'archivait elle-meme a chaque fois et
+    # remplissait le disque (2,7 Go en 2 minutes au banc d'essai, DAT-10)
+    try:
+        app_r = storage.get_app_dir().resolve()
+        if p.resolve() == app_r or app_r in p.resolve().parents:
+            return {"ok": False, "error": "Choisis un dossier en dehors du dossier des données de Pilote."}
+    except Exception:
+        pass
     try:
         p.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -368,7 +376,8 @@ def _iter_files(app_dir: Path, avec_backups: bool = True):
                    if not (rel_root == Path(".") and d in EXCLUDED_DIRS)
                    and (avec_backups or not d.startswith("backups"))]
         for name in files:
-            if name.endswith(".tmp") or name.startswith(".sauvegarde_"):
+            if (name.endswith((".tmp", ".part")) or name.startswith(".sauvegarde_")
+                    or (name.startswith(ARCHIVE_PREFIX) and name.endswith(".zip"))):
                 continue
             full = Path(root) / name
             yield full, str(rel_root / name) if str(rel_root) != "." else name
@@ -427,6 +436,8 @@ def run_backup(reason: str = "manuel") -> dict:
     size = target.stat().st_size
     removed = _rotate(out_dir, int(cfg.get("keep") or 10))
 
+    # Un reglage change pendant l'archive (quelques secondes) n'est pas annule
+    cfg = load_config()
     cfg["lastBackupAt"]   = datetime.datetime.now().isoformat(timespec="seconds")
     cfg["lastBackupPath"] = str(target)
     cfg["lastStatus"]     = "ok"
@@ -609,8 +620,12 @@ def push_to_usb(root: str = None) -> dict:
         target = dest / rel
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
-            # copy2 preserve la date : un fichier inchange reste identique
-            shutil.copy2(full, target)
+            # copy2 preserve la date : un fichier inchange reste identique.
+            # A cote puis renomme : une cle retiree en route ne laisse pas un
+            # fichier tronque a la place du bon (DAT-18)
+            partiel = target.with_name(target.name + ".part")
+            shutil.copy2(full, partiel)
+            os.replace(partiel, target)
             copies += 1
             octets += target.stat().st_size
         except Exception as e:
@@ -698,9 +713,12 @@ def is_due(cfg: dict = None) -> bool:
         last_dt = datetime.datetime.fromisoformat(last)
     except Exception:
         return True
-    delta = datetime.datetime.now() - last_dt
-    return delta >= (datetime.timedelta(days=7) if freq == "weekly"
-                     else datetime.timedelta(days=1))
+    # Jours de calendrier : avec 24 h glissantes, un lancement un peu plus tot
+    # que la veille sautait la journee (une archive un jour sur deux, DAT-12)
+    auj = datetime.date.today()
+    if freq == "weekly":
+        return auj.isocalendar()[:2] != last_dt.date().isocalendar()[:2]
+    return last_dt.date() < auj
 
 
 def auto_backup_if_due() -> dict:
@@ -756,6 +774,23 @@ def appliquer_reglages(patch: dict) -> dict:
 
 # ─── Restauration ─────────────────────────────────────────────────────────────
 
+def _fusionner_users(contenu: bytes, cible: Path) -> None:
+    """users.json de l'archive + utilisateurs actuels absents de l'archive :
+    un utilisateur cree apres l'archive ne disparait pas de la liste (la fiche
+    docs/sauvegarde-usb.md le promettait, le code le remplacait, DAT-09)."""
+    import json as _json
+    archive = _json.loads(contenu.decode("utf-8"))
+    try:
+        actuel = _json.loads(cible.read_text(encoding="utf-8"))
+    except Exception:
+        actuel = {"users": []}
+    slugs = {u.get("slug") for u in archive.get("users", [])}
+    for u in actuel.get("users", []):
+        if u.get("slug") not in slugs:
+            archive.setdefault("users", []).append(u)
+    storage.save_users_state(archive)
+
+
 def restore_from(zip_path: str) -> dict:
     """
     Restaure une archive par-dessus le dossier Donnees.
@@ -804,6 +839,8 @@ def restore_from(zip_path: str) -> dict:
         safety = str(safety_path)
     except Exception as e:
         print(f"[sauvegarde] archive de securite KO : {e}", flush=True)
+        # Promise par la confirmation : sans elle, on ne touche a rien (DAT-09)
+        return {"ok": False, "error": f"Archive de sécurité impossible ({e}) : rien n'a été restauré."}
 
     written = 0
     try:
@@ -827,8 +864,16 @@ def restore_from(zip_path: str) -> dict:
                 if app_r not in target.parents:
                     continue
                 target.parent.mkdir(parents=True, exist_ok=True)
-                with z.open(member) as fsrc, open(target, "wb") as fdst:
+                if rel == "users.json":
+                    _fusionner_users(z.read(member), target)
+                    written += 1
+                    continue
+                # Temporaire puis renommage : une cle retiree au milieu ne
+                # laisse jamais un fichier tronque (DAT-09)
+                partiel = target.with_name(target.name + ".restauration.tmp")
+                with z.open(member) as fsrc, open(partiel, "wb") as fdst:
                     shutil.copyfileobj(fsrc, fdst)
+                storage.remplacer(partiel, target)
                 written += 1
     except Exception as e:
         return {"ok": False, "error": str(e), "safety": safety}

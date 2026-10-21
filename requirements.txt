@@ -8,5 +8,13 @@ pywebview==6.2.1; sys_platform == "darwin"
 pyobjc-framework-Vision==12.2.2; sys_platform == "darwin"
 pyinstaller==6.11.1
 win10toast==0.9; sys_platform == "win32"
-pillow==10.4.0
-pypdf==5.9.0
+# win10toast importe pkg_resources, retire de setuptools a partir de la 81 :
+# sans cette borne, les notifications Windows se coupent en silence (SUP-09)
+setuptools<81; sys_platform == "win32"
+# Versions corrigees (avis de securite d'OSV) pour l'app fabriquee par la CI
+# en Python 3.11 ; le poste de developpement, en Python 3.8, garde les
+# anciennes, les seules qui s'y installent (audit du 20/10/2026, SUP-05)
+pillow==12.3.0; python_version >= "3.10"
+pillow==10.4.0; python_version < "3.10"
+pypdf==6.19.0; python_version >= "3.9"
+pypdf==5.9.0; python_version < "3.9"

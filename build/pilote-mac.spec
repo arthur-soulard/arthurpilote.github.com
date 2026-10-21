@@ -44,6 +44,8 @@ a = Analysis(
         (str(SRC / "ui" / "vendor"),     "ui/vendor"),
         # Fiches des versions, lues par updater.historique() : meme piege
         (str(SRC / "nouveautes.json"),   "."),
+        # Licences des composants embarques (LEG-03)
+        (str(ROOT / "THIRD-PARTY-NOTICES.txt"), "."),
     ],
     hiddenimports=[
         "webview.platforms.cocoa",

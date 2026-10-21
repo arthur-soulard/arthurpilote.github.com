@@ -174,9 +174,19 @@ def default_data() -> dict:
 
 # ─── Lecture / ecriture ───────────────────────────────────────────────────────
 
+# Chemin -> message : fichier illisible sans backup lisible, jamais reecrit
+# par les valeurs par defaut (voir jsonstore.JsonStore, DAT-03)
+_bloque: dict = {}
+
+
+def erreur_lecture():
+    return _bloque.get(str(get_finances_path()))
+
+
 def load_data() -> dict:
     """Charge finances.json. Si absent ou KO, retourne les defauts (en memoire)."""
     path = get_finances_path()
+    _bloque.pop(str(path), None)
     if path.exists():
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -204,10 +214,21 @@ def load_data() -> dict:
                         return json.load(f)
                 except Exception:
                     pass
+            _bloque[str(path)] = ("finances.json est illisible : rien n'est ecrit par-dessus "
+                                  "(dossier %s)" % path.parent)
     return default_data()
 
 
 def save_data(data: dict) -> None:
+    if erreur_lecture():
+        raise RuntimeError(erreur_lecture())
+    if not isinstance(data, dict) or not data:
+        raise ValueError("etat vide refuse : finances.json n'est pas modifie")
+    with storage.verrou(get_finances_path()):
+        _save_data(data)
+
+
+def _save_data(data: dict) -> None:
     """Ecriture atomique + backup quotidien."""
     path = get_finances_path()
     data.setdefault("_meta", {})
@@ -223,7 +244,7 @@ def save_data(data: dict) -> None:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp_path, path)
+        storage.remplacer(tmp_path, path)
     except Exception:
         try:
             os.remove(tmp_path)
@@ -246,7 +267,7 @@ def _daily_backup(data: dict) -> None:
                 json.dump(data, f, ensure_ascii=False, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp, backup_path)
+            storage.remplacer(tmp, backup_path)
         except Exception:
             try:
                 os.remove(tmp)
@@ -269,6 +290,8 @@ def _daily_backup(data: dict) -> None:
 def _latest_backup() -> Optional[Path]:
     """Le plus recent qui se lit (voir storage._latest_backup)."""
     for b in reversed(sorted(get_backup_dir().glob("finances_*.json"))):
+        if not storage.date_backup_ok(b.name):
+            continue
         try:
             with open(b, "r", encoding="utf-8") as f:
                 json.load(f)

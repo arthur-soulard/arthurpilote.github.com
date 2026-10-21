@@ -35,3 +35,12 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 * L'écran de verrouillage affiche l'avatar + le nom du compte verrouillé et propose
   d'ouvrir un autre compte (chacun reste protégé par son propre code).
 * Ça sépare les espaces, ça ne chiffre rien : les JSON restent lisibles sur le disque.
+
+## Audit du 20/10/2026 (4.4.21)
+
+* Un nouvel utilisateur ne retombe jamais sur le dossier d'un utilisateur supprimé :
+  `slugify` tient compte des dossiers de `users/`. Les noms réservés de Windows (`nul`,
+  `con`…) reçoivent un suffixe, et le dossier est créé avant l'inscription dans `users.json`.
+* Un `users.json` illisible est gardé à côté (`users.illisible-<date>.json`) et la liste est
+  refaite à partir des dossiers.
+* Les routes `/pin/*` n'acceptent qu'un utilisateur de `users.json`.

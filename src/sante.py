@@ -52,6 +52,10 @@ from typing import Optional
 import jsonstore
 
 
+# Seuls ces formats sont decodes : Pillow ne tente plus les autres (PSD, etc.),
+# ou se trouvaient les failles de securite connues (SUP-05)
+_FORMATS_IMAGE = ["PNG", "JPEG", "WEBP", "BMP", "GIF"]
+
 # ─── Catalogue des metriques ──────────────────────────────────────────────────
 # "aliases" : ce que l'OCR peut renvoyer pour ce libelle, en minuscules et sans
 # accents (voir _norm). On matche par prefixe/inclusion, donc pas besoin d'etre
@@ -187,7 +191,7 @@ def _preprocess(src: str, dst: str, scale: float, mode: str) -> bool:
         print(f"[sante] Pillow indisponible : {e}", flush=True)
         return False
     try:
-        im = Image.open(src)
+        im = Image.open(src, formats=_FORMATS_IMAGE)
         # Les captures iPhone peuvent porter une rotation EXIF
         try:
             im = ImageOps.exif_transpose(im)
@@ -283,7 +287,9 @@ class _ServeurOcr:
                 self.q.put(ligne.decode("utf-8", "replace").strip())
             self.q.put(None)
         threading.Thread(target=lire, daemon=True).start()
-        if self._reponse(60) != "pret":
+        rep = self._reponse(60)
+        if rep != "pret":
+            _noter_cause(rep)
             self.fermer()
             raise RuntimeError("serveur OCR indisponible")
 
@@ -314,6 +320,24 @@ class _ServeurOcr:
 
 
 _serveur = None   # le PowerShell de l'import en cours (read_screenshots)
+_cause_ocr = ""   # derniere panne du moteur, en clair, pour l'ecran (ENV-03)
+
+_CAUSES_OCR = {
+    "no_engine": "Windows n'a aucune langue de reconnaissance de texte installée : "
+                 "Paramètres › Heure et langue › Langue, ajoute le français (ou l'anglais) "
+                 "avec la reconnaissance optique de caractères.",
+}
+
+
+def _noter_cause(texte) -> None:
+    global _cause_ocr
+    texte = str(texte or "")
+    for code, phrase in _CAUSES_OCR.items():
+        if code in texte:
+            _cause_ocr = phrase
+            return
+    if texte and texte not in ("None", "ko"):
+        _cause_ocr = "Le moteur de lecture de Windows a répondu : " + texte
 
 
 def _run_ocr(image_path: str, timeout: int = 90) -> dict:
@@ -339,7 +363,10 @@ def _run_ocr(image_path: str, timeout: int = 90) -> dict:
         subprocess.run(_commande_ocr() + ["-ImagePath", image, "-JsonPath", out_path],
                        timeout=timeout, capture_output=True, creationflags=flags)
         with open(out_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            res = json.load(f)
+        if not res.get("ok"):
+            _noter_cause(res.get("error"))
+        return res
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "OCR trop long (image trop grande ?)"}
     except Exception as e:
@@ -771,7 +798,7 @@ def _zoom(src: str, blocs: list, tmpdir: str, n: int, bord=None, echelle: float 
         return []
     try:
         from PIL import Image, ImageChops, ImageOps
-        im = Image.open(src)
+        im = Image.open(src, formats=_FORMATS_IMAGE)
         try:
             im = ImageOps.exif_transpose(im)
         except Exception:
@@ -951,7 +978,7 @@ def read_screenshot(path: str, cumul: Optional[dict] = None) -> dict:
                     "error": "Image illisible (format non pris en charge ?). "
                              "Envoie la capture en PNG ou en JPG."}
         return {"ok": False, "values": {},
-                "error": "Le moteur OCR n'a pas répondu."}
+                "error": _cause_ocr or "Le moteur OCR n'a pas répondu."}
     values = {mid: _choisir(lus)[0] for mid, lus in lect.items()}
     # Date et heure : les plus souvent lues
     jours = [d for d, _ in dates]
@@ -965,7 +992,7 @@ def read_screenshot(path: str, cumul: Optional[dict] = None) -> dict:
 def _largeur(path: str) -> int:
     try:
         from PIL import Image, ImageOps
-        with Image.open(path) as im:
+        with Image.open(path, formats=_FORMATS_IMAGE) as im:
             try:
                 im = ImageOps.exif_transpose(im)
             except Exception:
@@ -1030,8 +1057,9 @@ def read_screenshots(paths: list) -> dict:
     ou qui ne colle pas avec les autres mesures (_coherence), est rendue dans
     `doutes` et surlignee « a verifier » par l'interface.
     """
-    global _serveur
+    global _serveur, _cause_ocr
     with _verrou_import:
+        _cause_ocr = ""
         if sys.platform == "win32" and _serveur is None:
             try:
                 _serveur = _ServeurOcr()

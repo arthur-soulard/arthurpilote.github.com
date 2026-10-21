@@ -1,21 +1,27 @@
-# Security Policy
+# Sécurité
 
-## Supported Versions
+## Versions suivies
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Seule la dernière version publiée de Pilote reçoit des corrections. Les versions
+installées se mettent à jour automatiquement.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Signaler une faille
 
-## Reporting a Vulnerability
+Merci de ne pas ouvrir de ticket public. Écris à **arthur.economie@gmail.com** avec :
 
-Use this section to tell people how to report a vulnerability.
+- la version de Pilote et le système (Windows ou Mac) ;
+- les étapes pour reproduire le problème ;
+- ce qu'un attaquant pourrait obtenir.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Tu recevras une réponse sous une semaine. Une faille confirmée est corrigée dans une
+nouvelle version, et la fiche de cette version le mentionne.
+
+## Ce que Pilote protège, et ce qu'il ne protège pas
+
+- Le serveur local (127.0.0.1) refuse les pages web étrangères : jeton de session, refus
+  des `Origin` et `Host` étrangers.
+- Tant que Pilote tourne, un autre programme de ton ordinateur peut lire la page locale,
+  donc le jeton, puis tes données. Pilote ne protège pas contre un programme malveillant
+  déjà installé sur ta machine.
+- Les fichiers de données ne sont pas chiffrés ; le code PIN ne fait que séparer les
+  utilisateurs dans l'app.

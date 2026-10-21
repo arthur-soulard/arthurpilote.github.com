@@ -32,7 +32,10 @@ WizardStyle=modern
 ; rangeait ailleurs (repli de storage.get_app_dir, AppData\Roaming). Retiree en
 ; 4.4.20 (19/10/2026) : PrivilegesRequiredOverridesAllowed=dialog.
 PrivilegesRequired=lowest
-ArchitecturesInstallIn64BitMode=x64
+; 64 bits exige (l'exe est en x64) : refus clair sur un Windows 32 bits, et un
+; Windows sur processeur ARM l'accepte (emulation x64), SUP-12
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 LanguageDetectionMethod=uilanguage
 ; Les donnees vivent dans {app}\Donnees. Jusqu'a la 4.3.13, [UninstallDelete]
@@ -58,6 +61,8 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 Source: "..\dist\Pilote\Pilote.exe";    DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\Pilote\_internal\*";   DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\assets\icon.ico";           DestDir: "{app}"; Flags: ignoreversion
+; Licences des composants embarques (LEG-03)
+Source: "..\THIRD-PARTY-NOTICES.txt";  DestDir: "{app}"; Flags: ignoreversion
 
 ; L'AppId est un GUID fixe : une installation "Suivi PEA" existante est
 ; reconnue et mise a jour dans son dossier actuel (Donnees/ est conserve).
@@ -157,6 +162,28 @@ begin
     DeleteFile(ChangeFileExt(Desinstalleur, '.dat'));
     if RegDeleteKeyIncludingSubkeys(HKCU, Cle) then
       Log('Ancienne entree ' + Noms[I] + ' retiree');
+  end;
+end;
+
+// Avant la 4.4.20, le Setup proposait « pour tous » (Program Files, registre
+// HKLM). L'installeur actuel, « pour moi », ne la voit pas : une mise a jour
+// poserait une seconde copie, et Pilote se rouvrirait vide (SUP-10). On
+// s'arrete en disant ou sont les donnees ; en mise a jour silencieuse, le
+// batch d'updater.py relance alors l'ancien Pilote.
+function InitializeSetup(): Boolean;
+var
+  Cle: String;
+begin
+  Result := True;
+  Cle := CLE_DESINSTALLATION + '\' + ExpandConstant('{#SetupSetting("AppId")}') + '_is1';
+  if RegKeyExists(HKLM32, Cle) or RegKeyExists(HKLM64, Cle) then
+  begin
+    MsgBox('Pilote est d' + #$00E9 + 'j' + #$00E0 + ' install' + #$00E9 + ' pour tous les utilisateurs '
+           + '(dossier Program Files). Pour garder tes donn' + #$00E9 + 'es, d' + #$00E9 + 'sinstalle '
+           + 'cette version depuis les Param' + #$00E8 + 'tres de Windows (tes donn' + #$00E9 + 'es restent '
+           + 'dans son dossier Donnees), puis relance ce programme d''installation.',
+           mbError, MB_OK);
+    Result := False;
   end;
 end;
 

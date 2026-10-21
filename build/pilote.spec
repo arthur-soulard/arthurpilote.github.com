@@ -19,6 +19,24 @@ from pathlib import Path
 # Le .spec s'execute avec son repertoire courant = racine du projet
 ROOT     = Path.cwd()
 SRC      = ROOT / "src"
+
+
+def _fiche_version():
+    """Ecrit build/version_info.txt (format de PyInstaller) depuis APP_VERSION."""
+    import re
+    v = re.search(r'^APP_VERSION\s*=\s*"([^"]+)"', (SRC / "app.py").read_text(encoding="utf-8"), re.M).group(1)
+    t = tuple(int(x) for x in (v.split(".") + ["0", "0", "0"])[:4])
+    texte = (
+        "VSVersionInfo(ffi=FixedFileInfo(filevers=%r, prodvers=%r, mask=0x3f, flags=0x0, OS=0x40004,\n"
+        "  fileType=0x1, subtype=0x0, date=(0, 0)), kids=[StringFileInfo([StringTable('040C04B0', [\n"
+        "  StringStruct('CompanyName', 'Arthur Soulard'), StringStruct('FileDescription', 'Pilote'),\n"
+        "  StringStruct('FileVersion', %r), StringStruct('InternalName', 'Pilote'),\n"
+        "  StringStruct('LegalCopyright', 'Licence MIT'), StringStruct('OriginalFilename', 'Pilote.exe'),\n"
+        "  StringStruct('ProductName', 'Pilote'), StringStruct('ProductVersion', %r)])]),\n"
+        "  VarFileInfo([VarStruct('Translation', [1036, 1200])])])\n" % (t, t, v, v))
+    chemin = ROOT / "build" / "version_info.txt"
+    chemin.write_text(texte, encoding="utf-8")
+    return str(chemin)
 ASSETS   = ROOT / "assets"
 ICON     = ASSETS / "icon.ico"
 
@@ -40,6 +58,8 @@ a = Analysis(
         (str(SRC / "ui" / "vendor"),      "ui/vendor"),
         # Script OCR (module Sante) : lu a l'execution via sys._MEIPASS
         (str(SRC / "ocr_win.ps1"),      "."),
+        # Licences des composants embarques (audit du 20/10/2026, LEG-03)
+        (str(ROOT / "THIRD-PARTY-NOTICES.txt"), "."),
         # Fiches des versions (Parametres -> Mises a jour, fiche apres une mise
         # a jour), lues par updater.historique() : sans cette ligne l'historique
         # est vide dans l'exe, alors qu'il s'affiche en dev
@@ -88,7 +108,9 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version=None,
+    # Fiche de version de l'exe (Proprietes > Details de Windows), lue dans
+    # app.py : un exe sans elle passe plus mal les antivirus (SUP-11)
+    version=_fiche_version(),
     uac_admin=False,
 )
 

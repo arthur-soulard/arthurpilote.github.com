@@ -28,7 +28,7 @@
   --brd3:   rgba(70,45,20,0.28);
   --txt:    #2a231b;
   --txt2:   #6a5e4d;
-  --txt3:   #998c79;
+  --txt3:   #7d705e;   /* 4,5:1 sur --bg2 (A11Y-07) ; etait #998c79 */
   --g:      #2b784a;
   --g2:     rgba(43,120,74,0.12);
   --r:      #b03a28;
@@ -164,23 +164,6 @@ input, select { font-family: var(--mono); }
   text-overflow: ellipsis;
 }
 .mc-sub    { font-size: 12px; color: var(--txt2); margin-top: 10px; font-family: var(--mono); }
-
-/* ── Heat map ─────────────────────────────────────── */
-.hm-wrap { position: relative; width: 100%; height: 280px; }
-.hm-cell {
-  position: absolute; border-radius: 5px; overflow: hidden;
-  box-sizing: border-box; transition: filter .15s; cursor: default;
-}
-.hm-cell:hover { filter: brightness(1.15); z-index: 10; }
-.hm-inner {
-  width: 100%; height: 100%; border-radius: 3px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 1px;
-  padding: 6px 4px; overflow: hidden;
-}
-.hm-tk  { font-weight: 800; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; line-height: 1.2; }
-.hm-pct { font-family: var(--mono); font-weight: 700; white-space: nowrap; line-height: 1.2; }
-.hm-val { font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; line-height: 1.2; }
 
 /* ── Cartes "dashboard" supplementaires ─────────── */
 .dash-grid {
@@ -570,7 +553,7 @@ html[data-theme="dark"] {
   --brd3:   rgba(255,230,200,0.22);
   --txt:    #efe7d9;
   --txt2:   #b1a592;
-  --txt3:   #7f7466;
+  --txt3:   #9a8f80;   /* plus lisible sur fond sombre (A11Y-07) */
   --g:      #74c493;
   --g2:     rgba(116,196,147,0.15);
   --r:      #ef8472;
@@ -807,7 +790,7 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 /* ── Secteurs ──────────────────────────────────────── */
 .sector-badge {
   display: inline-block; padding: 2px 7px; border-radius: 4px;
-  font-size: 9px; font-weight: 700; letter-spacing: .05em;
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
   text-transform: uppercase; white-space: nowrap; margin-top: 2px;
 }
 /* ══════════════════════════════════════════════════
@@ -1152,8 +1135,11 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 .m-nav { display: flex; align-items: center; gap: 6px; }
 .m-nav-lbl {
   font-size: 15px; font-weight: 700; min-width: 168px; text-align: center;
-  letter-spacing: -.3px; text-transform: capitalize;
+  letter-spacing: -.3px;
 }
+/* Majuscule à la première lettre seulement : « capitalize » donnait
+   « Semaine Du 12 Oct. » (UX-10) */
+.m-nav-lbl::first-letter { text-transform: uppercase; }
 .m-empty { text-align: center; padding: 34px 20px; color: var(--txt2); font-size: 12px; }
 .m-note {
   background: var(--a2); border-left: 3px solid var(--accent);
@@ -1823,6 +1809,9 @@ label.sv-check, label.sv-inline {
 .ac-lect-s { font-size: 12px; color: var(--txt2); margin-top: 4px; overflow-wrap: anywhere; }
 .ac-lect-acts { display: flex; gap: 6px; flex-shrink: 0; margin-left: auto; }
 /* Le mail garde son propre fond (blanc), comme dans Gmail */
+.ac-img-barre { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px;
+  color: var(--txt2); background: var(--bg3); border-bottom: 1px solid var(--brd); }
+.ac-img-barre span { flex: 1; min-width: 0; }
 .ac-cadre { flex: 1; min-height: 0; background: #fff; }
 .ac-cadre iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 .ac-vide {
@@ -1908,8 +1897,17 @@ body { font-variant-numeric: tabular-nums; }
 ::selection { background: var(--accent-soft); }
 .ph { vertical-align: -0.125em; }
 .btn:focus-visible, .sb-item:focus-visible, .sb-sec-btn:focus-visible,
-.home-card:focus-visible, .home-user:focus-visible, .set-nav-btn:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
+.home-card:focus-visible, .home-user:focus-visible, .set-nav-btn:focus-visible,
+.sp-day:focus-visible, .dash-note:focus-visible, .dash-note-plus:focus-visible,
+.dash-card-x:focus-visible, [role="button"]:focus-visible {
+  /* --accent-text : 4,7:1 en sombre, l'accent seul n'y suffisait pas (A11Y-13) */
+  outline: 2px solid var(--accent-text, var(--accent)); outline-offset: 2px;
+}
+.fg input, .fg select, .fg textarea { border-color: var(--brd3); }
+.card-eye-btn:focus-visible { opacity: 1; }
+@media (max-width: 700px) {
+  /* Agrandi a 200 %, la ligne passe sur deux lignes au lieu d'etre coupee (A11Y-09) */
+  .fin-tx-row { grid-template-columns: 76px 1fr auto; row-gap: 4px; }
 }
 
 /* — Barre de titre — */
@@ -2633,7 +2631,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
 <!-- METRICS -->
 <div class="mets">
-  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Total déposé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
+  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Total versé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
   <div class="mc" id="mc-pv"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total</div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
@@ -2655,15 +2653,15 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <span style="color:var(--txt2);font-size:12px">Comparer à&nbsp;:</span>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
           <input type="checkbox" data-bench="cac40">
-          <span style="color:#7c3aed;font-weight:600">CAC 40</span>
+          <span style="color:color-mix(in srgb, #7c3aed 60%, var(--txt));font-weight:600" title="Indice de prix : les dividendes n'y sont pas réinvestis">CAC 40 (hors div.)</span>
         </label>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
           <input type="checkbox" data-bench="sp500">
-          <span style="color:#ea580c;font-weight:600">S&P 500</span>
+          <span style="color:color-mix(in srgb, #ea580c 60%, var(--txt));font-weight:600" title="ETF BNP Paribas Easy S&P 500 en euros (ESE), dividendes réinvestis">S&P 500 (€)</span>
         </label>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
           <input type="checkbox" data-bench="world">
-          <span style="color:#0d9488;font-weight:600">ETF World</span>
+          <span style="color:color-mix(in srgb, #0d9488 60%, var(--txt));font-weight:600">ETF World</span>
         </label>
       </div>
       <div id="perf-range-btns" class="rng">
@@ -2694,7 +2692,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <span id="perf-loading-txt">Chargement de l'historique…</span>
     </div>
     <div id="perf-nodata" style="display:none;text-align:center;padding:2rem;font-size:12px;color:var(--txt2)">
-      Aucune transaction — ajoutez des positions pour voir la courbe.
+      Aucune transaction : ajoute une position pour voir la courbe.
     </div>
     <div style="position:relative;height:300px"><canvas id="c-perf"></canvas></div>
   </div>
@@ -2727,7 +2725,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <button class="tab" onclick="goTab('div')">Dividendes</button>
   <button class="tab" onclick="goTab('tx')">Transactions</button>
   <button class="tab" onclick="goTab('wish')">Wishlist</button>
-  <button class="tab" onclick="goTab('dep')">Dépôts</button>
+  <button class="tab" onclick="goTab('dep')">Versements</button>
   <button class="tab" onclick="goTab('strat')">Stratégie</button>
   <button class="tab" onclick="goTab('reco')">Recommandations</button>
 </div>
@@ -2878,6 +2876,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       </div>
     </div>
     <div class="card-b" id="expo-resume"></div>
+    <p style="font-size:11px;color:var(--txt3);margin:0;padding:0 16px 12px">Compositions : iShares, Amundi et justETF ; cours : Yahoo Finance. Sources non officielles, sans garantie.</p>
   </div>
   <div class="expo-duo">
     <div class="card" id="card-expo-geo">
@@ -3055,7 +3054,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <button class="btn btn-sm btn-primary" onclick="openAddRule()"><i class="ph ph-plus"></i> Ajouter une règle</button>
     </div>
     <div class="card-b" id="strat-list">
-      <div style="text-align:center;color:var(--txt2);padding:1.5rem;font-size:12px">Aucune règle — cliquez sur "+ Ajouter une règle" pour commencer.</div>
+      <div style="text-align:center;color:var(--txt2);padding:1.5rem;font-size:12px">Aucune règle : clique sur « + Ajouter une règle » pour commencer.</div>
     </div>
   </div>
 </div>
@@ -4062,7 +4061,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div class="modal" style="max-width:430px">
     <h2 id="user-modal-title">Nouvel utilisateur</h2>
     <p class="m-note" style="margin-top:-.4rem">
-      Chaque utilisateur a son propre PEA, ses comptes, son prêt et son sport.
+      Rien n'est partagé : chaque utilisateur a tous ses modules à lui.
       Rien n'est partagé entre deux utilisateurs.
     </p>
     <div class="fg">
@@ -4136,6 +4135,14 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
             <label>Couleur d'accent</label>
             <div id="cfg-accent-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:4px"></div>
           </div>
+          <div class="fg">
+            <label>Taille du texte</label>
+            <div style="display:flex;gap:8px;align-items:center" role="group" aria-label="Taille du texte">
+              <button type="button" class="btn btn-ghost btn-sm" data-zoom-btn="1" onclick="setZoomPref(1)">100 %</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-zoom-btn="1.15" onclick="setZoomPref(1.15)">115 %</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-zoom-btn="1.3" onclick="setZoomPref(1.3)">130 %</button>
+            </div>
+          </div>
           <div class="fg win-seul">
             <label>Icône de l'application</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -4154,7 +4161,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
               <span style="color:var(--txt3);font-weight:400">(optionnel, 4 chiffres)</span></label>
             <p class="set-lead" style="margin:2px 0 8px">
               Chaque utilisateur a son propre code. Il est demandé à l'ouverture de
-              son espace ; les autres comptes gardent le leur.
+              son espace ; les autres comptes gardent le leur. Il sépare les espaces dans
+              Pilote mais ne chiffre pas les fichiers : quiconque ouvre ta session peut les lire.
             </p>
             <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
               <div id="cfg-pin-boxes" style="display:flex;gap:14px">
@@ -4429,7 +4437,6 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 </div>
 
 <div class="sbadge" id="sbadge">✓ Sauvegardé</div>
-<input type="file" id="import-file" accept="application/json" style="display:none" onchange="doImport(event)">
 
 <!-- ══════════ MODALS ══════════ -->
 
@@ -4748,7 +4755,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div class="fg"><label>Quantité achetée</label><input id="f-qty" type="number" step="any" placeholder=""></div>
     </div>
     <div class="fg-row">
-      <div class="fg"><label>Frais de courtage (EUR)</label><input id="f-frais" type="number" step="0.01" placeholder=""></div>
+      <div class="fg"><label>Frais de courtage (€)</label><input id="f-frais" type="number" step="0.01" placeholder=""></div>
       <div class="fg"><label>Dividende / part (EUR, optionnel)</label><input id="f-div" type="number" step="0.01" placeholder="0.00"></div>
     </div>
     <div class="fg-row">
@@ -4847,11 +4854,11 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div class="fg"><label>Type</label>
         <select id="t-type" onchange="_txPretSync()"><option>Achat</option><option>Vente</option><option>Dividende</option></select>
       </div>
-      <div class="fg"><label>Cours (EUR)</label><input id="t-cours" type="number" step="0.0001" placeholder="93.88"></div>
+      <div class="fg"><label>Cours (€)</label><input id="t-cours" type="number" step="0.0001" placeholder="93,88"></div>
     </div>
     <div class="fg-row">
       <div class="fg"><label>Quantité</label><input id="t-qty" type="number" step="any" placeholder="2"></div>
-      <div class="fg"><label>Frais (EUR)</label><input id="t-frais" type="number" step="0.01" placeholder="0.70"></div>
+      <div class="fg"><label>Frais (€)</label><input id="t-frais" type="number" step="0.01" placeholder="0,70"></div>
     </div>
     <div class="fg pea-seul" id="t-pret-fg">
       <label class="pr-check" title="L'ordre apparaîtra aussi dans l'onglet PEA du prêt, sans y être saisi une seconde fois">
@@ -4924,10 +4931,11 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 <!-- Modal : Dépôt -->
 <div class="ov" id="ov-dep" onclick="if(event.target===this)closeOv('ov-dep')">
   <div class="modal">
-    <h2>Ajouter un dépôt</h2>
-    <div class="fg"><label>Date du dépôt</label><input id="d-date" type="date"></div>
-    <div class="fg"><label>Montant déposé (EUR)</label><input id="d-amt" type="number" step="0.01" placeholder="500"></div>
-    <div class="fg"><label>Note</label><input id="d-note" placeholder="virement du compte courant…"></div>
+    <h2>Ajouter un versement</h2>
+    <div class="fg"><label for="d-date">Date</label><input id="d-date" type="date"></div>
+    <div class="fg"><label for="d-amt">Montant (€)</label><input id="d-amt" type="number" step="0.01" min="0" placeholder="500"></div>
+    <label class="sv-check"><input type="checkbox" id="d-retrait"> C'est un retrait (argent sorti du PEA)</label>
+    <div class="fg"><label for="d-note">Note</label><input id="d-note" placeholder="virement du compte courant…"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-dep')">Annuler</button>
       <button class="btn btn-primary" onclick="saveDepot()">Enregistrer</button>
@@ -4942,7 +4950,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="m-note">Tant qu'il n'est pas arrivé, il ne compte ni dans les espèces ni dans le total déposé.
       La Stratégie s'en sert pour son budget prévisionnel.</div>
     <div class="fg"><label>Date d'arrivée prévue (dans un mois au plus)</label><input id="dp-date" type="date"></div>
-    <div class="fg"><label>Montant (EUR)</label><input id="dp-amt" type="number" step="0.01" min="0" placeholder="500"></div>
+    <div class="fg"><label>Montant (€)</label><input id="dp-amt" type="number" step="0.01" min="0" placeholder="500"></div>
     <div class="fg"><label>Note</label><input id="dp-note" placeholder="virement du compte courant…"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-depp')">Annuler</button>
@@ -4961,12 +4969,12 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="fg-row">
       <div class="fg"><label>Nb actions</label><input id="df-qty" type="number" step="0.001" placeholder="auto"></div>
-      <div class="fg"><label>Div / action estimé (EUR)</label><input id="df-ppa" type="number" step="0.0001" placeholder="3.50"></div>
+      <div class="fg"><label>Div / action estimé (€)</label><input id="df-ppa" type="number" step="0.0001" placeholder="3,50"></div>
     </div>
     <div id="df-recap" style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.7rem .9rem;font-size:11px;font-family:var(--mono);color:var(--txt2);display:none;margin-bottom:.8rem">
       <span id="df-recap-txt"></span>
     </div>
-    <div class="fg"><label>Montant estimé (EUR)</label><input id="df-montant" type="number" step="0.01" placeholder="calculé auto"></div>
+    <div class="fg"><label>Montant estimé (€)</label><input id="df-montant" type="number" step="0.01" placeholder="calculé auto"></div>
     <div class="fg"><label>Note (optionnel)</label><input id="df-note" placeholder="Saint-Gobain 2026…"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-divf')">Annuler</button>
@@ -4985,12 +4993,12 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="fg-row">
       <div class="fg"><label>Nb actions détenues</label><input id="dv-qty" type="number" step="0.001" placeholder="auto"></div>
-      <div class="fg"><label>Dividende / action (EUR)</label><input id="dv-ppa" type="number" step="0.0001" placeholder="3.50"></div>
+      <div class="fg"><label>Dividende / action (€)</label><input id="dv-ppa" type="number" step="0.0001" placeholder="3,50"></div>
     </div>
     <div id="dv-recap" style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rad);padding:.7rem .9rem;font-size:11px;font-family:var(--mono);color:var(--txt2);display:none;margin-bottom:.8rem">
       <span id="dv-recap-txt"></span>
     </div>
-    <div class="fg"><label>Montant reçu (EUR)</label><input id="dv-montant" type="number" step="0.01" placeholder="calculé auto"></div>
+    <div class="fg"><label>Montant reçu (€)</label><input id="dv-montant" type="number" step="0.01" placeholder="calculé auto"></div>
     <div class="fg"><label>Note (optionnel)</label><input id="dv-note" placeholder="Saint-Gobain 2026…"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-div')">Annuler</button>
@@ -5045,6 +5053,7 @@ if (window.Chart) {
   // légendes en pastilles, infobulle sombre lisible sur les deux fonds.
   Chart.defaults.scale.grid.color = "rgba(139,128,114,0.16)";
   Chart.defaults.scale.border.display = false;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
   Chart.defaults.elements.bar.borderRadius = 5;
   Chart.defaults.plugins.legend.labels.usePointStyle = true;
   Chart.defaults.plugins.legend.labels.boxWidth = 8;
@@ -5082,8 +5091,6 @@ function carnetAreaFill(hex) {
     return g;
   };
 }
-
-/* ─── URL Google Sheets pré-configurée ─── */
 
 /* ─── Données par défaut ─── */
 const DEF = {
@@ -5168,7 +5175,7 @@ function sectorBadgeHtml(id) {
   if (!id) return '<span style="color:var(--txt3);font-size:10px">—</span>';
   const s = sectorById(id);
   const bg = s.color + "22";
-  return `<span class="sector-badge" style="background:${bg};color:${s.color}">${s.icon} ${s.label}</span>`;
+  return `<span class="sector-badge" style="background:${bg};color:color-mix(in srgb, ${s.color} 45%, var(--txt))">${s.icon} ${s.label}</span>`;
 }
 
 let _coursTimer  = null;
@@ -5290,7 +5297,8 @@ async function _hydrateFromPython() {
     window.__appPrefs = { ui: d.ui || {}, notifs: d.notifs || {} };
     // La lecture a reussi : l'ecriture est autorisee, meme si le PEA est vide
     // (cas d'un utilisateur qui vient d'etre cree).
-    _hydrationDone = true;
+    // Lecture ratée côté Python (backup ou valeurs par défaut) : on n'écrit pas
+    _hydrationDone = !r.loadError;
     return true;
   } catch(e) {
     console.warn("Hydratation Python KO:", e);
@@ -5444,6 +5452,11 @@ function _surveillerEcritures() {
       // viendrait d'un état périmé. Rien n'est écrit, sans alerte.
       if (_ecrituresGelees) return Promise.resolve({ok: true, gele: true});
       const p = Promise.resolve(brut.apply(api, arguments));
+      // Les réglages (save_ui_prefs, appelé d'une vingtaine d'endroits qui ne
+      // lisent pas la réponse) : un échec s'affiche ici, une seule fois (ARC-05)
+      if (nom === "save_ui_prefs")
+        p.then(r => { if (r && r.ok === false) _alerteEnregistrement("Réglage non enregistré : " + (r.error || "erreur d'écriture")); },
+               e => _alerteEnregistrement("Réglage non enregistré : " + (e && e.message || e)));
       _ecrituresEnCours.add(p);
       const fin = () => _ecrituresEnCours.delete(p);
       p.then(fin, fin);
@@ -5479,7 +5492,13 @@ function flash() {
 
 function resetDef(ask) {
   if (ask && !confirm("Réinitialiser ? Toutes les données seront effacées.")) return;
+  pushUndo();   // Retour peut annuler la réinitialisation
+  // Les réglages (thème, tuiles, pense-bête, compositions d'ETF saisies à la
+  // main, ordre de la barre latérale…) vivent dans S.uiPrefs : ils ne font pas
+  // partie des données du PEA et survivent à la réinitialisation (DAT-06)
+  const reglages = S.uiPrefs;
   S = JSON.parse(JSON.stringify(DEF));
+  if (reglages) S.uiPrefs = reglages;
   NID = {pos:1, tx:1, wish:1, dep:1, div:1, divf:1};
   _perfHistory    = null;
   _perfFullSeries = null;
@@ -5492,6 +5511,9 @@ function resetDef(ask) {
 function resetFromConfig() {
   if (!confirm("Réinitialiser toutes les données ? Positions, transactions, dépôts, dividendes — tout sera effacé. Cette action est irréversible.")) return;
   closeOv("ov-config");
+  // Paramètres s'ouvre aussi depuis une section CTO : c'est le PEA qu'on vide,
+  // jamais le compte affiché (DAT-06)
+  if (_estCto() && typeof _cptBasculer === "function") _cptBasculer("pea");
   _peaVideVoulu = true;   // vider le PEA est ici la demande : la défense s'efface
   resetDef(false);
 }
@@ -5515,7 +5537,7 @@ function eur3(n) {
 }
 function pct(n) {
   if (n == null || isNaN(n)) return "—";
-  return (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(2).replace(".",",") + " %";
+  return (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(2).replace(".",",") + " %";
 }
 function pcls(n)  { return n == null ? "neu" : n >= 0 ? "pos" : "neg"; }
 function vcls(n)  { return n == null ? "vz"  : n >  0 ? "vp"  : n < 0 ? "vn" : "vz"; }
@@ -5620,6 +5642,13 @@ function peaDateFiscale() {
 function peaTotalVerse() {
   return (S.depots||[]).reduce((s,d)=>s+(d.amount||0),0);
 }
+/** Ce qui compte pour le plafond de 150 000 € : la somme des versements, sans
+    déduire les retraits (le plafond porte sur les versements, service-public
+    F2385 ; qu'un retrait ne libère pas de place est la lecture la plus prudente,
+    non écrite noir sur blanc dans les sources consultées le 21/10/2026, FIN-18). */
+function peaVersePlafond() {
+  return (S.depots||[]).reduce((s,d)=>s+Math.max(0, d.amount||0),0);
+}
 
 function renderPeaInfo() {
   const ouv = S.ouverture ? new Date(S.ouverture + "T00:00:00") : null;
@@ -5658,10 +5687,10 @@ function renderPeaInfo() {
   const fiscStr = target ? target.toLocaleDateString("fr-FR", {day:"2-digit", month:"long", year:"numeric"}) : "—";
   const sub = document.getElementById("pea-bank-line");
   if (sub) sub.textContent = banque + " · Ouvert " + ouvStr + " · Avantage fiscal " + fiscStr;
-  const depSum  = peaTotalVerse();
+  const depSum  = peaVersePlafond();
   const fillPct = Math.min(100, depSum/150000*100);
   document.getElementById("f-fill").style.width = fillPct.toFixed(2)+"%";
-  document.getElementById("fill-pct").textContent = fillPct.toFixed(2)+"%";
+  document.getElementById("fill-pct").textContent = pctFr(fillPct, 2);
   document.getElementById("fill-info").textContent = eur(depSum) + " déposés sur 150 000 € — reste " + eur(150000-depSum);
 }
 
@@ -5691,12 +5720,10 @@ function computeCashBrut() {
     if (!d.date) return false;
     return new Date(d.date+"T00:00:00") <= now;
   }).reduce((s,d)=>s+(d.montant||0),0);
-  // Count past divFuture as received cash too
-  const divFutPast = (S.divFuture||[]).filter(d=>{
-    if (!d.date) return false;
-    return new Date(d.date+"T00:00:00") <= now;
-  }).reduce((s,d)=>s+(d.montant||0),0);
-  return depSum - spent + earned + divRec + divFutPast;
+  // Un estimatif dont la date est passée ne compte qu'une fois confirmé (✓ de
+  // l'onglet Dividendes) : jusqu'en 4.4.20, il comptait comme encaissé, et en
+  // double si le dividende était aussi saisi comme reçu (FIN-04)
+  return depSum - spent + earned + divRec;
 }
 /* Solde négatif = des achats payés par des versements que Pilote ne connaît
    pas : affiché 0 €, et la plus-value n'est pas calculée tant qu'il manque
@@ -5743,10 +5770,7 @@ function renderMetrics() {
     const fromReceived = (S.divReceived||[])
       .filter(d=>d.date && new Date(d.date+"T00:00:00")<=nowMs)
       .reduce((s,d)=>s+(d.montant||0),0);
-    const fromFuture = (S.divFuture||[])
-      .filter(d=>d.date && new Date(d.date+"T00:00:00")<=nowMs)
-      .reduce((s,d)=>s+(d.montant||0),0);
-    return fromReceived + fromFuture;
+    return fromReceived;   // estimatifs : seulement une fois confirmés (FIN-04)
   })();
   const cash = computeCash();
   const manque = Math.round(Math.max(0, -computeCashBrut()) * 100) / 100;
@@ -5762,7 +5786,7 @@ function renderMetrics() {
   // mesure le rendement : valeur − versements.
   document.getElementById("m-val").textContent  = nc>0 ? eur(Math.round((tv + cash) * 100) / 100) : "—";
   document.getElementById("m-val-sub").innerHTML =
-    (nc>0 ? "Titres : " + eur(tv) + "<br>" : "") + "Espèces : " + eur(cash)
+    (nc>0 ? "Titres : " + eur(tv) + (all ? "" : " (partiel : " + (S.positions.length - nc) + " cours manquant" + (S.positions.length - nc > 1 ? "s" : "") + ")") + "<br>" : "") + "Espèces : " + eur(cash)
     + (nc>0 ? "<br>" + ligneRevient(ti, all ? tv - ti : null) : "");
   const pvEl = document.getElementById("m-pv");
   pvEl.textContent = pv!=null ? eur(pv,true) : "—";
@@ -5833,16 +5857,26 @@ function renderPositions() {
   const avecDiv = S.positions.some(p => p.type === "action" && _wsKey[p.ticker]?.divYield != null);
   document.getElementById("pos-th-per").style.display = avecPER ? "" : "none";
   document.getElementById("pos-th-div").style.display = avecDiv ? "" : "none";
+  // Aucune ligne : une phrase et les deux façons de commencer (UX-13)
+  if (!eps.length) {
+    body.innerHTML = `<tr><td colspan="12"><div class="m-empty">Aucune ligne pour l'instant. Ajoute ton premier achat, ou importe un relevé de ta banque.
+      <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openAddPos()"><i class="ph ph-plus"></i> Premier achat</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ctoOuvrirImport()"><i class="ph ph-file-arrow-down"></i> Importer un relevé</button>
+      </div></div></td></tr>`;
+    renderMetrics();
+    return;
+  }
   body.innerHTML = eps.map((e,i) => {
     const p  = S.positions[i];
     const rI = ti>0 ? e.inv/ti*100 : 0;
     const rV = (tv>0 && e.val!=null) ? e.val/tv*100 : null;
     const r  = rV!=null ? rV : rI;
     const aVenir = e.qty <= 0.0001 ? _achatAVenir(p) : "";
-    return `<tr data-id="${p.id}" draggable="true">
+    return `<tr data-id="${p.id}" draggable="true" tabindex="0" title="Glisser, ou Alt + flèche haut / bas, pour déplacer la ligne">
       <td>
         <div class="tk">${escHtml(p.name)}</div>
-        <div class="tk2">${escHtml(p.ticker)}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="Cours non chargé — vérifiez le ticker dans Google Sheets" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
+        <div class="tk2">${escHtml(p.ticker)}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="' + (_estHorsEuro(p.ticker) ? "Cours hors euro sur cette place : choisis une cotation en euros (Positions, modifier la ligne)" : "Cours non chargé : vérifie le ticker") + '" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
         <span class="badge ${p.type==="etf"?"be":"ba"}">${p.type==="etf"?"ETF":"Action"}</span>
       </td>
       <td>${sectorBadgeHtml(p.sector)}</td>
@@ -5850,13 +5884,13 @@ function renderPositions() {
       <td>${e.pru>0 ? eur3(e.pru) : "—"}</td>
       <td>${p.cours!=null ? eur3(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
       <td>${_renderSparkline(_wsSpark[p.ticker])}</td>
-      ${avecPER ? `<td>${p.type === "action" ? _renderPER(p.ticker)   : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
-      ${avecDiv ? `<td>${p.type === "action" ? _renderYield(p.ticker) : '<span style="color:var(--txt3);font-size:10px">n/a</span>'}</td>` : ""}
+      ${avecPER ? `<td>${p.type === "action" ? _renderPER(p.ticker)   : '<span style="color:var(--txt3);font-size:10px">—</span>'}</td>` : ""}
+      ${avecDiv ? `<td>${p.type === "action" ? _renderYield(p.ticker) : '<span style="color:var(--txt3);font-size:10px">—</span>'}</td>` : ""}
       <td>${e.val!=null ? eur(e.val) : "—"}</td>
       <td>${eur(e.inv)}</td>
-      <td class="${pcls(e.pv)}">${eur(e.pv,true)}</td>
+      <td class="${pcls(e.pv)}"${Math.abs(e.realised || 0) >= 0.005 ? ` title="dont réalisé (lignes déjà vendues) : ${eur(e.realised, true)} ; latent : ${e.val != null ? eur(e.val - e.inv, true) : "—"}"` : ""}>${eur(e.pv,true)}</td>
       <td class="${pcls(e.pvP)}">${pct(e.pvP)}</td>
-      <td style="font-size:11px;font-family:var(--mono);font-weight:600">${r.toFixed(1)}%${rV==null?'<span style="color:var(--txt3);font-size:9px"> *</span>':""}</td>
+      <td style="font-size:11px;font-family:var(--mono);font-weight:600">${pctFr(r, 1)}${rV==null?'<span style="color:var(--txt3);font-size:9px"> *</span>':""}</td>
       <td>${ebtn("editPos",p.id)}${dbtn("delPos",p.id)}</td>
     </tr>`;
   }).join("");
@@ -6085,7 +6119,7 @@ function buildTwrSeries(history) {
   (S.depots || []).forEach(d => {
     if (d.date && d.amount) cashEvents.push({date: normDate(d.date), delta: d.amount});
   });
-  [...(S.divReceived || []), ...(S.divFuture || [])].forEach(d => {
+  (S.divReceived || []).forEach(d => {   // reçus seulement (FIN-04)
     if (d.date && d.montant && normDate(d.date) <= cutToday)
       cashEvents.push({date: normDate(d.date), delta: d.montant});
   });
@@ -6185,8 +6219,30 @@ function normDate(s) {
 /* ─────────────────────────────────────────────────────────────────────────
    todayISO : date du jour en heure LOCALE (pas UTC) au format YYYY-MM-DD
 ──────────────────────────────────────────────────────────────────────── */
-function todayISO() {
-  const n = new Date();
+/* Place de cotation : préfixe de Pilote (« EPA: ») -> suffixe Yahoo (« .PA »).
+   Une seule table, au lieu de dix copies dans le fichier (ARC-09) ; la même
+   que to_yahoo() dans server.py. */
+const PLACES_YAHOO = { "EPA:": ".PA", "ETR:": ".DE", "AMS:": ".AS", "LON:": ".L" };
+function versYahoo(ticker) {
+  const t = String(ticker || "");
+  for (const pre in PLACES_YAHOO) if (t.startsWith(pre)) return t.slice(pre.length) + PLACES_YAHOO[pre];
+  return t;
+}
+
+/** « 2026-10-20 » -> « 20 oct. 2026 », pour les tableaux (UX-06) ; le tri reste sur l'ISO. */
+function dateCourte(iso) {
+  const d = new Date(normDate(iso || "") + "T00:00:00");
+  return isNaN(d) ? (iso || "—") : d.toLocaleDateString("fr-FR", {day: "numeric", month: "short", year: "numeric"});
+}
+
+/** 8,5 % à la française (virgule, espace insécable, vrai signe moins) : UX-07. */
+function pctFr(x, d = 1) {
+  return (x < 0 ? "−" : "") + Math.abs(x).toLocaleString("fr-FR", {minimumFractionDigits: d, maximumFractionDigits: d}) + " %";
+}
+
+function todayISO(n = new Date()) {
+  // Date locale AAAA-MM-JJ d'un objet Date (aujourd'hui par défaut) : jamais
+  // toISOString(), qui passe en UTC et donne la veille entre minuit et 2 h
   return n.getFullYear() + "-"
     + String(n.getMonth() + 1).padStart(2, "0") + "-"
     + String(n.getDate()).padStart(2, "0");
@@ -6225,8 +6281,13 @@ function filterByRange(series, range) {
   else if (range === "YTD") cutoff = ref.slice(0, 4) + "-01-01";
   else if (range === "1Y")  cutoff = isoDateMinus(ref, "years",  1);
   else                      return series;   /* MAX */
-  /* Comparaison sur dates normalisees pour etre sur du format */
-  return series.filter(p => normDate(p.date) >= cutoff);
+  /* Comparaison sur dates normalisees pour etre sur du format. La plage part
+     du dernier point anterieur ou egal a la date de depart : la base d'un YTD
+     est la cloture du 31 decembre, sinon la premiere seance de l'annee etait
+     perdue (FIN-08) */
+  const i = series.findIndex(p => normDate(p.date) >= cutoff);
+  if (i < 0) return [];
+  return series.slice(i > 0 && normDate(series[i].date) > cutoff ? i - 1 : i);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -6329,8 +6390,12 @@ function computePnl(series, range) {
    Chaque benchmark = "et si tous mes depots avaient achete cet indice ?"
    → meme axe EUR que la valeur portefeuille, comparaison directe.
 ═════════════════════════════════════════════════════════════════════════ */
-const BENCH_TICKERS = { cac40: "^FCHI",  sp500: "^GSPC",  world: "WPEA.PA" };
-const BENCH_NAMES   = { cac40: "CAC 40", sp500: "S&P 500", world: "ETF World" };
+// S&P 500 suivi par un ETF en euros qui réinvestit ses dividendes (ESE.PA, comme
+// WPEA.PA pour le World) : l'indice ^GSPC, en dollars et sans dividendes, ne se
+// comparait pas à un portefeuille en euros. Le CAC 40 reste l'indice de prix,
+// et son nom le dit (audit du 20/10/2026, FIN-06).
+const BENCH_TICKERS = { cac40: "^FCHI",  sp500: "ESE.PA",  world: "WPEA.PA" };
+const BENCH_NAMES   = { cac40: "CAC 40 (hors dividendes)", sp500: "S&P 500 (ETF en euros)", world: "ETF World" };
 const BENCH_COLORS  = { cac40: "#7c3aed", sp500: "#ea580c", world: "#0d9488" };  /* violet, orange, sarcelle */
 
 let _benchHistory = {};
@@ -6446,7 +6511,9 @@ async function _initBenchmarkUi() {
   }
   // Restaure depuis prefs si dispo
   try {
-    const saved = window.__appPrefs && window.__appPrefs.ui && window.__appPrefs.ui.benchEnabled;
+    // S.uiPrefs d'abord (4.4.21), l'ancien ui.benchEnabled une dernière fois sinon (ARC-03)
+    const saved = (S.uiPrefs && S.uiPrefs.benchEnabled)
+               || (window.__appPrefs && window.__appPrefs.ui && window.__appPrefs.ui.benchEnabled);
     if (saved && typeof saved === "object") {
       Object.keys(_benchEnabled).forEach(k => {
         if (typeof saved[k] === "boolean") _benchEnabled[k] = saved[k];
@@ -6473,16 +6540,12 @@ async function toggleBenchmark(bench, enabled) {
   _benchEnabled[bench] = enabled;
   if (enabled) await _loadBenchHistory(bench);
   drawPerfChart();
-  // Persiste l'etat dans pea_data.json
-  try {
-    if (window.pywebview && window.pywebview.api) {
-      const r = await window.pywebview.api.load_data();
-      const d = (r && r.ok && r.data) ? r.data : {};
-      d.ui = d.ui || {};
-      d.ui.benchEnabled = {..._benchEnabled};
-      await window.pywebview.api.save_data(d);
-    }
-  } catch (e) {}
+  // Rangé avec les autres réglages (S.uiPrefs), comme « Effacer » : avant, une
+  // relecture puis réécriture de tout pea_data.json, hors du gel des
+  // enregistrements, qui pouvait écraser une saisie (ARC-03)
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.benchEnabled = {..._benchEnabled};
+  _enregistrerUiPrefs();
 }
 
 function setPerfRange(range) {
@@ -6513,7 +6576,7 @@ async function resetPerf() {
     await window.pywebview.api.save_ui_prefs(S.uiPrefs);
   }
   setPerfRange("MAX");
-  showToastModern("✓ Graphique réinitialisé", "ok");
+  showToastModern("Graphique réinitialisé", "ok");
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -6602,7 +6665,7 @@ function drawPerfChart() {
   if (!_perfFullSeries || _perfFullSeries.length < 2) {
     document.getElementById("perf-nodata").style.display = "block";
     document.getElementById("perf-nodata").textContent =
-      "Aucune donnee disponible — ajoutez des positions et relancez le serveur.";
+      "Aucune donnée pour l'instant : ajoute une position, puis actualise les cours.";
     return;
   }
   document.getElementById("perf-nodata").style.display = "none";
@@ -6942,7 +7005,7 @@ async function renderPerf() {
   if (!history) {
     document.getElementById("perf-nodata").style.display = "block";
     document.getElementById("perf-nodata").textContent =
-      "Historique Yahoo indisponible. Vérifiez votre connexion internet, puis cliquez sur ↻ Actualiser.";
+      "Historique Yahoo indisponible. Vérifie ta connexion à internet, puis clique sur Actualiser.";
   } else {
     document.getElementById("perf-nodata").style.display = "none";
     setPerfRange(_perfRange);
@@ -6959,7 +7022,7 @@ function confirmDivFuture(id) {
   S.divReceived.push({id: NID.div++, date: d.date, ticker: d.ticker, qty: d.qty, ppa: d.ppa, montant: d.montant, note: d.note});
   S.divFuture = (S.divFuture||[]).filter(x=>x.id!==id);
   persist(); renderDividends(); renderMetrics();
-  showToast("✓ Dividende confirmé comme reçu");
+  showToast("Dividende confirmé comme reçu");
 }
 
 function renderDividends() {
@@ -6979,9 +7042,8 @@ function renderDividends() {
     .filter(d => d.date && normDate(d.date) > todayS)
     .sort((a,b) => a.date.localeCompare(b.date));
 
-  // Total = reçus confirmés + estimatifs passés
-  const totalRec = received.reduce((s,d)=>s+(d.montant||0),0)
-                 + futPast.reduce((s,d)=>s+(d.montant||0),0);
+  // Total = reçus confirmés ; les estimatifs passés attendent leur ✓ (FIN-04)
+  const totalRec = received.reduce((s,d)=>s+(d.montant||0),0);
   const el = document.getElementById("div-rec-total");
   if (el) el.textContent = totalRec>0 ? "Total reçu : " + eur(totalRec) : "";
 
@@ -6991,19 +7053,19 @@ function renderDividends() {
       const pos = S.positions.find(p=>p.ticker===d.ticker);
       const nm  = pos ? pos.name : d.ticker;
       if (mode === "received") return `<tr>
-        <td style="text-align:left;font-family:var(--mono);font-size:12px">${d.date}</td>
+        <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
         <td style="text-align:left"><span style="font-weight:600">${nm}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${d.ticker}</span></td>
         <td>${d.qty!=null?d.qty:"\u2014"}</td>
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
-        <td style="font-weight:700;color:var(--g)">${eur(d.montant)}</td>
+        <td style="font-weight:700">${eur(d.montant)}</td>
         <td style="white-space:nowrap">${ebtn("editDiv",d.id)}${dbtn("delDiv",d.id)}</td>
       </tr>`;
-      if (mode === "fut-past") return `<tr title="Estimatif dont la date est passée — cliquez ✓ pour confirmer">
-        <td style="text-align:left;font-family:var(--mono);font-size:12px">${d.date}</td>
+      if (mode === "fut-past") return `<tr title="Estimatif dont la date est passée : clique sur ✓ pour le confirmer">
+        <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
         <td style="text-align:left"><span style="font-weight:600">${nm}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${d.ticker}</span><br><span class="badge" style="background:var(--a2);color:var(--a)">ESTIMATIF</span></td>
         <td>${d.qty!=null?d.qty:"\u2014"}</td>
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
-        <td style="font-weight:700;color:var(--g)">${eur(d.montant)}</td>
+        <td style="font-weight:700">${eur(d.montant)}</td>
         <td style="white-space:nowrap">
           <button onclick="confirmDivFuture(${d.id})" style="background:none;border:1px solid var(--g);color:var(--g);cursor:pointer;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700" title="Confirmer comme reçu"><i class="ph ph-check"></i></button>
           ${ebtn("editDivFuture",d.id)}${dbtn("delDivFuture",d.id)}
@@ -7011,7 +7073,7 @@ function renderDividends() {
       </tr>`;
       // fut-upcoming
       return `<tr style="opacity:.42">
-        <td style="text-align:left;font-family:var(--mono);font-size:12px">${d.date}</td>
+        <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
         <td style="text-align:left"><span style="font-weight:600">${nm}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${d.ticker}</span><br><span class="badge" style="background:var(--b2);color:var(--b)">PRÉVU</span></td>
         <td>${d.qty!=null?d.qty:"\u2014"}</td>
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
@@ -7113,7 +7175,7 @@ function openAddDivFuture(editId) {
     ["df-date","df-qty","df-ppa","df-montant","df-note"].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value="";
     });
-    document.getElementById("df-date").value = new Date().toISOString().slice(0,10);
+    document.getElementById("df-date").value = todayISO();
     document.getElementById("df-recap").style.display="none";
   }
 
@@ -7188,7 +7250,7 @@ function delDivFuture(id) {
 
 /* Modal dividende reçu */
 function openAddDiv() {
-  document.getElementById("dv-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("dv-date").value = todayISO();
   const sel = document.getElementById("dv-asset");
   sel.innerHTML = "<option value=''>— Choisir —</option>" +
     S.positions.map(p=>`<option value="${escHtml(p.ticker)}">${escHtml(p.name)} (${escHtml(p.ticker)})</option>`).join("");
@@ -7527,7 +7589,7 @@ function renderTx() {
     const txSectorId   = sectorOf(t.asset);
     const txSectorHtml = txSectorId ? sectorBadgeHtml(txSectorId) : "";
     return `<div class="txr" style="${isFuture ? "opacity:.6;border-left:3px solid var(--a);padding-left:9px" : ""}">
-      <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;min-width:86px">${t.date}</span>
+      <span style="color:var(--txt2);font-size:10px;min-width:86px">${dateCourte(t.date)}</span>
       ${futureBadge}<span style="font-weight:600;font-size:12px;min-width:80px">${label}</span>
       ${typeBadge}${pretBadge}${txOrigineBadge(t)}${txFraisBadge(t)}${txSectorHtml}
       <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?fmtQte(t.qty)+"\u00A0\u00D7\u00A0"+eur3(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
@@ -8313,11 +8375,7 @@ function setStars(id, n) {
 function getVar(ticker) {
   const key = toDotKey(ticker);
   // Try EPA:SGO format, then ticker as-is, then .PA format
-  const dotKey = ticker.startsWith("EPA:") ? ticker.replace("EPA:","") + ".PA"
-               : ticker.startsWith("ETR:") ? ticker.replace("ETR:","") + ".DE"
-               : ticker.startsWith("AMS:") ? ticker.replace("AMS:","") + ".AS"
-               : ticker.startsWith("LON:") ? ticker.replace("LON:","") + ".L"
-               : ticker;
+  const dotKey = versYahoo(ticker);
   return _wsVar[key] || _wsVar[ticker] || _wsVar[dotKey] || null;
 }
 
@@ -8413,7 +8471,7 @@ function renderDepots() {
   document.getElementById("dep-total-lbl").textContent = "Total : "+eur(total);
   document.getElementById("dep-body").innerHTML = rows.map(d=>
     `<tr>
-      <td style="text-align:left;font-family:var(--mono);font-size:12px">${d.date}</td>
+      <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
       <td style="font-family:var(--mono);font-size:12px">${eur(d.amount)}</td>
       <td style="text-align:left;color:var(--txt2);font-size:11px">${d.note||""}</td>
       <td style="white-space:nowrap">${ebtn("editDepot",d.id)}${dbtn("delDepot",d.id)}</td>
@@ -8509,12 +8567,10 @@ function depPrevuArrive(id) {
   document.getElementById("d-note").value = d.note || "";
   document.querySelector("#ov-dep h2").textContent = "Versement arrivé";
   const btn = document.querySelector("#ov-dep .btn-primary");
-  btn.textContent = "Enregistrer le dépôt";
+  btn.textContent = "Enregistrer le versement";
   btn.onclick = () => {
-    const date = document.getElementById("d-date").value;
-    const amount = parseFloat(document.getElementById("d-amt").value);
-    const note = document.getElementById("d-note").value.trim();
-    if (!date || isNaN(amount) || amount <= 0) return;
+    const v = _lireVersement(); if (!v) return;
+    const {date, amount, note} = v;
     pushUndo();
     S.depots.push({id: NID.dep++, date, amount, note});
     S.depotsPrevus = (S.depotsPrevus || []).filter(x => x.id !== id);
@@ -8527,34 +8583,22 @@ function editDepot(id) {
   const d = (S.depots||[]).find(x=>x.id===id); if(!d) return;
   openAddDepot();
   document.getElementById("d-date").value = d.date||"";
-  document.getElementById("d-amt").value  = d.amount!=null?d.amount:"";
+  document.getElementById("d-amt").value  = d.amount!=null?Math.abs(d.amount):"";
+  document.getElementById("d-retrait").checked = (d.amount || 0) < 0;
   document.getElementById("d-note").value = d.note||"";
-  document.querySelector("#ov-dep h2").textContent = "Modifier le dépôt";
+  document.querySelector("#ov-dep h2").textContent = (d.amount || 0) < 0 ? "Modifier le retrait" : "Modifier le versement";
   const btn = document.querySelector("#ov-dep .btn-primary");
   btn.textContent="Mettre à jour"; btn.onclick=()=>saveEditDepot(id);
 }
 function saveEditDepot(id) {
-  const date   = document.getElementById("d-date").value;
-  const amount = parseFloat(document.getElementById("d-amt").value);
-  const note   = document.getElementById("d-note").value.trim();
-  if (!date||isNaN(amount)||amount<=0) return alert("Date et montant requis.");
+  const v = _lireVersement(); if (!v) return;
+  const {date, amount, note} = v;
   const idx = (S.depots||[]).findIndex(x=>x.id===id); if(idx<0) return;
   pushUndo();
   S.depots[idx] = {...S.depots[idx], date, amount, note};
   persist(); closeOv("ov-dep"); renderDepots(); renderMetrics(); renderPeaInfo();
 }
 
-/* ─── Google Sheets — parsing CSV ─── */
-/*
-  Format attendu dans le sheet :
-  Col A (idx 0) = Ticker    ex: EPA:SGO
-  Col B (idx 1) = (ignorée)
-  Col C (idx 2) = Entreprise
-  Col D (idx 3) = Cours
-  Col E (idx 4) = Var 1 semaine %
-  Col F (idx 5) = Var 1 mois %
-  Col G (idx 6) = Var 1 an %
-*/
 /* ─── Serveur local Yahoo Finance (meme origine que la page) ─── */
 const _PEA_PORT = location.port || "7438";
 const LOCAL_COURS_URL = `http://127.0.0.1:${_PEA_PORT}/cours`;
@@ -8584,26 +8628,24 @@ async function fetchLocalCours() {
   const prices     = {};
   const variations = {};
 
+  _coursHorsEuro = new Set();
   Object.entries(data.prices).forEach(([tk, info]) => {
     const prix = info.prix;
-    if (prix && prix > 0) {
+    // Cotation hors euro (CSPX.AS en dollars, LON: en pence) : son cours n'est
+    // pas compté comme des euros, la ligne passe en « cours manquant » (FIN-05)
+    const horsEuro = info.devise && info.devise !== "EUR";
+    if (horsEuro) {
+      _coursHorsEuro.add(tk);
+      _coursHorsEuro.add(tk.includes(":") ? tk.split(":")[1] : tk);
+    }
+    if (prix && prix > 0 && !horsEuro) {
       prices[tk] = prix;
-      let dotKey = tk;
-      if      (tk.startsWith("EPA:")) dotKey = tk.replace("EPA:", "") + ".PA";
-      else if (tk.startsWith("ETR:")) dotKey = tk.replace("ETR:", "") + ".DE";
-      else if (tk.startsWith("AMS:")) dotKey = tk.replace("AMS:", "") + ".AS";
-      else if (tk.startsWith("LON:")) dotKey = tk.replace("LON:", "") + ".L";
-      prices[dotKey] = prix;
+      prices[versYahoo(tk)] = prix;
     }
     const varEntry = { name: tk, cours: info.prix, d1: info.d1, w1: info.w1, m1: info.m1, y1: info.y1, t: info.t };
     variations[tk] = varEntry;
     // also store with dotKey so getVar finds it regardless of format saved in wishlist
-    let dotKey2 = tk;
-    if      (tk.startsWith("EPA:")) dotKey2 = tk.replace("EPA:", "") + ".PA";
-    else if (tk.startsWith("ETR:")) dotKey2 = tk.replace("ETR:", "") + ".DE";
-    else if (tk.startsWith("AMS:")) dotKey2 = tk.replace("AMS:", "") + ".AS";
-    else if (tk.startsWith("LON:")) dotKey2 = tk.replace("LON:", "") + ".L";
-    variations[dotKey2] = varEntry;
+    variations[versYahoo(tk)] = varEntry;
   });
 
   // Yahoo injoignable : le serveur rend les derniers cours connus et les liste
@@ -8623,6 +8665,10 @@ async function fetchLocalCours() {
    ou "erreur" (serveur local en panne). */
 let _coursEtat = "ok";
 let _coursPerimes = [];   // "partiel" : tickers détenus servis depuis le cache
+let _coursHorsEuro = new Set();   // tickers dont Yahoo donne un cours hors euro (FIN-05)
+function _estHorsEuro(ticker) {
+  return _coursHorsEuro.has(ticker) || _coursHorsEuro.has(ticker.includes(":") ? ticker.split(":")[1] : ticker);
+}
 
 async function applyCoursData() {
   try {
@@ -8632,14 +8678,11 @@ async function applyCoursData() {
 
     let changed = false;
     S.positions.forEach(p => {
-      const dotKey = p.ticker.startsWith("EPA:") ? p.ticker.replace("EPA:", "") + ".PA"
-                   : p.ticker.startsWith("ETR:") ? p.ticker.replace("ETR:", "") + ".DE"
-                   : p.ticker.startsWith("AMS:") ? p.ticker.replace("AMS:", "") + ".AS"
-                   : p.ticker.startsWith("LON:") ? p.ticker.replace("LON:", "") + ".L"
-                   : p.ticker;
+      const dotKey = versYahoo(p.ticker);
       const bare = p.ticker.includes(":") ? p.ticker.split(":")[1] : p.ticker;
       const v = prices[p.ticker] || prices[dotKey] || prices[bare];
       if (v && v > 0) { p.cours = v; changed = true; }
+      else if (_estHorsEuro(p.ticker)) { p.cours = null; changed = true; }
     });
     if (typeof ctoAppliquerCours === "function") ctoAppliquerCours(prices);
 
@@ -8679,12 +8722,13 @@ function startCoursRefresh() {
   const premier = applyCoursData();
   fetchSparklines();
   fetchKeystats();
-  fetchAnalysts();
+  // Plus d'avis d'analystes en tâche de fond : l'onglet qui les montre n'est
+  // plus accessible, et chaque appel envoyait la liste des titres à Yahoo
+  // toutes les 3 minutes (audit du 20/10/2026, LEG-04)
   _coursTimer = setInterval(() => {
     applyCoursData();
     fetchSparklines();
     fetchKeystats();
-    fetchAnalysts();
   }, 3 * 60 * 1000);
   return premier;
 }
@@ -8999,7 +9043,9 @@ function runDcaSim() {
   const amt   = parseFloat(document.getElementById("sim-dca-amt").value) || 0;
   const years = parseFloat(document.getElementById("sim-dca-years").value) || 0;
   const rate  = (parseFloat(document.getElementById("sim-dca-rate").value) || 0) / 100;
-  const r = rate / 12;
+  // Taux mensuel équivalent : 7 % par an donnent bien 7 % sur douze mois
+  // (taux / 12 donnait 7,23 %, FIN-13)
+  const r = Math.pow(1 + rate, 1 / 12) - 1;
   const n = Math.round(years * 12);
   const labels = [], capital = [], invest = [];
   let cap = start, inv = start;
@@ -9050,9 +9096,11 @@ function runGoalSim() {
   const goal  = parseFloat(document.getElementById("sim-goal-amt").value) || 0;
   const month = parseFloat(document.getElementById("sim-goal-month").value) || 0;
   const rate  = (parseFloat(document.getElementById("sim-goal-rate").value) || 0) / 100;
-  const r = rate / 12;
+  // Taux mensuel équivalent : 7 % par an donnent bien 7 % sur douze mois
+  // (taux / 12 donnait 7,23 %, FIN-13)
+  const r = Math.pow(1 + rate, 1 / 12) - 1;
   const out = document.getElementById("sim-goal-result");
-  if (goal <= 0) { out.innerHTML = '<span style="color:var(--txt2)">Renseignez l\'objectif.</span>'; return; }
+  if (goal <= 0) { out.innerHTML = '<span style="color:var(--txt2)">Indique l\'objectif.</span>'; return; }
   if (start >= goal) {
     out.innerHTML = `<div style="font-size:13px;color:var(--g);font-weight:600">🎉 Objectif déjà atteint !</div>`;
     return;
@@ -9140,7 +9188,7 @@ async function runEtfCompare() {
   // de Yahoo pour les longues periodes — sauf 15y ou on prend tout).
   const cfg = CMP_RANGES.find(r => r.key === _cmpRange) || CMP_RANGES[0];
   await _fetchCmpHist(tickers, cfg.yhRange, status);
-  status.textContent = "Historique chargé. Sélectionnez une plage.";
+  status.textContent = "Historique chargé. Choisis une plage.";
   _renderCmpRangeButtons();
   _drawCmpChart();
 }
@@ -9176,7 +9224,7 @@ function _drawCmpChart() {
   } else {
     cutoff = new Date(); cutoff.setDate(cutoff.getDate() - (rangeCfg.days * 1.45));
   }
-  const cutISO = cutoff.toISOString().slice(0, 10);
+  const cutISO = todayISO(cutoff);
 
   // Filtre par ticker
   const series = {};
@@ -9365,7 +9413,7 @@ function resetSimulators() {
   // Sauve les valeurs reset
   if (S.uiPrefs) { delete S.uiPrefs.simulators; }
   _saveSimulators();
-  showToastModern("✓ Simulateurs réinitialisés", "ok");
+  showToastModern("Simulateurs réinitialisés", "ok");
 }
 
 /* Wire up : recalcule + sauvegarde a chaque saisie */
@@ -9417,6 +9465,162 @@ function goTab(n) {
 
 /* ─── Modals ─── */
 /** Ouvre une modale en la placant au-dessus de celles deja ouvertes. */
+/* ─── Fenêtres (.ov) : rôle, focus, Tab et Échap (audit du 20/10/2026) ───
+   Une fenêtre qui s'ouvre (classe « open ») devient un dialogue : son premier
+   champ reçoit le focus, Tab reste dedans, et le focus revient à l'élément
+   d'origine à la fermeture (A11Y-01). Échap ferme celle du dessus (A11Y-15). */
+const _pileOv = [];
+function _focusables(el) {
+  return [...el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(x => x.offsetParent !== null);
+}
+function _ovDuDessus() {
+  for (let i = _pileOv.length - 1; i >= 0; i--) {
+    const ov = _pileOv[i].ov;
+    if (document.contains(ov) && ov.classList.contains("open")) return ov;
+    _pileOv.splice(i, 1);
+  }
+  return null;
+}
+(function () {
+  function ouverte(ov) {
+    if (_pileOv.some(x => x.ov === ov)) return;
+    _pileOv.push({ ov, retour: document.activeElement });
+    const m = ov.querySelector(".modal") || ov;
+    m.setAttribute("role", "dialog");
+    m.setAttribute("aria-modal", "true");
+    const h = m.querySelector("h2, h3");
+    if (h) { if (!h.id) h.id = "ovt-" + Math.random().toString(36).slice(2, 8); m.setAttribute("aria-labelledby", h.id); }
+    setTimeout(() => {
+      if (!ov.classList.contains("open") || m.contains(document.activeElement)) return;
+      const f = _focusables(m);
+      const champ = f.find(x => /^(INPUT|SELECT|TEXTAREA)$/.test(x.tagName)) || f[0];
+      if (champ) champ.focus({ preventScroll: true });
+    }, 30);
+  }
+  function fermee(ov) {
+    const i = _pileOv.findIndex(x => x.ov === ov);
+    if (i < 0) return;
+    const { retour } = _pileOv.splice(i, 1)[0];
+    if (retour && document.contains(retour) && typeof retour.focus === "function") retour.focus({ preventScroll: true });
+  }
+  new MutationObserver(muts => muts.forEach(mu => {
+    const ov = mu.target;
+    if (!ov.classList || !ov.classList.contains("ov")) return;
+    if (ov.classList.contains("open")) ouverte(ov); else fermee(ov);
+  })).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ["class"] });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Tab") return;
+    const ov = _ovDuDessus();
+    if (!ov) return;
+    const f = _focusables(ov.querySelector(".modal") || ov);
+    if (!f.length) return;
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
+  }, true);
+})();
+
+/* ─── Accessibilité : une passe sur la page après chaque rendu (audit du
+   20/10/2026). Libellés reliés à leurs champs (A11Y-02), boutons-icônes
+   nommés par leur infobulle, éléments cliquables atteignables au clavier
+   (A11Y-03, A11Y-11), titres de cartes (A11Y-05), graphiques décrits
+   (A11Y-10), états des sections et des étoiles (A11Y-12), œil du menu
+   masqué aux lecteurs d'écran (A11Y-14). ─── */
+const _A11Y_CLIQUABLES = ".home-card[onclick], .sp-day[onclick], .dash-note[onclick], .dash-card-x, .pa-cpt[onclick]";
+(function () {
+  function passe() {
+    document.querySelectorAll(".fg > label:not([for])").forEach(l => {
+      const ch = l.parentElement.querySelector("input:not([type=checkbox]):not([type=radio]), select, textarea");
+      if (!ch) return;
+      if (ch.id) l.htmlFor = ch.id;
+      else if (!ch.getAttribute("aria-label")) ch.setAttribute("aria-label", l.textContent.trim());
+    });
+    document.querySelectorAll("button:not([aria-label])").forEach(b => {
+      if (!b.textContent.trim() && b.title) b.setAttribute("aria-label", b.title);
+    });
+    document.querySelectorAll(_A11Y_CLIQUABLES).forEach(el => {
+      if (!el.hasAttribute("tabindex")) { el.tabIndex = 0; el.setAttribute("role", "button"); }
+    });
+    document.querySelectorAll(".card-t:not([role])").forEach(t => { t.setAttribute("role", "heading"); t.setAttribute("aria-level", "2"); });
+    document.querySelectorAll("canvas:not([role])").forEach(c => {
+      const carte = c.closest(".card, .home-card, .mc, .pa-card, .sa-card");
+      const t = carte && carte.querySelector(".card-t, .dash-card-t, .mc-lbl, .home-card-lbl, h3");
+      c.setAttribute("role", "img");
+      c.setAttribute("aria-label", "Graphique" + (t ? " : " + t.textContent.trim() : "") + ". Les chiffres sont écrits à côté.");
+    });
+    document.querySelectorAll(".sb-sec-btn[data-sec-btn]").forEach(b => {
+      const sec = b.closest(".sb-sec");
+      b.setAttribute("aria-expanded", sec && sec.classList.contains("open") ? "true" : "false");
+    });
+    document.querySelectorAll(".star-row:not([aria-label])").forEach(r => {
+      r.setAttribute("role", "group");
+      r.setAttribute("aria-label", r.querySelectorAll(".star.on").length + " étoiles sur 5");
+    });
+    document.querySelectorAll(".sb-eye-btn:not([aria-hidden])").forEach(e => e.setAttribute("aria-hidden", "true"));
+    if (!document.querySelector("[role=main]")) { const w = document.querySelector(".wrap"); if (w) w.setAttribute("role", "main"); }
+  }
+  let t = null;
+  const planifier = () => { if (t) return; t = setTimeout(() => { t = null; try { passe(); } catch (e) {} }, 250); };
+  new MutationObserver(planifier).observe(document.documentElement, { childList: true, subtree: true });
+  planifier();
+  document.addEventListener("keydown", e => {
+    const el = e.target;
+    if (!el || !el.matches) return;
+    // Entrée ou Espace sur un élément rendu cliquable : un clic
+    if ((e.key === "Enter" || e.key === " ") && el.matches(_A11Y_CLIQUABLES)) { e.preventDefault(); el.click(); return; }
+    // Alt + flèche haut/bas : déplacer une ligne des Positions sans glisser (A11Y-08)
+    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      const tr = el.closest && el.closest("#pos-body tr[data-id]");
+      if (!tr) return;
+      const i = S.positions.findIndex(p => String(p.id) === tr.dataset.id);
+      const j = i + (e.key === "ArrowUp" ? -1 : 1);
+      if (i < 0 || j < 0 || j >= S.positions.length) return;
+      e.preventDefault();
+      pushUndo();
+      [S.positions[i], S.positions[j]] = [S.positions[j], S.positions[i]];
+      persist(); renderPositions();
+      const nouvelle = document.querySelector(`#pos-body tr[data-id="${tr.dataset.id}"]`);
+      if (nouvelle) nouvelle.focus();
+    }
+  });
+})();
+
+/* Petite fenêtre de saisie de Pilote, à la place de prompt() (boîte du
+   système, hors de l'identité de l'app, UX-03). Promesse : le texte saisi, ou
+   null si on annule. opts : type (« password », « color »…), attrs, texte, ok. */
+function demander(titre, valeur = "", opts = {}) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "ov";
+    ov.innerHTML = `<div class="modal" style="max-width:420px"><h2>${escHtml(titre)}</h2>
+      ${opts.texte ? `<p style="white-space:pre-line;color:var(--txt2);font-size:13px;margin:0 0 10px">${escHtml(opts.texte)}</p>` : ""}
+      <div class="fg"><input type="${opts.type || "text"}" aria-label="${escHtml(titre)}" ${opts.attrs || ""}></div>
+      <div class="mact"><button type="button" class="btn btn-ghost" data-r="0">Annuler</button>
+        <button type="button" class="btn btn-primary" data-r="1">${escHtml(opts.ok || "Valider")}</button></div></div>`;
+    document.body.appendChild(ov);
+    const inp = ov.querySelector("input");
+    inp.value = valeur == null ? "" : String(valeur);
+    let fini = false;
+    const fin = ok => {
+      if (fini) return; fini = true;
+      ov.classList.remove("open");
+      setTimeout(() => ov.remove(), 0);
+      resolve(ok ? inp.value : null);
+    };
+    ov.querySelector('[data-r="1"]').onclick = () => fin(true);
+    ov.querySelector('[data-r="0"]').onclick = () => fin(false);
+    ov.addEventListener("click", e => { if (e.target === ov) fin(false); });
+    ov.addEventListener("keydown", e => {
+      if (e.key === "Enter" && e.target === inp) { e.preventDefault(); fin(true); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fin(false); }
+    });
+    ov.style.zIndex = 9700;
+    ov.classList.add("open");
+    setTimeout(() => { inp.focus(); if (inp.select) inp.select(); }, 40);
+  });
+}
+
 function openOvTop(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -9454,7 +9658,7 @@ function closeOv(id) {
   if (id==="ov-dep") {
     const btn=document.querySelector("#ov-dep .btn-primary");
     if(btn){ btn.textContent="Enregistrer"; btn.onclick=saveDepot; }
-    document.querySelector("#ov-dep h2").textContent="Ajouter un dépôt";
+    document.querySelector("#ov-dep h2").textContent="Ajouter un versement";
   }
 }
 
@@ -9569,11 +9773,13 @@ function _wireTickerSearch(opts) {
 }
 
 function openAddPos() {
+  const fp = document.getElementById("f-pret");
+  if (fp && fp.closest(".fg")) fp.closest(".fg").style.display = _pretParametre() ? "" : "none";
   ["f-name","f-ticker","f-prix","f-qty","f-frais","f-div","f-exdiv"].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value="";
   });
   document.getElementById("f-type").value="action";
-  document.getElementById("f-date").value=new Date().toISOString().slice(0,10);
+  document.getElementById("f-date").value=todayISO();
   document.getElementById("f-pret").checked=false;
   document.getElementById("f-pret-mt").value="";
   document.getElementById("pos-recap").style.display="none";
@@ -9784,9 +9990,14 @@ function delPos(id) {
 
 /* Case « argent du prêt » : un dividende n'en a pas, et pour une vente ce sont
    les parts achetées avec le prêt qu'on vend. */
+/* Le prêt est-il paramétré ? Sinon, la case « Payé avec l'argent du prêt »
+   n'a rien à faire dans les fenêtres d'un utilisateur neuf (UX-09). */
+function _pretParametre() {
+  return typeof PR !== "undefined" && !!PR && !!PR.pret && prN(PR.pret.montant) > 0;
+}
 function _txPretSync() {
   const type = document.getElementById("t-type").value;
-  document.getElementById("t-pret-fg").style.display = type === "Dividende" ? "none" : "";
+  document.getElementById("t-pret-fg").style.display = (type === "Dividende" || !_pretParametre()) ? "none" : "";
   document.getElementById("t-pret-lbl").textContent = type === "Vente"
     ? "Vente de parts achetées avec le prêt"
     : "Payé avec l'argent du prêt";
@@ -9811,7 +10022,7 @@ function _txPretInput(asset, excludeId) {
 
 /* Modal Transaction */
 function openAddTx() {
-  document.getElementById("t-date").value=new Date().toISOString().slice(0,10);
+  document.getElementById("t-date").value=todayISO();
   ["t-cours","t-qty","t-frais"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("t-type").value="Achat";
   document.getElementById("t-pret").checked=false;
@@ -10019,17 +10230,29 @@ function saveEditWish(id) {
   persist(); closeOv("ov-wish"); renderWishlist();
 }
 
-/* Modal Dépôt */
+/* Modal Versement */
 function openAddDepot() {
-  document.getElementById("d-date").value=new Date().toISOString().slice(0,10);
+  document.getElementById("d-date").value=todayISO();
   ["d-amt","d-note"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("d-retrait").checked = false;
+  document.querySelector("#ov-dep h2").textContent = "Ajouter un versement";
   document.getElementById("ov-dep").classList.add("open");
 }
+/* Lit la fenêtre : {date, amount, note}, montant négatif pour un retrait ; null
+   (avec un message qui dit quoi corriger) si la saisie ne va pas. Jusqu'en 4.4.20,
+   un montant vide ou négatif était refusé sans un mot, et un retrait ne pouvait
+   pas se saisir (UX-02). */
+function _lireVersement() {
+  const date   = document.getElementById("d-date").value;
+  const brut   = parseFloat(document.getElementById("d-amt").value);
+  const note   = document.getElementById("d-note").value.trim();
+  if (!date) { showToastModern("Indique la date du versement.", "warn"); return null; }
+  if (!(brut > 0)) { showToastModern("Montant : un nombre positif. Pour un retrait, coche « C'est un retrait ».", "warn"); return null; }
+  return { date, amount: document.getElementById("d-retrait").checked ? -brut : brut, note };
+}
 function saveDepot() {
-  const date  =document.getElementById("d-date").value;
-  const amount=parseFloat(document.getElementById("d-amt").value);
-  const note  =document.getElementById("d-note").value.trim();
-  if (!date||isNaN(amount)||amount<=0) return;
+  const v = _lireVersement(); if (!v) return;
+  const {date, amount, note} = v;
   pushUndo();
   S.depots.push({id:NID.dep++,date,amount,note});
   persist(); closeOv("ov-dep"); renderDepots(); renderMetrics(); renderPeaInfo();
@@ -10061,24 +10284,6 @@ function applyCours() {
   updateStatus();
 }
 
-/* Import d'un pea_data.json : alimente par l'input cache #import-file
-   (ecran de bienvenue). L'export passe par doExport(), cote Python, qui
-   ouvre une vraie boite de dialogue Windows. */
-function doImport(ev) {
-  const file=ev.target.files[0]; if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try {
-      const data=JSON.parse(e.target.result);
-      if(!data.positions||!data.transactions) throw new Error("Format invalide");
-      S=data; NID=data._nid||{pos:Date.now(),tx:Date.now()+1,wish:Date.now()+2,dep:Date.now()+3};
-      ["depots","depotsPrevus","divHist","wishlist","divReceived","divFuture"].forEach(k=>{if(!S[k])S[k]=[];});
-      persist(); renderAll(); updateStatus();
-    } catch(err){ alert("Erreur import : "+err.message); }
-    finally{ ev.target.value=""; }
-  };
-  reader.readAsText(file);
-}
 
 
 /* ─── Utilisateurs Pilote ───
@@ -10195,7 +10400,7 @@ async function openUserModal(slug) {
 
 async function saveUserModal() {
   const api = (window.pywebview && window.pywebview.api) || null;
-  if (!api) { showToastModern("Bridge indisponible", "err"); return; }
+  if (!api) { showToastModern("Pilote ne répond pas : ferme-le et relance-le.", "err"); return; }
   const label = document.getElementById("user-f-label").value.trim();
   const emoji = document.getElementById("user-f-emoji").value.trim();
   if (!label) { showToastModern("Donne un nom \u00e0 l'utilisateur", "warn"); return; }
@@ -10325,7 +10530,7 @@ function openAnnualReport() {
 <style>
   @page { size: A4; margin: 18mm; }
   body { font-family: Arial, Helvetica, sans-serif; color:#18181b; max-width:780px; margin:auto; }
-  h1 { font-size:24px; border-bottom:3px solid #d97706; padding-bottom:6px; }
+  h1 { font-size:24px; border-bottom:3px solid ${getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#9C4A7A"}; padding-bottom:6px; }
   h2 { font-size:14px; margin-top:24px; color:#71717a; text-transform:uppercase; letter-spacing:.08em }
   .kpi { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0 }
   .kpi-card { border:1px solid #e5e7eb; border-radius:8px; padding:12px; }
@@ -10354,22 +10559,22 @@ function openAnnualReport() {
 
 <h2>Versements ${year}</h2>
 <table><thead><tr><th>Date</th><th>Montant</th><th>Note</th></tr></thead><tbody>
-${depots.length ? depots.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${d.date}</td><td>${(d.amount||0).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})} €</td><td>${d.note||""}</td></tr>`).join("") : '<tr><td colspan="3" style="text-align:center;color:#9ca3af">Aucun versement</td></tr>'}
+${depots.length ? depots.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${dateCourte(d.date)}</td><td>${(d.amount||0).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})} €</td><td>${d.note||""}</td></tr>`).join("") : '<tr><td colspan="3" style="text-align:center;color:#9ca3af">Aucun versement</td></tr>'}
 </tbody></table>
 
 <h2>Transactions ${year}</h2>
 <table><thead><tr><th>Date</th><th>Type</th><th>Actif</th><th>Qté</th><th>Cours</th><th>Frais</th><th>Montant</th></tr></thead><tbody>
-${txs.length ? txs.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td>${t.asset}</td><td>${t.qty}</td><td>${(t.cours||0).toFixed(3)} €</td><td>${(t.frais||0).toFixed(2)} €</td><td>${((t.cours||0)*(t.qty||0)).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="7" style="text-align:center;color:#9ca3af">Aucune transaction</td></tr>'}
+${txs.length ? txs.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>`<tr><td>${dateCourte(t.date)}</td><td>${t.type}</td><td>${t.asset}</td><td>${t.qty}</td><td>${(t.cours||0).toFixed(3)} €</td><td>${(t.frais||0).toFixed(2)} €</td><td>${((t.cours||0)*(t.qty||0)).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="7" style="text-align:center;color:#9ca3af">Aucune transaction</td></tr>'}
 </tbody></table>
 
 <h2>Dividendes reçus ${year}</h2>
 <table><thead><tr><th>Date</th><th>Actif</th><th>Qté</th><th>Div / part</th><th>Montant</th></tr></thead><tbody>
-${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${d.date}</td><td>${d.ticker}</td><td>${d.qty}</td><td>${(d.ppa||0).toFixed(2)} €</td><td>${(d.montant||0).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Aucun dividende</td></tr>'}
+${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${dateCourte(d.date)}</td><td>${d.ticker}</td><td>${d.qty}</td><td>${(d.ppa||0).toFixed(2)} €</td><td>${(d.montant||0).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Aucun dividende</td></tr>'}
 </tbody></table>
 
 <div class="ftr">Pilote — Rapport généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div>
 <div class="noprint" style="text-align:center;margin-top:20px">
-  <button onclick="window.print()" style="padding:10px 20px;font-size:14px;cursor:pointer;background:#d97706;color:#fff;border:0;border-radius:6px"><i class="ph ph-printer"></i> Imprimer / Sauvegarder en PDF</button>
+  <button onclick="window.print()" style="padding:10px 20px;font-size:14px;cursor:pointer;background:${getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#9C4A7A"};color:#fff;border:0;border-radius:6px"><i class="ph ph-printer"></i> Imprimer / Sauvegarder en PDF</button>
 </div>
 </body></html>`;
   // Affichage dans un overlay interne avec iframe (pywebview ne supporte pas window.open)
@@ -10460,7 +10665,7 @@ async function disablePinNow() {
   if (cur === null) return;
   const ok = await _setPinServer("", null, cur);
   if (ok) {
-    showToastModern("✓ PIN désactivé", "ok");
+    showToastModern("PIN désactivé", "ok");
     clearPinDigits();
     const st = document.getElementById("cfg-pin-state");
     if (st) st.textContent = "Aucun PIN";
@@ -10508,7 +10713,7 @@ async function _setPinServer(pin, slug, oldPin) {
     const r = await fetch(qs, {cache: "no-store"});
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
-      if (d.needOld) showToastModern("⚠ Code actuel incorrect", "err");
+      if (d.needOld) showToastModern("Code actuel incorrect", "err");
       return false;
     }
     return !!d.ok;
@@ -10519,7 +10724,8 @@ async function _setPinServer(pin, slug, oldPin) {
    null si l'utilisateur annule. */
 async function _askCurrentPin(slug) {
   if (!(await _isPinRequired(slug))) return "";
-  const v = prompt("Code PIN actuel (4 chiffres) :");
+  const v = await demander("Code PIN actuel", "", {type: "password", texte: "4 chiffres",
+    attrs: 'inputmode="numeric" maxlength="4" autocomplete="off"'});
   if (v === null) return null;
   return (v || "").trim();
 }
@@ -10552,7 +10758,7 @@ async function _checkPinLock() {
                 <span style="font-size:20px;font-weight:700">${escHtml(me.label)}</span>
               </div>`
            : `<div style="font-size:20px;font-weight:700">Pilote</div>`}
-      <div style="font-size:13px;color:var(--txt2)">Entrez le code PIN de cet utilisateur</div>
+      <div style="font-size:13px;color:var(--txt2)">Tape le code PIN de cet utilisateur</div>
       <div id="lock-boxes" style="display:flex;gap:14px">
         <input class="pin-digit lock-digit" type="password" inputmode="numeric" maxlength="1" data-i="0">
         <input class="pin-digit lock-digit" type="password" inputmode="numeric" maxlength="1" data-i="1">
@@ -10592,7 +10798,7 @@ async function _checkPinLock() {
       // Le vrai frein est cote serveur (_pinLockedFor) : ce compteur local
       // n'est qu'un confort d'affichage, il ne protege rien a lui seul.
       err.textContent = _pinLockedFor > 0
-        ? `Trop d'essais — réessayez dans ${_pinLockedFor} s`
+        ? `Trop d'essais : réessaie dans ${_pinLockedFor} s`
         : "Code incorrect" + (attempts >= 3 ? " — patientez 5 sec" : "");
       reset();
       if (attempts >= 3) {
@@ -10823,7 +11029,7 @@ async function _showWelcomeIfFirstRun() {
           sport, santé…) dans une seule application, qui tourne entièrement sur ton ordinateur.</p>
         ${identitySection}
         <ul class="pp-points">
-          <li><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
+          <li title="Pilote ne demande sur internet que les cours de tes titres (à Yahoo Finance, sans les quantités ni les montants) et les mises à jour (à GitHub)."><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
             ${dossier ? `Sans compte ni serveur. Tes données sont ici, sauvegardées chaque jour&nbsp;:
             <span class="dossier-chemin"><span>${escHtml(dossier)}</span>
               <button type="button" onclick="openDataFolder()"><i class="ph ph-folder-open"></i> Ouvrir</button></span>`
@@ -10932,8 +11138,10 @@ async function _showWelcomeIfFirstRun() {
   // L'import recharge l'app : l'assistant ne revient pas si le PEA est rempli
   ov.querySelector("[data-pp-import]").onclick = () => {
     ov.remove();
-    const inp = document.getElementById("import-file");
-    if (inp) inp.click();
+    // Le même import que Paramètres (boîte de dialogue, contrôles et copie de
+    // sécurité côté Python) : l'ancien chemin par FileReader n'en avait aucun
+    // et pouvait donner des identifiants NaN (ARC-08)
+    doImportDialog();
   };
   // Branche les boutons "récupérer ces données"
   ov.querySelectorAll("[data-recover-idx]").forEach(btn => {
@@ -10948,16 +11156,16 @@ async function _showWelcomeIfFirstRun() {
         const r = await fetch(`http://127.0.0.1:${_PEA_PORT}/recover-data?from=` + encodeURIComponent(cand.path), {cache:"no-store"});
         const d = await r.json();
         if (d.ok) {
-          showToastModern(`✓ Récupéré : ${d.stats.positions} positions, ${d.stats.transactions} tx, ${d.stats.depots} dépôts`, "ok");
+          showToastModern(`Récupéré : ${d.stats.positions} positions, ${d.stats.transactions} tx, ${d.stats.depots} dépôts`, "ok");
           setTimeout(() => location.reload(), 800);
         } else {
           _degelerEnregistrements();
-          showToastModern("✗ Erreur : " + (d.error || "inconnue"), "err");
+          showToastModern("Erreur : " + (d.error || "inconnue"), "err");
           btn.style.opacity = "1";
         }
       } catch(e) {
         _degelerEnregistrements();
-        showToastModern("✗ " + e.message, "err");
+        showToastModern("" + e.message, "err");
         btn.style.opacity = "1";
       }
     };
@@ -11012,8 +11220,8 @@ async function openDataFolder() {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.open_data_folder) {
     try {
       const r = await window.pywebview.api.open_data_folder();
-      if (!r || !r.ok) showToastModern("✗ Impossible d'ouvrir le dossier", "err");
-    } catch(e) { showToastModern("✗ " + e.message, "err"); }
+      if (!r || !r.ok) showToastModern("Impossible d'ouvrir le dossier", "err");
+    } catch(e) { showToastModern("" + e.message, "err"); }
   } else {
     showToastModern("Disponible uniquement dans l'app", "warn");
   }
@@ -11057,11 +11265,43 @@ function applyAccent(color) {
     style.id = "accent-style";
     document.head.appendChild(style);
   }
-  style.textContent = `.btn-primary       { background:${color}; border-color:${color}; color:#fff; }
+  // Texte posé sur l'accent : blanc s'il contraste assez (4,5:1), sinon foncé (A11Y-06)
+  const surAccent = _texteSurAccent(color);
+  document.documentElement.style.setProperty("--on-accent", surAccent);
+  style.textContent = `.btn-primary       { background:${color}; border-color:${color}; color:${surAccent}; }
+                       .mkpi.accent .mkpi-lbl, .mkpi.accent .mkpi-sub, .mkpi.accent .mkpi-val { color:${surAccent}; }
                        .btn-primary:hover { background:${dark};  border-color:${dark};  }
                        .topbar-logo       { background:${color}; }
                        .titlebar-logo     { background:${color}; }
                        .sidebar-item.active { background:${color}; color:#fff; }`;
+}
+
+/* Couleur du texte posé sur un fond `hex` : blanc si son contraste WCAG est
+   d'au moins 4,5:1, sinon un brun presque noir. */
+/* Taille du texte de toute l'app (A11Y-16) : la fenêtre ne permet pas Ctrl+molette */
+function applyZoom(z) {
+  z = [1, 1.15, 1.3].includes(+z) ? +z : 1;
+  document.documentElement.style.zoom = z === 1 ? "" : String(z);
+  document.querySelectorAll("[data-zoom-btn]").forEach(b => {
+    const actif = +b.dataset.zoomBtn === z;
+    b.classList.toggle("btn-primary", actif);
+    b.setAttribute("aria-pressed", actif ? "true" : "false");
+  });
+}
+function setZoomPref(z) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.zoom = z;
+  applyZoom(z);
+  _enregistrerUiPrefs();
+}
+
+function _texteSurAccent(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  if (!m) return "#fff";
+  const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const n = parseInt(m[1], 16);
+  const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return (1.05 / (L + 0.05)) >= 4.5 ? "#fff" : "#1f1a14";
 }
 
 function _renderAccentPicker() {
@@ -11432,6 +11672,12 @@ async function svRestore(path, when) {
           + (res.safety ? "État précédent conservé ici :\n" + res.safety + "\n\n" : "")
           + "L'application va se recharger.");
       location.reload();
+    } else if (res && res.safety) {
+      // Échec en cours de route : une partie des fichiers est déjà restaurée.
+      // Dégeler laisserait l'état en mémoire réécrire par-dessus : on recharge.
+      alert("La restauration s'est arrêtée en route : " + (res.error || "") + "\n\n"
+          + "L'état d'avant est conservé ici :\n" + res.safety + "\n\nL'application va se recharger.");
+      location.reload();
     } else {
       _degelerEnregistrements();
       showToastModern((res && res.error) || "Restauration impossible", "err");
@@ -11554,14 +11800,14 @@ async function saveConfig() {
       if (ok) pinSaved = true;
     }
   } else if (pinVal.length > 0 && pinVal.length < 4) {
-    showToastModern("⚠ PIN incomplet (4 chiffres requis)", "warn");
+    showToastModern("PIN incomplet (4 chiffres requis)", "warn");
   }
   // Note : pour SUPPRIMER un PIN, il faut cliquer le bouton "Désactiver le PIN"
   // (qui appelle disablePinNow). Saisir des cases vides = no-op pur.
   closeOv("ov-config");
   renderPeaInfo();
   updateGreeting();
-  if (pinSaved) showToastModern("✓ PIN enregistré (demandé au prochain démarrage)", "ok");
+  if (pinSaved) showToastModern("PIN enregistré (demandé au prochain démarrage)", "ok");
 }
 
 /* ─── Render all + init ─── */
@@ -11601,9 +11847,9 @@ const STRAT_TEMPLATES = [
       const sorted = eps.filter(x => x.e.val != null).sort((a,b)=>b.e.val-a.e.val);
       const top = sorted[0];
       const p = (top.e.val/tv)*100;
-      if (p <= max - 5)  return {state:"ok",   msg:`Plus grosse ligne ${top.p.name} : ${p.toFixed(1)}%`};
-      if (p <= max)      return {state:"warn", msg:`Plus grosse ligne ${top.p.name} : ${p.toFixed(1)}% (proche du seuil)`};
-      return {state:"err", msg:`${top.p.name} dépasse le seuil : ${p.toFixed(1)}% > ${max}%`};
+      if (p <= max - 5)  return {state:"ok",   msg:`Plus grosse ligne ${top.p.name} : ${pctFr(p, 1)}`};
+      if (p <= max)      return {state:"warn", msg:`Plus grosse ligne ${top.p.name} : ${pctFr(p, 1)} (proche du seuil)`};
+      return {state:"err", msg:`${top.p.name} dépasse le seuil : ${pctFr(p, 1)} > ${max}%`};
     }
   },
   {
@@ -11618,9 +11864,9 @@ const STRAT_TEMPLATES = [
       if (tv === 0) return null;
       const etfV = eps.filter(x => x.p.type==="etf").reduce((s,x)=>s+(x.e.val||0),0);
       const p = (etfV/tv)*100;
-      if (p >= min + 5)  return {state:"ok",   msg:`ETF : ${p.toFixed(1)}%`};
-      if (p >= min)      return {state:"warn", msg:`ETF : ${p.toFixed(1)}% (proche du seuil)`};
-      return {state:"err", msg:`ETF : ${p.toFixed(1)}% < ${min}%`};
+      if (p >= min + 5)  return {state:"ok",   msg:`ETF : ${pctFr(p, 1)}`};
+      if (p >= min)      return {state:"warn", msg:`ETF : ${pctFr(p, 1)} (proche du seuil)`};
+      return {state:"err", msg:`ETF : ${pctFr(p, 1)} < ${min}%`};
     }
   },
   {
@@ -11648,9 +11894,9 @@ const STRAT_TEMPLATES = [
       if (tv === 0) return null;
       const actV = eps.filter(x => x.p.type==="action").reduce((s,x)=>s+(x.e.val||0),0);
       const p = (actV/tv)*100;
-      if (p <= max - 5)  return {state:"ok",   msg:`Actions : ${p.toFixed(1)}%`};
-      if (p <= max)      return {state:"warn", msg:`Actions : ${p.toFixed(1)}% (proche du seuil)`};
-      return {state:"err", msg:`Actions : ${p.toFixed(1)}% > ${max}%`};
+      if (p <= max - 5)  return {state:"ok",   msg:`Actions : ${pctFr(p, 1)}`};
+      if (p <= max)      return {state:"warn", msg:`Actions : ${pctFr(p, 1)} (proche du seuil)`};
+      return {state:"err", msg:`Actions : ${pctFr(p, 1)} > ${max}%`};
     }
   },
   {
@@ -11681,7 +11927,7 @@ const STRAT_TEMPLATES = [
         return {name: p.name, latentPct};
       }).filter(x => x.latentPct != null && x.latentPct < -max);
       if (!bad.length) return {state:"ok", msg:`Aucune ligne avec -${max}% ou plus`};
-      const list = bad.map(x => `${x.name} (${x.latentPct.toFixed(1)}%)`).join(", ");
+      const list = bad.map(x => `${x.name} (${pctFr(x.latentPct, 1)})`).join(", ");
       return {state:"err", msg:`Lignes en forte moins-value : ${list}`};
     }
   },
@@ -11711,9 +11957,9 @@ const STRAT_TEMPLATES = [
       const totalInv = eps.reduce((s,e) => s + (e.totalCost||0), 0);
       if (totalInv === 0) return null;
       const p = (totalPv / totalInv) * 100;
-      if (p >= 5)   return {state:"ok",   msg:`Performance globale : +${p.toFixed(1)}%`};
-      if (p >= 0)   return {state:"warn", msg:`Performance globale : +${p.toFixed(1)}% (légèrement positive)`};
-      return {state:"err", msg:`Performance globale : ${p.toFixed(1)}% — portefeuille en perte`};
+      if (p >= 5)   return {state:"ok",   msg:`Performance globale : +${pctFr(p, 1)}`};
+      if (p >= 0)   return {state:"warn", msg:`Performance globale : +${pctFr(p, 1)} (légèrement positive)`};
+      return {state:"err", msg:`Performance globale : ${pctFr(p, 1)} — portefeuille en perte`};
     }
   },
 
@@ -11788,11 +12034,11 @@ const STRAT_TEMPLATES = [
     param: {key: "min", label: "Utilisation min du plafond (%)", default: 30},
     check: (params) => {
       const min = parseFloat(params.min) || 30;
-      const dep = (S.depots||[]).reduce((s,d) => s + (d.amount||0), 0);
+      const dep = peaVersePlafond();
       const p = (dep / 150000) * 100;
-      if (p >= min + 10)  return {state:"ok",   msg:`Plafond utilisé : ${p.toFixed(1)}% (${dep.toFixed(0)} €)`};
+      if (p >= min + 10)  return {state:"ok",   msg:`Plafond utilisé : ${p.toFixed(1)}% (${Math.round(dep).toLocaleString("fr-FR")} €)`};
       if (p >= min)       return {state:"warn", msg:`Plafond utilisé : ${p.toFixed(1)}% (proche de l'objectif)`};
-      return {state:"err", msg:`Plafond utilisé : ${p.toFixed(1)}% — encore ${(150000-dep).toFixed(0)} € disponibles`};
+      return {state:"err", msg:`Plafond utilisé : ${p.toFixed(1)}% — encore ${Math.round(150000-dep).toLocaleString("fr-FR")} € disponibles`};
     }
   },
 
@@ -11808,9 +12054,9 @@ const STRAT_TEMPLATES = [
       const totalFee = (S.transactions||[]).reduce((s,t) => s + (t.frais||0), 0);
       if (totalDep === 0) return null;
       const p = (totalFee/totalDep)*100;
-      if (p <= max * 0.7)  return {state:"ok",   msg:`Frais : ${totalFee.toFixed(2)} € (${p.toFixed(2)}% du déposé)`};
-      if (p <= max)        return {state:"warn", msg:`Frais : ${totalFee.toFixed(2)} € (${p.toFixed(2)}%)`};
-      return {state:"err", msg:`Frais : ${p.toFixed(2)}% — dépasse l'objectif ${max}%`};
+      if (p <= max * 0.7)  return {state:"ok",   msg:`Frais : ${eur(totalFee)} (${pctFr(p, 2)} des versements)`};
+      if (p <= max)        return {state:"warn", msg:`Frais : ${eur(totalFee)} (${pctFr(p, 2)})`};
+      return {state:"err", msg:`Frais : ${pctFr(p, 2)}, au-dessus de l'objectif de ${max} %`};
     }
   },
   {
@@ -12159,7 +12405,7 @@ function renderStrat() {
 
     // Badge auto / toggle manuel
     const badgeOrToggle = checkFn
-      ? `<span class="badge ba" style="font-size:10px">auto</span>`
+      ? `<span class="badge" style="font-size:10px;background:var(--accent-soft);color:var(--accent-text)">auto</span>`
       : `<button class="strat-validate-btn ${r.validated===true?'ok':r.validated===false?'err':'neu'}"
            onclick="toggleRuleValidated(${r.id})"
            title="${r.validated===true?'Cliquer pour marquer non respectée':r.validated===false?'Cliquer pour réinitialiser':'Cliquer pour valider'}">
@@ -12302,7 +12548,7 @@ function _renderTplList(q) {
           <div style="font-weight:700;font-size:12px">${escHtml(t.title)}</div>
           <div style="font-size:10px;color:var(--txt2);margin-top:2px">${escHtml(t.text)}</div>
           <div style="margin-top:4px">
-            ${t.check ? '<span class="badge ba" style="font-size:10px">auto</span>' : '<span class="badge bw" style="font-size:10px">manuelle</span>'}
+            ${t.check ? '<span class="badge" style="font-size:10px;background:var(--accent-soft);color:var(--accent-text)">auto</span>' : '<span class="badge bw" style="font-size:10px">manuelle</span>'}
             ${t.param ? `<span style="font-size:10px;color:var(--txt3);margin-left:6px">param : ${escHtml(t.param.label)}</span>` : ""}
           </div>
         </div>
@@ -12322,12 +12568,12 @@ function _renderTplList(q) {
   }).join("");
 }
 
-function addFromTemplate(idx) {
+async function addFromTemplate(idx) {
   const tpl = STRAT_TEMPLATES[idx];
   if (!tpl) return;
   let params = {};
   if (tpl.param) {
-    const v = prompt(tpl.param.label + " :", tpl.param.default);
+    const v = await demander(tpl.param.label, tpl.param.default);
     if (v == null || v === "") return;
     params[tpl.param.key] = v;
   }
@@ -12346,7 +12592,7 @@ function addFromTemplate(idx) {
     template: idx,
     params,
     stars:    3,
-    addedAt:  new Date().toISOString().slice(0,10),
+    addedAt:  todayISO(),
   });
   persist(); closeOv("ov-template"); renderStrat();
 }
@@ -12376,7 +12622,7 @@ function saveRule() {
     title:   title,
     text:    document.getElementById("rule-text").value.trim(),
     stars:   3,
-    addedAt: new Date().toISOString().slice(0,10),
+    addedAt: todayISO(),
   });
   persist(); closeOv("ov-rule"); renderStrat();
 }
@@ -12816,7 +13062,12 @@ function pacGratuit(cfg) {
 function pacCoursInfo(ts) {
   if (!ts) return { txt: "heure du cours inconnue", cloture: true };
   const d = new Date(ts * 1000), now = new Date();
-  const j = now.getDay(), mn = now.getHours() * 60 + now.getMinutes();
+  // Jour et heure à Paris, pas ceux du PC : la séance d'Euronext ne bouge
+  // pas avec le fuseau de l'ordinateur (ENV-09)
+  const paris = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {timeZone: "Europe/Paris",
+    weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23"}).formatToParts(now).map(x => [x.type, x.value]));
+  const j = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(paris.weekday);
+  const mn = +paris.hour * 60 + +paris.minute;
   const seance = j >= 1 && j <= 5 && mn >= 9 * 60 && mn < 17 * 60 + 35;
   if (!seance || d.toDateString() !== now.toDateString())
     return { txt: "cours de clôture du " + d.toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"}), cloture: true };
@@ -14023,7 +14274,9 @@ document.addEventListener("DOMContentLoaded", ()=>{
   // Fermer la modale active avec Escape
   document.addEventListener("keydown", e => {
     if (e.key !== "Escape") return;
-    const open = document.querySelector(".ov.open");
+    // La fenêtre du dessus (deux peuvent être ouvertes), pas la première du DOM (A11Y-15)
+    const open = _ovDuDessus() || document.querySelector(".ov.open");
+    if (open && !open.id) { open.classList.remove("open"); return; }
     if (open) {
       const id = open.id;
       closeOv(id);
@@ -14048,7 +14301,7 @@ const NAV_SECTIONS = [
     { id: "div",    label: "Dividendes"     },
     { id: "tx",     label: "Transactions"   },
     { id: "wish",   label: "Wishlist"       },
-    { id: "dep",    label: "Dépôts"         },
+    { id: "dep",    label: "Versements"     },
     { id: "strat",  label: "Stratégie"      },
   ]},
   // Comptes-titres (4.4.0) : les écrans du PEA, sur un CTO (bloc CTO,
@@ -14561,17 +14814,10 @@ function _refreshThemeLabel() {
 async function toggleTheme() {
   const cur  = document.documentElement.getAttribute("data-theme") || "light";
   const next = cur === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", next);
+  // Le même chemin que Paramètres (S.uiPrefs.theme) : le bouton de la barre
+  // latérale écrivait ailleurs, et son choix était perdu au redémarrage (ARC-03)
+  setThemePref(next);
   _refreshThemeLabel();
-  // Sauvegarde dans pea_data.json -> ui.theme
-  if (window.pywebview && window.pywebview.api) {
-    try {
-      const r = await window.pywebview.api.load_data();
-      const d = (r && r.ok && r.data) ? r.data : {};
-      d.ui = d.ui || {}; d.ui.theme = next;
-      await window.pywebview.api.save_data(d);
-    } catch(e) {}
-  }
 }
 
 /* — Toast moderne en bas a droite (en plus du sbadge existant) — */
@@ -14580,17 +14826,21 @@ function showToastModern(msg, kind) {
   if (!stack) {
     stack = document.createElement("div");
     stack.id = "toast-stack"; stack.className = "toast-stack";
+    // Lues par un lecteur d'écran sans qu'on y aille (A11Y-04)
+    stack.setAttribute("role", "status");
+    stack.setAttribute("aria-live", "polite");
     document.body.appendChild(stack);
   }
   const el = document.createElement("div");
   el.className = "toast t-" + (kind === "err" ? "err" : kind === "warn" ? "warn" : "ok");
+  if (kind === "err") el.setAttribute("role", "alert");
   el.textContent = msg;
   stack.appendChild(el);
   setTimeout(() => {
     el.style.transition = "opacity .25s, transform .25s";
     el.style.opacity = "0"; el.style.transform = "translateY(10px)";
     setTimeout(() => el.remove(), 280);
-  }, 3500);
+  }, kind === "err" ? 8000 : 3500);   // une erreur reste le temps d'être lue (A11Y-04)
 }
 
 /* — Indicateur actualisation (#stext dans .refresh-grp) — */
@@ -14609,11 +14859,14 @@ function _setCoursHealth(state, label) {
 const _applyCoursDataOrig = applyCoursData;
 let _refreshInFlight = false;
 let _yahooDownSignale = false;
+let _refaireCours = false;   // demande arrivée pendant une actualisation (ARC-02)
 applyCoursData = async function(opts) {
-  if (_refreshInFlight) return;
+  // Une demande faite pendant une actualisation (ajout d'une ligne, bouton
+  // Actualiser) n'est plus jetée : elle relance une actualisation à la fin
+  if (_refreshInFlight) { _refaireCours = true; return; }
   _refreshInFlight = true;
   const manual = !!(opts && opts.manual);
-  if (manual) showToastModern("↻ Actualisation des cours…", "ok");
+  if (manual) showToastModern("Actualisation des cours…", "ok");
   _setCoursHealth("warn", "Actualisation en cours…");
   try {
     await _applyCoursDataOrig.apply(this);
@@ -14629,11 +14882,11 @@ applyCoursData = async function(opts) {
         + (noms.length > 3 ? "…" : ""));
     } else
     _setCoursHealth("ok", "Dernière actualisation " + t);
-    if (manual) showToastModern("✓ Cours actualisés à " + t, "ok");
+    if (manual) showToastModern("Cours actualisés à " + t, "ok");
   } catch(e) {
     _setCoursHealth("err", _coursEtat === "perime" ? "Yahoo injoignable · derniers cours connus"
                                                    : "Actualisation impossible");
-    if (manual) showToastModern("✗ Yahoo injoignable", "err");
+    if (manual) showToastModern("Yahoo injoignable", "err");
     // Une notification par panne, pas une toutes les 3 min
     if (window.pywebview && window.pywebview.api && !_yahooDownSignale) {
       _yahooDownSignale = true;
@@ -14648,6 +14901,7 @@ applyCoursData = async function(opts) {
     }
   } finally {
     _refreshInFlight = false;
+    if (_refaireCours) { _refaireCours = false; setTimeout(() => applyCoursData(), 0); }
   }
 };
 
@@ -14686,19 +14940,19 @@ async function doExport() {
     showToastModern("Export indisponible hors de l'app", "warn"); return;
   }
   const r = await window.pywebview.api.export_dialog();
-  if (r && r.ok) showToastModern("✓ Export réussi", "ok");
-  else if (r && r.cancelled) {} else showToastModern("⚠ Export échoué", "err");
+  if (r && r.ok) showToastModern("Export réussi", "ok");
+  else if (r && r.cancelled) {} else showToastModern("Export échoué", "err");
 }
 
 async function doImportDialog() {
   if (!(window.pywebview && window.pywebview.api)) {
     showToastModern("Import indisponible hors de l'app", "warn"); return;
   }
-  if (!confirm("Importer remplacera vos données actuelles. Un backup automatique sera créé. Continuer ?")) return;
+  if (!confirm("Importer remplacera tes données actuelles. Une sauvegarde de l'état actuel sera faite avant. Continuer ?")) return;
   await _gelerEnregistrements();   // rien ne doit réécrire l'ancien PEA par-dessus l'import
   const r = await window.pywebview.api.import_dialog();
   if (r && r.ok) {
-    showToastModern("✓ Import réussi — rechargement…", "ok");
+    showToastModern("Import réussi — rechargement…", "ok");
     setTimeout(() => location.reload(), 600);
   } else {
     _degelerEnregistrements();
@@ -14924,8 +15178,10 @@ async function manualCheckUpdate() {
       if (r && r.checked) break;
     }
     if (!r) { status.textContent = "❌ pas de réponse"; return; }
-    if (!r.checked) { status.textContent = "⚠ Délai dépassé — réessayez"; return; }
-    if (r.hasUpdate) {
+    if (!r.checked) { status.textContent = "Pas de réponse à temps : réessaie dans un moment"; return; }
+    if (r.erreur) {
+      status.textContent = r.erreur;
+    } else if (r.hasUpdate) {
       status.textContent = `✓ Mise à jour disponible : v${r.version}`;
       closeOv("ov-config");
       setTimeout(_checkForUpdates, 200);
@@ -15301,8 +15557,17 @@ function _finAdvanceDue(date, rec) {
   const d = new Date(date);
   const freq = rec.frequency;
   if (freq === "weekly")    { d.setDate(d.getDate() + 7); return d; }
-  if (freq === "quarterly") { d.setMonth(d.getMonth() + 3); return d; }
-  if (freq === "yearly")    { d.setFullYear(d.getFullYear() + 1); return d; }
+  // Mois, trimestre, année : même jour que la date de départ, ramené au dernier
+  // jour du mois s'il n'existe pas. setMonth(+1) envoyait le 31 janvier au
+  // 3 mars (février sauté), puis la date glissait (FIN-07)
+  const jour = rec.startDate ? +String(rec.startDate).slice(8, 10) : d.getDate();
+  const plusMois = n => {
+    const r = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    r.setDate(Math.min(jour, _finLastDayOfMonth(r.getFullYear(), r.getMonth())));
+    return r;
+  };
+  if (freq === "quarterly") return plusMois(3);
+  if (freq === "yearly")    return plusMois(12);
   if (freq === "monthly-dom") {
     const dom = rec.dayOfMonth || 1;
     d.setDate(1);
@@ -15312,8 +15577,7 @@ function _finAdvanceDue(date, rec) {
     return d;
   }
   // "monthly" simple
-  d.setMonth(d.getMonth() + 1);
-  return d;
+  return plusMois(1);
 }
 function finFmtAbs(amount) {
   return Math.abs(amount).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
@@ -15780,7 +16044,7 @@ function finValidatePending(idx) {
   const r = finRecById(p.recurrenceId); if (!r) return;
   const inp = document.getElementById("fin-pa-" + idx);
   const amount = Number(inp.value);
-  if (!amount || amount <= 0) { showToastModern("Saisir un montant valide", "err"); inp.focus(); return; }
+  if (!amount || amount <= 0) { showToastModern("Indique un montant supérieur à 0.", "err"); inp.focus(); return; }
   finCreateTxFromRec(r, p.scheduledDate, amount);
   const next = _finAdvanceDue(_finParseISO(r.nextDue), r);
   r.nextDue = _finDateToISO(next);
@@ -15858,7 +16122,7 @@ function finRenderTxList() {
     const src = finSrcById(tx.sourceId);
     const catName = cat ? (finCatIcon(cat) + " " + cat.name) : "—";
     const subPart = sub ? " · " + finSubIcon(sub) + " " + sub.name : "";
-    const pillStyle = cat ? `background:${cat.color}22;color:${cat.color}` : "";
+    const pillStyle = cat ? `background:${cat.color}22;color:color-mix(in srgb, ${cat.color} 45%, var(--txt))` : "";
     const amountStr = (tx.type === "income" ? "+" : "−") + finFmtAbs(Number(tx.amount) || 0);
     const recIcon = tx.recurrenceId ? ` <span title="Issue d'un récurrent" style="color:var(--txt3);font-size:10px">↻</span>` : "";
     return `<div class="fin-tx-row">
@@ -16155,7 +16419,10 @@ function finSaveTx() {
   const srcId  = Number(document.getElementById("fin-tx-src").value);
   const note   = document.getElementById("fin-tx-note").value.trim();
   if (!date || !amount || amount <= 0 || !label || !catId || !srcId) {
-    showToastModern("Vérifiez les champs obligatoires", "err"); return;
+    // Le champ qui manque, nommé (UX-05)
+    const manque = !date ? "la date" : !(amount > 0) ? "un montant supérieur à 0" : !label ? "le libellé"
+                 : !catId ? "la catégorie" : "la source";
+    showToastModern("Indique " + manque + ".", "err"); return;
   }
   if (_finEditingTxId) {
     const tx = F.transactions.find(t => t.id === _finEditingTxId);
@@ -16254,21 +16521,21 @@ function finAddCategory() {
   showToastModern("Catégorie ajoutée", "ok");
 }
 function finDeleteCat(id) {
-  if (finIsCatUsed(id)) { showToastModern("Réaffectez d'abord les transactions/récurrents liés", "err"); return; }
+  if (finIsCatUsed(id)) { showToastModern("Cette catégorie sert encore : change d'abord la catégorie de ses transactions et récurrents.", "err"); return; }
   if (!confirm("Supprimer cette catégorie ?")) return;
   F.categories = F.categories.filter(c => c.id !== id);
   finPersist(); finRenderCatsList(); finRefreshFilters(); finRenderAll();
 }
-function finRenameCat(id) {
+async function finRenameCat(id) {
   const c = finCatById(id); if (!c) return;
-  const v = prompt("Nouveau nom :", c.name);
+  const v = await demander("Nouveau nom de la catégorie", c.name);
   if (!v || !v.trim()) return;
   c.name = v.trim();
   finPersist(); finRenderCatsList(); finRefreshFilters(); finRenderAll();
 }
-function finChangeColor(id) {
+async function finChangeColor(id) {
   const c = finCatById(id); if (!c) return;
-  const v = prompt("Code couleur (hex) :", c.color || "#7c3aed");
+  const v = await demander("Couleur de la catégorie", c.color || "#7c3aed", {type: "color"});
   if (!v) return;
   c.color = v.trim();
   finPersist(); finRenderCatsList(); finRenderAll();
@@ -16302,15 +16569,15 @@ function finChangeSubIcon(catId, subId) {
     finPersist(); finRenderCatsList(); finRenderAll();
   });
 }
-function finRenameSub(catId, subId) {
+async function finRenameSub(catId, subId) {
   const s = finSubById(catId, subId); if (!s) return;
-  const v = prompt("Nouveau nom :", s.name);
+  const v = await demander("Nouveau nom de la sous-catégorie", s.name);
   if (!v || !v.trim()) return;
   s.name = v.trim();
   finPersist(); finRenderCatsList(); finRenderAll();
 }
 function finDeleteSub(catId, subId) {
-  if (finIsSubUsed(catId, subId)) { showToastModern("Sous-catégorie utilisée par des transactions/récurrents", "err"); return; }
+  if (finIsSubUsed(catId, subId)) { showToastModern("Cette sous-catégorie sert encore : change d'abord celle de ses transactions et récurrents.", "err"); return; }
   if (!confirm("Supprimer cette sous-catégorie ?")) return;
   const c = finCatById(catId); if (!c) return;
   c.subs = (c.subs || []).filter(s => s.id !== subId);
@@ -16349,15 +16616,15 @@ function finAddSource() {
   document.getElementById("fin-newsrc-name").value = "";
   finPersist(); finRenderSrcsList(); finRefreshFilters();
 }
-function finRenameSrc(id) {
+async function finRenameSrc(id) {
   const s = finSrcById(id); if (!s) return;
-  const v = prompt("Nouveau nom :", s.name);
+  const v = await demander("Nouveau nom de la source", s.name);
   if (!v || !v.trim()) return;
   s.name = v.trim();
   finPersist(); finRenderSrcsList(); finRefreshFilters(); finRenderAll();
 }
 function finDeleteSrc(id) {
-  if (finIsSrcUsed(id)) { showToastModern("Source utilisée par des transactions/récurrents", "err"); return; }
+  if (finIsSrcUsed(id)) { showToastModern("Cette source sert encore : change d'abord celle de ses transactions et récurrents.", "err"); return; }
   if (!confirm("Supprimer cette source ?")) return;
   F.sources = F.sources.filter(s => s.id !== id);
   finPersist(); finRenderSrcsList(); finRefreshFilters();
@@ -16373,7 +16640,7 @@ function finOpenRecurrences() {
 function finRenderRecsList() {
   const list = document.getElementById("fin-recs-list");
   if (!F.recurrences.length) {
-    list.innerHTML = `<div class="fin-empty">Aucun récurrent. Cliquez sur + Nouveau pour créer un abonnement, un loyer, etc.</div>`;
+    list.innerHTML = `<div class="fin-empty">Aucun récurrent. Clique sur « + Nouveau » pour créer un abonnement, un loyer…</div>`;
     return;
   }
   list.innerHTML = F.recurrences.map(r => {
@@ -16457,7 +16724,9 @@ function finSaveRec() {
   const dom    = Number(document.getElementById("fin-rec-dom").value) || 1;
   const startD = document.getElementById("fin-rec-start").value;
   if (!label || !amount || amount <= 0 || !catId || !srcId || !startD) {
-    showToastModern("Vérifiez les champs obligatoires", "err"); return;
+    const manque = !label ? "le libellé" : !(amount > 0) ? "un montant supérieur à 0" : !catId ? "la catégorie"
+                 : !srcId ? "la source" : "la date de départ";
+    showToastModern("Indique " + manque + ".", "err"); return;
   }
   let nextDue = startD;
   if (freq === "monthly-dom") {
@@ -17236,7 +17505,7 @@ async function spAddRoutine() {
 async function spRenameRoutine(id) {
   const r = spRoutines().find(x => x.id === id);
   if (!r) return;
-  const v = prompt("Nouveau nom :", r.name);
+  const v = await demander("Nouveau nom de la routine", r.name);
   if (v === null) return;
   const name = v.trim();
   if (!name) return;
@@ -17302,7 +17571,7 @@ async function spAddSubtype() {
 
 async function spRenameSubtype(i) {
   const list = spSubtypes(_spSport);
-  const v = prompt("Nouveau nom :", list[i]);
+  const v = await demander("Nouveau nom", list[i]);
   if (v === null) return;
   const name = v.trim();
   if (!name) return;
@@ -17828,7 +18097,9 @@ function prAVDepositInterest(depot, schedule, asOf) {
     const yEnd   = (y === y1) ? asOf  : ((y + 1) + "-01-01");
     const days = prDaysBetween(yStart, yEnd);
     if (days <= 0) continue;
-    capital += capital * (prRateForYear(y, schedule) / 100) * days / 365;
+    // Divisé par la vraie durée de l'année (366 jours une année bissextile, FIN-14)
+    const jAn = prDaysBetween(y + "-01-01", (y + 1) + "-01-01");
+    capital += capital * (prRateForYear(y, schedule) / 100) * days / jAn;
   }
   return capital - initial;
 }
@@ -17858,7 +18129,11 @@ function prAvContratTotals(c) {
     interets += prAVDepositInterest(prAvDepotInvesti(c, d), c.taux_annuels, asOf);
   }
   const investi = depose - frais;
-  return { depose, frais, investi, interets, valeur: investi + interets,
+  // L'année en cours sans taux saisi est comptée au dernier taux connu : on le
+  // dit à l'écran au lieu de le taire (FIN-14)
+  const an = parseInt(asOf.slice(0, 4), 10);
+  const estime = depose > 0 && !(c.taux_annuels || []).some(t => prN(t.annee) === an);
+  return { depose, frais, investi, interets, valeur: investi + interets, estime,
            perf: investi > 0 ? (interets / investi) * 100 : null };
 }
 
@@ -17966,10 +18241,7 @@ function prAllFrais(jusqua) {
 /** « EPA:WPEA » (notation du PEA) → « WPEA.PA » (notation Yahoo de ce module),
     comme to_yahoo() dans server.py. */
 function prYahoo(asset) {
-  const t = String(asset || "").trim().toUpperCase();
-  const m = { "EPA:": ".PA", "AMS:": ".AS", "ETR:": ".DE", "LON:": ".L" };
-  for (const p in m) if (t.startsWith(p)) return t.slice(p.length) + m[p];
-  return t;
+  return versYahoo(String(asset || "").trim().toUpperCase());
 }
 
 /**
@@ -18054,7 +18326,11 @@ function prAVenir(x, auj) { return !!(x && x.date && x.date > (auj || prToday())
     d'accueil passent tous par ici. */
 function prCapitalDu(auj) {
   const cumul = l => prSumBy((l || []).filter(x => prPasse(x, auj)), "montant");
-  return Math.max(0, cumul(PR.versements) - cumul(PR.remboursements));
+  // Un remboursement ne retire du capital dû que sa part de capital, quand elle
+  // est saisie (le reste est de l'intérêt) ; sans elle, tout son montant (FIN-03)
+  const capital = (PR.remboursements || []).filter(x => prPasse(x, auj))
+    .reduce((t, x) => t + (x.capital != null ? prN(x.capital) : prN(x.montant)), 0);
+  return Math.max(0, cumul(PR.versements) - capital);
 }
 
 function prOverview() {
@@ -18074,17 +18350,35 @@ function prOverview() {
 
   // Regroupement achats + ventes par ticker
   const byTicker = {};
-  const slot = t => (byTicker[t] = byTicker[t] || { ticker: t, debite: 0, qteA: 0, investA: 0, qteV: 0, credite: 0 });
+  const slot = t => (byTicker[t] = byTicker[t] || { ticker: t, debite: 0, qteA: 0, investA: 0, qteV: 0, credite: 0, ev: [] });
   for (const a of ordres.achats) {
     const e = slot((a.ticker || "").toUpperCase() || "—");
     e.debite  += prN(a.montant);
     e.qteA    += prN(a.quantite);
     e.investA += prN(a.quantite) * prN(a.cours_achat);
+    e.ev.push({ date: String(a.date || ""), achat: true, q: prN(a.quantite), c: prN(a.quantite) * prN(a.cours_achat) });
   }
   for (const v of ordres.ventes) {
     const e = slot((v.ticker || "").toUpperCase() || "—");
     e.qteV    += prN(v.quantite);
     e.credite += prN(v.montant);
+    e.ev.push({ date: String(v.date || ""), achat: false, q: prN(v.quantite), m: prN(v.montant) });
+  }
+  // Prix moyen pondéré glissant, ordres rejoués dans l'ordre des dates (achats
+  // d'abord le même jour), comme computePos pour le PEA : la moyenne de tous les
+  // achats donnait un autre PRU après une vente (FIN-12)
+  for (const t in byTicker) {
+    const e = byTicker[t];
+    let qte = 0, cout = 0, realise = 0, pmp = null;
+    e.ev.sort((x, y) => x.date.localeCompare(y.date) || (y.achat - x.achat)).forEach(o => {
+      if (o.achat) { qte += o.q; cout += o.c; pmp = qte > 0 ? cout / qte : pmp; }
+      else if (pmp != null) {
+        const q = Math.min(o.q, qte);
+        realise += o.m - o.q * pmp; cout -= q * pmp; qte -= q;
+        if (qte <= 0.00001) { qte = 0; cout = 0; }
+      }
+    });
+    e.pmp = pmp; e.cout = cout; e.realiseGlissant = realise;
   }
 
   const positions = [];
@@ -18093,10 +18387,10 @@ function prOverview() {
 
   for (const t in byTicker) {
     const e   = byTicker[t];
-    const pru = e.qteA > 0 ? e.investA / e.qteA : null;
+    const pru = e.pmp;
     const qte = e.qteA - e.qteV;                       // parts encore detenues
-    const investRestant = (pru != null) ? qte * pru : 0;
-    const realise = (pru != null) ? e.credite - e.qteV * pru : 0;
+    const investRestant = (pru != null) ? e.cout : 0;
+    const realise = (pru != null) ? e.realiseGlissant : 0;
     const q = prCours(t);
     const cours  = q ? q.prix : null;
     const valeur = (cours != null && qte > 0) ? qte * cours : null;
@@ -18159,7 +18453,11 @@ function prOverview() {
     capital_du, capital_attente, frais_total, valeur_portefeuille, benefice_net,
     // Sur le montant emprunté, pas sur le capital dû : avant la 2e tranche, celui-ci
     // n'en compte que la moitié et diviserait les mensualités restantes par deux
-    mensualites_restantes: mensualite > 0 ? Math.ceil(Math.max(0, prN(PR.pret.montant) - remb_total) / mensualite) : 0,
+    // La durée moins les mensualités payées, comme la tuile de l'accueil (les deux
+    // donnaient deux nombres différents) ; à défaut de durée, l'ancien calcul (FIN-03)
+    mensualites_restantes: prN(PR.pret.duree_remboursement) > 0
+      ? Math.max(0, prN(PR.pret.duree_remboursement) - (PR.remboursements || []).filter(x => prPasse(x, auj)).length)
+      : (mensualite > 0 ? Math.ceil(Math.max(0, prN(PR.pret.montant) - remb_total) / mensualite) : 0),
     mensualites_payees: (PR.remboursements || []).filter(x => prPasse(x, auj)).length,
     versements_a_venir,
   };
@@ -18495,7 +18793,7 @@ function prRenderAV(o) {
         <div class="mkpi"><span class="mkpi-lbl">Déposé</span><span class="mkpi-val">${prEur(t.depose)}</span>
           <span class="mkpi-sub">${prN(c.frais_versement) > 0 ? `dont ${prEur(t.frais)} de frais (${prNum(prN(c.frais_versement))} %)` : "sans frais sur versements"}</span></div>
         <div class="mkpi pos"><span class="mkpi-lbl">Intérêts</span><span class="mkpi-val">${prEur(t.interets)}</span>
-          <span class="mkpi-sub">${prPct(t.perf)}</span></div>
+          <span class="mkpi-sub">${prPct(t.perf)}${t.estime ? " · " + new Date().getFullYear() + " estimé au dernier taux connu" : ""}</span></div>
         <div class="mkpi"><span class="mkpi-lbl">Valeur</span><span class="mkpi-val">${prEur(t.valeur)}</span></div>
       </div>
       <div class="pr-split">
@@ -18755,7 +19053,7 @@ function prPeaModal(id) {
     data => {
       const ticker = (data.ticker || "").trim().toUpperCase().replace(/[:;\s]/g, ".");
       const montant = prN(data.montant), quantite = prN(data.quantite), cours = prN(data.cours_achat);
-      if (!data.date || !ticker || !quantite) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !ticker || !quantite) { showToastModern("Indique la date, le titre et la quantité de parts.", "err"); return false; }
       if (a) Object.assign(a, { date: data.date, ticker, montant, quantite, cours_achat: cours });
       else PR.pea.achats.push({ id: prNewId(), date: data.date, ticker, montant, quantite, cours_achat: cours });
       prSave(a ? "Achat modifié" : "Achat ajouté");
@@ -18786,7 +19084,7 @@ function prVenteModal(id) {
     data => {
       const ticker = (data.ticker || "").trim().toUpperCase();
       const qte = prN(data.quantite), cours = prN(data.cours_vente), montant = prN(data.montant);
-      if (!data.date || !ticker || !qte || !montant) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !ticker || !qte || !montant) { showToastModern("Indique la date, le titre, la quantité vendue et le montant reçu.", "err"); return false; }
       const pos = o.positions.find(p => p.ticker === ticker);
       const dejaVendu = v && (v.ticker || "").toUpperCase() === ticker ? prN(v.quantite) : 0;
       if (pos && qte > pos.qte + dejaVendu + 0.00001) {
@@ -18840,7 +19138,7 @@ function prAvTauxModal(cid, annee) {
     </div>`,
     data => {
       const y = parseInt(data.annee, 10);
-      if (!y) { showToastModern("Année invalide", "err"); return false; }
+      if (!y) { showToastModern("Indique l'année (par exemple 2026).", "err"); return false; }
       c.taux_annuels = (c.taux_annuels || []).filter(x => prN(x.annee) !== y).concat([{ annee: y, taux: prN(data.taux) }]);
       prSave("Taux enregistré");
     }, "Enregistrer");
@@ -18866,7 +19164,7 @@ function prAvDepotModal(cid, id) {
     ${prFg("Note", "note", "text", d ? d.note : "", 'placeholder="Optionnel"')}`,
     data => {
       const m = prN(data.montant);
-      if (!data.date || !m) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !m) { showToastModern("Indique la date et un montant supérieur à 0.", "err"); return false; }
       if (d) Object.assign(d, { date: data.date, montant: m, note: data.note || "" });
       else c.depots = (c.depots || []).concat([{ id: prNewId(), date: data.date, montant: m, note: data.note || "" }]);
       prSave(d ? "Dépôt modifié" : "Dépôt ajouté");
@@ -18889,7 +19187,7 @@ function prLivTauxModal(id) {
       ${prFg("Taux (%)", "taux", "number", h ? h.taux : "", 'step="0.01" required')}
     </div>`,
     data => {
-      if (!data.date) { showToastModern("Date invalide", "err"); return false; }
+      if (!data.date) { showToastModern("Indique la date.", "err"); return false; }
       if (h) Object.assign(h, { date: data.date, taux: prN(data.taux) });
       else PR.liv.taux_history.push({ id: prNewId(), date: data.date, taux: prN(data.taux) });
       prSave("Taux enregistré");
@@ -18912,7 +19210,7 @@ function prLivMovModal(id, forcedType) {
     ${prFg("Note", "note", "text", m ? m.note : "", 'placeholder="Optionnel"')}`,
     data => {
       const amt = prN(data.montant);
-      if (!data.date || !amt) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !amt) { showToastModern("Indique la date et un montant supérieur à 0.", "err"); return false; }
       const payload = { date: data.date, type: data.type || "depot", montant: amt, note: data.note || "" };
       if (m) Object.assign(m, payload);
       else PR.liv.mouvements.push(Object.assign({ id: prNewId() }, payload));
@@ -18929,7 +19227,7 @@ function prVersModal(id) {
     </div>`,
     data => {
       const m = prN(data.montant);
-      if (!data.date || !m) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !m) { showToastModern("Indique la date et un montant supérieur à 0.", "err"); return false; }
       if (v) Object.assign(v, { date: data.date, montant: m });
       else PR.versements.push({ id: prNewId(), date: data.date, montant: m });
       prSave("Versement enregistré");
@@ -18942,12 +19240,18 @@ function prRembModal(id) {
     <div class="fg-row">
       ${prFg("Date", "date", "date", r ? r.date : prToday(), "required")}
       ${prFg("Montant (€)", "montant", "number", r ? r.montant : (prN(PR.pret.mensualite) || ""), 'step="0.01" min="0" required')}
-    </div>`,
+    </div>
+    <div class="fg-row">
+      ${prFg("Dont capital (€, facultatif)", "capital", "number", r && r.capital != null ? r.capital : "", 'step="0.01" min="0"')}
+    </div>
+    <p style="font-size:12px;color:var(--txt2);margin:0">Pour un prêt avec intérêts : la part de capital lue sur l'échéancier de la banque. Vide : toute la mensualité rembourse le capital (prêt à 0 %).</p>`,
     data => {
       const m = prN(data.montant);
-      if (!data.date || !m) { showToastModern("Champs invalides", "err"); return false; }
-      if (r) Object.assign(r, { date: data.date, montant: m });
-      else PR.remboursements.push({ id: prNewId(), date: data.date, montant: m });
+      const cap = String(data.capital || "").trim() === "" ? null : prN(data.capital);
+      if (!data.date || !m) { showToastModern("Indique la date et le montant du remboursement.", "err"); return false; }
+      if (cap != null && (cap < 0 || cap > m)) { showToastModern("La part de capital doit être comprise entre 0 et le montant.", "err"); return false; }
+      if (r) { Object.assign(r, { date: data.date, montant: m }); if (cap == null) delete r.capital; else r.capital = cap; }
+      else PR.remboursements.push(Object.assign({ id: prNewId(), date: data.date, montant: m }, cap == null ? {} : { capital: cap }));
       prSave("Remboursement enregistré");
     }, "Enregistrer");
 }
@@ -18962,7 +19266,7 @@ function prFraisModal(id) {
     ${prFg("Libellé", "label", "text", f ? f.label : "", 'placeholder="Ex. frais de tenue de compte"')}`,
     data => {
       const m = prN(data.montant);
-      if (!data.date || !m) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !m) { showToastModern("Indique la date et un montant supérieur à 0.", "err"); return false; }
       if (f) Object.assign(f, { date: data.date, montant: m, label: data.label || "" });
       else PR.frais.push({ id: prNewId(), date: data.date, montant: m, label: data.label || "" });
       prSave("Frais enregistré");
@@ -18989,7 +19293,7 @@ function prRecModal(id) {
       Il ne compte qu'une fois passé. ${r ? "Le montant ci-dessus est celui de départ : pour un changement de tarif, utilise le bouton <i class=\"ph ph-currency-eur\"></i> de la ligne, les prélèvements passés gardent leur montant." : ""}</div>`,
     data => {
       const m = prN(data.montant), nb = parseInt(data.nb_occurrences, 10) || 0;
-      if (!data.date_debut || !m || nb < 0) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date_debut || !m || nb < 0) { showToastModern("Indique la date de début et un montant positif.", "err"); return false; }
       const payload = { date_debut: data.date_debut, montant: m, label: data.label || "",
                         frequence: data.frequence || "mensuelle", nb_occurrences: nb };
       if (r) Object.assign(r, payload);
@@ -19010,7 +19314,7 @@ function prPalierModal(recId) {
     </div>
     <div class="m-note" style="margin-bottom:0">Montant actuel : ${prEur(prTarif(r, prToday()))}. Les prélèvements datés d'avant gardent leur montant.</div>`,
     data => {
-      if (!data.date || data.montant === "") { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || data.montant === "") { showToastModern("Indique la date et le montant.", "err"); return false; }
       r.paliers = (r.paliers || []).filter(p => p.date !== data.date)
         .concat([{ id: prNewId(), date: data.date, montant: prN(data.montant) }]);
       prSave("Nouveau montant enregistré");
@@ -19040,7 +19344,7 @@ function prFraisRembModal(id, recId) {
     ${prFg("Libellé", "label", "text", label, 'placeholder="Ex. frais de carte de septembre remboursés"')}`,
     data => {
       const m = prN(data.montant);
-      if (!data.date || !m) { showToastModern("Champs invalides", "err"); return false; }
+      if (!data.date || !m) { showToastModern("Indique la date et un montant supérieur à 0.", "err"); return false; }
       const payload = { date: data.date, montant: m, label: data.label || "" };
       if (f) Object.assign(f, payload);
       else (PR.frais_rembourses = PR.frais_rembourses || []).push(Object.assign({ id: prNewId() }, payload));
@@ -19464,7 +19768,7 @@ function saFilterRange(list) {
   if (!days) return list;
   const limite = new Date();
   limite.setDate(limite.getDate() - days);
-  const iso = limite.toISOString().slice(0, 10);
+  const iso = todayISO(limite);
   return list.filter(m => m.date >= iso);
 }
 
@@ -19665,7 +19969,7 @@ async function saRunOcr() {
 
   _saImport.values  = res.values  || {};
   _saImport.missing = res.missing || [];
-  _saImport.date    = res.date || new Date().toISOString().slice(0, 10);
+  _saImport.date    = res.date || todayISO();
   _saImport.time    = res.time || "";
 
   const lus = Object.keys(_saImport.values).length;
@@ -19763,7 +20067,7 @@ function saOpenMesure(id) {
   _saEditId = id;
   const m = id ? saMesures().find(x => x.id === id) : null;
   document.getElementById("sa-mes-title").textContent = m ? "Modifier la pesée" : "Nouvelle pesée";
-  document.getElementById("sa-mes-date").value = m ? m.date : new Date().toISOString().slice(0, 10);
+  document.getElementById("sa-mes-date").value = m ? m.date : todayISO();
   document.getElementById("sa-mes-time").value = m ? (m.time || "") : "";
   document.getElementById("sa-mes-note").value = m ? (m.note || "") : "";
   document.getElementById("sa-mes-del").style.display = m ? "" : "none";
@@ -19848,7 +20152,7 @@ function saRenderGoals() {
     const reste = (p.current !== null) ? Math.abs(Number(g.target) - p.current) : null;
     let ech = "";
     if (g.date) {
-      const j = Math.round((new Date(g.date + "T00:00:00") - new Date()) / 86400000);
+      const j = dashJours(g.date);   // jours de calendrier, pas tranches de 24 h
       ech = j >= 0 ? `J−${j}` : `échéance dépassée de ${Math.abs(j)} j`;
     }
     return `<div class="sa-goal${p.done ? " done" : ""}">
@@ -19917,7 +20221,7 @@ async function saSaveGoal() {
   } else {
     SA.goals.push(Object.assign({
       id: saNextId("goal"), status: "active",
-      createdAt: new Date().toISOString().slice(0, 10),
+      createdAt: todayISO(),
     }, base));
   }
   if (await saSave()) {
@@ -19980,8 +20284,8 @@ async function svPushToUsb(root) {
   // Plusieurs clés branchées : on demande laquelle
   if (res && res.reason === "choose" && (res.drives || []).length) {
     const choix = res.drives.map((d, i) => `${i + 1}. ${(d.letter + " " + d.label).trim()}`).join("\n");
-    const rep = prompt("Plusieurs clés USB sont branchées.\n\n" + choix
-                     + "\n\nLaquelle ? (numéro)", "1");
+    const rep = await demander("Plusieurs clés USB sont branchées", "1",
+                               {texte: choix + "\n\nTape le numéro de la clé.", attrs: 'inputmode="numeric"'});
     if (rep === null) return;
     const idx = parseInt(rep, 10) - 1;
     if (idx >= 0 && idx < res.drives.length) svPushToUsb(res.drives[idx].root);
@@ -20030,7 +20334,7 @@ async function svRenderUsbState() {
   // clé USB, et un nouvel utilisateur voyait un avertissement permanent dès le
   // premier lancement.
   const der = svDerniereCopie(s);
-  const j = der ? Math.floor((new Date() - der) / 86400000) : null;
+  const j = der ? -dashJours(todayISO(der)) : null;   // « Hier » = la veille au calendrier
   if (j === null) parts.push("aucune sauvegarde sur clé pour l'instant");
   else if (j >= svAlerteJours(s)) {
     const quand = `Dernière sauvegarde sur clé il y a ${j} jours`;
@@ -20142,11 +20446,18 @@ function paMoisIso(d) {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
-function paMoisLabel(iso) {
+/* « octobre 2026 » ; court (axes des graphiques) : « oct. 26 ». Le format court
+   partout se lisait comme un jour (« Oct. 26 », UX-11). */
+function paMoisLabel(iso, court) {
   const d = new Date(iso + "T00:00:00");
   if (isNaN(d)) return iso;
-  const s = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return court ? d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" })
+               : d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+}
+/* « d'octobre 2026 », « de mars 2026 » */
+function paDeMois(iso) {
+  const m = paMoisLabel(iso);
+  return (/^[aeiouyh]/i.test(m) ? "d'" : "de ") + m;
 }
 
 /** Dernier relevé connu d'un compte, à une date donnée ou avant. */
@@ -20218,7 +20529,7 @@ function paRenderRappel() {
   box.innerHTML = `<div class="pa-rappel">
     <span style="font-size:18px">📝</span>
     <div style="flex:1">
-      <b>Relevé de ${escHtml(paMoisLabel(_paMois))} pas encore fait.</b>
+      <b>Relevé ${escHtml(paDeMois(_paMois))} pas encore fait.</b>
       <div class="m-note" style="margin:2px 0 0">Quelques chiffres suffisent, les lignes sont pré-remplies.</div>
     </div>
     <button class="btn btn-primary btn-sm" onclick="paOpenSaisie()">Le faire maintenant</button>
@@ -20266,7 +20577,7 @@ function paRenderChart() {
   _paCharts.net = new Chart(cv, {
     type: "line",
     data: {
-      labels: _paSerie.map(p => paMoisLabel(p.date)),
+      labels: _paSerie.map(p => paMoisLabel(p.date, true)),
       datasets: [
         { label: "Net", data: _paSerie.map(p => p.net), borderColor: acc,
           backgroundColor: acc + "22", borderWidth: 2.5, tension: .25, fill: true, pointRadius: 3 },
@@ -20298,7 +20609,7 @@ function paRenderRepartition() {
   const leg  = document.getElementById("pa-legend");
   const cv   = document.getElementById("pa-chart-pie");
   if (!leg || !cv) return;
-  if (when) when.textContent = _paNet ? "au " + paMoisLabel(_paNet.date) : "";
+  if (when) when.textContent = _paNet ? "relevé " + paDeMois(_paNet.date) : "";
 
   const actifs = (_paNet ? _paNet.detail : []).filter(d => d.type !== "dette" && d.montant > 0);
   if (!actifs.length) {
@@ -20348,7 +20659,7 @@ function paRenderComptes() {
       <span>
         <span class="pa-cpt-name">${escHtml(paLabel(c))}</span>
         ${c.auto ? `<span class="pa-cpt-auto">auto</span>` : ""}
-        <div class="pa-cpt-type">${escHtml(t.label)}${last ? " · relevé " + escHtml(paMoisLabel(last.date)) : " · jamais relevé"}</div>
+        <div class="pa-cpt-type">${escHtml(t.label)}${last ? " · relevé " + escHtml(paDeMois(last.date)) : " · jamais relevé"}</div>
       </span>
       <span class="pa-cpt-val">${last ? (t.dette ? "− " : "") + paEur(Math.abs(last.montant)) : "—"}</span>
       <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
@@ -20480,6 +20791,19 @@ async function paDeleteCompte() {
   if (!_paEditCpt) return;
   const n = paReleves().filter(r => r.compteId === _paEditCpt).length;
   const credit = PA.comptes.some(x => x.bien === _paEditCpt);
+  // Clôturer garde l'historique : supprimer efface aussi les relevés passés et
+  // change toute la courbe du patrimoine (FIN-16)
+  if (n && confirm("Clôturer ce compte plutôt que le supprimer ?\n\nClôturer garde ses " + n
+      + " relevé(s) et note 0 € ce mois-ci : ta courbe reste juste. Supprimer efface tout son historique."
+      + "\n\nOK : clôturer. Annuler : continuer vers la suppression.")) {
+    const iso = paMoisIso();
+    const c = PA.comptes.find(x => x.id === _paEditCpt);
+    const r = PA.releves.find(x => x.compteId === _paEditCpt && x.date === iso);
+    if (r) r.montant = 0; else PA.releves.push({ id: paNextId("releve"), compteId: _paEditCpt, date: iso, montant: 0 });
+    if (c) c.archived = true;
+    if (await paSave()) { closeOv("ov-pa-compte"); showToastModern("Compte clôturé, historique gardé", "ok"); paRenderAll(); }
+    return;
+  }
   if (!confirm(`Supprimer ce compte ?${n ? `\n\nSes ${n} relevé(s) seront également supprimés.` : ""}`
     + (credit ? "\n\nLa ligne de son crédit reste dans tes dettes : supprime-la aussi s'il est remboursé." : ""))) return;
   PA.comptes = PA.comptes.filter(x => x.id !== _paEditCpt);
@@ -20631,7 +20955,7 @@ async function paSaveSaisie() {
   if (!n) { showToastModern("Aucune valeur saisie", "warn"); return; }
   if (await paSave()) {
     closeOv("ov-pa-saisie");
-    showToastModern(`Relevé de ${paMoisLabel(iso)} enregistré`, "ok");
+    showToastModern(`Relevé ${paDeMois(iso)} enregistré`, "ok");
     _paMois = paMoisIso();
     paRenderAll();
   }
@@ -20936,12 +21260,17 @@ function acRenderLecteur() {
   const m = L && acMail(L.uid);
   if (!m) {
     box.innerHTML = `<div class="ac-vide"><i class="ph ph-envelope-open"></i><b>Choisis un mail</b>
-      Il s'ouvre ici, images comprises. Ses liens s'ouvrent dans ton navigateur.</div>`;
+      Il s'ouvre ici ; ses images distantes s'affichent sur demande. Ses liens s'ouvrent dans ton navigateur.</div>`;
     return;
   }
   let corps;
   if (L.etat === "pret") {
-    corps = `<div class="ac-cadre"><iframe src="/actus/mail/${encodeURIComponent(L.ticket)}"
+    // Images distantes bloquées tant qu'on ne les demande pas : elles disent à
+    // l'expéditeur quand et d'où le mail est ouvert (audit du 20/10/2026)
+    corps = (L.images ? "" : `<div class="ac-img-barre"><i class="ph ph-image"></i>
+      <span>Images masquées : elles préviendraient l'expéditeur que tu as ouvert ce mail.</span>
+      <button class="btn btn-ghost btn-sm" onclick="AC.lecture.images = true; acRenderLecteur()">Afficher les images</button></div>`)
+      + `<div class="ac-cadre"><iframe src="/actus/mail/${encodeURIComponent(L.ticket)}${L.images ? "?images=1" : ""}"
       sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"
       title="${escHtml(m.objet)}"></iframe></div>`;
   } else if (L.etat === "erreur") {
@@ -21257,7 +21586,7 @@ function ctoDepotsDeduits(e) {
     if (t.type === "Achat") out.push({ id: "a" + t.id, date: d, amount: brutOrdre(t) + (t.frais || 0), note: "" });
     else if (t.type === "Vente") out.push({ id: "v" + t.id, date: d, amount: -(brutOrdre(t) - (t.frais || 0)), note: "" });
   });
-  [...(e.divReceived || []), ...(e.divFuture || [])].forEach(x => {
+  (e.divReceived || []).forEach(x => {   // reçus seulement (FIN-04)
     if (x.date && x.montant && normDate(x.date) <= cut)
       out.push({ id: "d" + x.id, date: normDate(x.date), amount: -x.montant, note: "" });
   });
@@ -21351,12 +21680,11 @@ function ctoAutresTickers() {
 }
 /* Les cours reçus, recopiés sur les positions rangées (comme applyCoursData) */
 function ctoAppliquerCours(prices) {
-  const SUFFIXES = { "EPA:": ".PA", "ETR:": ".DE", "AMS:": ".AS", "LON:": ".L" };
   const maj = e => (e.positions || []).forEach(p => {
-    const pre = Object.keys(SUFFIXES).find(x => p.ticker.startsWith(x));
-    const dot = pre ? p.ticker.slice(pre.length) + SUFFIXES[pre] : p.ticker;
+    const dot = versYahoo(p.ticker);
     const v = prices[p.ticker] || prices[dot] || prices[p.ticker.includes(":") ? p.ticker.split(":")[1] : p.ticker];
     if (v > 0) p.cours = v;
+    else if (_estHorsEuro(p.ticker)) p.cours = null;   // cours hors euro (FIN-05)
   });
   if (_peaHorsEcran) maj(_peaHorsEcran);
   ctoComptes().forEach(c => { if (!(_estCto() && c.id === _compteActif)) maj(c); });
@@ -21385,7 +21713,7 @@ function ctoResume(id) {
     frais += t.frais || 0;
     if (t.type === "Achat" && (t.origine === "saveback" || t.origine === "offert")) offert += brutOrdre(t);
   });
-  const dividendes = [...(e.divReceived || []), ...(e.divFuture || [])]
+  const dividendes = (e.divReceived || [])
     .filter(d => d.date && normDate(d.date) <= cut).reduce((s, d) => s + (d.montant || 0), 0);
   const investiNet = Math.round(ctoDepotsDeduits(e).reduce((s, d) => s + d.amount, 0) * 100) / 100;
   const valeur = complet ? Math.round(titres * 100) / 100 : null;
@@ -21991,6 +22319,8 @@ function ctoImportRender() {
     ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) hors actions et ETF ignorée(s)</span>` : ""}
     ${I.ignores.transferts ? `<span>${I.ignores.transferts} transfert(s) de titres depuis une autre banque ignoré(s) : leur achat d'origine vient de l'ancienne banque</span>` : ""}
     ${I.ignores.detachements ? `<span>${I.ignores.detachements} détachement(s) de coupon ignoré(s) : le dividende est sur la ligne d'encaissement</span>` : ""}
+    ${I.ignores.conversion ? `<span>${I.ignores.conversion} ligne(s) en devise non reprise(s) : pas de cours de change ce jour-là, saisis-les à la main</span>` : ""}
+    ${I.ignores.dates_ambigues ? `<span>Dates lues jour/mois (03/04 = 3 avril) : le fichier ne permet pas de trancher, vérifie-les</span>` : ""}
     ${inc}
     ${docs.length > 1 || I.documents.some(d => d.erreur) ? `<span>Fichiers : ${docs.join(" · ")}</span>` : ""}`;
   document.getElementById("cto-imp-titres").innerHTML = Object.entries(I.titres).map(([isin, t]) => {
@@ -22223,7 +22553,7 @@ const DASH_WIDGETS = [
   {
     id: "pea-plafond", label: "Plafond du PEA", module: "PEA", tab: "dep",
     render() {
-      const verse = peaTotalVerse();
+      const verse = peaVersePlafond();
       if (!(verse > 0)) return null;
       const p = Math.min(100, verse / 150000 * 100);
       return { lbl: "Plafond du PEA", val: eur(verse),
@@ -22344,7 +22674,7 @@ const DASH_WIDGETS = [
     render() {
       if (typeof _paNet === "undefined" || !_paNet) return null;
       if (!(PA && PA.releves && PA.releves.length)) return null;
-      let sub = "au " + paMoisLabel(_paNet.date);
+      let sub = "relevé " + paDeMois(_paNet.date);
       if (typeof _paSerie !== "undefined" && _paSerie.length > 1) {
         const d = _paSerie[_paSerie.length - 1].net - _paSerie[_paSerie.length - 2].net;
         sub = (d >= 0 ? "+" : "−") + paEur(Math.abs(d)) + " ce mois-ci";
@@ -22358,9 +22688,11 @@ const DASH_WIDGETS = [
     id: "patri-rappel", label: "Rappel du relevé mensuel", module: "Patrimoine", tab: "pa-vue",
     render() {
       if (typeof PA === "undefined" || !PA) return null;
+      // Aucune ligne saisie à la main : rien à relever chaque mois (UX-09)
+      if (!(PA.comptes || []).some(c => !c.archived && !c.auto)) return null;
       if (paMoisSaisi()) return null;   // rien à rappeler : le widget s'efface
       return { lbl: "Relevé de patrimoine", val: "À faire",
-               sub: paMoisLabel(_paMois) + " n'est pas saisi", go: "Le faire maintenant" };
+               sub: "Le relevé " + paDeMois(_paMois) + " n'est pas saisi", go: "Le faire maintenant" };
     },
   },
   {
@@ -22717,7 +23049,7 @@ const DASH_WIDGETS = [
       // Jamais faite : sans orange, comme la ligne sous les boutons
       let val = "Jamais", cls = "";
       if (d) {
-        const j = Math.floor((new Date() - d) / 86400000);
+        const j = -dashJours(todayISO(d));
         val = j === 0 ? "Aujourd'hui" : (j === 1 ? "Hier" : "Il y a " + j + " j");
         if (j >= svAlerteJours(s)) cls = "c-a";
       }
@@ -22977,6 +23309,18 @@ function dashPeaDay(total = (window._peaPv || {}).total) {
     t = Math.max(t, v.t);
     lignes++;
   }
+  // Ligne vendue en totalité aujourd'hui et sortie des positions : sa vente
+  // compte quand même dans le gain du jour (cours de vente − clôture de la
+  // veille), sinon elle disparaissait du calcul (FIN-15)
+  const suivis = new Set(S.positions.map(p => p.ticker));
+  for (const x of S.transactions) {
+    if (x.type !== "Vente" || normDate(x.date) !== today || suivis.has(x.asset)) continue;
+    const v = getVar(x.asset);
+    if (!v || v.d1 == null || !v.cours) return null;
+    const cloture = v.cours / (1 + v.d1 / 100);
+    gain += x.qty * (x.cours - cloture) - (x.frais || 0);
+    lignes++;
+  }
   if (!lignes) return null;
   // Un versement du jour gonfle les espèces sans rien rapporter : hors base
   const versements = (S.depots || []).filter(d => normDate(d.date) === today)
@@ -22990,6 +23334,8 @@ function dashPeaDay(total = (window._peaPv || {}).total) {
 }
 
 function dashPeaPerf() {
+  // PEA vide (utilisateur neuf) : pas de tuile « +0,00 € » en vert (UX-09)
+  if (_estCto() ? false : !(S.positions || []).length && !(S.depots || []).length) return null;
   return dashPerfTuile({
     lbl: "Performance du PEA", range: dashPeaRange(), clic: k => `dashSetPeaRange('${k}')`,
     jour: () => dashPeaDay(),
@@ -23266,11 +23612,11 @@ async function dashAddExpense(type) {
 
 /* ── Outils communs des tuiles ──────────────────────────────────────────── */
 
-/** Dividendes reçus du PEA : les reçus et les estimatifs dont la date est
-    passée, comme le total de l'onglet Dividendes (renderDividends). */
+/** Dividendes reçus du PEA, comme le total de l'onglet Dividendes
+    (renderDividends) : les estimatifs ne comptent qu'une fois confirmés. */
 function dashDivRecus() {
   const auj = todayISO();
-  return [...(S.divReceived || []), ...(S.divFuture || [])]
+  return (S.divReceived || [])
     .filter(d => d.date && normDate(d.date) <= auj)
     .map(d => ({ ...d, date: normDate(d.date) }));
 }
@@ -23894,10 +24240,11 @@ function _appReady() {
     try {
       const accentKey = (S.uiPrefs && S.uiPrefs.accent) || ACCENT_DEFAULT;
       if (typeof applyAccent === "function") applyAccent(accentKey);
+      if (typeof applyZoom === "function") applyZoom(S.uiPrefs && S.uiPrefs.zoom);
     } catch(e) {}
     // Restaure le theme sauvegarde
     try {
-      const themeKey = (S.uiPrefs && S.uiPrefs.theme) || "light";
+      const themeKey = (S.uiPrefs && S.uiPrefs.theme) || (window.__appPrefs && window.__appPrefs.ui && window.__appPrefs.ui.theme) || "light";
       if (typeof applyTheme === "function") applyTheme(themeKey);
     } catch(e) {}
     // Verrou PIN si configure
@@ -23953,7 +24300,7 @@ function _appReady() {
     await Promise.race([donneesPretes, new Promise(r => setTimeout(r, 5000))]);
   } catch(e) {
     const box=document.getElementById("errbox");
-    if (box) { box.style.display="block"; box.textContent="Erreur JS : "+e.message+" — Cliquez sur Reset."; }
+    if (box) { box.style.display="block"; box.textContent="Pilote n'a pas pu démarrer. Ferme-le et relance-le : tes données ne sont pas touchées. (Détail : "+e.message+")"; }
     _jn("boot KO : " + e.message);
     console.error(e);
   }

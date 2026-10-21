@@ -14,6 +14,10 @@ import sys
 import subprocess
 
 
+# Seuls ces formats sont decodes : Pillow ne tente plus les autres (PSD, etc.),
+# ou se trouvaient les failles de securite connues (SUP-05)
+_FORMATS_IMAGE = ["PNG", "JPEG", "WEBP", "BMP", "GIF"]
+
 def certificats_mac() -> None:
     """Mac : donne a Python les certificats fournis avec macOS quand il n'en a pas.
 
@@ -84,7 +88,7 @@ def ocr_mac(image_path: str) -> dict:
     except Exception as e:
         return {"ok": False, "error": f"Vision indisponible : {e}"}
     try:
-        with Image.open(image_path) as im:
+        with Image.open(image_path, formats=_FORMATS_IMAGE) as im:
             largeur, hauteur = im.size
             gris = im.convert("L")
         url = NSURL.fileURLWithPath_(str(image_path))

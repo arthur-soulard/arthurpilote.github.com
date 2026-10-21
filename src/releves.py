@@ -119,6 +119,14 @@ def _ordre_dates(valeurs: list) -> str:
     return "mj" if seconds and max(seconds) > 12 and max(premiers) <= 12 else "jm"
 
 
+def _dates_ambigues(valeurs: list) -> bool:
+    """Vrai quand aucune date JJ/MM ne permet de trancher (jamais un nombre au-dela de 12)."""
+    vus = [m for m in (re.search(r"(?<!\d)(\d{1,2})[-/.](\d{1,2})[-/.](\d{4}|\d{2})(?!\d)", v or "")
+                       for v in valeurs) if m]
+    return bool(vus) and all(int(m.group(1)) <= 12 and int(m.group(2)) <= 12 for m in vus) \
+        and any(m.group(1) != m.group(2) for m in vus)
+
+
 def _classe(*textes) -> str:
     return "etf" if any(_ETF.search(t or "") for t in textes) else "action"
 
@@ -1574,6 +1582,10 @@ def _ligne_entetes(lignes: list) -> int:
 def _universel(entetes, lignes, lot, colonnes):
     g = lambda r, k: r[colonnes[k]].strip() if k in colonnes and 0 <= colonnes[k] < len(r) else ""
     ordre = _ordre_dates([g(r, "date") for r in lignes])
+    if _dates_ambigues([g(r, "date") for r in lignes]):
+        # Aucun jour au-dela de 12 : 03/04 peut etre le 3 avril ou le 4 mars.
+        # Lu jour/mois, mais dit a l'ecran d'import (FIN-17)
+        lot.ignores["dates_ambigues"] = 1
     for r in lignes:
         date = _date_fr(g(r, "date"), ordre)
         if not date:
@@ -1592,6 +1604,8 @@ def _universel(entetes, lignes, lot, colonnes):
         if not dev and "cours" in colonnes and colonnes["cours"] + 1 < len(r) and re.fullmatch(r"[A-Z]{3}", r[colonnes["cours"] + 1].strip()):
             dev = r[colonnes["cours"] + 1].strip()
         dev = dev if re.fullmatch(r"[A-Z]{3}", dev or "") else "EUR"
+        if dev != "EUR" and frais:
+            frais = _vers_eur(frais, dev, date) or 0   # frais dans la devise de l'ordre
         heure = g(r, "heure")
         quand = date + ("T" + heure if re.fullmatch(r"\d{2}:\d{2}(:\d{2})?", heure) else "")
         ref = g(r, "ref")
@@ -1608,16 +1622,23 @@ def _universel(entetes, lignes, lot, colonnes):
                                              or (im + 1 < len(r) and r[im + 1].strip().upper() == "EUR"))
                 brut = abs(mt) if mt and en_eur else _vers_eur(brut, dev, date)
             if not brut:
+                if dev != "EUR":
+                    lot.ignores["conversion"] = lot.ignores.get("conversion", 0) + 1
                 continue
             # Cours du fichier tel quel (au millieme) quand il est en euros
             lot.ajoute(sens, date, g(r, "isin").upper(), g(r, "nom"), qty, cours if dev == "EUR" and cours else None,
                        brut, frais, quand=quand,
                        ref=("u:" + ref) if ref else "", classe=_classe(g(r, "nom")))
-        elif sens == "Dividende" and mt:
-            lot.ajoute("Dividende", date, g(r, "isin").upper(), g(r, "nom"), abs(qty or 0),
-                       montant=_vers_eur(abs(mt), dev, date) or 0)
-        elif sens in ("Versement", "Retrait") and mt:
-            lot.ajoute(sens, date, montant=_vers_eur(abs(mt), dev, date) or 0, origine="especes")
+        elif sens in ("Dividende", "Versement", "Retrait") and mt:
+            # Conversion impossible (pas de cours de change ce jour-la) : la ligne
+            # n'est pas reprise et l'ecran le dit ; elle valait 0 EUR jusqu'en 4.4.20
+            eur_mt = _vers_eur(abs(mt), dev, date)
+            if not eur_mt:
+                lot.ignores["conversion"] = lot.ignores.get("conversion", 0) + 1
+            elif sens == "Dividende":
+                lot.ajoute("Dividende", date, g(r, "isin").upper(), g(r, "nom"), abs(qty or 0), montant=eur_mt)
+            else:
+                lot.ajoute(sens, date, montant=eur_mt, origine="especes")
 
 
 def _deballer(lignes: list) -> list:

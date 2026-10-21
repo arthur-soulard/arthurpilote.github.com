@@ -3,13 +3,15 @@
 #
 # À METTRE À JOUR À CHAQUE FONCTIONNALITÉ : les écrans qu'elle change.
 # Une ligne par capture : l'onglet (id de goTab, sans « pane- »), puis, si
-# besoin, de combien de pixels faire défiler la page. La fenêtre du test
-# fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité baisse (toutes
-# passent en 45 annotations au plus).
+# besoin, de combien de pixels faire défiler la page. Pour un écran qui n'est
+# pas un onglet : « js:appel » sans espace, par exemple js:openSettings('general').
+# La fenêtre du test fait 1024 × 681 : au-delà de 3 ou 4 captures, la qualité
+# baisse (toutes passent en 45 annotations au plus).
 #
-# 20/10/2026 : correctifs de l'audit. Noms des titres échappés (Positions),
-# carte Plus-value et barre d'état des cours (vue d'ensemble), tuiles de
-# l'accueil (% du CTO et de toute la bourse).
+# 20/10/2026 : correctifs de l'audit. Accueil (tuiles), Positions (noms
+# échappés, ligne au clavier), vue d'ensemble (versements manquants, état des
+# cours), Paramètres (taille du texte).
 home
 pos
 dash
+js:openSettings('general')

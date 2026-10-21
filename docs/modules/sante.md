@@ -44,12 +44,12 @@ Quatre pièges, tous traités — ne pas « simplifier » :
    pour les trois). Les quatre anciennes passes restent derrière, en rattrapage.
    **L'arrêt anticipé attend les libellés vus** : une passe qui n'apporte rien
    n'arrête plus la lecture si un libellé de la capture attend encore sa valeur
-   (`vus`, rempli par `_extract_values`). L'âge corporel orange n'apparaissait
+   (`vus`, rempli à la lecture des blocs de `_label_blocks`). L'âge corporel orange n'apparaissait
    qu'à la 3e passe, et la lecture s'arrêtait à la 2e.
 2. **Appariement par COLONNES, jamais par lignes.** FitDays coupe ses libellés
    longs sur deux lignes et place la valeur sur la ligne du milieu :
    `Graisse` / `21.3 %` / `corporelle`. Un appariement ligne à ligne rate la
-   moitié des mesures (voir `_extract_values` et `_label_blocks`).
+   moitié des mesures (voir `_label_blocks`).
 3. **Comparaison des libellés par ENSEMBLE de mots** (`_match_metric`) : le
    moteur renvoie « Corporelle Eau » et « Graisse sous- cutanee eee ».
    L'alias le plus spécifique gagne, sinon « Poids sans graisse » devient
@@ -222,3 +222,11 @@ estompé avant (`dashSpark(vals, depuis)`, classe `.dash-spark-ctx`).
 `saNombre()` (`toLocaleString("fr-FR")`) : « 77,5 kg », « −0,4 kg », avec une
 espace insécable avant l'unité. Tout le module était en « 77.5 kg ». Ces fonctions
 ne servent qu'à l'affichage : les champs de saisie gardent leurs valeurs brutes.
+
+## Panne du moteur OCR (4.4.21)
+
+Quand Windows n'a aucune langue de reconnaissance de texte (`no_engine` dans
+`ocr_win.ps1`), l'écran d'import le dit en clair (`_cause_ocr`, `_CAUSES_OCR` dans
+`sante.py`) au lieu de « Le moteur OCR n'a pas répondu ». Pillow n'ouvre plus que les
+formats d'images utiles (`_FORMATS_IMAGE` : PNG, JPEG, WEBP, BMP, GIF) : les failles
+connues de Pillow tenaient à d'autres formats.

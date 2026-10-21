@@ -63,3 +63,10 @@ if __name__ == "__main__":
     res = lire(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else ".")
     # Console Windows en cp1252 : rien d'exotique à l'écran, tout est dans le fichier
     print("\n".join(res).encode("ascii", "replace").decode())
+    # Code de sortie : 1 si un test n'est pas fini et réussi, ou si le journal
+    # signale une erreur JavaScript (audit du 20/10/2026, QA-08)
+    rate = [l for l in res if l.startswith(("===", "---")) and not l.rstrip().endswith("completed / success")]
+    rate += [l for l in res if "ERREUR " in l and "[diag]" in l]
+    if rate or (res and res[0].startswith("aucun test")):
+        print("ECHEC ou incomplet :", len(rate) or 1, "ligne(s)")
+        sys.exit(1)

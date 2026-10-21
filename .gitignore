@@ -40,9 +40,9 @@ build/build/
 build/__pycache__/
 
 # Sortie compilée (l'exe et le Setup.exe vont dans GitHub Releases, pas dans git)
-dist/Suivi_PEA.exe
-dist/Suivi_PEA_Setup.exe
-dist/*.exe
+dist/
+# Fiche de version de l'exe, ecrite par build/pilote.spec
+build/version_info.txt
 
 # Cache Python
 __pycache__/

@@ -15,6 +15,9 @@ from __future__ import annotations
 import os
 import sys
 import json
+import threading
+import time
+import re
 import shutil
 import datetime
 import tempfile
@@ -27,6 +30,50 @@ LEGACY_APP_NAME = "Suivi PEA"   # nom avant la v4.1.0
 DATA_FILE = "pea_data.json"
 BACKUP_DIR = "backups"
 BACKUP_KEEP_DAYS = 7
+# Version de la forme des fichiers que ce code sait ecrire (_meta.version).
+# Un fichier plus recent (ecrit par une version future de Pilote) est lu mais
+# jamais reecrit : un retour en arriere ne doit pas detruire ce qu'il ne
+# comprend pas (audit du 20/10/2026, DAT-19). A monter au prochain changement
+# de forme d'un fichier.
+DATA_VERSION = 1
+
+
+# ─── Outils d'ecriture communs (storage, jsonstore, finances) ─────────────────
+
+_verrous: dict = {}
+_verrous_lock = threading.Lock()
+
+
+def verrou(chemin) -> "threading.RLock":
+    """Un verrou par fichier : chaque appel du pont pywebview a son propre fil,
+    et deux ecritures croisees du meme fichier pouvaient faire gagner la plus
+    ancienne (DAT-11)."""
+    cle = str(chemin).lower()
+    with _verrous_lock:
+        if cle not in _verrous:
+            _verrous[cle] = threading.RLock()
+        return _verrous[cle]
+
+
+def remplacer(tmp, cible) -> None:
+    """os.replace, reessaye 5 fois : sous Windows, il echoue tant qu'un autre
+    programme (archive USB, antivirus, indexation, OneDrive) tient le fichier
+    ouvert un instant (DAT-05)."""
+    for essai in range(5):
+        try:
+            os.replace(tmp, cible)
+            return
+        except PermissionError:
+            if essai == 4:
+                raise
+            time.sleep(0.1 * (essai + 1))
+
+
+def date_backup_ok(nom: str) -> bool:
+    """Un backup date apres aujourd'hui (horloge qui etait en avance) n'est
+    pas le plus recent (ENV-13)."""
+    m = re.search(r"(\d{4}-\d{2}-\d{2})", nom)
+    return not m or m.group(1) <= datetime.date.today().isoformat()
 
 
 # ─── Localisation du dossier de l'app ─────────────────────────────────────────
@@ -116,9 +163,19 @@ def slugify(label: str, existing=()) -> str:
     norm = unicodedata.normalize("NFKD", label or "")
     norm = "".join(c for c in norm if not unicodedata.combining(c))
     base = _re.sub(r"[^a-z0-9]+", "_", norm.lower()).strip("_") or "user"
+    # Noms de peripheriques reserves par Windows : un dossier « nul » ne peut
+    # pas etre cree (DAT-16)
+    if _re.fullmatch(r"(con|prn|aux|nul|com\d|lpt\d)", base):
+        base += "_1"
     slug = base
     i = 2
     existing = set(existing)
+    # Les dossiers deja sur le disque comptent aussi : un utilisateur supprime
+    # garde le sien, un homonyme recree ne doit pas retomber dessus (DAT-07)
+    try:
+        existing |= {d.name for d in (get_app_dir() / "users").iterdir() if d.is_dir()}
+    except Exception:
+        pass
     while slug in existing:
         slug = f"{base}_{i}"
         i += 1
@@ -580,6 +637,11 @@ def load_data() -> dict:
                     for k, v in base.items():
                         merged[sub].setdefault(k, v)
             _LAST_LOAD_INFO["source"] = "main_file"
+            v = (data.get("_meta") or {}).get("version", 1) if isinstance(data, dict) else 1
+            if isinstance(v, int) and v > DATA_VERSION:
+                # Comme une lecture ratee : la page et Python n'ecrivent plus
+                _LAST_LOAD_INFO["error"] = ("fichier ecrit par une version plus recente de Pilote "
+                                            "(forme %d, celle-ci connait la %d)" % (v, DATA_VERSION))
             return merged
         except Exception as e:
             _LAST_LOAD_INFO["error"] = f"main: {type(e).__name__}: {e}"
@@ -610,6 +672,11 @@ def load_data() -> dict:
 
 def save_data(data: dict) -> None:
     """Ecrit le fichier de maniere atomique + backup quotidien."""
+    with verrou(get_data_path()):
+        _save_data(data)
+
+
+def _save_data(data: dict) -> None:
     path = get_data_path()
     data.setdefault("_meta", {})
     data["_meta"]["lastSavedAt"] = datetime.datetime.now().isoformat(timespec="seconds")
@@ -623,7 +690,7 @@ def save_data(data: dict) -> None:
             # un fichier renomme mais jamais ecrit pourrait ne contenir que des zeros
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp_path, path)
+        remplacer(tmp_path, path)
     except Exception:
         try:
             os.remove(tmp_path)
@@ -662,7 +729,7 @@ def _daily_backup(data: dict) -> None:
                 json.dump(sans_cache, f, ensure_ascii=False, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp, backup_path)
+            remplacer(tmp, backup_path)
         except Exception:
             try:
                 os.remove(tmp)
@@ -688,6 +755,8 @@ def _latest_backup() -> Optional[Path]:
     essaie la veille, et ainsi de suite (jusqu'a la 4.4.20, seul le plus
     recent etait essaye, puis on passait aux valeurs par defaut)."""
     for b in reversed(sorted(get_backup_dir().glob(_BACKUP_GLOB))):
+        if not date_backup_ok(b.name):
+            continue
         try:
             with open(b, "r", encoding="utf-8") as f:
                 json.load(f)

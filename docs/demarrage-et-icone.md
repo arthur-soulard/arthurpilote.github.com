@@ -154,3 +154,18 @@ Python attend pendant ce temps (`[pile]`). Elles varient avec la charge du PC
   dans Paramètres → Général (`Api.apply_icon_to_shortcuts`, via WScript.Shell).
 * L'icône gravée dans le `.exe` reste celle du build : elle ne peut pas changer à chaud.
 * Pillow est déclaré dans les `hiddenimports` de `build/pilote.spec` (import paresseux).
+
+## Premier lancement lent après un démarrage du PC (4.4.21)
+
+Juste après le démarrage de Windows, le cache disque est froid : la page peut
+mettre assez longtemps à charger pour que pywebview lève « Main window failed
+to load » (une fois dans le `crash.log` d'Arthur, le 25/09/2026). La fenêtre
+s'ouvre ensuite normalement. Ce message est désormais écarté du journal comme
+les autres erreurs bénignes (`install_crash_handler`, audit du 20/10/2026).
+Pas de correction simple : l'écran de chargement s'affiche déjà avant la page.
+
+WebView2 reçoit un dossier fixe (`%TEMP%\pilote_webview2`, `webview.start(storage_path=...)`),
+en mode privé comme avant : sans lui, pywebview en créait un neuf dans `%TEMP%`
+à chaque lancement sans jamais l'effacer (112 dossiers sur le PC d'Arthur).
+`_menage_webview_temp()` efface en arrière-plan ces anciens dossiers (`tmp*`
+contenant seulement `EBWebView`, inchangés depuis 2 jours).

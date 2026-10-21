@@ -5,19 +5,26 @@ on:
     tags:
       - 'v*.*.*'
 
+# Actions designees par leur commit (une etiquette comme v4 peut etre deplacee),
+# droit d'ecriture seulement dans les jobs qui joignent un fichier a la release
+# (audit du 20/10/2026, SUP-02)
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
 
@@ -31,9 +38,8 @@ jobs:
       - name: Check versions
         run: python tests/verifier_release.py ${{ github.ref_name }}
 
-      - name: Generate icon
-        run: python assets/make_icon.py
-        continue-on-error: true
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
 
       - name: Build exe (PyInstaller)
         run: python -m PyInstaller build/pilote.spec --clean --noconfirm
@@ -79,7 +85,7 @@ jobs:
         shell: pwsh
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           name: "Pilote ${{ github.ref_name }}"
           draft: false
@@ -97,13 +103,17 @@ jobs:
   mac:
     needs: build
     runs-on: macos-15          # puce Apple
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
 
@@ -126,6 +136,6 @@ jobs:
         run: ditto -c -k --keepParent dist/Pilote.app Pilote_Mac.zip
 
       - name: Attach to the release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: Pilote_Mac.zip

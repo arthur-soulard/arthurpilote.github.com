@@ -60,6 +60,11 @@ _state: dict = {
 
 _progress: dict = {"step": "idle", "pct": 0, "error": None}
 
+# Taille et empreinte SHA-256 annoncees par l'API pour l'installeur retenu
+# ({} quand la version vient de la page publique) : un fichier tronque ou
+# altere en route n'est pas lance (audit du 20/10/2026, SUP-06)
+_attendu: dict = {}
+
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 
@@ -161,6 +166,8 @@ def _latest_from_api() -> tuple:
             # vers un binaire quelconque.
             if _is_github_https(url):
                 download_url = url
+                _attendu.clear()
+                _attendu.update({"size": asset.get("size"), "digest": asset.get("digest")})
             else:
                 _log(f"CHECK: asset ignore, URL non GitHub : {url}")
             break
@@ -182,6 +189,7 @@ def _latest_from_page() -> tuple:
     # encore attendre ses fichiers. Pas d'installeur -> pas de mise a jour
     # proposee, on reessaiera au prochain lancement.
     download_url = f"{RELEASES_PAGE}/download/{urllib.parse.quote(tag)}/{ASSET}"
+    _attendu.clear()
     try:
         present = bool(_redirect_target(download_url))   # 302 vers le stockage GitHub
     except urllib.error.HTTPError as e:
@@ -223,6 +231,7 @@ def _fetch(current: str) -> None:
         with _lock:
             _state.update({
                 "checked": True,
+                "erreur": None,
                 "hasUpdate": has_update,
                 "version": latest,
                 "url": html_url,
@@ -235,6 +244,8 @@ def _fetch(current: str) -> None:
         _log(f"CHECK FAIL: {e}\n{traceback.format_exc()}")
         with _lock:
             _state["checked"] = True
+            # Dit a l'ecran : jusqu'a la 4.4.20, un echec s'affichait « A jour »
+            _state["erreur"] = "Vérification impossible : pas de connexion à GitHub"
 
 
 # ── Fiche des nouveautes ─────────────────────────────────────────────────────
@@ -318,6 +329,25 @@ def start_install_async() -> None:
     threading.Thread(target=_do_install, daemon=True).start()
 
 
+def _conforme(chemin, size) -> bool:
+    """Taille et SHA-256 du fichier telecharge = ce qu'annonce l'API (si connu)."""
+    attendu = dict(_attendu)
+    if attendu.get("size") and int(attendu["size"]) != size:
+        _log(f"INSTALL: taille {size} au lieu de {attendu['size']}")
+        return False
+    digest = str(attendu.get("digest") or "")
+    if digest.startswith("sha256:"):
+        import hashlib
+        h = hashlib.sha256()
+        with open(chemin, "rb") as f:
+            for bloc in iter(lambda: f.read(1 << 20), b""):
+                h.update(bloc)
+        if h.hexdigest() != digest.split(":", 1)[1].lower():
+            _log("INSTALL: empreinte SHA-256 differente de celle de l'API")
+            return False
+    return True
+
+
 def _do_install() -> None:
     try:
         with _lock:
@@ -389,12 +419,14 @@ def _do_install() -> None:
         if size < 1024 * 1024:  # < 1 Mo = corrompu
             _set_progress("error", 0, f"Téléchargement corrompu ({size} octets)")
             return
+        if not _conforme(setup_path, size):
+            _set_progress("error", 0, "Téléchargement incomplet ou altéré : réessaie plus tard")
+            return
 
         # ── Étape 2 : Préparation batch (70 → 80%) ───────────────────────────
         _set_progress("installing", 75)
 
         # Nom reel du binaire en cours : survit a un renommage de l'app
-        exe_name = Path(exe_path).name if getattr(sys, "frozen", False) else "Pilote.exe"
 
         bat_path = tmp_dir / "update.bat"
         # Aucun chemin ecrit dans le batch : %~dp0 (son propre dossier, ou sont
@@ -405,13 +437,17 @@ def _do_install() -> None:
             f'@echo off\r\n'
             f'echo [%TIME%] Update batch started >> "%~dp0update_bat.log"\r\n'
             f':wait\r\n'
-            f'tasklist /FI "IMAGENAME eq {exe_name}" 2>nul | find /I "{exe_name}" > nul\r\n'
-            f'if not errorlevel 1 ( timeout /t 1 /nobreak > nul & goto wait )\r\n'
+            f'"%SystemRoot%\\System32\\tasklist.exe" /FI "PID eq %~2" /NH 2>nul'
+            f' | "%SystemRoot%\\System32\\find.exe" " %~2 " > nul\r\n'
+            f'if not errorlevel 1 ( "%SystemRoot%\\System32\\timeout.exe" /t 1 /nobreak > nul & goto wait )\r\n'
             f'echo [%TIME%] App process gone, waiting 5s for file handle release >> "%~dp0update_bat.log"\r\n'
-            f'timeout /t 5 /nobreak > nul\r\n'
+            f'"%SystemRoot%\\System32\\timeout.exe" /t 5 /nobreak > nul\r\n'
             f'echo [%TIME%] Running installer >> "%~dp0update_bat.log"\r\n'
             f'"%~dp0{setup_path.name}" /VERYSILENT /NORESTART /SUPPRESSMSGBOXES\r\n'
-            f'echo [%TIME%] Installer finished (errorlevel=%errorlevel%) >> "%~dp0update_bat.log"\r\n'
+            f'set CODE=%errorlevel%\r\n'
+            f'echo [%TIME%] Installer finished (errorlevel=%CODE%) >> "%~dp0update_bat.log"\r\n'
+            # Echec : l'ancien Pilote, s'il est encore la, est relance
+            f'if not "%CODE%"=="0" if exist "%~1" start "" "%~1"\r\n'
             f'(goto) 2>nul & del "%~f0"\r\n'
         )
         bat_path.write_text(bat_content, encoding="ascii", errors="replace")
@@ -420,8 +456,11 @@ def _do_install() -> None:
         # ── Étape 3 : Lancement batch + fermeture (80 → 100%) ───────────────
         _set_progress("installing", 85)
 
+        # Chemin de l'exe et numero du processus en arguments (%1, %2) : rien de
+        # non ASCII dans le batch. /s : cmd ne retire que les guillemets externes
+        ancien = exe_path if getattr(sys, "frozen", False) else ""
         subprocess.Popen(
-            ["cmd.exe", "/c", str(bat_path)],
+            f'cmd.exe /s /c ""{bat_path}" "{ancien}" {os.getpid()}"',
             creationflags=subprocess.CREATE_NO_WINDOW,
             close_fds=True,
         )
@@ -499,8 +538,14 @@ def _installer_mac(download_url: str, version: str) -> None:
     # Lancee depuis Telechargements sans avoir ete deplacee, l'app tourne d'une
     # copie en lecture seule (« App Translocation ») : rien a remplacer
     if mac_a_deplacer():
-        _set_progress("error", 0, "Déplace Pilote dans le dossier Applications, puis relance-le : "
-                                  "la mise à jour pourra s'installer.")
+        if "AppTranslocation" in str(bundle):
+            _set_progress("error", 0, "Déplace Pilote dans le dossier Applications, puis relance-le : "
+                                      "la mise à jour pourra s'installer.")
+        else:
+            _set_progress("error", 0, "Pilote est dans un dossier que ton compte ne peut pas modifier : "
+                                      "mets-le dans le dossier Applications de ton compte "
+                                      "(~/Applications), ou installe la mise à jour depuis un compte "
+                                      "administrateur.")
         return
 
     tmp_dir = Path(tempfile.mkdtemp(prefix="pilote_maj_"))

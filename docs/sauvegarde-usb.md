@@ -110,3 +110,17 @@ seule une ligne grise « dernier envoi 24 sept. » le disait. Désormais :
   lancement, et pour toujours s'il n'avait pas de clé.
 * La tuile « Sauvegarde USB » lit la **même** date (`svDerniereCopie`) et passe en
   orange au même seuil : les deux ne peuvent pas se contredire.
+
+## Audit du 20/10/2026 (4.4.21)
+
+* Une destination dans `Donnees/` est refusée : chaque archive s'y incluait elle-même
+  (2,7 Go en deux minutes au banc d'essai). Les `Pilote_*.zip` et `*.part` ne sont jamais
+  archivés.
+* L'archive automatique est due au changement de jour (ou de semaine ISO), plus après
+  24 h glissantes, qui sautaient un jour sur deux.
+* Le miroir copie chaque fichier en `.part` puis le renomme.
+* La restauration s'arrête si l'archive de sécurité n'a pas pu être écrite ; chaque
+  fichier est écrit par temporaire puis renommé ; `users.json` est fusionné (les
+  utilisateurs créés après l'archive restent) ; après un échec en route, la page se
+  recharge et donne le chemin de l'archive de sécurité.
+* `run_backup` relit la configuration avant d'y noter son résultat.

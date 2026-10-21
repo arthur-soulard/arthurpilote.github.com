@@ -49,7 +49,7 @@ Pilote/
 │   ├── notifications.py
 │   ├── plateforme.py   # Ce qui diffère entre Windows et Mac (docs/mac.md)
 │   └── ui/
-│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~20 900 lignes)
+│       ├── index.html  # TOUTE l'UI (HTML + CSS + JS dans un seul fichier, ~24 000 lignes)
 │       └── vendor/     # Chart.js, polices woff2 (drapeaux compris), icônes Phosphor : servis en local (aucun CDN)
 ├── build/
 │   ├── installer.iss   # Script Inno Setup utilisé par la CI (AppVersion à bumper)
@@ -58,8 +58,10 @@ Pilote/
 │   └── build.bat       # build local
 ├── assets/             # icon.ico + make_icon.py (générateur d'icône)
 ├── docs/               # Fiches détaillées par module (voir « Documentation détaillée »)
-├── .github/workflows/release.yml
-└── requirements.txt    # pywebview, pyinstaller, win10toast, pillow, pypdf (PDF des relevés)
+├── .github/workflows/  # release.yml (publication), build-windows.yml et build-mac.yml (tests de la branche mac)
+├── tests/              # donnees_exemple.py (Camille), lire_tests.py, ecrans.txt, verifier_release.py, test_*.py
+├── THIRD-PARTY-NOTICES.txt # licences des composants embarques (dans l'exe, l'app Mac et le Setup)
+└── requirements.txt    # pywebview, pyinstaller, win10toast + setuptools<81, pillow, pypdf, pyobjc-framework-Vision (Mac)
 ```
 
 En dev, `Donnees` à la racine du dépôt est un lien symbolique vers le dossier de
@@ -102,7 +104,7 @@ les onglets masqués sont propres à chacun (ils vivent dans `pea_data.json`).
 ### `_cache` : dans le fichier courant, jamais dans les backups
 
 `pea_data.json` contient une clé `_cache` (cours et historiques Yahoo) qui pèse à
-elle seule plus que toutes les données réunies : ~200 Ko contre ~6 Ko. Elle est
+elle seule plus que toutes les données réunies : ~620 Ko contre ~15 Ko chez Arthur (octobre 2026). Elle est
 volontairement persistée — c'est ce qui fait vivre l'app **hors ligne** :
 `GET /data` la repasse au serveur (`server.hydrate_cache`) avant les premiers cours,
 et le serveur la rend quand Yahoo ne répond pas (liste `stale`). Jusqu'à la 4.3.13,
@@ -238,6 +240,11 @@ dans les fiches) :
    main, les tests `build-mac.yml` et `build-windows.yml` de la branche `mac`
    montrent s'il démarre des deux côtés (`docs/mac.md`)
 
+Avant le tag : `python tests/verifier_release.py vX.Y.Z` et `python -m unittest discover -s tests`
+(la CI les relance de toute façon : un tag qui échoue n'est pas publié). Une version par jour au
+plus, hors correctif urgent : 21 versions en 8 jours (octobre 2026) laissaient trop peu de recul
+avant chaque diffusion à tous les utilisateurs (audit du 20/10/2026).
+
 Règle importante : le numéro de version ne peut qu'augmenter (comparaison sémantique).
 Ne jamais descendre sinon l'auto-updater croit que l'app est déjà à jour.
 
@@ -298,8 +305,9 @@ CTO précis ; `_navSectionOf` ignore le `@…`, `_setActiveSidebar` complète un
 `cto-pos` sans `@` par le CTO affiché (`_ongletComplet`). `body.dataset.activeTab`
 garde l'onglet sans `@`.
 
-Chaque module annexe ajoute son propre patch de `window.goTab` en fin de fichier
-(finances, sports, prêt, accueil) : ils s'enchaînent, ne pas casser l'ordre.
+Neuf blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
+Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO
+(`grep -n "window.goTab = function"`). Ils s'enchaînent : ne pas casser l'ordre.
 
 ## Serveur local (server.py, port 7438)
 
@@ -366,6 +374,16 @@ Corollaires à ne pas défaire :
   reste libre : il n'y a rien à prouver.
 * `/pin/check` est ralenti (0,25 s) et bloqué 60 s après 10 échecs, **côté serveur**.
   Le compteur de l'écran de verrouillage est purement cosmétique et ne protège rien.
+  Le paramètre `user` des routes `/pin/*` doit être un utilisateur de `users.json`
+  (4.4.21) : sinon « DEMO » ou « ./demo » contournaient le blocage, et `../x` écrivait
+  hors de `Donnees/`.
+* **Limite assumée** : tant que Pilote tourne, un autre programme du PC (même un autre
+  compte Windows) peut demander `/`, y lire le jeton, puis lire `/data`. Les trois verrous
+  visent les pages web, pas un programme local ; c'est écrit dans `SECURITY.md`.
+* Tout nom venu de l'extérieur (Yahoo, justETF, relevé importé, mail) passe par
+  `escHtml` avant d'entrer dans du HTML : la CSP autorise `'unsafe-inline'`, elle
+  n'arrêterait pas un `onerror=` injecté, qui aurait tout le pont. `Api.open_url`
+  n'ouvre que `http`, `https` et `mailto` (4.4.21).
 
 ## Aucune donnée réelle dans le dépôt
 
@@ -378,11 +396,15 @@ des fichiers, l'historique git les garde.
 
 ## Conventions de code
 
-* Tout l'UI vit dans `index.html` (~20 900 lignes). Les modules annexes sont des blocs
+* Tout l'UI vit dans `index.html` (~24 000 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `ac*`,
-  `cto*`, `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre d'insertion : Sports →
-  Prêt → Santé → Patrimoine → Actus → CTO → Tableau de bord → `boot()`.** Les patches de `goTab`
-  s'enchaînent, ne pas casser l'ordre.
+  `cto*`, `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre des patchs :
+  Mes comptes → Sports → Prêt → Accueil → Santé → Sauvegarde USB → Patrimoine → Actus → CTO,
+  puis le tableau de bord et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
+* **HTTP pour lire, pont pour écrire.** Le serveur local (`/data`, `/cours`, `/history`,
+  `/isin`…) sert les lectures et Yahoo ; toute écriture passe par une méthode `save_*` du
+  pont pywebview (`window.pywebview.api`), enveloppée par `_surveillerEcritures` (gel,
+  vidange, alerte d'échec).
 * Primitives de DA à réutiliser : `.card/.card-h/.card-t/.card-b`, `.btn/.btn-primary/
   .btn-ghost/.btn-sm`, `table + .tw`, `.ov/.modal/.fg/.fg-row/.mact` + `closeOv(id)`,
   `.mkpis/.mkpi` (KPIs), `.m-tag`, `.m-empty`, `.m-note`, `.m-acts/.m-iconbtn`,

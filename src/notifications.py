@@ -48,6 +48,11 @@ def _show_mac(title: str, msg: str) -> None:
         print(f"[notif] Echec osascript : {e}", flush=True)
 
 
+# win10toast ne supporte pas deux notifications a la fois (la seconde etait
+# perdue, avec une erreur dans crash.log) : elles passent l'une apres l'autre
+_verrou_toast = threading.Lock()
+
+
 def _show(title: str, msg: str, duration: int = 6) -> None:
     if sys.platform == "darwin":
         _show_mac(title, msg)
@@ -56,13 +61,15 @@ def _show(title: str, msg: str, duration: int = 6) -> None:
         return
     icon = _icon_path()
     try:
-        # threaded=True pour ne pas bloquer l'event loop pywebview
-        _toaster.show_toast(
-            title, msg,
-            icon_path=icon,
-            duration=duration,
-            threaded=True,
-        )
+        # Deja dans un fil a part (notify) : on attend ici la fin du toast
+        # precedent au lieu de bloquer l'interface
+        with _verrou_toast:
+            _toaster.show_toast(
+                title, msg,
+                icon_path=icon,
+                duration=duration,
+                threaded=False,
+            )
     except Exception as e:
         print(f"[notif] Echec toast : {e}", flush=True)
 

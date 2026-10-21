@@ -16,6 +16,7 @@ import os
 import sys
 import json
 import socket
+import tempfile
 import threading
 import traceback
 from pathlib import Path
@@ -166,6 +167,15 @@ def _hwnd_principale() -> int:
 
 # ─── Bridge JS <-> Python ─────────────────────────────────────────────────────
 
+def _dialogue(genre: str):
+    """Type de boite de dialogue : webview.FileDialog.OPEN/FOLDER/SAVE depuis
+    pywebview 5, les anciennes constantes OPEN_DIALOG... avant (4.4.1 sous
+    Windows) ; elles sont depreciees en 6.2.1 sur Mac (ENV-15)."""
+    import webview
+    fd = getattr(webview, "FileDialog", None)
+    return getattr(fd, genre) if fd is not None else getattr(webview, genre + "_DIALOG")
+
+
 class Api:
     """
     Methodes appelees depuis JavaScript via window.pywebview.api.<methode>(...)
@@ -184,7 +194,9 @@ class Api:
             # Hydrate le serveur avec le cache disque -> mode hors-ligne
             cache = data.get("_cache", {})
             server.hydrate_cache(cache.get("prices", {}), cache.get("history", {}))
-            return {"ok": True, "data": data}
+            # loadError : la page n'ecrit pas apres une lecture ratee (regle n. 3),
+            # meme quand elle passe par ce repli au lieu de /data (DAT-15)
+            return {"ok": True, "data": data, "loadError": storage.get_last_load_info().get("error")}
         except Exception as e:
             return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
 
@@ -209,11 +221,14 @@ class Api:
         pea_data.json illisible serait remplace par un backup ou un PEA vide.
         """
         try:
-            d = storage.load_data()
-            if storage.get_last_load_info().get("error"):
-                return {"ok": False, "error": "pea_data.json illisible : rien n'est ecrit"}
-            d["uiPrefs"] = prefs or {}
-            storage.save_data(d)
+            # Lecture et ecriture sous le verrou du fichier : une transaction
+            # enregistree entre les deux etait perdue (DAT-11)
+            with storage.verrou(storage.get_data_path()):
+                d = storage.load_data()
+                if storage.get_last_load_info().get("error"):
+                    return {"ok": False, "error": "pea_data.json illisible : rien n'est ecrit"}
+                d["uiPrefs"] = prefs or {}
+                storage.save_data(d)
             return {"ok": True, "uiPrefs": d["uiPrefs"]}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -338,7 +353,7 @@ class Api:
         try:
             win = webview.windows[0]
             result = win.create_file_dialog(
-                webview.OPEN_DIALOG,
+                _dialogue("OPEN"),
                 allow_multiple=True,
                 file_types=("Captures ou zip (*.png;*.jpg;*.jpeg;*.heic;*.webp;*.zip)",
                             "All files (*.*)"),
@@ -383,7 +398,7 @@ class Api:
         """Ouvre le selecteur de dossier et retient la cle choisie."""
         try:
             win = webview.windows[0]
-            result = win.create_file_dialog(webview.FOLDER_DIALOG)
+            result = win.create_file_dialog(_dialogue("FOLDER"))
             if not result:
                 return {"ok": False, "cancelled": True}
             path = result[0] if isinstance(result, (list, tuple)) else result
@@ -464,18 +479,6 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     # -- Cours / historique ------------------------------------------------
-
-    def get_prices(self, tickers: list) -> dict:
-        try:
-            return {"ok": True, "prices": server.get_prices(tickers)}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-
-    def get_history(self, tickers: list) -> dict:
-        try:
-            return {"ok": True, "history": server.get_history(tickers)}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
 
     # -- Actus : boite Gmail des newsletters (propre a l'utilisateur actif) --
     # Le mot de passe d'application entre par save_actus et ne ressort jamais.
@@ -562,15 +565,12 @@ class Api:
             traceback.print_exc()
             return {"ok": False, "error": "recherche impossible : " + str(e)[:150]}
 
-    def server_port(self) -> int:
-        return server.get_port()
-
     # -- Export / import (boutons UI) -------------------------------------
 
     def export_dialog(self) -> dict:
         win = webview.windows[0]
         result = win.create_file_dialog(
-            webview.SAVE_DIALOG,
+            _dialogue("SAVE"),
             save_filename="pea_data.json",
             file_types=("JSON (*.json)",),
         )
@@ -583,7 +583,7 @@ class Api:
     def import_dialog(self) -> dict:
         win = webview.windows[0]
         result = win.create_file_dialog(
-            webview.OPEN_DIALOG,
+            _dialogue("OPEN"),
             allow_multiple=False,
             file_types=("JSON (*.json)", "All files (*.*)"),
         )
@@ -593,19 +593,7 @@ class Api:
         ok, msg = storage.import_from(path)
         return {"ok": ok, "message": msg}
 
-    def import_legacy(self, payload: dict) -> dict:
-        ok, msg = storage.import_from_legacy(payload)
-        return {"ok": ok, "message": msg}
-
     # -- Fenetre / divers --------------------------------------------------
-
-    def open_app_folder(self) -> dict:
-        path = str(storage.get_app_dir())
-        try:
-            plateforme.ouvrir(path)
-            return {"ok": True, "path": path}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
 
     def app_ready(self) -> dict:
         """Appele par boot() (index.html) quand l'accueil est pret : ouvre
@@ -761,12 +749,13 @@ class Api:
             label = (label or "").strip() or "Nouvel utilisateur"
             state = storage.get_users_state()
             slug = storage.slugify(label, [u["slug"] for u in state["users"]])
+            # Le dossier d'abord : s'il ne peut pas etre cree, l'utilisateur
+            # n'est pas inscrit dans users.json (DAT-16)
+            storage.get_user_dir(slug)
             state["users"].append({"slug": slug, "label": label,
                                    "emoji": (emoji or "").strip(),
                                    "color": (color or "").strip()})
             storage.save_users_state(state)
-            # Cree le dossier : les modules ecriront leurs defauts au 1er acces
-            storage.get_user_dir(slug)
             return {"ok": True, "slug": slug, "state": state}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -948,7 +937,10 @@ def install_crash_handler() -> None:
     Installe un crash handler silencieux qui n'ecrit que les VRAIS crashes.
     Filtre les erreurs benignes connues (ex: bug WPARAM de win10toast).
     """
-    BENIGN = ("WPARAM is simple", "win10toast")
+    # « Main window failed to load » : pywebview le leve quand la page met trop
+    # de temps au tout premier lancement apres un demarrage du PC (cache disque
+    # froid) ; la fenetre s'ouvre ensuite normalement (ENV-11, docs/demarrage-et-icone.md)
+    BENIGN = ("WPARAM is simple", "win10toast", "Main window failed to load")
 
     def _is_benign(exc) -> bool:
         try:
@@ -1058,9 +1050,38 @@ def reveal_main_window(origine: str = "delai") -> None:
 # ─── Cycle de vie ─────────────────────────────────────────────────────────────
 
 
+def _menage_webview_temp() -> None:
+    """Efface, en arriere-plan, les dossiers WebView2 laisses dans %TEMP% par
+    les versions d'avant la 4.4.21 : un dossier tmp* qui ne contient que
+    EBWebView et n'a pas bouge depuis 2 jours."""
+    def menage():
+        import shutil, time as _t
+        racine = tempfile.gettempdir()
+        try:
+            for nom in os.listdir(racine):
+                d = os.path.join(racine, nom)
+                try:
+                    if (nom.startswith("tmp") and os.path.isdir(d)
+                            and os.listdir(d) == ["EBWebView"]
+                            and _t.time() - os.path.getmtime(d) > 2 * 86400):
+                        shutil.rmtree(d, ignore_errors=True)
+                except Exception:
+                    continue
+        except Exception:
+            pass
+    threading.Thread(target=menage, daemon=True).start()
+
+
 def main() -> int:
     _repere("imports termines")
     install_crash_handler()
+
+    # Single instance : si une autre tourne, on quitte (elle a deja remonte au
+    # front). En tete de main depuis la 4.4.21 : un double-clic lancait sinon
+    # la migration du PIN et une seconde archive USB, tuee en route (DAT-17)
+    if not acquire_single_instance_lock():
+        print("[app] Une autre instance tourne deja. Sortie.", flush=True)
+        return 0
 
     # Le PIN, global jusqu'a la v4.1.3, devient propre a chaque utilisateur
     try:
@@ -1125,11 +1146,6 @@ def main() -> int:
                 except Exception:
                     pass
 
-    # Single instance : si une autre tourne, on quitte (elle a deja remonte au front)
-    if not acquire_single_instance_lock():
-        print("[app] Une autre instance tourne deja. Sortie.", flush=True)
-        return 0
-
     # Charge les preferences UI pour decider taille/position fenetre
     data = storage.load_data()
     ui_prefs = data.get("ui", {})
@@ -1181,8 +1197,18 @@ def main() -> int:
                 x_, y_ = int(pos[0]), int(pos[1])
                 if not (-16000 < x_ < 16000 and -16000 < y_ < 16000):
                     pos = None
-                elif x_ + w_ < 0 or y_ + h_ < 0 or x_ > screen_w or y_ > screen_h:
-                    pos = None
+                elif x_ + w_ < 100 or y_ < -10 or x_ > screen_w - 100 or y_ > screen_h - 50:
+                    pos = None   # au moins 100 px visibles, barre de titre comprise
+                elif sys.platform == "win32":
+                    # Le haut de la fenetre doit tomber sur un ecran branche : un
+                    # second ecran retire laissait Pilote s'ouvrir hors de vue (ENV-02)
+                    import ctypes
+                    from ctypes import wintypes
+                    _MFP = ctypes.windll.user32.MonitorFromPoint
+                    _MFP.restype = wintypes.HMONITOR
+                    _MFP.argtypes = [wintypes.POINT, wintypes.DWORD]
+                    if not _MFP(wintypes.POINT(x_ + 100, y_ + 10), 0):   # 0 : MONITOR_DEFAULTTONULL
+                        pos = None
             except Exception:
                 pos = None
         else:
@@ -1578,7 +1604,11 @@ def main() -> int:
                 onglet = e[0]
                 defil = int(e[1]) if len(e) > 1 and e[1].isdigit() else 0
                 try:
-                    lire("goTab(%s); _setActiveSidebar(%s); 1" % (json.dumps(onglet), json.dumps(onglet)))
+                    # « js:openSettings('donnees') » : un ecran qui n'est pas un onglet (QA-09)
+                    if onglet.startswith("js:"):
+                        lire(onglet[3:] + "; 1")
+                    else:
+                        lire("goTab(%s); _setActiveSidebar(%s); 1" % (json.dumps(onglet), json.dumps(onglet)))
                     _t.sleep(3)
                     # Le premier parent qui defile (la page, ou la zone du
                     # contenu), sans le defilement en douceur de la page
@@ -1724,7 +1754,13 @@ def main() -> int:
             # Menus et boites de dialogue de pywebview en francais
             webview.start(debug=False, localization=plateforme.LOCALISATION_MAC)
         else:
-            webview.start(debug=False)
+            # Dossier WebView2 fixe : sans lui, pywebview en cree un neuf dans
+            # %TEMP% a chaque lancement et ne l'efface jamais (119 dossiers,
+            # 694 Mo sur le PC d'Arthur, ENV-06). Le mode prive reste actif :
+            # rien n'y est garde d'une session a l'autre.
+            _menage_webview_temp()
+            webview.start(debug=False,
+                          storage_path=os.path.join(tempfile.gettempdir(), "pilote_webview2"))
     finally:
         # Apres fermeture de la fenetre : on coupe le serveur, on libere le port
         server.stop_server()

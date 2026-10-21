@@ -30,6 +30,7 @@ import sys
 import threading
 import time
 import datetime
+import urllib.error
 import urllib.request
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -108,10 +109,6 @@ def _own_origins() -> set:
         f"http://127.0.0.1:{_server_port}",
         f"http://localhost:{_server_port}",
     }
-
-
-def get_session_token() -> str:
-    return _SESSION_TOKEN
 
 
 # ─── Limitation des tentatives de PIN ─────────────────────────────────────────
@@ -378,6 +375,14 @@ _search_cache = {}              # {query_normalisee: {results, ts}}
 _yahoo_opener = None
 _yahoo_crumb  = None
 _yahoo_lock   = threading.Lock()
+_yahoo_echec  = 0.0     # instant du dernier echec de session (ENV-08)
+
+
+def _oublier_session_yahoo() -> None:
+    """Crumb refuse (401/403) : on l'oublie, le prochain appel en reprend un."""
+    global _yahoo_opener, _yahoo_crumb
+    with _yahoo_lock:
+        _yahoo_opener = _yahoo_crumb = None
 
 
 def _ensure_yahoo_session():
@@ -385,10 +390,14 @@ def _ensure_yahoo_session():
     Initialise une session avec cookies + crumb pour acceder a quoteSummary.
     Voir https://github.com/ranaroussi/yfinance/issues/1737
     """
-    global _yahoo_opener, _yahoo_crumb
+    global _yahoo_opener, _yahoo_crumb, _yahoo_echec
     with _yahoo_lock:
         if _yahoo_opener and _yahoo_crumb:
             return _yahoo_opener, _yahoo_crumb
+        # Un echec recent : pas de nouvel essai avant 10 minutes (sinon trois
+        # requetes a Yahoo a chaque appel, toutes les 3 minutes, pour rien)
+        if time.time() - _yahoo_echec < 600:
+            return None, None
 
         cj = http.cookiejar.CookieJar()
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj),
@@ -420,6 +429,7 @@ def _ensure_yahoo_session():
             print(f"[server] Crumb KO: {e}", flush=True)
 
         if not crumb:
+            _yahoo_echec = time.time()
             return None, None
 
         _yahoo_opener = opener
@@ -600,6 +610,12 @@ def fetch_yahoo_keystats(yahoo_ticker: str):
             return out
         except Exception as e:
             print(f"[server] keystats/{host} {yahoo_ticker}: {e}", flush=True)
+            # Crumb perime (401/403) : une nouvelle session pour l'hote suivant
+            if isinstance(e, urllib.error.HTTPError) and e.code in (401, 403):
+                _oublier_session_yahoo()
+                opener, crumb = _ensure_yahoo_session()
+                if not opener or not crumb:
+                    return None
     return None
 
 
@@ -678,6 +694,7 @@ PEA_STOCK_INDEX = {
     "credit agricole":       ("ACA.PA",  "Crédit Agricole"),
     "danone":                ("BN.PA",   "Danone"),
     "dassault":              ("AM.PA",   "Dassault Aviation"),
+    "dassault systemes":     ("DSY.PA",  "Dassault Systèmes"),
     "edenred":               ("EDEN.PA", "Edenred"),
     "engie":                 ("ENGI.PA", "Engie"),
     "essilor":               ("EL.PA",   "EssilorLuxottica"),
@@ -717,7 +734,6 @@ PEA_STOCK_INDEX = {
     "biomerieux":            ("BIM.PA",  "bioMérieux"),
     "casino":                ("CO.PA",   "Casino Guichard"),
     "covivio":               ("COV.PA",  "Covivio"),
-    "edf":                   ("EDF.PA",  "Électricité de France"),
     "elis":                  ("ELIS.PA", "Elis"),
     "eutelsat":              ("ETL.PA",  "Eutelsat Communications"),
     "faurecia":              ("FRVIA.PA","Forvia"),
@@ -728,17 +744,14 @@ PEA_STOCK_INDEX = {
     "jc decaux":             ("DEC.PA",  "JCDecaux"),
     "klepierre":             ("LI.PA",   "Klépierre"),
     "lagardere":             ("MMB.PA",  "Lagardère"),
-    "natixis":               ("KN.PA",   "Natixis"),
     "nexity":                ("NXI.PA",  "Nexity"),
     "rexel":                 ("RXL.PA",  "Rexel"),
     "scor":                  ("SCR.PA",  "SCOR"),
     "soitec":                ("SOI.PA",  "Soitec"),
     "spie":                  ("SPIE.PA", "Spie"),
-    "suez":                  ("SEV.PA",  "Suez"),
     "ubisoft":               ("UBI.PA",  "Ubisoft Entertainment"),
     "valneva":               ("VLA.PA",  "Valneva"),
     "vallourec":             ("VK.PA",   "Vallourec"),
-    "veolia":                ("VIE.PA",  "Veolia"),
     "verallia":              ("VRLA.PA", "Verallia"),
     "worldline":             ("WLN.PA",  "Worldline"),
 }
@@ -1176,6 +1189,12 @@ def fetch_yahoo_analysts(yahoo_ticker: str):
             }
         except Exception as e:
             print(f"[server] analysts/{host} KO {yahoo_ticker}: {e}", flush=True)
+            # Crumb perime (401/403) : une nouvelle session pour l'hote suivant
+            if isinstance(e, urllib.error.HTTPError) and e.code in (401, 403):
+                _oublier_session_yahoo()
+                opener, crumb = _ensure_yahoo_session()
+                if not opener or not crumb:
+                    return None
             continue
     return None
 
@@ -1320,6 +1339,18 @@ _CSP_MAIL = (
     "frame-ancestors 'self'; "
     "sandbox allow-popups allow-popups-to-escape-sandbox"
 )
+# Par defaut (4.4.21), rien de distant : les images de suivi d'une newsletter
+# previennent l'expediteur de l'ouverture, de l'heure et de l'adresse IP. Le
+# bouton « Afficher les images » rouvre le mail avec ?images=1 (SEC-06).
+_CSP_MAIL_SANS_IMAGES = (
+    "default-src 'none'; "
+    "img-src data:; "
+    "style-src 'unsafe-inline'; "
+    "font-src data:; "
+    "form-action 'none'; "
+    "frame-ancestors 'self'; "
+    "sandbox allow-popups allow-popups-to-escape-sandbox"
+)
 
 
 def publier_mail(html: str) -> str:
@@ -1355,6 +1386,12 @@ class _Handler(http.server.BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         # Rien n'est expose en cross-origin : pas de preflight a accorder.
         self.send_response(405); self._sec_headers(); self.end_headers()
+
+    # Toute autre methode : 405 avec les memes en-tetes de securite (la page
+    # 501 par defaut de Python n'en avait aucun)
+    def _refuser_methode(self):
+        return self._json(405, {"ok": False, "error": "Methode non prise en charge"})
+    do_POST = do_PUT = do_DELETE = do_PATCH = do_HEAD = _refuser_methode
 
     # ─── Controle d'acces ─────────────────────────────────────────────────
     #
@@ -1482,6 +1519,18 @@ class _Handler(http.server.BaseHTTPRequestHandler):
 
         # ─── PIN endpoints (ultra-simples, fichier dedie) ─────────────────
         # Les endpoints PIN acceptent ?user=<slug> ; sans lui, utilisateur actif
+        if parsed.path.startswith("/pin/"):
+            # Seul un utilisateur de users.json : le compteur d'echecs prend
+            # ainsi une seule cle par compte (« DEMO », « demo/ » ou « ./demo »
+            # contournaient le blocage) et rien ne s'ecrit hors de users/
+            # (audit du 20/10/2026, SEC-03)
+            brut = (params.get("user", [""])[0] or "").strip()
+            import storage as _storage
+            etat = _storage.get_users_state()
+            if brut and brut not in [u["slug"] for u in etat["users"]]:
+                return self._json(404, {"ok": False, "error": "Utilisateur inconnu"})
+            params["user"] = [brut or etat.get("active") or ""]
+
         if parsed.path == "/pin/required":
             who = (params.get("user", [""])[0] or "").strip() or None
             return self._json(200, {"ok": True, "required": pin_required(who)})
@@ -1573,7 +1622,8 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             return self._serve_vendor(parsed.path[len("/vendor/"):])
 
         if parsed.path.startswith("/actus/mail/"):
-            return self._serve_mail(parsed.path[len("/actus/mail/"):])
+            return self._serve_mail(parsed.path[len("/actus/mail/"):],
+                                    params.get("images", [""])[0] == "1")
 
         # Sert l'UI HTML embarquee (sans cache pour eviter les vieilles versions)
         if parsed.path in ("/", "/index.html") and _html_file_path:
@@ -1632,7 +1682,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _serve_mail(self, ticket: str):
+    def _serve_mail(self, ticket: str, images: bool = False):
         with _mail_lock:
             entree = _mail_pages.get(ticket)
         if not entree or entree[0] < time.time():
@@ -1643,7 +1693,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options",        "SAMEORIGIN")
         self.send_header("Referrer-Policy",        "no-referrer")
-        self.send_header("Content-Security-Policy", _CSP_MAIL)
+        self.send_header("Content-Security-Policy", _CSP_MAIL if images else _CSP_MAIL_SANS_IMAGES)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
