@@ -392,7 +392,9 @@ contrat, une mesure de santé ou un relevé d'Arthur dans un fichier, un comment
 ou un message de commit : écrire « vérifié sur un vrai relevé, au centime », ou
 prendre les données fictives de Camille (`tests/donnees_exemple.py`). Des montants
 réels étaient écrits dans `docs/` jusqu'à la 4.4.20 (audit du 20/10/2026) : retirés
-des fichiers, l'historique git les garde.
+des fichiers, puis de tout l'historique git le 21/10/2026 (réécrit et poussé en force,
+tags compris). Les numéros de commit d'avant cette date, cités dans d'anciennes notes,
+n'existent plus.
 
 ## Conventions de code
 
