@@ -33,7 +33,10 @@ except Exception as e:
 
 versions = {"src/app.py": app and app.group(1), "build/installer.iss": iss and iss.group(1),
             "src/nouveautes.json": tete}
-tag = (sys.argv[1] if len(sys.argv) > 1 else os.environ.get("GITHUB_REF_NAME", "")).lstrip("v")
+# En CI, GITHUB_REF_NAME n'est un tag que si GITHUB_REF_TYPE vaut « tag » (sur la
+# branche mac, il vaut « mac »)
+en_ci = os.environ.get("GITHUB_REF_NAME", "") if os.environ.get("GITHUB_REF_TYPE") == "tag" else ""
+tag = (sys.argv[1] if len(sys.argv) > 1 else en_ci).lstrip("v")
 if tag:
     versions["tag"] = tag
 if len(set(versions.values())) != 1 or None in versions.values():

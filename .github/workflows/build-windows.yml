@@ -46,9 +46,11 @@ jobs:
         with:
           python-version: '3.8'
 
+      # pwsh continue apres une commande en echec : chaque code de sortie est lu
       - name: Check with Python 3.8
         run: |
           python tests/verifier_release.py
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           python -m unittest discover -s tests -v
 
       - name: Back to Python 3.11
