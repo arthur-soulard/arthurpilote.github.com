@@ -11,7 +11,11 @@
 # 20/10/2026 : correctifs de l'audit. Accueil (tuiles), Positions (noms
 # échappés, ligne au clavier), vue d'ensemble (versements manquants, état des
 # cours), Paramètres (taille du texte).
+#
+# 21/10/2026 : Newsletters (4.4.22). Les données d'exemple n'ont pas de boîte
+# Gmail : la capture montre l'invite « Connecte ta boîte », pas la liste.
 home
 pos
 dash
 js:openSettings('general')
+ac-boite

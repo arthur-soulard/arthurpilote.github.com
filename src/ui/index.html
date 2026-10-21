@@ -1753,7 +1753,8 @@ label.sv-check, label.sv-inline {
 .ac-maj { font-size: 12px; color: var(--txt3); }
 .ac-maj.err { color: var(--r); }
 .ac-maj-btn { font-size: 15px; margin-left: -6px; }
-.ac-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+#pane-ac-boite .m-head { margin-bottom: .6rem; }
+.ac-filtres { display: flex; flex-wrap: wrap; gap: 6px; }
 .ac-chip {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--brd2); background: transparent; color: var(--txt2);
@@ -1764,9 +1765,12 @@ label.sv-check, label.sv-inline {
 .ac-chip.active { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; }
 .ac-chip small { font-size: 11px; opacity: .7; }
 .ac-layout {
-  display: grid; grid-template-columns: minmax(270px, 330px) minmax(0, 1fr); gap: 14px;
-  height: calc(100vh - 230px); min-height: 380px;
+  display: grid; grid-template-columns: minmax(230px, 280px) minmax(0, 1fr); gap: 14px;
+  height: calc(100vh - 200px); min-height: 380px;
 }
+/* « Masquer la liste » : le mail prend toute la largeur */
+.ac-layout.sans-liste { grid-template-columns: minmax(0, 1fr); }
+.ac-layout.sans-liste .ac-liste { display: none; }
 .ac-liste, .ac-lecteur, .ac-off {
   background: var(--bg2); border-radius: var(--radl); box-shadow: var(--sh);
   overflow: hidden; display: flex; flex-direction: column; min-height: 0;
@@ -1803,11 +1807,13 @@ label.sv-check, label.sv-inline {
 .ac-mail-tags .m-tag { font-family: var(--font); font-size: 10.5px; font-weight: 500; }
 .ac-lect-h {
   display: flex; align-items: flex-start; gap: 12px;
-  padding: 14px 18px 12px; border-bottom: 1px solid var(--brd);
+  flex-wrap: wrap; padding: 12px 18px 10px; border-bottom: 1px solid var(--brd);
 }
-.ac-lect-t { font-family: var(--serif); font-size: 20px; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
+.ac-lect-id { flex: 1 1 280px; min-width: 0; }
+.ac-lect-t { font-family: var(--serif); font-size: 19px; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
 .ac-lect-s { font-size: 12px; color: var(--txt2); margin-top: 4px; overflow-wrap: anywhere; }
 .ac-lect-acts { display: flex; gap: 6px; flex-shrink: 0; margin-left: auto; }
+.ac-lect-h .btn { padding: 4px 11px; }
 /* Le mail garde son propre fond (blanc), comme dans Gmail */
 .ac-img-barre { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px;
   color: var(--txt2); background: var(--bg3); border-bottom: 1px solid var(--brd); }
@@ -3516,10 +3522,11 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <span class="m-nav-lbl">Newsletters</span>
     <span class="ac-maj" id="ac-maj"></span>
     <button class="m-iconbtn ac-maj-btn" id="ac-btn-maj" onclick="acReleve()" title="Relever la boîte maintenant"><i class="ph ph-arrows-clockwise"></i></button>
+    <div class="ac-filtres" id="ac-filtres"></div>
     <div class="m-spacer"></div>
+    <button class="btn btn-ghost btn-sm" id="ac-btn-liste" onclick="acBasculerListe()" title="Cacher la liste pour lire le mail sur toute la largeur"><i class="ph ph-sidebar-simple"></i> <span>Masquer la liste</span></button>
   </div>
   <div class="ac-off" id="ac-off" hidden></div>
-  <div class="ac-filtres" id="ac-filtres"></div>
   <div class="ac-layout" id="ac-layout">
     <div class="ac-liste"><div class="ac-liste-in" id="ac-liste"></div></div>
     <div class="ac-lecteur" id="ac-lecteur"></div>
@@ -21119,6 +21126,7 @@ function acRenderBoite() {
   document.getElementById("ac-filtres").hidden = !on;
   document.getElementById("ac-layout").hidden = !on;
   document.getElementById("ac-btn-maj").hidden = !on;
+  document.getElementById("ac-btn-liste").hidden = !on;
   if (!on) {
     document.getElementById("ac-maj").textContent = "";
     off.innerHTML = `<div class="ac-vide">
@@ -21136,6 +21144,7 @@ function acRenderBoite() {
   acRenderFiltres();
   acRenderListe();
   if (!document.getElementById("ac-lecteur").dataset.rendu) acRenderLecteur();
+  acRenderBoutonListe();
   acAjusterHauteur();
 }
 
@@ -21225,7 +21234,22 @@ function acAjusterHauteur() {
   const el = document.getElementById("ac-layout");
   if (!el || !el.offsetParent || window.innerWidth <= 900) return;
   const haut = el.getBoundingClientRect().top + window.scrollY;
-  el.style.height = Math.max(380, window.innerHeight - haut - 36) + "px";
+  el.style.height = Math.max(380, window.innerHeight - haut - 20) + "px";
+}
+
+/* Cache la liste : le mail prend toute la largeur (le choix dure jusqu'à la fermeture de Pilote) */
+function acBasculerListe() {
+  AC.listeCachee = !AC.listeCachee;
+  acRenderBoutonListe();
+}
+
+function acRenderBoutonListe() {
+  const lay = document.getElementById("ac-layout");
+  const btn = document.getElementById("ac-btn-liste");
+  if (!lay || !btn) return;
+  lay.classList.toggle("sans-liste", !!AC.listeCachee);
+  btn.querySelector("span").textContent = AC.listeCachee ? "Afficher la liste" : "Masquer la liste";
+  btn.querySelector("i").className = "ph " + (AC.listeCachee ? "ph-sidebar-simple" : "ph-arrows-out-line-horizontal");
 }
 window.addEventListener("resize", () => { if (acOngletOuvert("ac-boite")) acAjusterHauteur(); });
 
@@ -21291,7 +21315,7 @@ function acRenderLecteurTete() {
   if (!h || !m) return;
   const adr = m.adresseDe && m.adresseDe !== m.de ? ` &lt;${escHtml(m.adresseDe)}&gt;` : "";
   h.innerHTML = `
-    <div style="min-width:0">
+    <div class="ac-lect-id">
       <div class="ac-lect-t">${escHtml(m.objet)}</div>
       <div class="ac-lect-s">${escHtml(m.de)}${adr} · ${acDateLongue(m.date)}</div>
     </div>

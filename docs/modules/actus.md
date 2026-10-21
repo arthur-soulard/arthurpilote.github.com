@@ -86,6 +86,16 @@ d'Arthur : l'étape 1 de la fiche le signale depuis.
    (`BODY.PEEK[]` puis `STORE +FLAGS \Seen`, pour que l'échec éventuel se voie).
    Le bouton « Non lu » / « Lu » de l'en-tête bascule, ici et dans Gmail.
 
+### Place donnée à la lecture (demande d'Arthur du 21/10/2026)
+
+Le mail occupait trop peu de la fenêtre : liste de 330 px, titre du mail qui
+repoussait ses boutons à côté, filtres sur une ligne à part. Maintenant : filtres
+sur la ligne du titre de l'onglet, liste de 230 à 280 px, en-tête du mail dont les
+boutons passent dessous quand le titre est long (`.ac-lect-id`, `flex-wrap`), marge
+du bas de 20 px au lieu de 36 (`acAjusterHauteur`). Le bouton « Masquer la liste »
+(`acBasculerListe`, `AC.listeCachee`, classe `.sans-liste`) donne tout l'écran au
+mail ; le choix dure jusqu'à la fermeture de Pilote (pas stocké).
+
 ### Relevé
 
 Les 60 derniers mails de la boîte de réception (`NB_MAILS`), relevés au
