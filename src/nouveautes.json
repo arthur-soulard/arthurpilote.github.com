@@ -2,6 +2,31 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.21",
+      "date": "2026-10-21",
+      "titre": "Tes données mieux protégées",
+      "nouveau": [
+        "Taille du texte réglable, dans Paramètres → Général.",
+        "Les fenêtres se manient au clavier : Tab reste dans la fenêtre ouverte, Échap ferme celle du dessus.",
+        "Actus : les images des newsletters sont bloquées par défaut ; un bouton les affiche pour le mail ouvert."
+      ],
+      "ameliore": [
+        "Un fichier de données abîmé, ou écrit par une version plus récente de Pilote, n'est plus jamais écrasé ; la liste des utilisateurs se reconstruit seule si elle est illisible.",
+        "Pilote ne se lance plus deux fois en même temps : deux fenêtres auraient pu écrire l'une sur l'autre.",
+        "Sauvegarde USB : la copie s'écrit à part avant de remplacer l'ancienne, et une restauration s'annule si la copie de sécurité échoue.",
+        "Mise à jour : le fichier téléchargé est vérifié avant d'être installé ; en cas d'échec, ton Pilote actuel redémarre.",
+        "Pilote signale les cours trop anciens ou manquants, et les titres qui ne cotent pas en euros.",
+        "Textes plus contrastés, graphiques décrits et notifications annoncées pour les lecteurs d'écran."
+      ],
+      "corrige": [
+        "Les dividendes estimés ne comptent plus tant qu'ils ne sont pas versés.",
+        "Un PEA dont les versements ne sont pas saisis ne montre plus une plus-value fausse : Pilote te le signale.",
+        "Prêt : mensualités restantes et prix de revient justes ; assurance vie : intérêts justes les années bissextiles.",
+        "Import des relevés : dates jour/mois ambiguës signalées, frais convertis en euros, taxe sur les transactions reconnue.",
+        "La fenêtre revient à l'écran si elle s'ouvrait en dehors."
+      ]
+    },
+    {
       "version": "4.4.20",
       "date": "2026-10-19",
       "titre": "Tu sais où sont tes données",
