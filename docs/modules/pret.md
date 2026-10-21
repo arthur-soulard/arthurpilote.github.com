@@ -107,7 +107,7 @@ Un versement annoncé pour une date future comptait déjà comme reçu.
 * `capital_du = prCapitalDu()` (versé − remboursé). `mensualites_restantes` reste
   calculé sur le **montant emprunté** : sur le capital dû, il tomberait à 30 au lieu
   de 60 avant la 2e tranche.
-* `prTranchesTxt(o, court)` : « … € versés sur … € empruntés, … €
+* `prTranchesTxt(o, court)` : « 5 000 € versés sur 10 000 € empruntés, 5 000 €
   attendus le … ». Le champ « Date du 1er déblocage » n'est qu'indicatif : ce sont
   les versements qui comptent (un par tranche).
 * **Cours** : `prCours(t)` prend le cours du PEA (`getVar`, rafraîchi toutes les
@@ -144,7 +144,7 @@ modification, un décochage, une suppression ou le bouton Retour se voient parto
   `t-pret-mt`, enregistré dans `pretMontant`. Vide ou égal à l'ordre : l'ordre
   entier, pas de `pretMontant`. Le prêt détient alors la même part des parts et
   des frais (`prPartOrdre` = `pretMontant` / montant de l'ordre, `prTotalOrdre`) :
-  par exemple … € d'un achat de … € → … parts sur 25. Cas
+  par exemple 60 € d'un achat de 150 € → 4 parts sur 10. Cas
   d'origine : des ETF achetés en partie avec l'argent du prêt et en partie avec
   des espèces déjà sur le compte ; tout coché, le prêt comptait plus d'argent placé que reçu.
   Fenêtre « Passer un scénario » : un seul montant (`sop-pret-mt`), réparti entre

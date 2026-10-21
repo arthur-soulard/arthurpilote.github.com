@@ -150,7 +150,7 @@ Relevés le 11/10/2026 :
   recevait la grille d'Arthur.
 * **PEA** : « Réglage libre » (seuil + taux) reste le défaut, exactement le
   calcul d'avant. Choisir Fortuneo Starter redonne le même plan au centime
-  (vérifié : mêmes ordres, mêmes frais, … €).
+  (vérifié : mêmes ordres, mêmes frais).
 * **Personnalisé** : la grille se modifie palier par palier (Stratégie →
   Réglages / Cibles et courtier).
 * **`txFraisBadge`** : un ordre dont les frais réels ne collent pas à la grille
@@ -232,8 +232,8 @@ Résultat vérifié au centime contre un calcul indépendant fait sur un vrai CS
 positions (parts fractionnées comprises), investi net, frais et taxe, montant
 offert, aucun « frais ≠ grille », lignes clôturées, second import
 du même fichier : rien de nouveau, PEA identique avant et après. Les
-plus-values réalisées par ligne diffèrent de quelques centimes du relevé
-(… € contre … €) : `computePos` multiplie parts × cours sans
+plus-values réalisées par ligne diffèrent de quelques centimes du relevé :
+`computePos` multiplie parts × cours sans
 arrondir, comme pour le PEA ; l'investi net, lui, part de `brutOrdre`.
 
 ### Courbe vérifiée sur le vrai relevé (12/10/2026)

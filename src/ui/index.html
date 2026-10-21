@@ -5696,9 +5696,9 @@ function renderPeaInfo() {
 
 /* ─── Metrics ─── */
 /* Montant brut d'un ordre (parts × cours) arrondi au centime, comme sur le
-   relevé de la banque : n × 7,297 = … → … €. Sans cet arrondi, les
-   fractions de centime s'additionnaient : … € d'espèces affichés pour … €
-   à la banque (07/10/2026). toPrecision : 7,297 × n vaut …… en
+   relevé de la banque : 13 × 7,675 = 99,775 → 99,78 €. Sans cet arrondi, les
+   fractions de centime s'additionnaient : un centime d'espèces de plus qu'à
+   la banque (07/10/2026). toPrecision : 13 × 7,675 vaut 99,77499… en
    virgule flottante, comme pacR2. */
 function brutOrdre(t) {
   return Math.round(Number(((t.qty || 0) * (t.cours || 0) * 100).toPrecision(12))) / 100;
@@ -5737,7 +5737,7 @@ function computeCash() { return Math.max(0, computeCashBrut()); }
    réalisé des lignes vendues et les
    dividendes, réinvestis. Montant et latent insécables : la carte fait
    147 px de large dans la fenêtre par défaut (1280 px), la ligne y passe
-   sur trois lignes sans couper « (… € latents) ». */
+   sur trois lignes sans couper « (+12,34 € latents) ». */
 function ligneRevient(inv, latent) {
   const nb = t => `<span style="white-space:nowrap">${t}</span>`;
   return `<span title="Ce qu'ont coûté les lignes détenues aujourd'hui, frais compris. Ce n'est pas le total déposé : le gain ou la perte des lignes déjà vendues et les dividendes ont été réinvestis.">`
@@ -6369,8 +6369,8 @@ function computePnl(series, range) {
      Jusqu'à la 4.4.2 : un TWR coupé à chaque flux, qui repartait du premier
      point du jour du flux et perdait le rendement de ce jour-là. Peu visible
      sur le PEA (un versement par mois), faux sur un CTO où chaque ordre est
-     un flux : « YTD » affichait … % pour … € (12/10/2026). Choix
-     d'Arthur : ce rendement plutôt qu'un TWR corrigé (… % ce jour-là),
+     un flux : « YTD » affichait un gain en % pour une perte en euros
+     (12/10/2026). Choix d'Arthur : ce rendement plutôt qu'un TWR corrigé,
      qui peut être de signe opposé au gain. */
   const jour   = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 864e5;
   const duree  = jour(endDate) - jour(startDate);
@@ -18261,7 +18261,7 @@ function prPeaOrdres() {
     if (!t.pret || (t.type !== "Achat" && t.type !== "Vente")) continue;
     const total = prTotalOrdre(t), part = prPartOrdre(t);
     // Ordre payé en partie avec le prêt : le prêt en détient la même part
-    // (… € sur un achat de … € → … % des parts et des frais)
+    // (60 € sur un achat de 150 € → 40 % des parts et des frais)
     const o = { id: "pea-" + t.id, peaTxId: t.id, date: normDate(t.date),
                 ticker: prYahoo(t.asset), quantite: prN(t.qty) * part,
                 montant: part < 1 ? prN(t.pretMontant) : total };
@@ -18560,7 +18560,7 @@ function prRenderAll() {
   prRenderParams(o);
 }
 
-/** « … € versés sur … € empruntés, … € attendus le 05/10/2026 ».
+/** « 5 000 € versés sur 10 000 € empruntés, 5 000 € attendus le 05/03/2027 ».
     `court` : pour la carte de la vue d'ensemble, seulement le prochain versement. */
 function prTranchesTxt(o, court) {
   const montant = prN(PR.pret.montant);

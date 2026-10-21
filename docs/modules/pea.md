@@ -5,11 +5,11 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 ## Espèces : chaque ordre arrondi au centime (08/10/2026)
 
 La banque arrondit le montant brut de **chaque** ordre (parts × cours) au
-centime, demi-centime vers le haut : n × 7,297 = … → … €. Pilote
+centime, demi-centime vers le haut : 13 × 7,675 = 99,775 → 99,78 €. Pilote
 additionnait les montants exacts : les fractions de centime s'accumulaient,
-… € d'espèces affichés … € pour … € chez Fortuneo. `brutOrdre(t)`
-fait l'arrondi (avec `toPrecision`, comme `pacR2` : 7,297 × n vaut
-…… en virgule flottante). Il sert partout où l'on compte de l'argent
+et les espèces affichées dépassaient d'un centime celles de la banque. `brutOrdre(t)`
+fait l'arrondi (avec `toPrecision`, comme `pacR2` : 13 × 7,675 vaut
+99,77499… en virgule flottante). Il sert partout où l'on compte de l'argent
 qui sort ou entre : `computeCash`, les espèces rejouées de la courbe
 (`buildTwrSeries`, pour finir sur le même solde), le montant d'une ligne de
 Transactions, le total de « Passer un scénario », le prêt (`prTotalOrdre`).
@@ -449,7 +449,7 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   elle prenait les achats et ventes. Or la courbe du portefeuille compte titres
   **et espèces** : une vente suivie d'un rachat faisait plonger les trois
   comparaisons entre les deux dates (vu par Arthur le 03/10/2026 ; reproduit :
-  CAC 40 de … € à … € après une vente de … €, retour au rachat).
+  le CAC 40 perdait le montant de la vente, puis le retrouvait au rachat).
   Sans aucun versement saisi, les espèces valent 0 et la courbe baisse aussi à
   une vente : on garde alors achats et ventes comme flux.
 * **Comparaisons cochées absentes à l'ouverture (4.3.16)** : `renderPerf()`
@@ -464,9 +464,8 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   la part de la plage où il a travaillé). Toujours du même signe que le gain.
   Avant : un TWR qui repartait du premier point du jour de chaque flux et perdait
   le rendement de ce jour-là. Faux sur un CTO, où chaque ordre est un flux
-  (un « YTD » positif en % pour une perte en euros). Choix d'Arthur contre un TWR corrigé
-  (… % ce jour-là), qui peut être de signe opposé au gain. Sur son PEA :
-  YTD … % → … %, 6M … % → … %. La tuile « Performance du PEA »
+  (un « YTD » positif en % pour une perte en euros). Choix d'Arthur contre un TWR corrigé,
+  qui peut être de signe opposé au gain. La tuile « Performance du PEA »
   de l'accueil lit le même calcul. Max ne change pas.
 * **Comparaisons d'un compte à l'autre (12/10/2026)** : `_benchHistory` garde le
   `since` de son chargement et n'est repris que s'il remonte jusqu'au premier
