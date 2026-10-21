@@ -788,7 +788,7 @@ def _avis_generique(t: str, lot: _Lot):
             # (pas si l'avis parle d'une taxe qui n'a pas ete lue : elle serait
             # comptee dans les frais)
             if 0 <= ecart <= max(50.0, 0.05 * brut) and (taxe or not re.search(
-                    r"(?i)taxe\s+sur\s+les\s+transactions|T\.?T\.?F", t)):
+                    r"(?i)taxe\s+sur\s+les\s+transactions|\bT\.?T\.?F\b", t)):
                 frais = round(ecart, 2)
             else:
                 return False

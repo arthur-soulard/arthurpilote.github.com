@@ -111,8 +111,7 @@ jobs:
           $s = Start-Process -FilePath "dist\Pilote_Setup.exe" -Wait -PassThru `
                  -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$dir`""
           if ($s.ExitCode -ne 0) { Write-Output "::error title=Setup::installation silencieuse KO ($($s.ExitCode))"; exit 1 }
-          foreach ($f in "$dir\Pilote.exe", "$dir\_internal
-ouveautes.json", "$dir\THIRD-PARTY-NOTICES.txt") {
+          foreach ($f in "$dir/Pilote.exe", "$dir/_internal/nouveautes.json", "$dir/THIRD-PARTY-NOTICES.txt") {
             if (-not (Test-Path $f)) { Write-Output "::error title=Setup::$f absent apres installation"; exit 1 }
           }
           $p = Start-Process -FilePath "$dir\Pilote.exe" -PassThru
