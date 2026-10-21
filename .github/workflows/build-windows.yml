@@ -18,6 +18,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -108,19 +109,24 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" build\installer.iss
           if ($LASTEXITCODE -ne 0) { Write-Output "::error title=Setup::compilation impossible"; exit 1 }
           $dir = Join-Path $env:RUNNER_TEMP "Pilote essai"
-          $s = Start-Process -FilePath "dist\Pilote_Setup.exe" -Wait -PassThru `
+          # Pas de -Wait : il attend aussi les processus lances par le Setup, et le
+          # Setup silencieux relance Pilote ([Run], comme apres une mise a jour),
+          # qui ne se ferme pas. On attend le Setup seul.
+          $s = Start-Process -FilePath "dist\Pilote_Setup.exe" -PassThru `
                  -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$dir`""
+          $null = $s.Handle
+          if (-not $s.WaitForExit(300000)) { Write-Output "::error title=Setup::installation silencieuse bloquee"; exit 1 }
           if ($s.ExitCode -ne 0) { Write-Output "::error title=Setup::installation silencieuse KO ($($s.ExitCode))"; exit 1 }
           foreach ($f in "$dir/Pilote.exe", "$dir/_internal/nouveautes.json", "$dir/THIRD-PARTY-NOTICES.txt") {
             if (-not (Test-Path $f)) { Write-Output "::error title=Setup::$f absent apres installation"; exit 1 }
           }
-          $p = Start-Process -FilePath "$dir\Pilote.exe" -PassThru
+          # Le Pilote relance par le Setup doit repondre
           $up = $null
           for ($i = 1; $i -le 60; $i++) {
             try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:7438/ping -TimeoutSec 2 | Out-Null; $up = $i; break } catch { Start-Sleep 1 }
           }
           Start-Sleep 3
-          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-          if (-not $up) { Write-Output "::error title=Setup::l'exe installe ne repond pas"; exit 1 }
+          Get-Process Pilote -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (-not $up) { Write-Output "::error title=Setup::Pilote relance par le Setup ne repond pas"; exit 1 }
           if (-not (Test-Path "$dir\Donnees")) { Write-Output "::error title=Setup::Donnees absent a cote de l'exe"; exit 1 }
           Write-Output "::notice title=Setup::installe, lance (ping $up s), Donnees a cote de l'exe"
