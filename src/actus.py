@@ -142,31 +142,34 @@ def _security(*args) -> subprocess.CompletedProcess:
     return subprocess.run(["security", *args], capture_output=True, text=True, timeout=15)
 
 
-def _chiffrer(mdp: str) -> str:
+# service / libelle : le module Agenda range son code iCloud a cote, sous son
+# propre nom de service (un element du Trousseau par service et par compte).
+def _chiffrer(mdp: str, service: str = _TROUSSEAU,
+              libelle: str = "Pilote : code d'application Gmail (Actus)") -> str:
     brut = mdp.encode("utf-8")
     if sys.platform == "win32":
         return "dpapi:" + base64.b64encode(_dpapi(brut, True)).decode("ascii")
     if sys.platform == "darwin":
         compte = _compte_trousseau()
-        r = _security("add-generic-password", "-U", "-s", _TROUSSEAU, "-a", compte,
-                      "-l", "Pilote : code d'application Gmail (Actus)", "-w", mdp)
+        r = _security("add-generic-password", "-U", "-s", service, "-a", compte,
+                      "-l", libelle, "-w", mdp)
         if r.returncode != 0:
             raise OSError((r.stderr or "").strip() or "le Trousseau a refusé le code")
         return "trousseau:" + compte
     return "b64:" + base64.b64encode(brut).decode("ascii")
 
 
-def _oublier(secret: str) -> None:
+def _oublier(secret: str, service: str = _TROUSSEAU) -> None:
     """Deconnexion : retire aussi le code du Trousseau (Mac)."""
     if secret.startswith("trousseau:") and sys.platform == "darwin":
-        _security("delete-generic-password", "-s", _TROUSSEAU, "-a", secret[10:])
+        _security("delete-generic-password", "-s", service, "-a", secret[10:])
 
 
-def _dechiffrer(secret: str) -> str:
+def _dechiffrer(secret: str, service: str = _TROUSSEAU) -> str:
     if secret.startswith("dpapi:") and sys.platform == "win32":
         return _dpapi(base64.b64decode(secret[6:]), False).decode("utf-8")
     if secret.startswith("trousseau:") and sys.platform == "darwin":
-        r = _security("find-generic-password", "-s", _TROUSSEAU, "-a", secret[10:], "-w")
+        r = _security("find-generic-password", "-s", service, "-a", secret[10:], "-w")
         if r.returncode != 0:
             raise ValueError("code absent du Trousseau")
         return r.stdout.rstrip("\n")

@@ -1871,6 +1871,37 @@ label.sv-check, label.sv-inline {
 .ac-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .ac-err { margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--r); }
 .ac-err:empty { display: none; }
+/* Agenda : calendrier (cases de .sp-day, comme Sports) et onglet iCloud
+   (mêmes briques que la connexion d'Actus). --c : couleur de la ligne
+   (celle de l'agenda chez Apple, posée en style, sinon celle-ci). */
+.ag-t-note     { --c: var(--accent); }
+.ag-t-icloud   { --c: var(--b); }
+.ag-day { gap: 3px; min-width: 0; }
+.ag-ev {
+  display: block; min-width: 0; padding: 2px 6px; border-radius: 5px;
+  font-size: 11px; line-height: 1.35; color: var(--txt);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  border-left: 3px solid var(--c);
+}
+.ag-ev b { font-family: var(--mono); font-weight: 600; color: var(--txt2); }
+.ag-plus { background: none; border-left-color: transparent; color: var(--txt3); font-family: var(--mono); }
+.ag-legende { display: flex; flex-wrap: wrap; gap: 12px; margin-left: auto; }
+.ag-leg { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--txt2); }
+.ag-leg::before { content: ""; width: 8px; height: 8px; border-radius: 99px; background: var(--c); }
+.ag-ico { background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); font-size: 17px; }
+.ag-icloud-etat { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); }
+.ag-cnx { max-width: 720px; }
+@media (max-width: 760px) {
+  .ag-ev { font-size: 10px; padding: 1px 4px; }
+  .ag-ev b { display: none; }
+}
+.ag-etapes { margin-bottom: 18px; }
+.ag-choix { display: flex; flex-direction: column; gap: 9px; }
+.ag-choix label.sv-check { font-size: 13px; color: var(--txt); align-items: flex-start; }
+.ag-choix input { margin-top: 3px; }
+.ag-aide { font-weight: 400; color: var(--txt3); }
+.ag-err { color: var(--r); }
 @media (max-width: 900px) {
   .ac-cnx { grid-template-columns: 1fr; }
   .ac-layout { grid-template-columns: 1fr; height: auto !important; }
@@ -3580,6 +3611,46 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- ════════════════════ AGENDA (agenda.py, bloc ag* en fin de fichier) ════════════════════ -->
+<div class="pane" id="pane-ag-cal">
+  <div class="m-head">
+    <div class="m-nav">
+      <button class="btn btn-sm btn-ghost" onclick="agChangerMois(-1)" title="Mois précédent"><i class="ph ph-caret-left"></i></button>
+      <span class="m-nav-lbl" id="ag-mois-lbl">—</span>
+      <button class="btn btn-sm btn-ghost" onclick="agChangerMois(1)" title="Mois suivant"><i class="ph ph-caret-right"></i></button>
+      <button class="btn btn-sm btn-ghost" onclick="agAujourdhui()" style="margin-left:6px">Aujourd'hui</button>
+    </div>
+    <div class="m-spacer"></div>
+    <span class="ag-icloud-etat" id="ag-icloud-etat"></span>
+    <button class="btn btn-primary" onclick="agOuvrirNote(null, null)"><i class="ph ph-plus"></i> Note</button>
+  </div>
+  <div class="card">
+    <div class="card-h"><span class="card-t">Calendrier</span>
+      <span class="ag-legende" id="ag-legende"></span>
+    </div>
+    <div class="card-b">
+      <div class="sp-cal" id="ag-cal-dows"></div>
+      <div class="sp-cal" id="ag-cal-grid" style="margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="pane" id="pane-ag-connexion">
+  <div class="m-head">
+    <span class="m-nav-lbl">iCloud</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="card ag-cnx">
+    <div class="card-h"><span class="card-t">Ton agenda iCloud</span></div>
+    <div class="card-b">
+      <p class="ac-intro">Pilote met dans ton agenda iCloud tes notes et ce que tu coches ici&nbsp;: ils
+        apparaissent sur ton iPhone, ton Mac et sur iCloud.com. Il lit aussi tes autres agendas pour
+        les montrer dans le calendrier, sans jamais les modifier.</p>
+      <div id="ag-boite"></div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /wrap -->
 
 <!-- ════════════════════ MODALES SPORTS ════════════════════ -->
@@ -3795,6 +3866,42 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <button class="btn btn-ghost danger" id="sp-g-del" style="margin-right:auto;display:none" onclick="spDeleteGoal()">Supprimer</button>
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-goal')">Annuler</button>
       <button class="btn btn-primary" onclick="spSaveGoal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════ MODALES AGENDA ═════════════════ -->
+
+<!-- Tout ce qui tombe un jour -->
+<div class="ov" id="ov-ag-jour" onclick="if(event.target===this)closeOv('ov-ag-jour')">
+  <div class="modal" style="max-width:520px">
+    <h2 id="ag-jour-titre">—</h2>
+    <div class="sp-slist" id="ag-jour-liste"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-ag-jour')">Fermer</button>
+      <button class="btn btn-primary" id="ag-jour-ajout"><i class="ph ph-plus"></i> Ajouter une note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Une note de l'agenda -->
+<div class="ov" id="ov-ag-note" onclick="if(event.target===this)closeOv('ov-ag-note')">
+  <div class="modal" style="max-width:480px">
+    <h2 id="ag-note-titre">Nouvelle note</h2>
+    <div class="fg"><label for="ag-n-titre">Titre</label>
+      <input id="ag-n-titre" type="text" maxlength="200" placeholder="Ex. Dentiste, rendre le livre…"></div>
+    <div class="fg-row">
+      <div class="fg"><label for="ag-n-date">Date</label><input id="ag-n-date" type="date"></div>
+      <div class="fg"><label for="ag-n-heure">Heure (facultatif)</label><input id="ag-n-heure" type="time"></div>
+      <div class="fg"><label for="ag-n-duree">Durée (min)</label><input id="ag-n-duree" type="number" min="0" step="5" placeholder="60"></div>
+    </div>
+    <div class="fg"><label for="ag-n-texte">Détails</label>
+      <textarea id="ag-n-texte" maxlength="2000" placeholder="Adresse, choses à penser…"></textarea></div>
+    <p class="ac-note" id="ag-n-icloud"></p>
+    <div class="mact">
+      <button class="btn btn-ghost danger" id="ag-n-suppr" style="margin-right:auto;display:none" onclick="agSupprimerNote()">Supprimer</button>
+      <button class="btn btn-ghost" onclick="closeOv('ov-ag-note')">Annuler</button>
+      <button class="btn btn-primary" onclick="agEnregistrerNote()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -10891,6 +10998,10 @@ const NAV_MODULES = {
     desc: "La boîte Gmail qui reçoit tes newsletters, lue dans Pilote.",
     pas:  "Connecte ta boîte Gmail : l'onglet Connexion explique comment.",
     tab: "ac-connexion", tuiles: [] },
+  "sec-agenda": {
+    desc: "Un calendrier de tout ce que Pilote sait dater, tes notes, et ton agenda iCloud sur l'iPhone.",
+    pas:  "Ajoute une note dans le calendrier, ou connecte ton agenda iCloud.",
+    tab: "ag-cal", tuiles: [] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -14355,6 +14466,12 @@ const NAV_SECTIONS = [
     { id: "ac-boite",     label: "Newsletters" },
     { id: "ac-connexion", label: "Connexion"          },
   ]},
+  // Agenda (22/10/2026) : tout ce que Pilote sait dater, les notes, les
+  // agendas iCloud ; l'onglet iCloud règle ce qui part sur l'iPhone
+  { id: "sec-agenda", label: "Agenda", children: [
+    { id: "ag-cal",       label: "Calendrier" },
+    { id: "ag-connexion", label: "iCloud"     },
+  ]},
 ];
 
 // Liste plate : conserve l'API historique (onglets masques, Ctrl+1..7, config)
@@ -14422,7 +14539,7 @@ function _updateCrumb(id) {
    le premier CTO prend la place de la section CTO qui l'attendait, et celle-ci
    revient à la place du dernier CTO supprimé. */
 const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-actus", "@perso",
-                          "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante"];
+                          "sec-agenda", "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante"];
 
 /* Les blocs de la barre : {cle, sec, label, enfants: [{id, base, label}]} */
 function _navBlocs() {
@@ -14551,7 +14668,7 @@ function _injectTitlebar() {
 const NAV_ICONS = {
   "sec-pea": "chart-line-up", "sec-cto": "briefcase", "sec-comptes": "wallet", "sec-pret": "hand-coins",
   "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
-  "sec-actus": "newspaper",
+  "sec-actus": "newspaper", "sec-agenda": "calendar-blank",
 };
 
 function _injectSidebar() {
@@ -24189,6 +24306,434 @@ function dashWireDnd(box) {
   });
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   MODULE AGENDA (agenda.py, docs/modules/agenda.md)
+   Section « Agenda » : Calendrier (ag-cal) et iCloud (ag-connexion).
+   * Le calendrier reproduit ce qu'il y a dans iCloud, comme le téléphone
+     (agenda_icloud, tous les agendas, celui de Pilote compris : une séance
+     n'y est que si elle a été envoyée). Seules les notes s'affichent depuis
+     Pilote, sans attendre l'aller-retour (Python les saute à la lecture).
+   * Les notes vivent dans AG.notes ; save_agenda_notes les écrit, et Python
+     les envoie à iCloud dans la seconde. « Mettre à jour le téléphone »
+     lance l'envoi tout de suite, puis relit iCloud.
+   * L'onglet iCloud règle la connexion et ce qui part sur l'iPhone. Le mot
+     de passe pour app entre par save_agenda et ne ressort pas.
+   ══════════════════════════════════════════════════════════════════════════ */
+const AG = { config: null, calendriers: null, formMdp: false, erreur: "", occupe: false,
+             notes: [], icloud: {}, icloudA: {}, icloudErr: "", noteId: null, envoi: false };
+let _agBootstrapped = false;
+let _agMois = { annee: new Date().getFullYear(), mois: new Date().getMonth() };
+const AG_CHOIX = [
+  ["sport",     "Séances de sport", "chacune à son heure, avec sa durée"],
+  ["objectifs", "Objectifs de sport à date", "semi-marathon, course, match…"],
+  ["pret",      "Mensualités du prêt", "un rappel chaque mois, de la première à la dernière"],
+];
+
+function agApi() { return window.pywebview && window.pywebview.api; }
+
+async function agBootstrap() {
+  if (_agBootstrapped) return;
+  const api = agApi();
+  if (!api || !api.load_agenda) return;
+  const r = await api.load_agenda();
+  if (!r || !r.ok) { console.warn("[agenda] load KO", r); return; }
+  AG.config = r;
+  AG.notes = Array.isArray(r.notes) ? r.notes : [];
+  _agBootstrapped = true;
+}
+
+/** Onglet iCloud : relit l'état (dernier envoi) à chaque ouverture. */
+async function agOuvrir() {
+  const api = agApi();
+  const box = document.getElementById("ag-boite");
+  if (!box) return;
+  if (!api || !api.load_agenda) { box.innerHTML = `<p class="ac-note">Disponible dans l'application.</p>`; return; }
+  const r = await api.load_agenda();
+  AG.config = (r && r.ok) ? r : { connecte: false, adresse: "", choix: {}, etat: {} };
+  AG.formMdp = false;
+  agRender();
+  if (AG.config.connecte && !AG.calendriers) agChargerCalendriers();
+}
+
+async function agChargerCalendriers() {
+  const r = await agApi().agenda_calendriers();
+  if (r && r.ok) { AG.calendriers = r.calendriers; AG.erreur = ""; }
+  else AG.erreur = (r && r.error) || "iCloud ne répond pas.";
+  agRender();
+}
+
+function agEtatHtml() {
+  const e = (AG.config && AG.config.etat) || {};
+  if (AG.occupe || e.enCours) return `<i class="ph ph-circle-notch ac-tourne"></i> Envoi à iCloud…`;
+  if (AG.erreur || e.erreur) return `<span class="ag-err">${escHtml(AG.erreur || e.erreur)}</span>`
+    + (AG.calendriers === null ? ` <button type="button" class="btn btn-ghost btn-sm" onclick="agChargerCalendriers()">Réessayer</button>` : "");
+  if (e.quand) return `Envoyé à ${escHtml(e.quand)} : ${e.nb} événement${e.nb > 1 ? "s" : ""} de Pilote dans l'agenda.`;
+  return "";
+}
+
+function agRender() {
+  const box = document.getElementById("ag-boite");
+  if (!box || !AG.config) return;
+  const cfg = AG.config;
+  if (!cfg.connecte || AG.formMdp) {
+    box.innerHTML = `
+      <ol class="ac-etapes ag-etapes">
+        <li><b>Ouvre ton compte Apple</b>, rubrique <b>Connexion et sécurité</b>, puis
+          <b>Mots de passe pour app</b>.
+          <small>Apple l'exige : Pilote ne peut pas utiliser le mot de passe de ton compte.
+            La double authentification doit être activée (elle l'est presque toujours).</small>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="agApi().open_url('https://account.apple.com/')"><i class="ph ph-arrow-square-out"></i> Compte Apple</button></li>
+        <li><b>Crée un mot de passe</b> nommé «&nbsp;Pilote&nbsp;», puis copie-le
+          (16&nbsp;lettres, en quatre groupes).
+          <small>Apple ne le remontre plus. Si tu le perds, il suffit d'en créer un autre.</small></li>
+        <li><b>Colle-le ci-dessous</b>, avec ton identifiant Apple.</li>
+      </ol>
+      <div class="fg"><label for="ag-adresse">Identifiant Apple</label>
+        <input id="ag-adresse" type="email" autocomplete="off" spellcheck="false"
+               placeholder="prenom.nom@icloud.com" value="${escHtml(cfg.adresse || "")}"></div>
+      <div class="fg"><label for="ag-mdp">Mot de passe pour app</label>
+        <input id="ag-mdp" type="password" autocomplete="off" spellcheck="false"
+               placeholder="xxxx-xxxx-xxxx-xxxx"></div>
+      <p class="ac-note">Pilote vérifie le mot de passe auprès d'iCloud avant de l'enregistrer, le garde
+        <span class="txt-win">chiffré par Windows sur ce PC</span><span class="txt-mac">dans le Trousseau
+        de ce Mac</span>, et ne l'envoie qu'à iCloud.</p>
+      <div class="ac-btns">
+        <button type="button" class="btn btn-primary" id="ag-btn-cnx" onclick="agConnecter()"><i class="ph ph-plug"></i> Connecter</button>
+        ${cfg.connecte ? `<button type="button" class="btn btn-ghost" onclick="AG.formMdp=false;agRender()">Annuler</button>` : ""}
+      </div>
+      <div class="ac-err" id="ag-err">${escHtml(AG.erreur)}</div>`;
+    box.querySelectorAll("input").forEach(i => i.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); agConnecter(); }
+    }));
+    return;
+  }
+  const cals = AG.calendriers;
+  const options = cals === null
+    ? `<option value="">Lecture des agendas…</option>`
+    : (cfg.calendrierCree ? [] : [`<option value="nouveau"${cfg.calendrier ? "" : " selected"}>Nouvel agenda « Pilote » (conseillé)</option>`])
+        .concat(cals.map(c => `<option value="${escHtml(c.url)}"${c.url === cfg.calendrier ? " selected" : ""}>${escHtml(c.nom)}</option>`))
+        .join("");
+  box.innerHTML = `
+    <div class="ac-etat"><i class="ph ph-check-circle"></i><span>Connecté à <b>${escHtml(cfg.adresse)}</b></span></div>
+    <div class="fg"><label for="ag-cal">Agenda où Pilote écrit</label>
+      <select id="ag-cal" onchange="agRegler()"${cals === null ? " disabled" : ""}>${options}</select></div>
+    <div class="fg"><label>Ce que Pilote y met</label>
+      <div class="ag-choix">${AG_CHOIX.map(([cle, nom, aide]) => `
+        <label class="sv-check"><input type="checkbox" value="${cle}" onchange="agRegler()"${cfg.choix && cfg.choix[cle] ? " checked" : ""}>
+          <span><b>${nom}</b> <span class="ag-aide">${aide}</span></span></label>`).join("")}
+      </div></div>
+    <p class="ac-note" id="ag-etat">${agEtatHtml()}</p>
+    <div class="ac-btns">
+      <button type="button" class="btn btn-ghost" onclick="agEnvoyer()"${cfg.calendrier ? "" : " disabled"}><i class="ph ph-arrows-clockwise"></i> Envoyer maintenant</button>
+      <button type="button" class="btn btn-ghost" onclick="AG.formMdp=true;AG.erreur='';agRender()">Changer de mot de passe</button>
+      <button type="button" class="btn btn-ghost" onclick="agDeconnecter()">Déconnecter</button>
+    </div>`;
+}
+
+async function agConnecter() {
+  const btn = document.getElementById("ag-btn-cnx");
+  if (!btn || btn.disabled) return;
+  const adresse = document.getElementById("ag-adresse").value.trim();
+  const mdp = document.getElementById("ag-mdp").value;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="ph ph-circle-notch ac-tourne"></i> Connexion à iCloud…`;
+  let r = null;
+  try { r = await agApi().save_agenda(adresse, mdp); }
+  catch (e) { r = { ok: false, error: String(e) }; }
+  if (r && r.gele) return;
+  if (!r || !r.ok) {
+    AG.erreur = (r && r.error) || "Connexion impossible.";
+    agRender();
+    const champ = document.getElementById(r && r.code === "saisie" && !adresse.includes("@") ? "ag-adresse" : "ag-mdp");
+    if (champ) champ.focus();
+    return;
+  }
+  AG.config = r; AG.calendriers = r.calendriers || []; AG.formMdp = false; AG.erreur = ""; AG.icloud = {};
+  agRender();
+  showToastModern("Agenda iCloud connecté", "ok");
+}
+
+/** Agenda ou case changés : enregistré tout de suite, puis envoyé. */
+async function agRegler() {
+  const sel = document.getElementById("ag-cal");
+  const choix = {};
+  if (AG.calendriers === null) return;   // liste des agendas pas encore lue
+  document.querySelectorAll("#ag-boite .ag-choix input").forEach(i => { choix[i.value] = i.checked; });
+  // Rien de coché et aucun agenda encore choisi : ne pas créer d'agenda vide
+  if (!AG.config.calendrier && !Object.values(choix).some(Boolean)) return;
+  AG.occupe = true; AG.erreur = "";
+  agRender();
+  const r = await agApi().save_agenda_reglages(sel ? sel.value : "nouveau", choix);
+  if (r && r.gele) { AG.occupe = false; return; }
+  if (!r || !r.ok) { AG.occupe = false; AG.erreur = (r && r.error) || "Réglage non enregistré."; agRender(); return; }
+  AG.config = r;
+  // Un agenda vient d'être créé : il rejoint la liste
+  if (AG.calendriers && r.calendrier && !AG.calendriers.some(c => c.url === r.calendrier))
+    AG.calendriers = AG.calendriers.concat([{ url: r.calendrier, nom: "Pilote" }]);
+  await agEnvoyer();
+}
+
+async function agEnvoyer() {
+  AG.occupe = true; AG.erreur = "";
+  agRender();
+  const r = await agApi().agenda_synchroniser();
+  AG.occupe = false;
+  if (r && r.ok) AG.config.etat = r.etat;
+  else AG.erreur = (r && r.error) || "Envoi impossible.";
+  agRender();
+}
+
+async function agDeconnecter() {
+  if (!confirm("Déconnecter l'agenda iCloud ? Pilote retire de l'agenda les événements qu'il y a mis "
+             + "(l'agenda « Pilote » est supprimé), puis oublie le mot de passe. Tes autres événements ne bougent pas.")) return;
+  AG.occupe = true;
+  agRender();
+  const r = await agApi().save_agenda_deconnexion();
+  AG.occupe = false;
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Déconnexion impossible", "err"); agRender(); return; }
+  AG.config = r; AG.calendriers = null; AG.erreur = ""; AG.icloud = {};
+  agRender();
+  if (r.avertissement) showToastModern(r.avertissement, "warn");
+  else showToastModern("Agenda déconnecté", "ok");
+}
+
+/* ── Calendrier du mois ──────────────────────────────────────────────────── */
+
+const AG_TYPES = {
+  note:   { nom: "Note",   ico: "note-pencil" },
+  icloud: { nom: "iCloud", ico: "calendar-blank" },
+};
+const AG_RELIRE_MS = 60000;   // iCloud relu en revenant sur un mois lu il y a plus d'une minute
+
+/** Les 42 jours affichés (6 semaines, du lundi avant le 1er). */
+function agFenetre() {
+  const premier = new Date(_agMois.annee, _agMois.mois, 1);
+  const debut = new Date(_agMois.annee, _agMois.mois, 1 - (premier.getDay() + 6) % 7);
+  const jours = [];
+  for (let i = 0; i < 42; i++)
+    jours.push(new Date(debut.getFullYear(), debut.getMonth(), debut.getDate() + i));
+  return { jours, debut: spDateISO(jours[0]), fin: spDateISO(jours[41]) };
+}
+
+function agChangerMois(delta) {
+  let m = _agMois.mois + delta, a = _agMois.annee;
+  while (m < 0)  { m += 12; a--; }
+  while (m > 11) { m -= 12; a++; }
+  _agMois = { annee: a, mois: m };
+  agRenderCal();
+}
+
+function agAujourdhui() {
+  const d = new Date();
+  _agMois = { annee: d.getFullYear(), mois: d.getMonth() };
+  agRenderCal();
+}
+
+/** « 14:00 » + 30 min → « 14:30 » (une note sans durée dure une heure, comme chez iCloud). */
+function agFinNote(n) {
+  if (!n.heure) return "";
+  const [h, m] = n.heure.split(":").map(Number);
+  const fin = h * 60 + m + (spNum(n.duree) || 60);
+  return String(Math.floor(fin / 60) % 24).padStart(2, "0") + ":" + String(fin % 60).padStart(2, "0");
+}
+
+/** Ce qui tombe un jour, comme sur le téléphone : par heure, la journée entière en dernier. */
+function agDuJour(iso) {
+  const f = agFenetre();
+  const notes = AG.notes.filter(n => n.date === iso)
+    .map(n => ({ type: "note", id: n.id, titre: n.titre || "Note", heure: n.heure,
+                 heureFin: agFinNote(n), texte: n.texte, agenda: "Pilote" }));
+  const ic = (AG.icloud[f.debut] || []).filter(e => e.debut <= iso && e.fin >= iso)
+    .map(e => ({ type: "icloud", titre: e.titre, heure: e.debut === iso ? e.heure : "",
+                 heureFin: e.debut === iso ? e.heureFin : "", agenda: e.agenda, couleur: e.couleur }));
+  return notes.concat(ic).sort((a, b) => (a.heure || "99").localeCompare(b.heure || "99"));
+}
+
+function agLigneHtml(e) {
+  const style = e.type === "icloud" && e.couleur ? ` style="--c:${escHtml(e.couleur)}"` : "";
+  return `<span class="ag-ev ag-t-${e.type}"${style} title="${escHtml((e.heure ? e.heure + " " : "") + e.titre)}">`
+    + (e.heure ? `<b>${escHtml(e.heure)}</b> ` : "") + escHtml(e.titre) + `</span>`;
+}
+
+function agRenderCal() {
+  const grille = document.getElementById("ag-cal-grid");
+  if (!grille || !agApi()) return;
+  const lbl = document.getElementById("ag-mois-lbl");
+  if (lbl) lbl.textContent = SP_MONTHS[_agMois.mois] + " " + _agMois.annee;
+  const dows = document.getElementById("ag-cal-dows");
+  if (dows) dows.innerHTML = SP_DOWS.map(d => `<div class="sp-dow">${d}</div>`).join("");
+  const f = agFenetre();
+  agDessinerGrille();
+  // iCloud : lu une fois par mois affiché, relu si la lecture date de plus d'une minute
+  if (AG.config && AG.config.connecte && !AG.envoi
+      && (!AG.icloud[f.debut] || Date.now() - (AG.icloudA[f.debut] || 0) > AG_RELIRE_MS)) agLireIcloud(f);
+  else agEtatIcloud();
+}
+
+async function agLireIcloud(f) {
+  const etat = document.getElementById("ag-icloud-etat");
+  if (etat) etat.innerHTML = `<i class="ph ph-circle-notch ac-tourne"></i> Lecture d'iCloud…`;
+  const r = await agApi().agenda_icloud(f.debut, f.fin);
+  if (r && r.ok) { AG.icloud[f.debut] = r.evenements; AG.icloudA[f.debut] = Date.now(); AG.icloudErr = ""; }
+  else AG.icloudErr = (r && r.error) || "iCloud ne répond pas.";
+  if (agFenetre().debut === f.debut) { agDessinerGrille(); agEtatIcloud(); }
+}
+
+function agEtatIcloud() {
+  const etat = document.getElementById("ag-icloud-etat");
+  if (!etat) return;
+  if (!(AG.config && AG.config.connecte)) {
+    etat.innerHTML = `<span>Connecte iCloud pour voir ton agenda</span>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="goTab('ag-connexion');_setActiveSidebar('ag-connexion')"><i class="ph ph-plug"></i> Connecter</button>`;
+    return;
+  }
+  const e = AG.config.etat || {};
+  const quand = AG.icloudErr ? `<span class="ag-err">${escHtml(AG.icloudErr)}</span>`
+    : e.erreur ? `<span class="ag-err">${escHtml(e.erreur)}</span>`
+    : e.quand ? `<span>Téléphone à jour à ${escHtml(e.quand)}</span>` : "";
+  etat.innerHTML = quand + (AG.envoi
+    ? ` <span><i class="ph ph-circle-notch ac-tourne"></i> Envoi au téléphone…</span>`
+    : ` <button type="button" class="btn btn-ghost btn-sm" onclick="agMettreAJour()"><i class="ph ph-device-mobile"></i> Mettre à jour le téléphone</button>`);
+}
+
+/** Envoie tout de suite ce qui attend, puis relit iCloud : le calendrier
+    montre alors exactement ce que le téléphone va montrer. */
+async function agMettreAJour() {
+  if (AG.envoi) return;
+  AG.envoi = true;
+  agEtatIcloud();
+  const r = await agApi().agenda_synchroniser();
+  AG.envoi = false;
+  if (r && r.ok) AG.config.etat = r.etat;
+  else AG.config.etat = Object.assign({}, AG.config.etat, { erreur: (r && r.error) || "Envoi impossible." });
+  AG.icloud = {}; AG.icloudA = {};
+  agRenderCal();
+}
+
+function agDessinerGrille() {
+  const grille = document.getElementById("ag-cal-grid");
+  if (!grille) return;
+  const auj = spDateISO(new Date());
+  grille.innerHTML = agFenetre().jours.map(d => {
+    const iso = spDateISO(d);
+    const liste = agDuJour(iso);
+    const lignes = liste.slice(0, 3).map(agLigneHtml).join("")
+      + (liste.length > 3 ? `<span class="ag-ev ag-plus">+${liste.length - 3}</span>` : "");
+    return `<div class="sp-day ag-day${d.getMonth() !== _agMois.mois ? " out" : ""}${iso === auj ? " today" : ""}"
+                 role="button" tabindex="0" onclick="agOuvrirJour('${iso}')"
+                 onkeydown="if(event.key==='Enter')agOuvrirJour('${iso}')">
+              <span class="sp-day-n">${d.getDate()}</span>${lignes}</div>`;
+  }).join("");
+  // Légende : un point par agenda présent ce mois-ci, dans sa couleur Apple
+  const leg = document.getElementById("ag-legende");
+  if (leg) {
+    const vus = new Map();
+    agFenetre().jours.forEach(d => agDuJour(spDateISO(d)).forEach(e => {
+      const nom = e.type === "note" ? "Notes" : e.agenda;
+      if (!vus.has(nom)) vus.set(nom, e);
+    }));
+    leg.innerHTML = [...vus].map(([nom, e]) => {
+      const style = e.type === "icloud" && e.couleur ? ` style="--c:${escHtml(e.couleur)}"` : "";
+      return `<span class="ag-leg ag-t-${e.type}"${style}>${escHtml(nom)}</span>`;
+    }).join("");
+  }
+}
+
+/* ── Un jour, une note ───────────────────────────────────────────────────── */
+
+function agOuvrirJour(iso) {
+  const d = spParseISO(iso);
+  document.getElementById("ag-jour-titre").textContent =
+    d.getDate() + " " + SP_MONTHS[d.getMonth()] + " " + d.getFullYear();
+  const liste = agDuJour(iso);
+  document.getElementById("ag-jour-liste").innerHTML = liste.length ? liste.map(e => {
+    const t = AG_TYPES[e.type];
+    const style = e.type === "icloud" && e.couleur ? ` style="--c:${escHtml(e.couleur)}"` : "";
+    const quand = e.heure ? e.heure + (e.heureFin ? " – " + e.heureFin : "") : "Toute la journée";
+    const source = e.type === "icloud" ? "Agenda « " + e.agenda + " »" : t.nom;
+    return `<div class="sp-srow">
+      <div class="sp-sicon ag-ico ag-t-${e.type}"${style}><i class="ph ph-${t.ico}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div class="sp-sname">${escHtml(e.titre)}</div>
+        <div class="sp-smeta">${escHtml(quand)} · ${escHtml(source)}</div>
+        ${e.texte ? `<div class="sp-snote">${escHtml(e.texte)}</div>` : ""}
+      </div>
+      ${e.type === "note" ? `<div class="m-acts">
+        <button class="m-iconbtn" title="Modifier" onclick="agOuvrirNote('${escHtml(e.id)}', null)"><i class="ph ph-pencil-simple"></i></button>
+      </div>` : ""}
+    </div>`;
+  }).join("") : `<div class="m-empty">Rien ce jour-là.</div>`;
+  document.getElementById("ag-jour-ajout").onclick = () => agOuvrirNote(null, iso);
+  document.getElementById("ov-ag-jour").classList.add("open");
+}
+
+function agOuvrirNote(id, iso) {
+  const n = id ? AG.notes.find(x => x.id === id) : null;
+  AG.noteId = n ? n.id : null;
+  document.getElementById("ag-note-titre").textContent = n ? "Modifier la note" : "Nouvelle note";
+  document.getElementById("ag-n-titre").value = n ? n.titre : "";
+  document.getElementById("ag-n-date").value  = n ? n.date : (iso || spDateISO(new Date()));
+  document.getElementById("ag-n-heure").value = n ? n.heure : "";
+  document.getElementById("ag-n-duree").value = n && n.duree ? n.duree : "";
+  document.getElementById("ag-n-texte").value = n ? n.texte : "";
+  document.getElementById("ag-n-suppr").style.display = n ? "" : "none";
+  const cfg = AG.config || {};
+  document.getElementById("ag-n-icloud").textContent = cfg.connecte && cfg.calendrier
+    ? "La note part aussi dans ton agenda iCloud, quelques secondes après."
+    : "Elle reste dans Pilote tant que l'agenda iCloud n'est pas connecté (onglet iCloud).";
+  closeOv("ov-ag-jour");
+  openOvTop("ov-ag-note");
+  setTimeout(() => document.getElementById("ag-n-titre").focus(), 50);
+}
+
+async function agEcrireNotes(notes, message) {
+  const r = await agApi().save_agenda_notes(notes);
+  if (r && r.gele) return false;
+  if (!r || !r.ok) { showToastModern("Note non enregistrée : " + ((r && r.error) || "?"), "err"); return false; }
+  AG.notes = r.notes || [];
+  closeOv("ov-ag-note");
+  agRenderCal();
+  showToastModern(message, "ok");
+  return true;
+}
+
+async function agEnregistrerNote() {
+  const titre = document.getElementById("ag-n-titre").value.trim();
+  const date  = document.getElementById("ag-n-date").value;
+  if (!titre) { showToastModern("Donne un titre à la note", "warn"); return; }
+  if (!date)  { showToastModern("Choisis la date de la note", "warn"); return; }
+  const note = {
+    id:    AG.noteId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    titre, date,
+    heure: document.getElementById("ag-n-heure").value || "",
+    duree: spNum(document.getElementById("ag-n-duree").value) || 0,
+    texte: document.getElementById("ag-n-texte").value.trim(),
+  };
+  const notes = AG.noteId ? AG.notes.map(x => x.id === AG.noteId ? note : x) : AG.notes.concat([note]);
+  await agEcrireNotes(notes, AG.noteId ? "Note modifiée" : "Note ajoutée");
+}
+
+async function agSupprimerNote() {
+  if (!AG.noteId || !confirm("Supprimer cette note ? Elle part aussi de l'agenda iCloud.")) return;
+  await agEcrireNotes(AG.notes.filter(x => x.id !== AG.noteId), "Note supprimée");
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────── */
+
+(function patchGoTabAgenda() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    if (n !== "ag-cal" && n !== "ag-connexion") return;
+    Promise.resolve(_agBootstrapped || agBootstrap()).then(() => {
+      if (n === "ag-connexion") agOuvrir();
+      else agRenderCal();
+    });
+  };
+})();
+
 /* Chargement de chaque module : [nom du journal, section de NAV_SECTIONS,
    chargement]. boot() ne charge que les sections affichées ; une section
    cochée plus tard dans Paramètres → Modules se charge à ce moment-là. Santé
@@ -24202,6 +24747,7 @@ const MODULES_A_CHARGER = [
   ["patrimoine", "sec-patri",   () => paBootstrap(true)],
   ["actus",      "sec-actus",   () => acBootstrap()],
   ["cto",        "sec-cto",     () => ctoBootstrap()],
+  ["agenda",     "sec-agenda",  () => agBootstrap()],
 ];
 
 /** Un module qu'on vient de cocher (il était masqué au lancement, donc pas
@@ -24303,6 +24849,9 @@ function _appReady() {
     const histPret = visibles.has("sec-pea") ? perfSeriesAsync() : null;
     // Verifie les mises a jour apres stabilisation de l'UI (15s = temps suffisant pour l'API GitHub)
     if (window.pywebview) setTimeout(_checkForUpdates, 5000);
+    // Agenda iCloud : ce qui a changé pendant que Pilote était fermé ou hors ligne
+    if (hasPy && pywebview.api.agenda_synchroniser)
+      setTimeout(() => Promise.resolve(pywebview.api.agenda_synchroniser()).catch(() => {}), 8000);
     // Initialise le module Mes Comptes (en silence, sans bloquer le rendu PEA)
     // Tous les modules sont charges EN PARALLELE : l'accueil affiche les chiffres
     // de six modules, il ne doit pas attendre six allers-retours enchaines.

@@ -2,6 +2,18 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.24",
+      "date": "2026-10-22",
+      "titre": "Ton agenda iCloud dans Pilote",
+      "nouveau": [
+        "Nouvelle section Agenda : un calendrier du mois qui montre tes agendas iCloud, comme sur ton iPhone.",
+        "Ajoute des notes directement dans le calendrier (titre, date, heure si tu veux) : elles arrivent sur ton iPhone.",
+        "Coche ce que Pilote met dans ton agenda : séances de sport, objectifs à date, mensualités du prêt. Tout part dans un agenda « Pilote » à part, sans toucher à tes autres événements.",
+        "Le bouton « Mettre à jour le téléphone » envoie tout de suite ce qui attend.",
+        "Il suffit d'un mot de passe pour app d'Apple : l'onglet Agenda › iCloud explique comment le créer."
+      ]
+    },
+    {
       "version": "4.4.23",
       "date": "2026-10-22",
       "titre": "Pilote plus simple à installer sur Mac",

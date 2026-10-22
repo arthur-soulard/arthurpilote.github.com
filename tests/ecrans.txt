@@ -9,6 +9,7 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 22/10/2026 : import des relevés (sélecteur de fichiers sur Mac), accueil.
-js:ctoOuvrirImport()
-home
+# 22/10/2026 (4.4.24) : section Agenda, calendrier, fiche d'une note, onglet iCloud.
+ag-cal
+js:agOuvrirNote(null,null)
+ag-connexion

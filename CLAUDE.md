@@ -3,8 +3,11 @@
 Application desktop Windows et Mac de suivi personnel : bourse (PEA, comptes-titres), budget, prêt (étudiant ou autre),
 sport, santé et patrimoine réunis dans une seule app 100 % locale, multi-utilisateurs.
 Aucune donnée ne sort du PC — pas de compte, pas de serveur distant, pas de télémétrie.
-Seule exception, voulue : le module Actus se connecte à la boîte Gmail de
+Deux exceptions, voulues : le module Actus se connecte à la boîte Gmail de
 l'utilisateur pour la lire (`docs/modules/actus.md`) ; il n'y envoie rien de Pilote.
+Et la section Agenda (22/10/2026) écrit dans l'agenda iCloud de l'utilisateur ses
+notes et ce qu'il a coché, et lit ses autres agendas pour les afficher sans jamais
+les modifier (`docs/modules/agenda.md`).
 **Aussi sur Mac depuis la 4.4.8** (décidé le 11/10/2026, Mac à puce Apple) : une seule
 app pour les deux systèmes, pas de copie séparée ; ce qui diffère passe par
 `sys.platform` ou `plateforme.py`, le chemin Windows y reste celui d'avant. Avant de
@@ -14,7 +17,7 @@ Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS ; 4.4.1 sous Win
 6.2.1 sur Mac), PyInstaller pour compiler en .exe et en Pilote.app, Inno Setup pour le
 Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.4.22**
+**Version actuelle : 4.4.24**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
@@ -38,6 +41,7 @@ Pilote/
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
+│   ├── agenda.py       # Agenda iCloud            (agenda.json) : séances, objectifs, mensualités, en CalDAV
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
@@ -87,6 +91,7 @@ Donnees/
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
+│   ├── agenda.json           # Agenda iCloud : identifiant, code chiffré, agenda, cases (+ backups_agenda/)
 │   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
 │   │                         #   laissés sur le disque, plus lus par l'app
 │   ├── vocabulaire.json      # module Vocabulaire retiré le 11/10/2026, idem
@@ -202,6 +207,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
 | `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : formats, pièges par banque, exemples réels, pypdf | `releves.py`, `ctoImport*`, `/isin` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
+| `docs/modules/agenda.md` | Agenda : calendrier, notes, iCloud en CalDAV (écriture et lecture), synchronisation | `agenda.py`, `ag*`, `save_agenda*` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
 
@@ -284,6 +290,7 @@ Paramètres.
 | PEA             | dash, pos, sector, div, tx, wish, dep, strat (plus de `perf`)      |
 | CTO « nom » (un par CTO) | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
+| Agenda          | ag-cal (« Calendrier »), ag-connexion (« iCloud »)                 |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
@@ -304,9 +311,9 @@ CTO précis ; `_navSectionOf` ignore le `@…`, `_setActiveSidebar` complète un
 `cto-pos` sans `@` par le CTO affiché (`_ongletComplet`). `body.dataset.activeTab`
 garde l'onglet sans `@`.
 
-Neuf blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
-Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO
-(`grep -n "window.goTab = function"`). Ils s'enchaînent : ne pas casser l'ordre.
+Dix blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
+Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO, puis Agenda
+après le tableau de bord (`grep -n "window.goTab = function"`). Ils s'enchaînent : ne pas casser l'ordre.
 
 ## Serveur local (server.py, port 7438)
 
@@ -399,9 +406,9 @@ n'existent plus.
 
 * Tout l'UI vit dans `index.html` (~24 000 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `ac*`,
-  `cto*`, `dash*`, `sv*`, `home*`), avec leur propre patch de `goTab`. **Ordre des patchs :
+  `cto*`, `dash*`, `sv*`, `home*`, `ag*`), avec leur propre patch de `goTab`. **Ordre des patchs :
   Mes comptes → Sports → Prêt → Accueil → Santé → Sauvegarde USB → Patrimoine → Actus → CTO,
-  puis le tableau de bord et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
+  puis le tableau de bord, Agenda et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
 * **HTTP pour lire, pont pour écrire.** Le serveur local (`/data`, `/cours`, `/history`,
   `/isin`…) sert les lectures et Yahoo ; toute écriture passe par une méthode `save_*` du
   pont pywebview (`window.pywebview.api`), enveloppée par `_surveillerEcritures` (gel,

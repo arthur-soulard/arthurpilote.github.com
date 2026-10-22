@@ -63,6 +63,7 @@ import releves
 import patrimoine
 import sante
 import actus
+import agenda
 import expositions
 import sauvegarde
 import notifications
@@ -70,7 +71,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.23"
+APP_VERSION = "4.4.24"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -260,6 +261,7 @@ class Api:
     def save_sports(self, data: dict) -> dict:
         try:
             sports.save_data(data or {})
+            agenda.planifier()
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -275,6 +277,7 @@ class Api:
     def save_pret(self, data: dict) -> dict:
         try:
             pret.save_data(data or {})
+            agenda.planifier()
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -531,6 +534,69 @@ class Api:
             return {"ok": False, "code": e.code, "error": e.message}
         except Exception as e:
             return {"ok": False, "code": "imap", "error": "Gmail a répondu : " + str(e)}
+
+    # -- Agenda : Pilote ecrit dans l'agenda iCloud (propre a l'utilisateur actif) --
+    # Comme pour Actus, le mot de passe pour app entre par save_agenda et ne ressort jamais.
+
+    def load_agenda(self) -> dict:
+        try:
+            return {"ok": True, **agenda.config()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_agenda(self, adresse: str, mot_de_passe: str) -> dict:
+        """Connecte iCloud : rien n'est enregistre tant qu'iCloud n'a pas accepte."""
+        try:
+            return {"ok": True, **agenda.connecter(adresse, mot_de_passe)}
+        except agenda.ErreurAgenda as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "caldav", "error": str(e)}
+
+    def save_agenda_reglages(self, calendrier: str, choix: dict) -> dict:
+        try:
+            return {"ok": True, **agenda.regler(calendrier or "", choix or {})}
+        except agenda.ErreurAgenda as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "caldav", "error": str(e)}
+
+    def save_agenda_deconnexion(self) -> dict:
+        try:
+            return {"ok": True, **agenda.deconnecter()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def agenda_calendriers(self) -> dict:
+        try:
+            return {"ok": True, "calendriers": agenda.calendriers()}
+        except agenda.ErreurAgenda as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "caldav", "error": str(e)}
+
+    def save_agenda_notes(self, notes: list) -> dict:
+        try:
+            return {"ok": True, **agenda.enregistrer_notes(notes or [])}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def agenda_icloud(self, debut: str, fin: str) -> dict:
+        """Ce qu'il y a dans les agendas iCloud (le calendrier de Pilote), en lecture seule."""
+        try:
+            return {"ok": True, "evenements": agenda.icloud(debut, fin)}
+        except agenda.ErreurAgenda as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "caldav", "error": str(e)}
+
+    def agenda_synchroniser(self) -> dict:
+        try:
+            return {"ok": True, "etat": agenda.synchroniser()}
+        except agenda.ErreurAgenda as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "caldav", "error": str(e)}
 
     # -- Expositions : composition des ETF (donnees publiques, niveau installation)
 
