@@ -96,6 +96,14 @@ Autres pistes :
   proches, ni argent prêté à quelqu'un (proposés le 13/10, pas pris), ni
   échéancier prévisionnel mois par mois.
 
+- **Agenda pour Android (Google Agenda)** : abandonné par Arthur le 22/10/2026,
+  « trop compliqué ». Trois voies regardées : Google en direct (OAuth seulement :
+  projet Google Cloud, vérification de l'app par Google, connexion coupée tous
+  les 7 jours tant que l'app reste en mode test), un serveur CalDAV au choix
+  (Nextcloud, Infomaniak…) relié au téléphone par DAVx⁵, ou iCloud + DAVx⁵ sur
+  Android. Toutes gratuites, mais lourdes pour Arthur ou pour l'utilisateur.
+  L'Agenda reste sur iCloud seul (`docs/modules/agenda.md`).
+
 **Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,
