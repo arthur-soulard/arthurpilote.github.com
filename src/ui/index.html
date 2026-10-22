@@ -1892,6 +1892,8 @@ label.sv-check, label.sv-inline {
 .ag-ico { background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); font-size: 17px; }
 .ag-icloud-etat { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); }
 .ag-cnx { max-width: 720px; }
+/* « iCloud » s'écrit avec un i minuscule (.m-nav-lbl met une capitale) */
+.m-nav-lbl.ag-sans-cap::first-letter { text-transform: none; }
 @media (max-width: 760px) {
   .ag-ev { font-size: 10px; padding: 1px 4px; }
   .ag-ev b { display: none; }
@@ -3637,7 +3639,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
 <div class="pane" id="pane-ag-connexion">
   <div class="m-head">
-    <span class="m-nav-lbl" style="text-transform:none">iCloud</span>
+    <span class="m-nav-lbl ag-sans-cap">iCloud</span>
     <div class="m-spacer"></div>
   </div>
   <div class="card ag-cnx">
