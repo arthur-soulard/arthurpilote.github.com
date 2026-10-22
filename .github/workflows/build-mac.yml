@@ -19,6 +19,7 @@ permissions:
 jobs:
   build-mac:
     runs-on: macos-15          # puce Apple
+    timeout-minutes: 40        # une etape figee ne garde pas la machine 6 h
 
     steps:
       - name: Checkout
@@ -235,6 +236,7 @@ jobs:
           exit 0
 
       - name: Install test (Terminal)
+        timeout-minutes: 8
         # Installation en une ligne (README) : un fichier telecharge par curl ne
         # porte pas la marque de quarantaine, donc ni « Ouvrir quand meme », ni
         # copie en lecture seule (App Translocation), ni « endommage ». Essai sur
@@ -274,7 +276,9 @@ jobs:
             rm -rf "$HOME/Downloads/Pilote.app"
             ditto dist/Pilote.app "$HOME/Downloads/Pilote.app"
             xattr -w com.apple.quarantine "$F;$(printf %x $(date +%s));Safari;" "$HOME/Downloads/Pilote.app"
-            open "$HOME/Downloads/Pilote.app" 2>&1 | head -3
+            # En arriere-plan : bloquee par Gatekeeper, « open » attend la
+            # reponse a sa fenetre (vu le 22/10/2026 : etape figee)
+            open "$HOME/Downloads/Pilote.app" > /dev/null 2>&1 &
             sleep 15
             NAV=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
             RES="$RES [$F] ${NAV:-non lancee}"
@@ -376,6 +380,7 @@ jobs:
 
   ecrans-mac:
     needs: [build-mac, lots]
+    timeout-minutes: 20
     runs-on: macos-15
     strategy:
       fail-fast: false
