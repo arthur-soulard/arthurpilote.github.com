@@ -23981,7 +23981,9 @@ function dashAgAVenir(nbJours) {
       const cle = e.type + "|" + (e.id || "") + "|" + e.titre + "|" + (e.agenda || "");
       if (vus.has(cle)) return;
       vus.add(cle);
-      if (i === 0 && e.heure && (e.heureFin || e.heure) <= h) return;
+      // Fin à minuit ou après (« 00:00 ») : l'événement court jusqu'au bout de la journée
+      const fin = e.heureFin && e.heureFin > e.heure ? e.heureFin : e.heureFin ? "24:00" : e.heure;
+      if (i === 0 && e.heure && fin <= h) return;
       out.push(Object.assign({ jour: iso }, e));
     });
   }
