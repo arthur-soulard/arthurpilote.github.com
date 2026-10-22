@@ -269,7 +269,7 @@ jobs:
           # ouverte depuis Telechargements. Drapeaux de quarantaine : 0081
           # (telechargee), puis 00c1 / 01c1 (deja approuvee, comme apres
           # « Ouvrir quand meme »). Lancee en copie (App Translocation), Pilote
-          # propose de se ranger dans Applications : on accepte (« OK »).
+          # resterait retenue par Gatekeeper : essai du rangement a l etape suivante.
           rm -rf /Applications/Pilote.app
           RES=""
           for F in 0081 00c1 01c1; do
@@ -285,24 +285,57 @@ jobs:
             RES="$RES [$F] ${NAV:-non lancee}"
             if [ "$F" = "0081" ]; then screencapture -x capture-navigateur.png || true; fi
             if echo "$NAV" | grep -q AppTranslocation; then
-              sleep 10
-              screencapture -x capture-ranger.png || true
-              OK=$(osascript -e 'tell application "System Events" to tell process "Pilote" to click button "OK" of window 1' 2>&1 || true)
-              for i in $(seq 1 30); do
-                test -d /Applications/Pilote.app && ! test -e "$HOME/Downloads/Pilote.app" && break
-                sleep 1
-              done
-              sleep 8
-              APRES=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1 || true)
-              echo "::notice title=Rangement::clic : $OK ; Applications : $(test -d /Applications/Pilote.app && echo oui || echo non) ; Telechargements : $(test -e "$HOME/Downloads/Pilote.app" && echo reste || echo vide) ; quarantaine : $(xattr -p com.apple.quarantine /Applications/Pilote.app 2>/dev/null || echo aucune) ; relancee : ${APRES:-non} ; $(tail -c 400 "$HOME/Library/Logs/Pilote/update_sh.log" 2>/dev/null | tr '\n' ' ')"
-              pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
-              break
+              break   # copie en lecture seule, retenue par Gatekeeper (capture)
             fi
             pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
             sleep 2
           done
           echo "::notice title=Installation navigateur::$RES"
           exit 0
+
+      - name: Rangement test
+        # Pilote se range lui-meme dans Applications (updater.mac_ranger). Sur
+        # cette machine, Gatekeeper retient l'app avant qu'elle s'ouvre (personne
+        # pour « Ouvrir quand meme ») : la copie en lecture seule est creee ici
+        # par la meme API que macOS, puis mac_ranger part de cette copie.
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+          pkill -f CoreServicesUIAgent || true
+          rm -rf /Applications/Pilote.app "$HOME/Downloads/Pilote.app"
+          ditto dist/Pilote.app "$HOME/Downloads/Pilote.app"
+          xattr -w com.apple.quarantine "0081;$(printf %x $(date +%s));Safari;" "$HOME/Downloads/Pilote.app"
+          cat > ranger.py <<'EOF'
+          import ctypes, sys, objc
+          from pathlib import Path
+          from Foundation import NSURL
+          sys.path.insert(0, "src")
+          import updater
+          sec = ctypes.CDLL("/System/Library/Frameworks/Security.framework/Security")
+          f = sec.SecTranslocateCreateSecureDirectoryForURL
+          f.restype = ctypes.c_void_p
+          f.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+          src = NSURL.fileURLWithPath_(str(Path.home() / "Downloads" / "Pilote.app"))
+          ptr = f(objc.pyobjc_id(src), None, None)
+          copie = Path(str(objc.objc_object(c_void_p=ptr).path())) if ptr else None
+          print("[ranger] copie :", copie)
+          print("[ranger] origine retrouvee :", copie and updater._origine_mac(copie))
+          if copie:
+              updater._bundle_mac = lambda: copie
+              print("[ranger] mac_ranger :", updater.mac_ranger())
+          EOF
+          python ranger.py > ranger.log 2>&1
+          for i in $(seq 1 30); do
+            test -d /Applications/Pilote.app && ! test -e "$HOME/Downloads/Pilote.app" && break
+            sleep 1
+          done
+          sleep 10
+          APRES=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1 || true)
+          echo "::notice title=Rangement::$(cat ranger.log | tr '\n' ' ' | head -c 1500) ; Applications : $(test -d /Applications/Pilote.app && echo oui || echo non) ; Telechargements : $(test -e "$HOME/Downloads/Pilote.app" && echo reste || echo vide) ; quarantaine : $(xattr -p com.apple.quarantine /Applications/Pilote.app 2>/dev/null || echo aucune) ; relancee : ${APRES:-non} ; $(tail -c 300 "$HOME/Library/Logs/Pilote/update_sh.log" 2>/dev/null | tr '\n' ' ')"
+          sleep 2
+          screencapture -x capture-ranger.png || true
+          pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
 
       - name: Capture (annotations)
         # Les artefacts ne se lisent qu'avec un compte : une petite copie JPEG de

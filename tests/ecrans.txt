@@ -10,44 +10,5 @@
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
 # 22/10/2026 : import des relevés (sélecteur de fichiers sur Mac), accueil.
-home
-home 700
-dash
-pos
-sector
-div
-tx
-wish
-dep
-strat
-cto-dash
-cto-pos
-fin-month
-fin-year
-pr-overview
-pr-pea
-pr-av
-pr-liv
-pr-params
-sp-agenda
-sp-goals
-sp-stats
-pa-vue
-pa-comptes
-sim
-sa-suivi
-sa-mesures
-sa-goals
-ac-boite
-ac-connexion
-js:openSettings('general')
-js:openSettings('users')
-js:openSettings('nav')
-js:openSettings('accueil')
-js:openSettings('sauvegarde')
-js:openSettings('donnees')
-js:openSettings('maj')
 js:ctoOuvrirImport()
-js:openAddTx()
-js:openAddPos()
-py:notif
+home
