@@ -277,7 +277,10 @@ chiants possible ».
   déplace l'app (/Applications, ou ~/Applications pour un compte non
   administrateur ; un ancien Pilote y est remplacé), retire la quarantaine et la
   relance. L'ancien message « Glisse Pilote dans Applications » ne reste que si
-  macOS ne donne pas l'emplacement d'origine.
+  macOS ne donne pas l'emplacement d'origine. **Non vérifié** : sur la machine de
+  GitHub, Gatekeeper retient l'app avant qu'elle s'ouvre (personne pour « Ouvrir
+  quand même »), et `SecTranslocateCreateSecureDirectoryForURL` appelée par un
+  script n'y crée pas de copie (« Rangement test » : None).
 * **Réseau local** : plus de question depuis `server._ServeurMac` (test du
   21/10/2026 : aucun bouton « Ne pas autoriser » trouvé après une ouverture par
   le Finder). Retiré du README.
