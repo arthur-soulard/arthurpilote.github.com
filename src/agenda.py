@@ -21,6 +21,13 @@ ajoutees a la main. Ce qui part dans l'agenda iCloud se choisit dans l'onglet iC
   pret      : les mensualites du pret (un seul evenement repete chaque mois)
   + les notes, toujours (elles sont ecrites pour l'agenda)
 
+Onglet Notifications (demande d'Arthur du 22/10/2026 : « des notifs sur le
+telephone ») : une alerte (VALARM) posee sur ces evenements, que l'iPhone
+sonne tout seul, Pilote ferme ou non. Plus quatre rappels qui ne partent que
+si leur alerte est reglee (RAPPELS) : pesee du mois et releve du patrimoine
+(un evenement repete chaque mois, qui saute au mois suivant une fois le mois
+fait), versements prevus et dividendes attendus du PEA.
+
 Synchronisation : Pilote calcule la liste voulue a partir de sports.json et
 pret.json, liste ce qui est deja dans l'agenda, puis ajoute, remplace ou
 retire. Elle repart quelques secondes apres chaque enregistrement de Sports
@@ -31,7 +38,8 @@ Emplacement : <app_dir>/users/<slug>/agenda.json
    "choix": {"sport", "objectifs", "pret"},
    "envoyes": {nom de fichier: empreinte},
    "aNettoyer": [agenda quitte, a vider], "aSupprimer": [agenda « Pilote » quitte],
-   "notes": [{id, titre, date, heure, duree (min), texte}]}
+   "notes": [{id, titre, date, heure, duree (min), texte}],
+   "alertes": {type: valeur de ALERTES_VALEURS}, "jours": {"pesee", "releve": jour du mois}}
 
 Le mot de passe suit le chemin de celui d'Actus : verifie aupres d'iCloud
 avant d'etre garde, chiffre (DPAPI sous Windows, Trousseau sur Mac), et ne
@@ -42,6 +50,7 @@ from __future__ import annotations
 import base64
 import datetime
 import hashlib
+import json
 import re
 import socket
 import ssl
@@ -54,7 +63,9 @@ import xml.etree.ElementTree as ET
 
 import actus
 import jsonstore
+import patrimoine
 import pret
+import sante
 import sports
 import storage
 
@@ -64,6 +75,13 @@ DELAI     = 20      # s par requete
 REESSAI   = 600     # s : iCloud injoignable, on retente 10 min plus tard
 TROUSSEAU = "Pilote Agenda"
 CHOIX     = ("sport", "objectifs", "pret")
+# Rappels de l'onglet Notifications : envoyes seulement si leur alerte est reglee
+RAPPELS   = ("pesee", "releve", "versement", "dividende")
+ALERTES   = ("note", "sport", "objectif", "pret") + RAPPELS
+# "" : aucune alerte (un rappel n'est alors pas envoye) ; minutes avant le
+# debut ; « matin » : 9 h le jour meme ; « veille » : 18 h la veille.
+# Un evenement sans heure prend 9 h le jour meme pour les minutes.
+ALERTES_VALEURS = ("", "0", "15", "30", "60", "matin", "veille")
 
 _DAV = "{DAV:}"
 _CAL = "{urn:ietf:params:xml:ns:caldav}"
@@ -98,6 +116,8 @@ def default_data() -> dict:
         "aNettoyer": [],
         "aSupprimer": [],
         "notes":   [],
+        "alertes": {},
+        "jours":   {"pesee": 1, "releve": 1},
     }
 
 
@@ -348,15 +368,103 @@ def elements(sp: dict, pr: dict, notes: list) -> list:
     return out
 
 
+def _pea() -> dict:
+    """pea_data.json en lecture seule (versements prevus, dividendes attendus).
+    Pas storage.load_data() : elle note son resultat pour toute l'app, et un
+    fil d'envoi ne doit pas le changer."""
+    chemin = storage.get_data_path()
+    if not chemin.exists():
+        return {}
+    try:
+        with storage.verrou(chemin):
+            return json.loads(chemin.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise ErreurAgenda("config", "Le fichier du PEA est illisible : rien n'a été envoyé.")
+
+
+def _jour_du_mois(jour, fait: bool) -> datetime.date:
+    """Le jour choisi (1 a 28) de ce mois, ou du mois suivant si ce mois est fait."""
+    auj = datetime.date.today()
+    j = min(max(int(_nombre(jour)) or 1, 1), 28)
+    if fait:
+        return (auj.replace(day=1) + datetime.timedelta(days=32)).replace(day=j)
+    return auj.replace(day=j)
+
+
+def rappels(alertes: dict, jours: dict) -> list:
+    """Les rappels de l'onglet Notifications dont l'alerte est reglee. La pesee
+    et le releve sont un evenement repete chaque mois (mois=-1) qui commence
+    au mois suivant une fois celui-ci fait : la notification ne sonne pas
+    pour rien."""
+    out = []
+    mois = datetime.date.today().strftime("%Y-%m")
+    if alertes.get("pesee"):
+        mesures = sante.load_data().get("mesures") or []
+        if mesures:   # Sante jamais utilise : rien a rappeler
+            fait = any(str(m.get("date") or "").startswith(mois) for m in mesures)
+            out.append(_element("pesee", "pesee", "⚖️ Pesée du mois",
+                                _jour_du_mois(jours.get("pesee"), fait), mois=-1))
+    if alertes.get("releve"):
+        pa = patrimoine.load_data()
+        # Seules les lignes saisies a la main se relevent chaque mois
+        if any(not c.get("archived") and not c.get("auto") for c in pa.get("comptes") or []):
+            out.append(_element("releve", "releve", "📋 Relevé du patrimoine",
+                                _jour_du_mois(jours.get("releve"), patrimoine.mois_saisi(pa)), mois=-1))
+    if alertes.get("versement") or alertes.get("dividende"):
+        pea = _pea()
+        if alertes.get("versement"):
+            for i, v in enumerate(pea.get("depotsPrevus") or []):
+                jour = _jour(v.get("date"))
+                if jour:
+                    cle = re.sub(r"[^A-Za-z0-9_-]", "", str(v.get("id") or "")) or f"{jour}-{i}"
+                    out.append(_element(f"versement-{cle}", "versement",
+                                        "💶 Versement PEA prévu · " + _euros(v.get("amount")),
+                                        jour, texte=v.get("note")))
+        if alertes.get("dividende"):
+            noms = {p.get("ticker"): p.get("name") for p in pea.get("positions") or []}
+            for i, d in enumerate(pea.get("divFuture") or []):
+                jour = _jour(d.get("date"))
+                if jour:
+                    cle = re.sub(r"[^A-Za-z0-9_-]", "", str(d.get("id") or "")) or f"{jour}-{i}"
+                    titre = "💶 Dividende · " + str(noms.get(d.get("ticker")) or d.get("ticker") or "")
+                    if _nombre(d.get("montant")) > 0:
+                        titre += " · " + _euros(d["montant"])
+                    out.append(_element(f"dividende-{cle}", "dividende", titre, jour,
+                                        texte=d.get("note")))
+    return out
+
+
+def _alarme(e: dict, valeur: str) -> list:
+    """Bloc VALARM : l'iPhone affiche la notification tout seul, Pilote ferme
+    ou non. Declenchement relatif au debut, donc valable pour chaque mois
+    d'un evenement repete."""
+    if not valeur or valeur not in ALERTES_VALEURS:
+        return []
+    if e["debut"]:
+        minute = e["debut"].hour * 60 + e["debut"].minute
+        avant = {"matin": max(minute - 9 * 60, 0), "veille": minute + 6 * 60}.get(valeur)
+        if avant is None:
+            avant = int(valeur)
+        declencheur = f"-PT{avant}M" if avant else "PT0S"
+    else:
+        # Toute la journee : le debut est minuit
+        declencheur = "-PT6H" if valeur == "veille" else "PT9H"
+    return ["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + _echapper(e["titre"]),
+            "TRIGGER:" + declencheur, "END:VALARM"]
+
+
 _CASES = {"sport": "sport", "objectif": "objectifs", "pret": "pret"}
 
 
-def evenements(sp: dict, pr: dict, choix: dict, notes: list = ()) -> dict:
+def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
+               alertes: dict = None, en_plus: list = ()) -> dict:
     """{cle: lignes iCalendar de l'evenement, sans UID ni DTSTAMP}. Les notes
-    partent toujours : elles sont ecrites pour l'agenda."""
+    partent toujours : elles sont ecrites pour l'agenda. `en_plus` : les
+    rappels (rappels()), deja tries selon leur alerte."""
     out = {}
-    for e in elements(sp, pr, notes):
-        if e["type"] != "note" and not choix.get(_CASES[e["type"]]):
+    alertes = alertes or {}
+    for e in list(elements(sp, pr, notes)) + list(en_plus):
+        if e["type"] in _CASES and not choix.get(_CASES[e["type"]]):
             continue
         lignes = ["SUMMARY:" + _echapper(e["titre"])]
         if e["debut"]:
@@ -365,11 +473,11 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = ()) -> dict:
         else:
             lignes += ["DTSTART;VALUE=DATE:" + e["jour"].strftime("%Y%m%d"),
                        "DTEND;VALUE=DATE:" + (e["jour"] + datetime.timedelta(days=1)).strftime("%Y%m%d")]
-        if e["mois"]:
-            lignes.append(f"RRULE:FREQ=MONTHLY;COUNT={e['mois']}")
+        if e["mois"]:   # -1 : chaque mois, sans fin
+            lignes.append(f"RRULE:FREQ=MONTHLY;COUNT={e['mois']}" if e["mois"] > 0 else "RRULE:FREQ=MONTHLY")
         if e["texte"]:
             lignes.append("DESCRIPTION:" + _echapper(e["texte"]))
-        out[e["cle"]] = lignes
+        out[e["cle"]] = lignes + _alarme(e, alertes.get(e["type"]))
     return out
 
 
@@ -489,9 +597,11 @@ def icloud(debut: str, fin: str) -> list:
 
 def _ics(uid: str, lignes: list) -> bytes:
     maintenant = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    # La description de l'alerte (VALARM) n'est pas celle de l'evenement
+    propres = lignes[:lignes.index("BEGIN:VALARM")] if "BEGIN:VALARM" in lignes else lignes
     tout = (["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Pilote//Agenda//FR", "BEGIN:VEVENT",
              "UID:" + uid, "DTSTAMP:" + maintenant] + lignes
-            + ["DESCRIPTION:Ajouté par Pilote." if not any(l.startswith("DESCRIPTION:") for l in lignes) else "",
+            + ["DESCRIPTION:Ajouté par Pilote." if not any(l.startswith("DESCRIPTION:") for l in propres) else "",
                "END:VEVENT", "END:VCALENDAR"])
     return ("\r\n".join(_plier(l) for l in tout if l) + "\r\n").encode("utf-8")
 
@@ -584,8 +694,10 @@ def _envoyer(data: dict, dossier: str) -> int:
         except ErreurAgenda as e:
             if e.code != "caldav":   # agenda supprime entre-temps : rien a retirer
                 raise
+    alertes = data.get("alertes") or {}
     tous = evenements(sports.load_data(), pret.load_data(),
-                      data.get("choix") or {}, data.get("notes") or [])
+                      data.get("choix") or {}, data.get("notes") or [],
+                      alertes, rappels(alertes, data.get("jours") or {}))
     # Les notes d'abord : ecrites a la main pour l'agenda, elles n'attendent
     # pas derriere cinquante seances
     voulus = {prefixe + cle + ".ics": tous[cle]
@@ -620,7 +732,37 @@ def config() -> dict:
             "calendrierCree": bool(data.get("calendrierCree")),
             "choix":      {c: bool(choix.get(c)) for c in CHOIX},
             "notes":      data.get("notes") or [],
+            "alertes":    _alertes_propres(data.get("alertes")),
+            "jours":      _jours_propres(data.get("jours")),
             "etat":       _etat_public()}
+
+
+def _alertes_propres(alertes) -> dict:
+    alertes = alertes if isinstance(alertes, dict) else {}
+    return {t: alertes.get(t) if alertes.get(t) in ALERTES_VALEURS else "" for t in ALERTES}
+
+
+def _jours_propres(jours) -> dict:
+    jours = jours if isinstance(jours, dict) else {}
+    return {t: min(max(int(_nombre(jours.get(t))) or 1, 1), 28) for t in ("pesee", "releve")}
+
+
+def regler_alertes(alertes: dict, jours: dict) -> dict:
+    """Onglet Notifications : enregistre, puis envoie dans la seconde."""
+    _modifier(lambda d: d.update(alertes=_alertes_propres(alertes), jours=_jours_propres(jours)))
+    planifier(0.5)
+    return config()
+
+
+def planifier_si(*types) -> None:
+    """planifier(), seulement si l'un de ces rappels part : le PEA, la Sante et
+    le Patrimoine s'enregistrent souvent, sans rien changer a l'agenda sinon."""
+    try:
+        alertes = _store.load().get("alertes") or {}
+    except Exception:
+        return
+    if any(alertes.get(t) for t in types):
+        planifier()
 
 
 def enregistrer_notes(notes: list) -> dict:

@@ -374,6 +374,87 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual(e.exception.code, "reseau")
         self.assertIn("ne répond pas", agenda.config()["etat"]["erreur"])
 
+    def test_alertes_sur_les_evenements(self):
+        agenda.connecter(ID, MDP)
+        agenda.regler("nouveau", {"sport": True, "objectifs": True, "pret": True})
+        agenda.enregistrer_notes([{"id": "n1", "titre": "Dentiste", "date": "2026-10-30", "heure": "08:00"}])
+        r = agenda.regler_alertes({"sport": "30", "objectif": "veille", "pret": "matin",
+                                   "note": "matin", "inconnu": "15"}, {"pesee": 40})
+        self.assertNotIn("inconnu", r["alertes"])
+        self.assertEqual(r["jours"]["pesee"], 28)                 # borné au 28
+        self.assertEqual(agenda.regler_alertes({"sport": "999"}, {})["alertes"]["sport"], "")
+        agenda.regler_alertes({"sport": "30", "objectif": "veille", "pret": "matin", "note": "matin"}, {})
+        agenda.synchroniser()
+        f = self._fichiers(urllib.parse.urlparse(agenda.config()["calendrier"]).path)
+        t = {n.split("-", 2)[2][:-4]: v for n, v in f.items()}
+        self.assertIn("BEGIN:VALARM\r\nACTION:DISPLAY\r\n", t["sport-1"])
+        self.assertIn("TRIGGER:-PT30M", t["sport-1"])            # 18 h 30 : 30 min avant
+        self.assertIn("TRIGGER:PT9H", t["sport-2"])              # sans heure : 9 h le jour même
+        self.assertIn("TRIGGER:-PT6H", t["objectif-1"])          # la veille à 18 h
+        self.assertIn("TRIGGER:PT9H", t["pret"])                 # chaque mois, relatif au début
+        self.assertIn("TRIGGER:PT0S", t["note-n1"])              # 8 h : avant 9 h, à l'heure
+        # La description de l'alerte ne remplace pas celle de l'événement
+        self.assertIn("DESCRIPTION:Ajouté par Pilote.", t["objectif-1"])
+        self.assertEqual(agenda.lire_ics(t["objectif-1"])[0]["titre"], "🎯 Semi-marathon")
+        # Alerte changée : seul l'événement concerné repart
+        _ICloud.requetes.clear()
+        agenda.regler_alertes({"sport": "30", "objectif": "veille", "pret": "matin", "note": "60"}, {})
+        agenda.synchroniser()
+        self.assertEqual(sum(1 for m, _ in _ICloud.requetes if m == "PUT"), 1)
+        self.assertNotIn("VALARM", agenda._ics("x", ["SUMMARY:x"]).decode())
+
+    def test_rappels_du_mois_et_du_pea(self):
+        import datetime
+        import patrimoine
+        import sante
+        auj = datetime.date.today()
+        mois_suivant = (auj.replace(day=1) + datetime.timedelta(days=32)).replace(day=5)
+        alertes = {"pesee": "matin", "releve": "veille", "versement": "matin", "dividende": "veille"}
+        jours = {"pesee": 5, "releve": 1}
+        # Rien de saisi : pas de pesée ni de relevé à rappeler, PEA absent
+        self.assertEqual(agenda.rappels(alertes, jours), [])
+
+        sante.save_data({"mesures": [{"id": 1, "date": "2025-01-10", "poids": 70}]})
+        patrimoine.save_data({"comptes": [{"id": "c1", "label": "Livret A", "type": "livret"}],
+                              "releves": []})
+        (storage.get_user_dir() / "pea_data.json").write_text(json.dumps({
+            "positions": [{"ticker": "EPA:CW8", "name": "Amundi MSCI World"}],
+            "depotsPrevus": [{"id": 7, "date": "2026-11-02", "amount": 300}],
+            "divFuture": [{"id": "d1", "date": "2026-12-10", "ticker": "EPA:CW8", "montant": 12.5}],
+        }), "utf-8")
+        ev = agenda.evenements({}, {}, {}, [], alertes, agenda.rappels(alertes, jours))
+        self.assertEqual(sorted(ev), ["dividende-d1", "pesee", "releve", "versement-7"])
+        self.assertIn("DTSTART;VALUE=DATE:" + auj.replace(day=5).strftime("%Y%m%d"), ev["pesee"])
+        self.assertIn("RRULE:FREQ=MONTHLY", ev["pesee"])
+        self.assertIn("TRIGGER:-PT6H", ev["releve"])
+        self.assertIn("SUMMARY:💶 Versement PEA prévu · 300\\,00 €", ev["versement-7"])
+        self.assertIn("SUMMARY:💶 Dividende · Amundi MSCI World · 12\\,50 €", ev["dividende-d1"])
+
+        # Pesée et relevé faits ce mois-ci : le rappel passe au mois suivant
+        sante.save_data({"mesures": [{"id": 1, "date": auj.isoformat(), "poids": 70}]})
+        patrimoine.save_data({"comptes": [{"id": "c1", "label": "Livret A", "type": "livret"}],
+                              "releves": [{"id": 1, "compteId": "c1", "date": patrimoine.mois_courant(),
+                                           "montant": 100}]})
+        ev = agenda.evenements({}, {}, {}, [], alertes, agenda.rappels(alertes, jours))
+        self.assertIn("DTSTART;VALUE=DATE:" + mois_suivant.strftime("%Y%m%d"), ev["pesee"])
+        self.assertIn("DTSTART;VALUE=DATE:" + mois_suivant.replace(day=1).strftime("%Y%m%d"), ev["releve"])
+        # Sans alerte, un rappel ne part pas
+        self.assertEqual(agenda.rappels({}, jours), [])
+
+    def test_planifier_seulement_si_un_rappel_part(self):
+        appels = []
+        avant, agenda.planifier = agenda.planifier, lambda delai=3: appels.append(delai)
+        try:
+            agenda.planifier_si("versement", "dividende")
+            self.assertEqual(appels, [])
+            agenda.regler_alertes({"dividende": "matin"}, {})
+            appels.clear()
+            agenda.planifier_si("versement", "dividende")
+            agenda.planifier_si("pesee")
+            self.assertEqual(appels, [3])
+        finally:
+            agenda.planifier = avant
+
 
 if __name__ == "__main__":
     unittest.main()

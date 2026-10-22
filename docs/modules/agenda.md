@@ -4,7 +4,8 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 ## Ce que c'est (agenda.json)
 
-Une section **Agenda** de la barre latérale (Vie perso), deux onglets :
+Une section **Agenda** de la barre latérale (Vie perso), trois onglets
+(Notifications, `ag-notifs`, ajouté le 22/10/2026 : voir plus bas) :
 
 * **Calendrier** (`ag-cal`) : un mois en grille, comme l'agenda de Sports. Il
   **reproduit ce qu'il y a dans iCloud**, comme le téléphone : tous les
@@ -121,6 +122,61 @@ double authentification obligatoire). Bibliothèque standard uniquement
   dernier envoi. Un mois déjà lu est relu en y revenant après une minute.
 * Un clic sur un jour ouvre son détail (`ov-ag-jour`) : chaque élément avec
   son heure et son agenda, « Modifier » pour une note, « Ajouter une note ».
+
+## Notifications sur l'iPhone (onglet `ag-notifs`)
+
+Demandé par Arthur le 22/10/2026 (« est-ce que grâce à l'agenda on pourrait
+pas envoyer des notifs sur le téléphone ? Si c'est le cas ça doit être un
+nouvel onglet »), avec des rappels en plus de ce qui part déjà.
+
+Pilote n'envoie aucune notification lui-même : il pose une **alerte iCalendar**
+(`VALARM`, `ACTION:DISPLAY`) dans les événements qu'il écrit chez iCloud, et
+c'est l'iPhone qui la sonne, Pilote fermé ou non. Rien de nouveau ne sort du
+PC : mêmes événements, même agenda. Sur l'iPhone, Réglages › Notifications ›
+Calendrier doit être autorisé.
+
+* **Réglage par type** (`agenda.json` : `alertes`, `jours`) : `""` aucune
+  alerte, `"0"`/`"15"`/`"30"`/`"60"` minutes avant le début, `"matin"` 9 h le
+  jour même, `"veille"` 18 h la veille (`ALERTES_VALEURS`). Un événement « toute
+  la journée » prend `PT9H` (9 h) pour les minutes et pour « matin », `-PT6H`
+  pour « veille ». Avec heure : « matin » = 9 h, ou l'heure même si elle est
+  avant 9 h. Déclencheur **relatif au début** : il vaut pour chaque mois d'un
+  événement répété (mensualités, rappels du mois).
+* **Ce qui part déjà** : notes, séances, objectifs, mensualités. Une case
+  décochée dans l'onglet iCloud grise son réglage (« pas envoyées »).
+* **Rappels en plus** (`agenda.RAPPELS`), envoyés **seulement** si leur alerte
+  est réglée (« Pas de rappel » = rien dans l'agenda) :
+  | Rappel | Événement |
+  |---|---|
+  | `pesee` | « ⚖️ Pesée du mois », toute la journée, le jour choisi (1 à 28), répété chaque mois sans fin. Commence au mois suivant dès qu'une pesée du mois est saisie : il ne sonne pas pour rien. Rien tant que Santé n'a aucune mesure |
+  | `releve` | « 📋 Relevé du patrimoine », même principe (`patrimoine.mois_saisi`). Rien sans ligne saisie à la main |
+  | `versement` | un événement par versement prévu du PEA (`depotsPrevus`) |
+  | `dividende` | un événement par dividende attendu du PEA (`divFuture`), nom de la ligne et montant |
+* Le PEA est lu par `agenda._pea()` (JSON en lecture seule, sous le verrou du
+  fichier), **pas** `storage.load_data()`, qui note son résultat pour toute
+  l'app (`get_last_load_info`). Fichier illisible : l'envoi s'arrête avec une
+  erreur, rien n'est retiré.
+* Envoi : `save_agenda_alertes` enregistre puis envoie dans la seconde.
+  `save_data`, `save_sante` et `save_patrimoine` appellent
+  `agenda.planifier_si(...)` : l'envoi ne repart que si l'un de leurs rappels
+  est réglé (le PEA s'enregistre souvent).
+* `_ics` ne cherche la description de l'événement qu'avant `BEGIN:VALARM` :
+  celle de l'alerte ne doit pas faire sauter « Ajouté par Pilote. ».
+
+**Pas encore vérifié** : que le vrai iCloud garde l'alerte et que l'iPhone
+sonne (ni sur Mac). Banc et tests seulement.
+
+## Tuiles de l'accueil
+
+Trois tuiles (22/10/2026, choisies par Arthur), éteintes comme toute tuile
+nouvelle, module « Agenda » : « Aujourd'hui » (`ag-jour`, disparaît si la
+journée est vide), « Cette semaine » (`ag-semaine`, 7 jours, un événement sur
+plusieurs jours compté une fois, ceux d'aujourd'hui déjà finis écartés),
+« Prochaines notes » (`ag-notes`, toujours là pour son bouton « Ajouter »).
+Mêmes éléments que le calendrier (`agDuJour(iso, icloud)`). Les événements
+iCloud des 7 jours sont lus à part (`_dashAg`, `dashAgIcloud`), seulement si
+« Aujourd'hui » ou « Cette semaine » est affichée, relus après 10 min ; un
+échec garde la lecture précédente (pas de boucle). Détail : `docs/accueil.md`.
 
 ## Lecture des autres agendas iCloud
 

@@ -1904,6 +1904,19 @@ label.sv-check, label.sv-inline {
 .ag-choix input { margin-top: 3px; }
 .ag-aide { font-weight: 400; color: var(--txt3); }
 .ag-err { color: var(--r); }
+/* Onglet Notifications : une ligne par type, icône · nom et aide · réglage */
+.ag-notifs-t { font-size: 12px; font-weight: 600; color: var(--txt2); margin: 4px 0 6px; }
+.ag-notifs { display: flex; flex-direction: column; margin-bottom: 16px; }
+.ag-notif { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--brd); }
+.ag-notif:first-child { border-top: none; }
+.ag-notif-ico { flex: none; width: 30px; height: 30px; border-radius: 8px; display: inline-flex;
+  align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-text); font-size: 16px; }
+.ag-notif-nom { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; }
+.ag-notif-nom .ag-aide { font-size: 11.5px; }
+.ag-notif-champ { flex: none; display: flex; gap: 6px; }
+.ag-notif-champ select { width: auto; min-width: 150px; }
+.ag-notif-champ select.ag-notif-jour { min-width: 0; }
+.ag-notifs-pied { margin-bottom: 4px; }
 @media (max-width: 900px) {
   .ac-cnx { grid-template-columns: 1fr; }
   .ac-layout { grid-template-columns: 1fr; height: auto !important; }
@@ -2318,6 +2331,16 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .dash-mkt-v { color: var(--txt2); font-size: 12px; }
 .dash-mkt b { font-weight: 500; }
 .dash-mkt em { font-style: normal; font-size: 10.5px; color: var(--txt3); }
+/* Agenda : une ligne par élément, barre à la couleur de son agenda (--c) */
+.dash-ags, .dash-agnotes { display: flex; flex-direction: column; gap: 3px; }
+.dash-ag {
+  display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13px;
+  padding-left: 7px; border-left: 3px solid var(--c);
+}
+.dash-ag b { flex: none; min-width: 3.3em; font-family: var(--mono); font-weight: 500; font-size: 12px; color: var(--txt2); }
+.dash-ag em { flex: none; min-width: 2.6em; font-style: normal; font-size: 11.5px; color: var(--txt3); }
+.dash-ag span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-ag-plus { display: block; margin-top: 4px; font-size: 11.5px; color: var(--txt3); }
 /* Pense-bête : tuile et fenêtre */
 .dash-notes { display: flex; flex-direction: column; gap: 2px; }
 .dash-note, .dash-nl {
@@ -3649,6 +3672,21 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         apparaissent sur ton iPhone, ton Mac et sur iCloud.com. Il lit aussi tes autres agendas pour
         les montrer dans le calendrier, sans jamais les modifier.</p>
       <div id="ag-boite"></div>
+    </div>
+  </div>
+</div>
+
+<div class="pane" id="pane-ag-notifs">
+  <div class="m-head">
+    <span class="m-nav-lbl">Notifications</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="card ag-cnx">
+    <div class="card-h"><span class="card-t">Sur ton iPhone</span></div>
+    <div class="card-b">
+      <p class="ac-intro">Pilote pose une alerte sur ce qu'il met dans ton agenda iCloud&nbsp;: c'est
+        l'iPhone qui la fait sonner, à l'heure dite, même quand Pilote est fermé.</p>
+      <div id="ag-notifs-boite"></div>
     </div>
   </div>
 </div>
@@ -11003,7 +11041,7 @@ const NAV_MODULES = {
   "sec-agenda": {
     desc: "Un calendrier de tout ce que Pilote sait dater, tes notes, et ton agenda iCloud sur l'iPhone.",
     pas:  "Ajoute une note dans le calendrier, ou connecte ton agenda iCloud.",
-    tab: "ag-cal", tuiles: [] },
+    tab: "ag-cal", tuiles: ["ag-jour", "ag-notes"] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -14472,6 +14510,7 @@ const NAV_SECTIONS = [
   // agendas iCloud ; l'onglet iCloud règle ce qui part sur l'iPhone
   { id: "sec-agenda", label: "Agenda", children: [
     { id: "ag-cal",       label: "Calendrier" },
+    { id: "ag-notifs",    label: "Notifications" },
     { id: "ag-connexion", label: "iCloud"     },
   ]},
 ];
@@ -23205,6 +23244,19 @@ const DASH_WIDGETS = [
     },
   },
   {
+    // Agenda (22/10/2026) : ce que montre le calendrier aujourd'hui (iCloud + notes)
+    id: "ag-jour", label: "Aujourd'hui dans l'agenda", module: "Agenda", tab: "ag-cal",
+    render() { return dashAgJour(); },
+  },
+  {
+    id: "ag-semaine", label: "Cette semaine dans l'agenda", module: "Agenda", tab: "ag-cal",
+    render() { return dashAgSemaine(); },
+  },
+  {
+    id: "ag-notes", label: "Prochaines notes", module: "Agenda", tab: "ag-cal",
+    render() { return dashAgNotes(); },
+  },
+  {
     // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
     // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
@@ -23265,6 +23317,8 @@ function dashModuleReady(mod) {
     case "Bourse":     return !!window._peaPv && (_ctoBootstrapped || !_modulesVisibles().has("sec-cto"));
     // Boîte connectée : attendre le premier relevé (réussi ou non)
     case "Actus":      return _acBootstrapped && (!acConnecte() || !!AC.majA || !!AC.erreur);
+    // Première lecture d'iCloud en cours : squelette, ensuite on garde la dernière
+    case "Agenda":     return _agBootstrapped && !(_dashAg.attente && !_dashAg.debut);
   }
   return true;
 }
@@ -23894,6 +23948,105 @@ function dashMarches() {
            viz: `<div class="dash-mkts-c"><div class="dash-mkts">${lignes}</div></div>` };
 }
 
+/* ── Tuiles de l'Agenda ──────────────────────────────────────────────────────
+   Les notes viennent d'AG.notes. Les événements iCloud des 7 prochains jours
+   sont lus à part du calendrier (agenda_icloud), seulement si une tuile
+   « Aujourd'hui » ou « Cette semaine » est affichée, et relus après 10 min.
+   Le tri et le filtre d'un jour sont ceux du calendrier (agDuJour). */
+const _dashAg = { debut: "", lu: 0, ev: [], attente: false };
+const DASH_AG_RELIRE_MS = 600000;
+
+function dashAgIcloud() {
+  const auj = todayISO(), api = agApi();
+  if (_dashAg.attente || !(AG.config && AG.config.connecte) || !api || !api.agenda_icloud) return;
+  if (!dashConfig().some(c => (c.id === "ag-jour" || c.id === "ag-semaine") && c.on)) return;
+  if (_dashAg.debut === auj && Date.now() - _dashAg.lu < DASH_AG_RELIRE_MS) return;
+  const d = new Date();
+  const fin = spDateISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 6));
+  _dashAg.attente = true;
+  // Échec : on garde la lecture précédente, nouvel essai dans 10 min (pas en boucle)
+  Promise.resolve(api.agenda_icloud(auj, fin))
+    .then(r => { if (r && r.ok) _dashAg.ev = r.evenements || []; })
+    .catch(() => {})
+    .finally(() => { _dashAg.debut = auj; _dashAg.lu = Date.now(); _dashAg.attente = false; dashRender(); });
+}
+
+/** Les éléments de 7 jours à partir d'aujourd'hui, un événement sur plusieurs
+    jours une seule fois ; ceux d'aujourd'hui déjà finis sont écartés. */
+function dashAgAVenir(nbJours) {
+  const d = new Date(), h = d.toTimeString().slice(0, 5), vus = new Set(), out = [];
+  for (let i = 0; i < nbJours; i++) {
+    const iso = spDateISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + i));
+    agDuJour(iso, _dashAg.ev).forEach(e => {
+      const cle = e.type + "|" + (e.id || "") + "|" + e.titre + "|" + (e.agenda || "");
+      if (vus.has(cle)) return;
+      vus.add(cle);
+      if (i === 0 && e.heure && (e.heureFin || e.heure) <= h) return;
+      out.push(Object.assign({ jour: iso }, e));
+    });
+  }
+  return out;
+}
+
+function dashAgLigne(e, avecJour) {
+  const style = e.type === "icloud" && e.couleur ? ` style="--c:${escHtml(e.couleur)}"` : "";
+  const j = avecJour ? dashJours(e.jour) : 0;
+  const jour = !avecJour ? "" : j === 0 ? "auj." : j === 1 ? "dem."
+    : spParseISO(e.jour).toLocaleDateString("fr-FR", { weekday: "short" });
+  return `<div class="dash-ag ag-t-${e.type}"${style} title="${escHtml((e.heure ? e.heure + " " : "") + e.titre)}">
+    ${avecJour ? `<em>${escHtml(jour)}</em>` : ""}<b>${escHtml(e.heure || "journée")}</b><span>${escHtml(e.titre)}</span></div>`;
+}
+
+function dashAgJour() {
+  if (!_agBootstrapped) return null;
+  dashAgIcloud();
+  const tout = agDuJour(todayISO(), _dashAg.ev);
+  if (!tout.length) return null;   // rien aujourd'hui : la tuile s'efface
+  const l = dashAgAVenir(1);
+  return { lbl: "Aujourd'hui", val: null, vizCls: "dash-viz-haut", go: "Ouvrir le calendrier",
+           sub: l.length ? "" : "Journée terminée : " + tout.length + " événement" + (tout.length > 1 ? "s" : ""),
+           viz: l.length ? `<div class="dash-ags">${l.slice(0, 3).map(e => dashAgLigne(e, false)).join("")}</div>`
+                           + (l.length > 3 ? `<span class="dash-ag-plus">+ ${l.length - 3} ensuite</span>` : "") : "" };
+}
+
+function dashAgSemaine() {
+  if (!_agBootstrapped) return null;
+  dashAgIcloud();
+  const l = dashAgAVenir(7);
+  if (!l.length) return null;
+  return { lbl: "Cette semaine", val: String(l.length),
+           sub: (l.length > 1 ? "événements" : "événement") + " dans les 7 jours",
+           // go "" : tuile cliquable, sans le lien du bas (229 px avec lui, 222 au plus)
+           go: "",
+           viz: `<div class="dash-ags">${l.slice(0, 3).map(e => dashAgLigne(e, true)).join("")}</div>` };
+}
+
+/** « 14:00 », « demain 9:30 », « ven. 24 oct. » : quand tombe une note. */
+function dashAgQuandNote(n) {
+  const j = dashJours(n.date);
+  if (j === 0) return n.heure || "aujourd'hui";
+  return (j === 1 ? "demain" : dashDateCourte(n.date)) + (n.heure ? (j === 1 ? " " : ", ") + n.heure : "");
+}
+
+/** Toujours affichée une fois l'agenda chargé : c'est d'elle qu'on ajoute une note. */
+function dashAgNotes() {
+  if (!_agBootstrapped) return null;
+  const auj = todayISO();
+  const l = AG.notes.filter(n => n.date >= auj)
+    .sort((a, b) => (a.date + (a.heure || "99")).localeCompare(b.date + (b.heure || "99")));
+  const lignes = l.slice(0, 3).map(n => `<div class="dash-note" title="${escHtml(n.texte || n.titre)}"
+      onclick="event.stopPropagation();agOuvrirNote('${escHtml(n.id)}', null)">
+      <span class="dash-note-t">${escHtml(n.titre || "Note")}</span>
+      <span class="dash-note-d${n.date === auj ? " dash-note-auj" : ""}">${escHtml(dashAgQuandNote(n))}</span></div>`).join("");
+  const autres = l.length > 3
+    ? `<button type="button" class="dash-note-plus" onclick="event.stopPropagation();goTab('ag-cal');_setActiveSidebar('ag-cal')">+ ${l.length - 3} autre${l.length > 4 ? "s" : ""}</button>` : "";
+  return { lbl: "Prochaines notes", val: null, go: null, vizCls: "dash-viz-haut",
+           sub: l.length ? "" : "Aucune note à venir.",
+           viz: (lignes ? `<div class="dash-agnotes">${lignes}</div>` : "")
+              + `<div class="dash-notes-pied"><button type="button" class="btn btn-ghost btn-sm dash-tile-btn"
+                   onclick="event.stopPropagation();agOuvrirNote(null, null)"><i class="ph ph-plus"></i> Ajouter</button>${autres}</div>` };
+}
+
 /* ── Tuile « Pense-bête » ────────────────────────────────────────────────────
    S.uiPrefs.penseBete = [{id, texte, date ("AAAA-MM-JJ" ou ""), faite}],
    enregistré avec les préférences de l'utilisateur (pea_data.json, donc dans
@@ -24080,6 +24233,7 @@ const DASH_ICONS = {
   "Santé": "heartbeat", "Prêt": "hand-coins",
   "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase",
   "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
+  "Agenda": "calendar-blank",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -24540,13 +24694,13 @@ function agFinNote(n) {
   return String(Math.floor(fin / 60) % 24).padStart(2, "0") + ":" + String(fin % 60).padStart(2, "0");
 }
 
-/** Ce qui tombe un jour, comme sur le téléphone : par heure, la journée entière en dernier. */
-function agDuJour(iso) {
-  const f = agFenetre();
+/** Ce qui tombe un jour, comme sur le téléphone : par heure, la journée entière en dernier.
+    `icloud` : une autre lecture d'iCloud que celle du mois affiché (tuiles de l'accueil). */
+function agDuJour(iso, icloud) {
   const notes = AG.notes.filter(n => n.date === iso)
     .map(n => ({ type: "note", id: n.id, titre: n.titre || "Note", heure: n.heure,
                  heureFin: agFinNote(n), texte: n.texte, agenda: "Pilote" }));
-  const ic = (AG.icloud[f.debut] || []).filter(e => e.debut <= iso && e.fin >= iso)
+  const ic = (icloud || AG.icloud[agFenetre().debut] || []).filter(e => e.debut <= iso && e.fin >= iso)
     .map(e => ({ type: "icloud", titre: e.titre, heure: e.debut === iso ? e.heure : "",
                  heureFin: e.debut === iso ? e.heureFin : "", agenda: e.agenda, couleur: e.couleur }));
   return notes.concat(ic).sort((a, b) => (a.heure || "99").localeCompare(b.heure || "99"));
@@ -24696,6 +24850,7 @@ async function agEcrireNotes(notes, message) {
   AG.notes = r.notes || [];
   closeOv("ov-ag-note");
   agRenderCal();
+  dashRender();   // tuiles de l'agenda (une note peut s'ajouter depuis l'accueil)
   showToastModern(message, "ok");
   return true;
 }
@@ -24721,6 +24876,91 @@ async function agSupprimerNote() {
   await agEcrireNotes(AG.notes.filter(x => x.id !== AG.noteId), "Note supprimée");
 }
 
+/* ── Notifications (ag-notifs) ───────────────────────────────────────────
+   Une alerte (VALARM) posée par Python sur les événements envoyés à iCloud :
+   l'iPhone la sonne lui-même. Les quatre rappels du bas ne partent que si leur
+   alerte est réglée (agenda.RAPPELS). */
+
+const AG_ALERTES_HEURE = [["", "Pas d'alerte"], ["0", "À l'heure"], ["15", "15 min avant"],
+  ["30", "30 min avant"], ["60", "1 h avant"], ["matin", "Le matin même, 9 h"], ["veille", "La veille, 18 h"]];
+const AG_ALERTES_JOUR = [["", "Pas d'alerte"], ["matin", "Le jour même, 9 h"], ["veille", "La veille, 18 h"]];
+// [type, icône, nom, aide, options, case de l'onglet iCloud ou null]
+const AG_NOTIFS = [
+  ["note",     "note-pencil",       "Notes de l'agenda", "sans heure : 9 h le jour même", AG_ALERTES_HEURE, null],
+  ["sport",    "person-simple-run", "Séances de sport",  "sans heure : 9 h le jour même", AG_ALERTES_HEURE, "sport"],
+  ["objectif", "flag-checkered",    "Objectifs de sport à date", "", AG_ALERTES_JOUR, "objectifs"],
+  ["pret",     "hand-coins",        "Mensualités du prêt", "", AG_ALERTES_JOUR, "pret"],
+];
+const AG_RAPPELS = [
+  ["pesee",     "heartbeat",   "Pesée du mois", "passe au mois suivant dès que la pesée du mois est saisie", true],
+  ["releve",    "bank",        "Relevé du patrimoine", "passe au mois suivant dès que le relevé du mois est saisi", true],
+  ["versement", "piggy-bank",  "Versements PEA prévus", "ceux de l'onglet Versements", false],
+  ["dividende", "coins",       "Dividendes attendus", "ceux de l'onglet Dividendes", false],
+];
+
+function agSelectHtml(type, options, valeur, inactif) {
+  return `<select data-type="${type}" onchange="agReglerNotifs()"${inactif ? " disabled" : ""}>`
+    + options.map(([v, nom]) => `<option value="${v}"${v === (valeur || "") ? " selected" : ""}>${nom}</option>`).join("")
+    + `</select>`;
+}
+
+async function agOuvrirNotifs() {
+  const box = document.getElementById("ag-notifs-boite");
+  if (!box) return;
+  const api = agApi();
+  if (!api || !api.load_agenda) { box.innerHTML = `<p class="ac-note">Disponible dans l'application.</p>`; return; }
+  const r = await api.load_agenda();
+  if (r && r.ok) AG.config = r;
+  agRenderNotifs();
+}
+
+function agRenderNotifs() {
+  const box = document.getElementById("ag-notifs-boite");
+  if (!box || !AG.config) return;
+  const cfg = AG.config, al = cfg.alertes || {}, jours = cfg.jours || {};
+  if (!cfg.connecte || !cfg.calendrier) {
+    box.innerHTML = `<p class="ac-note">Les notifications passent par ton agenda iCloud : connecte-le d'abord
+        et choisis l'agenda où Pilote écrit.</p>
+      <div class="ac-btns"><button type="button" class="btn btn-primary" onclick="goTab('ag-connexion');_setActiveSidebar('ag-connexion')"><i class="ph ph-plug"></i> Connecter iCloud</button></div>`;
+    return;
+  }
+  const ligne = (ico, nom, aide, champ) => `<div class="ag-notif">
+      <span class="ag-notif-ico"><i class="ph ph-${ico}"></i></span>
+      <span class="ag-notif-nom"><b>${nom}</b>${aide ? `<span class="ag-aide">${aide}</span>` : ""}</span>
+      <span class="ag-notif-champ">${champ}</span></div>`;
+  const deja = AG_NOTIFS.map(([type, ico, nom, aide, options, cas]) => {
+    const coupe = cas && !(cfg.choix || {})[cas];
+    return ligne(ico, nom, coupe ? "pas envoyées : à cocher dans l'onglet iCloud" : aide,
+                 agSelectHtml(type, options, al[type], coupe));
+  }).join("");
+  const jourHtml = type => `<select class="ag-notif-jour" data-jour="${type}" onchange="agReglerNotifs()" title="Jour du mois">`
+    + Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}"${i + 1 === (jours[type] || 1) ? " selected" : ""}>le ${i + 1 === 1 ? "1er" : i + 1}</option>`).join("")
+    + `</select>`;
+  const plus = AG_RAPPELS.map(([type, ico, nom, aide, mensuel]) =>
+    ligne(ico, nom, aide, (mensuel ? jourHtml(type) : "")
+      + agSelectHtml(type, [["", "Pas de rappel"]].concat(AG_ALERTES_JOUR.slice(1)), al[type], false))).join("");
+  box.innerHTML = `
+    <div class="ag-notifs-t">Ce que Pilote envoie déjà</div>
+    <div class="ag-notifs">${deja}</div>
+    <div class="ag-notifs-t">Rappels en plus</div>
+    <div class="ag-notifs">${plus}</div>
+    <p class="ac-note ag-notifs-pied">Sur l'iPhone, les alertes de Calendrier doivent être autorisées
+      (Réglages › Notifications › Calendrier).</p>
+    <p class="ac-note" id="ag-notifs-etat">${agEtatHtml()}</p>`;
+}
+
+async function agReglerNotifs() {
+  const alertes = {}, jours = {};
+  document.querySelectorAll("#ag-notifs-boite select[data-type]").forEach(s => { alertes[s.dataset.type] = s.value; });
+  document.querySelectorAll("#ag-notifs-boite select[data-jour]").forEach(s => { jours[s.dataset.jour] = Number(s.value); });
+  const r = await agApi().save_agenda_alertes(alertes, jours);
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern("Réglage non enregistré : " + ((r && r.error) || "?"), "err"); return; }
+  AG.config = r;
+  agRenderNotifs();
+  showToastModern("Enregistré, envoi à iCloud en cours", "ok");
+}
+
 /* ── Navigation ────────────────────────────────────────────────────────── */
 
 (function patchGoTabAgenda() {
@@ -24728,9 +24968,10 @@ async function agSupprimerNote() {
   if (typeof _prev !== "function") return;
   window.goTab = function(n) {
     _prev.call(this, n);
-    if (n !== "ag-cal" && n !== "ag-connexion") return;
+    if (n !== "ag-cal" && n !== "ag-connexion" && n !== "ag-notifs") return;
     Promise.resolve(_agBootstrapped || agBootstrap()).then(() => {
       if (n === "ag-connexion") agOuvrir();
+      else if (n === "ag-notifs") agOuvrirNotifs();
       else agRenderCal();
     });
   };

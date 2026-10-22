@@ -290,7 +290,7 @@ Paramètres.
 | PEA             | dash, pos, sector, div, tx, wish, dep, strat (plus de `perf`)      |
 | CTO « nom » (un par CTO) | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
-| Agenda          | ag-cal (« Calendrier »), ag-connexion (« iCloud »)                 |
+| Agenda          | ag-cal (« Calendrier »), ag-notifs (« Notifications »), ag-connexion (« iCloud ») |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
@@ -439,8 +439,10 @@ n'existent plus.
   l'interface. Un libellé qui porte une icône se sauve et se restaure en `innerHTML`.
 * Un nouveau module de données = un fichier `src/<nom>.py` basé sur
   `jsonstore.JsonStore` + deux méthodes `load_`/`save_` dans la classe `Api` de `app.py`.
-  Il sera automatiquement propre à chaque utilisateur. Penser à l'ajouter aussi
-  à `DASH_WIDGETS` s'il a un chiffre à montrer sur l'accueil.
+  Il sera automatiquement propre à chaque utilisateur.
+* **Toute nouvelle fonctionnalité vient avec ses tuiles d'accueil** (règle d'Arthur,
+  22/10/2026) : `DASH_WIDGETS`, `DASH_ICONS`, `NAV_MODULES.tuiles`, `docs/accueil.md`.
+  Les proposer à Arthur dès la question de départ ; pas de « fini » sans elles.
 * **Enregistrements en attente** (4.3.14, bloc juste après `_syncToPython`) : les
   méthodes `save_*` du pont pywebview sont enveloppées (`_surveillerEcritures`) ;
   un module qui retarde ses écritures ajoute sa fonction « écrire maintenant » à

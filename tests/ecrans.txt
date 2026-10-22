@@ -9,7 +9,8 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 22/10/2026 (4.4.24) : section Agenda, calendrier, fiche d'une note, onglet iCloud.
+# 22/10/2026 (4.4.25) : tuiles de l'Agenda sur l'accueil, onglet Notifications.
+home
+home 300
+ag-notifs
 ag-cal
-js:agOuvrirNote(null,null)
-ag-connexion

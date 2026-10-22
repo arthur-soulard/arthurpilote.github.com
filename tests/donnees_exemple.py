@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["pea", "cto-perf:c1", "bourse-perf", "marches", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -275,6 +275,16 @@ def patrimoine():
             "releves": releves, "_seeded": True, "_nid": {"compte": 7, "releve": len(releves) + 1}}
 
 
+def agenda():
+    """Agenda pas connecte a iCloud (aucun echange reseau dans le test) : les
+    notes seules, pour les tuiles Aujourd'hui, Cette semaine et Prochaines notes."""
+    return {"_meta": dict(META, schema="agenda.v1"), "notes": [
+        {"id": "n1", "titre": "Rendez-vous chez le dentiste", "date": jour(0), "heure": "23:30", "duree": 30, "texte": ""},
+        {"id": "n2", "titre": "Rendre les livres à la médiathèque", "date": jour(2), "heure": "", "duree": 0, "texte": ""},
+        {"id": "n3", "titre": "Dîner chez Léa", "date": jour(5), "heure": "20:00", "duree": 120, "texte": ""},
+    ]}
+
+
 def ecrire(dossier):
     utilisateur = os.path.join(dossier, "users", "demo")
     os.makedirs(utilisateur, exist_ok=True)
@@ -288,6 +298,7 @@ def ecrire(dossier):
         os.path.join(utilisateur, "sante.json"): sante(),
         os.path.join(utilisateur, "pret.json"): pret(),
         os.path.join(utilisateur, "patrimoine.json"): patrimoine(),
+        os.path.join(utilisateur, "agenda.json"): agenda(),
     }
     for chemin, contenu in fichiers.items():
         with open(chemin, "w", encoding="utf-8") as f:

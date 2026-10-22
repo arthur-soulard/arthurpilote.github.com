@@ -2,6 +2,16 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.25",
+      "date": "2026-10-22",
+      "titre": "Des notifications sur ton iPhone",
+      "nouveau": [
+        "Nouvel onglet Agenda › Notifications : choisis quand ton iPhone te prévient (à l'heure, 15 min, 30 min ou 1 h avant, le matin même ou la veille) pour tes notes, séances, objectifs et mensualités. C'est l'iPhone qui sonne, même quand Pilote est fermé.",
+        "Des rappels en plus, si tu le veux : la pesée et le relevé du patrimoine chaque mois (ils passent au mois suivant une fois faits), les versements prévus et les dividendes attendus du PEA.",
+        "Trois tuiles pour l'accueil : Aujourd'hui, Cette semaine et Prochaines notes. Ajoute-les avec « Modifier les tuiles »."
+      ]
+    },
+    {
       "version": "4.4.24",
       "date": "2026-10-22",
       "titre": "Ton agenda iCloud dans Pilote",

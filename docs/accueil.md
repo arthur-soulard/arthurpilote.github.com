@@ -307,6 +307,22 @@ ramenée à 26 px sous les pastilles (`.dash-rng + .dash-spark`) et pastilles
 moins espacées : 222 px comme les autres, 2e rangée à 708 px, même avec trois
 tuiles Performance dedans (703 px).
 
+### Tuiles de l'Agenda (22/10/2026)
+
+Demandées par Arthur, qui a posé la règle : **toute nouvelle fonctionnalité
+vient avec ses tuiles** (`CLAUDE.md`). `ag-jour` (« Aujourd'hui »),
+`ag-semaine` (« Cette semaine », 7 jours), `ag-notes` (« Prochaines notes » +
+« Ajouter »). Elles relisent `agDuJour` du calendrier et `AG.notes` ; les
+événements iCloud sont lus à part (`dashAgIcloud`, 10 min). Détail :
+`docs/modules/agenda.md`.
+
+* Mesuré à 1366 × 720 sur le banc : « Cette semaine » faisait 229 px avec son
+  lien du bas ; `go: ""` le retire en gardant la tuile cliquable → 199 px, 2e
+  rangée à 706 px.
+* La liste des notes est en `.dash-agnotes`, pas `.dash-notes` :
+  `dashNotesAjuster` prend la première `.dash-notes` de l'accueil, il aurait
+  ajusté cette tuile au lieu du pense-bête.
+
 ### Tuiles des CTO (4.4.0)
 
 Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de

@@ -71,7 +71,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.24"
+APP_VERSION = "4.4.25"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -210,6 +210,7 @@ class Api:
             data["_cache"]["history"] = cache["history"] or data["_cache"].get("history", {})
             storage.save_data(data)
             self._notif_prefs = data.get("notifs", {})
+            agenda.planifier_si("versement", "dividende")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -322,6 +323,7 @@ class Api:
     def save_patrimoine(self, data: dict) -> dict:
         try:
             patrimoine.save_data(data or {})
+            agenda.planifier_si("releve")
             d = patrimoine.load_data()
             return {"ok": True, "net": patrimoine.net_worth(d),
                     "serie": patrimoine.serie_mensuelle(d),
@@ -341,6 +343,7 @@ class Api:
     def save_sante(self, data: dict) -> dict:
         try:
             sante.save_data(data or {})
+            agenda.planifier_si("pesee")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -578,6 +581,13 @@ class Api:
     def save_agenda_notes(self, notes: list) -> dict:
         try:
             return {"ok": True, **agenda.enregistrer_notes(notes or [])}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_agenda_alertes(self, alertes: dict, jours: dict) -> dict:
+        """Onglet Notifications : l'alerte de chaque type d'evenement."""
+        try:
+            return {"ok": True, **agenda.regler_alertes(alertes or {}, jours or {})}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
