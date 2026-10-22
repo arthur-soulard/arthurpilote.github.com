@@ -24237,8 +24237,15 @@ function _appReady() {
   } catch (e) {}
   // Mac : lancé depuis Téléchargements, Pilote ne pourra pas se mettre à jour
   if (EST_MAC && window.pywebview && pywebview.api && pywebview.api.mac_emplacement) {
-    Promise.resolve(pywebview.api.mac_emplacement()).then(r => {
-      if (r && r.aDeplacer) showToastModern("Glisse Pilote dans le dossier Applications, puis "
+    Promise.resolve(pywebview.api.mac_emplacement()).then(async r => {
+      if (!r || !r.aDeplacer) return;
+      // Ouvert depuis Téléchargements : Pilote se range lui-même dans Applications
+      if (r.copie && pywebview.api.mac_ranger && confirm("Pilote doit être dans le dossier "
+          + "Applications pour se mettre à jour. L'y ranger maintenant ? Il va redémarrer.")) {
+        const m = await pywebview.api.mac_ranger();
+        if (m && m.ok) { showToastModern("Rangement dans Applications…", "ok"); return; }
+      }
+      showToastModern("Glisse Pilote dans le dossier Applications, puis "
         + "relance-le : sinon les mises à jour ne pourront pas s'installer.", "warn");
     }).catch(() => {});
   }

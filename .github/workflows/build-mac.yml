@@ -262,16 +262,41 @@ jobs:
           screencapture -x capture-installation.png || true
           pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
           sleep 3
-          # En regard : la meme app, marquee comme telechargee par Safari
-          rm -rf "$HOME/Downloads/Pilote.app"
-          ditto /Applications/Pilote.app "$HOME/Downloads/Pilote.app"
-          xattr -w com.apple.quarantine "0081;$(printf %x $(date +%s));Safari;" "$HOME/Downloads/Pilote.app"
-          open "$HOME/Downloads/Pilote.app" 2>&1 | head -3
-          sleep 12
-          NAV=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
-          echo "::notice title=Installation navigateur::lancee : ${NAV:-non (bloquee)}"
-          screencapture -x capture-navigateur.png || true
-          pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+          # En regard : l'app du build, marquee comme telechargee par Safari,
+          # ouverte depuis Telechargements. Drapeaux de quarantaine : 0081
+          # (telechargee), puis 00c1 / 01c1 (deja approuvee, comme apres
+          # « Ouvrir quand meme »). Lancee en copie (App Translocation), Pilote
+          # propose de se ranger dans Applications : on accepte (« OK »).
+          rm -rf /Applications/Pilote.app
+          RES=""
+          for F in 0081 00c1 01c1; do
+            pkill -f CoreServicesUIAgent || true
+            rm -rf "$HOME/Downloads/Pilote.app"
+            ditto dist/Pilote.app "$HOME/Downloads/Pilote.app"
+            xattr -w com.apple.quarantine "$F;$(printf %x $(date +%s));Safari;" "$HOME/Downloads/Pilote.app"
+            open "$HOME/Downloads/Pilote.app" 2>&1 | head -3
+            sleep 15
+            NAV=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+            RES="$RES [$F] ${NAV:-non lancee}"
+            if [ "$F" = "0081" ]; then screencapture -x capture-navigateur.png || true; fi
+            if echo "$NAV" | grep -q AppTranslocation; then
+              sleep 10
+              screencapture -x capture-ranger.png || true
+              OK=$(osascript -e 'tell application "System Events" to tell process "Pilote" to click button "OK" of window 1' 2>&1)
+              for i in $(seq 1 30); do
+                test -d /Applications/Pilote.app && ! test -e "$HOME/Downloads/Pilote.app" && break
+                sleep 1
+              done
+              sleep 8
+              APRES=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+              echo "::notice title=Rangement::clic : $OK ; Applications : $(test -d /Applications/Pilote.app && echo oui || echo non) ; Telechargements : $(test -e "$HOME/Downloads/Pilote.app" && echo reste || echo vide) ; quarantaine : $(xattr -p com.apple.quarantine /Applications/Pilote.app 2>/dev/null || echo aucune) ; relancee : ${APRES:-non} ; $(tail -c 400 "$HOME/Library/Logs/Pilote/update_sh.log" 2>/dev/null | tr '\n' ' ')"
+              pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+              break
+            fi
+            pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+            sleep 2
+          done
+          echo "::notice title=Installation navigateur::$RES"
           exit 0
 
       - name: Capture (annotations)
@@ -283,6 +308,7 @@ jobs:
           # (ou celle de l'app marquee « telechargee par Safari », qui montre Gatekeeper)
           CAP=capture.png; test -f capture-maj.png && CAP=capture-maj.png
           test -f capture-navigateur.png && CAP=capture-navigateur.png
+          test -f capture-ranger.png && CAP=capture-ranger.png
           test -f "$CAP" || exit 0
           sips -s format jpeg -s formatOptions 25 -Z 720 "$CAP" --out cap.jpg > /dev/null
           { base64 -i cap.jpg | tr -d '\n' | fold -w 3800; echo; } > cap.b64
@@ -331,13 +357,30 @@ jobs:
   # Trois ecrans par job (lot) : chaque job a ses propres 50 annotations, les
   # captures restent nettes et toute l'app peut passer en une fois. Un lot sans
   # ecran s'arrete aussitot.
+  lots:
+    runs-on: ubuntu-latest
+    outputs:
+      lots: ${{ steps.n.outputs.lots }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Nombre de lots
+        id: n
+        # [1, 2, ...] : un lot par groupe de trois ecrans, 15 au plus
+        run: |
+          N=$(grep -v '^[[:space:]]*#' tests/ecrans.txt | sed '/^[[:space:]]*$/d' | wc -l)
+          L=$(( (N + 2) / 3 )); [ "$L" -gt 15 ] && L=15; [ "$L" -lt 1 ] && L=1
+          echo "lots=[$(seq -s, 1 $L)]" >> "$GITHUB_OUTPUT"
+
   ecrans-mac:
-    needs: build-mac
+    needs: [build-mac, lots]
     runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
-        lot: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        lot: ${{ fromJSON(needs.lots.outputs.lots) }}
 
     steps:
       - name: Checkout

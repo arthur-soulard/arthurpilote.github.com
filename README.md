@@ -57,20 +57,28 @@ tes données sont conservées.
 
 ### Sur Mac (puce Apple uniquement, M1 et suivants)
 
+**Le plus simple : une ligne dans le Terminal** (Applications → Utilitaires → Terminal).
+La copier, la coller, puis Entrée :
+
+```bash
+curl -fL https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
+```
+
+Elle télécharge Pilote, le range dans Applications et l'ouvre. Aucun réglage à faire :
+l'avertissement de macOS sur les apps non signées ne vise que les fichiers téléchargés
+par un navigateur.
+
+**Ou par le navigateur :**
+
 1. Télécharger **`Pilote_Mac.zip`** depuis la dernière version : [Releases](../../releases/latest).
    Le Mac le décompresse tout seul en **Pilote**. Il ne fonctionne pas sur un Mac Intel.
-2. **Glisser Pilote dans le dossier Applications.** Indispensable : lancé depuis
-   Téléchargements, macOS le fait tourner depuis une copie en lecture seule, et Pilote ne
-   peut pas se mettre à jour.
-3. Ouvrir Pilote une première fois. Pilote n'est pas signé par Apple (pas de compte
-   développeur payant) : macOS refuse de l'ouvrir. Fermer le message.
-4. Ouvrir **Réglages Système → Confidentialité et sécurité**, descendre jusqu'au message
+2. Ouvrir Pilote. Il n'est pas signé par Apple (pas de compte développeur payant) :
+   macOS refuse de l'ouvrir. Fermer le message.
+3. Ouvrir **Réglages Système → Confidentialité et sécurité**, descendre jusqu'au message
    sur Pilote et cliquer sur **Ouvrir quand même**, puis confirmer avec le mot de passe
    du Mac. Ce n'est à faire qu'une fois.
-5. Si macOS dit que Pilote « est endommagé », taper dans le Terminal :
-   `xattr -dr com.apple.quarantine /Applications/Pilote.app`, puis l'ouvrir.
-6. Si macOS demande d'autoriser Pilote à « trouver des appareils sur les réseaux
-   locaux », réponds **Ne pas autoriser** : Pilote n'en a pas besoin.
+4. Ouvert depuis Téléchargements, Pilote propose de se ranger lui-même dans le dossier
+   Applications : accepter (sans ça, il ne pourrait pas se mettre à jour).
 
 Les mises à jour suivantes sont faites par Pilote lui-même. Les données vivent dans
 `~/Library/Application Support/Pilote/Donnees`, hors de l'app : la remplacer ne les touche pas.

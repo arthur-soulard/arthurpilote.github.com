@@ -7,47 +7,8 @@
 # pas un onglet : « js:appel » sans espace, par exemple js:openSettings('general') ;
 # « py:notif » envoie une notification du système avant la capture.
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
+# Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 22/10/2026 : tour complet de l'app sur Mac (demande d'Arthur : « vérifier de
-# fond en comble que Pilote fonctionne sur Mac »).
-home
-home 700
-dash
-pos
-sector
-div
-tx
-wish
-dep
-strat
-cto-dash
-cto-pos
-fin-month
-fin-year
-pr-overview
-pr-pea
-pr-av
-pr-liv
-pr-params
-sp-agenda
-sp-goals
-sp-stats
-pa-vue
-pa-comptes
-sim
-sa-suivi
-sa-mesures
-sa-goals
-ac-boite
-ac-connexion
-js:openSettings('general')
-js:openSettings('users')
-js:openSettings('nav')
-js:openSettings('accueil')
-js:openSettings('sauvegarde')
-js:openSettings('donnees')
-js:openSettings('maj')
+# 22/10/2026 : import des relevés (sélecteur de fichiers sur Mac), accueil.
 js:ctoOuvrirImport()
-js:openAddTx()
-js:openAddPos()
-py:notif
+home

@@ -527,6 +527,87 @@ def mac_a_deplacer() -> bool:
     return "AppTranslocation" in str(bundle) or not os.access(bundle.parent, os.W_OK)
 
 
+def _origine_mac(bundle: Path):
+    """App Translocation : le Pilote.app d'origine (dans Telechargements, en
+    general), dont macOS fait tourner une copie en lecture seule. None si
+    l'app n'est pas une copie, ou si macOS ne le dit pas."""
+    if "AppTranslocation" not in str(bundle):
+        return None
+    try:
+        import ctypes
+        import objc
+        from Foundation import NSURL
+        sec = ctypes.CDLL("/System/Library/Frameworks/Security.framework/Security")
+        f = sec.SecTranslocateCreateOriginalPathForURL
+        f.restype = ctypes.c_void_p
+        f.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        ptr = f(objc.pyobjc_id(NSURL.fileURLWithPath_(str(bundle))), None)
+        if not ptr:
+            return None
+        origine = Path(str(objc.objc_object(c_void_p=ptr).path()))
+        return origine if origine.suffix == ".app" and origine.exists() else None
+    except Exception as e:
+        _log(f"RANGER MAC: origine introuvable : {e}")
+        return None
+
+
+def mac_ranger() -> dict:
+    """Mac : range dans Applications un Pilote ouvert depuis Telechargements
+    sans avoir ete deplace (copie en lecture seule), puis le relance de la.
+    Plus de « glisse Pilote dans Applications » a faire soi-meme."""
+    bundle = _bundle_mac()
+    if sys.platform != "darwin" or bundle is None:
+        return {"ok": False, "error": "Seulement dans l'app Mac."}
+    origine = _origine_mac(bundle)
+    if origine is None:
+        return {"ok": False, "error": "Glisse Pilote dans le dossier Applications, puis relance-le."}
+    dossier = Path("/Applications")
+    if not os.access(dossier, os.W_OK):
+        dossier = Path.home() / "Applications"      # compte non administrateur
+        dossier.mkdir(exist_ok=True)
+    dest = dossier / "Pilote.app"
+    _log(f"RANGER MAC: {origine} -> {dest}")
+
+    import shlex
+    q = shlex.quote
+    o, d, a = q(str(origine)), q(str(dest)), q(str(dest) + ".ancienne")
+    tmp_dir = Path(tempfile.mkdtemp(prefix="pilote_ranger_"))
+    script = tmp_dir / "ranger.sh"
+    # Comme la mise a jour : attend la fin de Pilote, met de cote un ancien
+    # Pilote d'Applications, deplace l'app (remet tout en place si ca rate),
+    # puis la relance depuis Applications
+    script.write_text(
+        "#!/bin/sh\n"
+        f"exec >> {q(str(_log_path().parent / 'update_sh.log'))} 2>&1\n"
+        f"echo \"[$(date)] rangement dans {dossier}\"\n"
+        f"while kill -0 {os.getpid()} 2>/dev/null; do sleep 0.5; done\n"
+        "sleep 1\n"
+        f"rm -rf {a}\n"
+        f"if [ -e {d} ]; then mv {d} {a} || {{ open {o}; exit 1; }}; fi\n"
+        f"if ! mv {o} {d}; then [ -e {a} ] && mv {a} {d}; open {o}; exit 1; fi\n"
+        f"rm -rf {a}\n"
+        f"xattr -dr com.apple.quarantine {d} 2>/dev/null\n"
+        "unset PILOTE_DIAG PILOTE_MAJ_ESSAI\n"
+        f"open {d}\n"
+        "echo \"[$(date)] rangee et relancee\"\n"
+        f"rm -rf {q(str(tmp_dir))}\n",
+        encoding="utf-8")
+    subprocess.Popen(["/bin/sh", str(script)], start_new_session=True, close_fds=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def fermer():
+        import time as _time
+        _time.sleep(1.5)          # le temps pour la page d'afficher son message
+        try:
+            import webview
+            if webview.windows:
+                webview.windows[0].destroy()
+        except Exception as e:
+            _log(f"RANGER MAC: destroy KO {e}")
+    threading.Thread(target=fermer, daemon=True).start()
+    return {"ok": True, "dossier": str(dossier)}
+
+
 def _installer_mac(download_url: str, version: str) -> None:
     import shlex
     import time as _time

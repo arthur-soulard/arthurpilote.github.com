@@ -1,0 +1,46 @@
+# Tour complet de Pilote : tous les onglets, les sections des Paramètres et
+# quelques fenêtres, sur les données d'exemple. Même format que ecrans.txt.
+# Pour le lancer sur Mac : copier ces lignes dans tests/ecrans.txt et pousser
+# sur la branche mac (14 lots de 3 captures, une quinzaine de minutes).
+# Premier passage le 22/10/2026 (docs/mac.md, « Tour complet »).
+home
+home 700
+dash
+pos
+sector
+div
+tx
+wish
+dep
+strat
+cto-dash
+cto-pos
+fin-month
+fin-year
+pr-overview
+pr-pea
+pr-av
+pr-liv
+pr-params
+sp-agenda
+sp-goals
+sp-stats
+pa-vue
+pa-comptes
+sim
+sa-suivi
+sa-mesures
+sa-goals
+ac-boite
+ac-connexion
+js:openSettings('general')
+js:openSettings('users')
+js:openSettings('nav')
+js:openSettings('accueil')
+js:openSettings('sauvegarde')
+js:openSettings('donnees')
+js:openSettings('maj')
+js:ctoOuvrirImport()
+js:openAddTx()
+js:openAddPos()
+py:notif

@@ -606,7 +606,16 @@ class Api:
         """Mac : Pilote doit etre dans Applications pour se mettre a jour."""
         try:
             import updater
-            return {"ok": True, "aDeplacer": updater.mac_a_deplacer()}
+            return {"ok": True, "aDeplacer": updater.mac_a_deplacer(),
+                    "copie": "AppTranslocation" in str(updater._bundle_mac() or "")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def mac_ranger(self) -> dict:
+        """Mac : Pilote se range lui-meme dans Applications et redemarre."""
+        try:
+            import updater
+            return updater.mac_ranger()
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
