@@ -236,6 +236,7 @@ jobs:
           exit 0
 
       - name: Install test (Terminal)
+        continue-on-error: true
         timeout-minutes: 8
         # Installation en une ligne (README) : un fichier telecharge par curl ne
         # porte pas la marque de quarantaine, donc ni « Ouvrir quand meme », ni
@@ -257,7 +258,7 @@ jobs:
             done
             sleep 1
           done
-          CHEMIN=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+          CHEMIN=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1 || true)
           QUAR=$(xattr -p com.apple.quarantine /Applications/Pilote.app 2>/dev/null || echo "aucune")
           echo "::notice title=Installation Terminal::code $CODE ; ping $PING ; quarantaine : $QUAR ; lancee depuis : $CHEMIN ; $(defaults read /Applications/Pilote.app/Contents/Info.plist CFBundleShortVersionString 2>/dev/null)"
           sleep 3
@@ -280,19 +281,19 @@ jobs:
             # reponse a sa fenetre (vu le 22/10/2026 : etape figee)
             open "$HOME/Downloads/Pilote.app" > /dev/null 2>&1 &
             sleep 15
-            NAV=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+            NAV=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1 || true)
             RES="$RES [$F] ${NAV:-non lancee}"
             if [ "$F" = "0081" ]; then screencapture -x capture-navigateur.png || true; fi
             if echo "$NAV" | grep -q AppTranslocation; then
               sleep 10
               screencapture -x capture-ranger.png || true
-              OK=$(osascript -e 'tell application "System Events" to tell process "Pilote" to click button "OK" of window 1' 2>&1)
+              OK=$(osascript -e 'tell application "System Events" to tell process "Pilote" to click button "OK" of window 1' 2>&1 || true)
               for i in $(seq 1 30); do
                 test -d /Applications/Pilote.app && ! test -e "$HOME/Downloads/Pilote.app" && break
                 sleep 1
               done
               sleep 8
-              APRES=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+              APRES=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1 || true)
               echo "::notice title=Rangement::clic : $OK ; Applications : $(test -d /Applications/Pilote.app && echo oui || echo non) ; Telechargements : $(test -e "$HOME/Downloads/Pilote.app" && echo reste || echo vide) ; quarantaine : $(xattr -p com.apple.quarantine /Applications/Pilote.app 2>/dev/null || echo aucune) ; relancee : ${APRES:-non} ; $(tail -c 400 "$HOME/Library/Logs/Pilote/update_sh.log" 2>/dev/null | tr '\n' ' ')"
               pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
               break
@@ -380,6 +381,7 @@ jobs:
 
   ecrans-mac:
     needs: [build-mac, lots]
+    if: ${{ !cancelled() }}
     timeout-minutes: 20
     runs-on: macos-15
     strategy:

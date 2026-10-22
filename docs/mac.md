@@ -259,6 +259,48 @@ connexions, toutes deux sur 127.0.0.1 (`lsof` : 50317 et le port du serveur).
   (TIME_WAIT) : l'app relancée prend 7439 (`_find_free_port`), sans conséquence (la
   page lit son port dans `location.port`).
 
+## Installation sans réglage (22/10/2026)
+
+Demande d'Arthur : que Pilote marche sur Mac « avec le moins de paramètres
+chiants possible ».
+
+* **Une ligne dans le Terminal** (README) : `curl` télécharge
+  `releases/latest/download/Pilote_Mac.zip`, `ditto` le décompresse dans
+  /Applications, `open` le lance. Un fichier téléchargé par `curl` ne porte pas
+  la marque de quarantaine : pas d'« Ouvrir quand même », pas de copie en lecture
+  seule, pas d'« endommagé ». Essayé par `build-mac.yml` (« Install test ») sur
+  la vraie dernière release.
+* **Par le navigateur** : Gatekeeper reste (sans compte Apple, rien à faire), mais
+  Pilote ouvert depuis Téléchargements (App Translocation) propose de se ranger
+  lui-même dans Applications (`updater.mac_ranger`) : l'emplacement d'origine vient
+  de `SecTranslocateCreateOriginalPathForURL`, un script attend la fin de Pilote,
+  déplace l'app (/Applications, ou ~/Applications pour un compte non
+  administrateur ; un ancien Pilote y est remplacé), retire la quarantaine et la
+  relance. L'ancien message « Glisse Pilote dans Applications » ne reste que si
+  macOS ne donne pas l'emplacement d'origine.
+* **Réseau local** : plus de question depuis `server._ServeurMac` (test du
+  21/10/2026 : aucun bouton « Ne pas autoriser » trouvé après une ouverture par
+  le Finder). Retiré du README.
+
+## Sélecteur de fichiers (22/10/2026)
+
+pywebview 6.2.1 (`runOpenPanelWithParameters`) ne filtre la fenêtre du Finder
+que par les **types MIME** d'`accept` (`_acceptedMIMETypes`) et ignore les
+extensions. L'import des relevés déclarait `text/csv, application/pdf,
+application/zip` : un .xlsx, .xls, .ods, .xml, .txt ou .html y était grisé sur
+Mac. `ctoOuvrirImport` n'y garde que les extensions : aucun filtre, tout se
+choisit, et Pilote dit lui-même ce qu'il ne sait pas lire. Windows inchangé.
+Le test (`_diag_fichiers`, annotation « Modules ») note ce que pywebview reçoit,
+avant et après.
+
+## Tour complet (22/10/2026)
+
+`tests/ecrans-tour.txt` : tous les onglets, les sections des Paramètres,
+quelques fenêtres et une notification. Le job `ecrans-mac` est découpé en lots
+de 3 captures (job `lots`, puis une matrice) : chaque lot a ses 50
+annotations, les captures restent nettes. Chaque écran relève aussi les erreurs
+JavaScript du journal de la page (« [ecran] n erreurs JS »).
+
 ## Gatekeeper (app non signée)
 
 Depuis macOS Sequoia, le clic droit → Ouvrir ne contourne plus le blocage : lancer
