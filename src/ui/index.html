@@ -22139,7 +22139,12 @@ function ctoOuvrirImport() {
   document.getElementById("cto-imp-etape2").style.display = "none";
   document.getElementById("cto-imp-ok").style.display = "none";
   document.getElementById("cto-imp-msg").textContent = "";
-  document.getElementById("cto-imp-input").value = "";
+  const inp = document.getElementById("cto-imp-input");
+  inp.value = "";
+  // Mac : pywebview ne filtre le sélecteur que par les types MIME d'« accept »
+  // (text/csv, application/pdf, application/zip), pas par les extensions : un
+  // .xlsx, .xml ou .txt y était grisé. Sans type MIME, aucun filtre (docs/mac.md).
+  if (EST_MAC) inp.accept = inp.accept.split(",").filter(a => a.startsWith(".")).join(",");
   openOvTop("ov-cto-import");
 }
 

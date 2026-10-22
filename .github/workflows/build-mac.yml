@@ -105,7 +105,6 @@ jobs:
             sleep 1
           done
           echo "::notice title=HTTPS::$(grep -E "\[https\]|Yahoo/query" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
-          echo "::notice title=Modules::$(grep "\[module\]" pilote.log | tr '\n' ' ' || echo absent)"
           # 5. Fenetre et fermeture (app.py, _diag_fenetre a 45 s) : apres
           #    « Quitter » (comme Cmd+Q), l'app doit ecrire ce qui attendait et
           #    se fermer seule
@@ -121,6 +120,8 @@ jobs:
           ECRIT=$(grep -l "ecrit avant de quitter" "$DONNEES"/users/*/pea_data.json 2>/dev/null | wc -l | tr -d ' ')
           MAXI=$(grep -ho '"windowMaximized": *[a-z]*' "$DONNEES"/users/*/pea_data.json 2>/dev/null | head -1)
           echo "::notice title=Fenetre::$(grep -E "\[fenetre\]|\[app\] fermeture" pilote.log | tr '\n' ' ' | head -c 3000)"
+          # Bibliotheques embarquees, et filtre du selecteur de fichiers (_diag_fichiers, 36 s)
+          echo "::notice title=Modules::$(grep -E "\[(module|fichiers)\]" pilote.log | tr '\n' ' ' || echo absent)"
           echo "::notice title=Fermeture::$FIN ; ecriture en attente retrouvee dans $ECRIT pea_data.json ; $MAXI"
           # Essai USB d'app.py (_diag_usb, 25 s apres le lancement) : fini a ce stade
           echo "::notice title=USB::$(grep "\[usb\]" pilote.log | tr '\n' ' ' | head -c 3000 || echo absent)"
@@ -233,13 +234,55 @@ jobs:
           kill $SRV 2>/dev/null || true
           exit 0
 
+      - name: Install test (Terminal)
+        # Installation en une ligne (README) : un fichier telecharge par curl ne
+        # porte pas la marque de quarantaine, donc ni « Ouvrir quand meme », ni
+        # copie en lecture seule (App Translocation), ni « endommage ». Essai sur
+        # la vraie derniere release ; en regard, la meme app marquee comme
+        # telechargee par un navigateur.
+        if: always()
+        run: |
+          pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+          rm -rf /Applications/Pilote.app
+          sleep 2
+          echo "::notice title=Gatekeeper::$(spctl --status 2>&1)"
+          curl -fL https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
+          CODE=$?
+          PING="aucun port apres 60 s"
+          for i in $(seq 1 60); do
+            for P in 7438 7439 7440 7441; do
+              if curl -fsS http://127.0.0.1:$P/ping > /dev/null 2>&1; then PING="200 sur $P en $i s"; break 2; fi
+            done
+            sleep 1
+          done
+          CHEMIN=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+          QUAR=$(xattr -p com.apple.quarantine /Applications/Pilote.app 2>/dev/null || echo "aucune")
+          echo "::notice title=Installation Terminal::code $CODE ; ping $PING ; quarantaine : $QUAR ; lancee depuis : $CHEMIN ; $(defaults read /Applications/Pilote.app/Contents/Info.plist CFBundleShortVersionString 2>/dev/null)"
+          sleep 3
+          screencapture -x capture-installation.png || true
+          pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+          sleep 3
+          # En regard : la meme app, marquee comme telechargee par Safari
+          rm -rf "$HOME/Downloads/Pilote.app"
+          ditto /Applications/Pilote.app "$HOME/Downloads/Pilote.app"
+          xattr -w com.apple.quarantine "0081;$(printf %x $(date +%s));Safari;" "$HOME/Downloads/Pilote.app"
+          open "$HOME/Downloads/Pilote.app" 2>&1 | head -3
+          sleep 12
+          NAV=$(ps -axo command | grep "MacOS/Pilote" | grep -v grep | head -1)
+          echo "::notice title=Installation navigateur::lancee : ${NAV:-non (bloquee)}"
+          screencapture -x capture-navigateur.png || true
+          pkill -f "Pilote.app/Contents/MacOS/Pilote" || true
+          exit 0
+
       - name: Capture (annotations)
         # Les artefacts ne se lisent qu'avec un compte : une petite copie JPEG de
         # la capture sort en annotations, en base64 decoupe en morceaux
         if: always()
         run: |
           # La capture apres la mise a jour (app relancee) si elle existe, sinon la premiere
+          # (ou celle de l'app marquee « telechargee par Safari », qui montre Gatekeeper)
           CAP=capture.png; test -f capture-maj.png && CAP=capture-maj.png
+          test -f capture-navigateur.png && CAP=capture-navigateur.png
           test -f "$CAP" || exit 0
           sips -s format jpeg -s formatOptions 25 -Z 720 "$CAP" --out cap.jpg > /dev/null
           { base64 -i cap.jpg | tr -d '\n' | fold -w 3800; echo; } > cap.b64
@@ -285,9 +328,16 @@ jobs:
   # tests/donnees_exemple.py : le premier job demarre sur un utilisateur
   # vierge, qui ne montre que les Premiers pas. Un job a part, car GitHub
   # garde 50 annotations au plus par job et le premier en emet une trentaine.
+  # Trois ecrans par job (lot) : chaque job a ses propres 50 annotations, les
+  # captures restent nettes et toute l'app peut passer en une fois. Un lot sans
+  # ecran s'arrete aussitot.
   ecrans-mac:
     needs: build-mac
     runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        lot: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
     steps:
       - name: Checkout
@@ -303,9 +353,11 @@ jobs:
 
       - name: Captures
         run: |
+          DEBUT=$(( (${{ matrix.lot }} - 1) * 3 ))
+          ECRANS=$(grep -v '^[[:space:]]*#' tests/ecrans.txt | sed '/^[[:space:]]*$/d' | sed -n "$((DEBUT+1)),$((DEBUT+3))p" | paste -sd ';' -)
+          if [ -z "$ECRANS" ]; then echo "lot ${{ matrix.lot }} : aucun ecran"; exit 0; fi
           ditto -x -k art/Pilote-mac.zip .
           python3 tests/donnees_exemple.py "$HOME/Library/Application Support/Pilote/Donnees"
-          ECRANS=$(grep -v '^[[:space:]]*#' tests/ecrans.txt | sed '/^[[:space:]]*$/d' | paste -sd ';' -)
           PILOTE_ECRANS="$ECRANS" Pilote.app/Contents/MacOS/Pilote > ecrans.log 2>&1 &
           PID=$!
           # Chaque « [ecran] n pret » de l'app : une capture de sa fenetre
@@ -315,7 +367,7 @@ jobs:
             N=$(grep -c "\[ecran\] [0-9]* pret" ecrans.log || true)
             while [ "$FAITES" -lt "$N" ]; do
               FAITES=$((FAITES+1))
-              NOM=$(printf "ecran-%02d" $FAITES)
+              NOM=$(printf "ecran-%02d" $((DEBUT+FAITES)))
               CADRE=$(osascript -e 'tell application "System Events" to tell process "Pilote" to get {position, size} of window 1' 2>/dev/null | tr -d ' ')
               screencapture -x ${CADRE:+-R"$CADRE"} "$NOM.png" || echo "capture $FAITES impossible"
             done
@@ -373,7 +425,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ecrans-mac
+          name: ecrans-mac-${{ matrix.lot }}
           path: |
             ecran-*.png
             ecrans.log

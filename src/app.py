@@ -1524,6 +1524,39 @@ def main() -> int:
                 print(f"[rapport] KO : {e}", flush=True)
         threading.Thread(target=_diag_mac_divers, daemon=True).start()
 
+        # Mac : selecteur de fichiers de l'import des releves (<input type=file>).
+        # pywebview le filtre par les seuls types MIME d'« accept » (index.html,
+        # ctoOuvrirImport) : on note ce qu'il recoit, avant et apres l'adaptation
+        # de la page, sans ouvrir la fenetre du Finder (« Annuler »).
+        def _diag_fichiers():
+            import time as _t
+            _t.sleep(36)
+            if sys.platform != "darwin":
+                return
+            try:
+                from webview.platforms import cocoa
+                vrai = cocoa.BrowserView.create_file_dialog
+                vus = []
+
+                def espion(self, dialog_type, directory, allow_multiple, save_filename,
+                           file_filter, main_thread=False):
+                    vus.append([str(m) for m in (file_filter or [])])
+                    return None
+                cocoa.BrowserView.create_file_dialog = espion
+                lire = window.run_js
+                lire("var i = document.getElementById('cto-imp-input'); i.accept ="
+                     " '.csv,.pdf,.xlsx,.xml,text/csv,application/pdf,application/zip'; i.click(); 1")
+                _t.sleep(2)
+                lire("ctoOuvrirImport(); document.getElementById('cto-imp-input').click();"
+                     " closeOv('ov-cto-import'); 1")
+                _t.sleep(2)
+                cocoa.BrowserView.create_file_dialog = vrai
+                print(f"[fichiers] filtre recu par pywebview : avant {vus[0] if vus else 'aucun appel'}"
+                      f" ; apres {vus[1] if len(vus) > 1 else 'aucun appel'}", flush=True)
+            except Exception as e:
+                print(f"[fichiers] KO : {e}", flush=True)
+        threading.Thread(target=_diag_fichiers, daemon=True).start()
+
         # Mac : fenetre et fermeture (docs/mac.md, etape 3). 45 s apres le
         # lancement : barre de titre, ⌘2, taille ; puis une ecriture laissee en
         # attente et « Quitter » comme ⌘Q. Le test verifie ensuite qu'elle est
@@ -1604,8 +1637,15 @@ def main() -> int:
                 onglet = e[0]
                 defil = int(e[1]) if len(e) > 1 and e[1].isdigit() else 0
                 try:
+                    # Fenetres de l'ecran precedent refermees
+                    lire("document.querySelectorAll('.ov.open').forEach(function (o) {"
+                         " o.classList.remove('open'); }); 1")
+                    # « py:notif » : une notification du systeme (Mac : osascript)
+                    if onglet == "py:notif":
+                        notifications._show("Pilote", "Essai de notification")
+                        _t.sleep(2)
                     # « js:openSettings('donnees') » : un ecran qui n'est pas un onglet (QA-09)
-                    if onglet.startswith("js:"):
+                    elif onglet.startswith("js:"):
                         lire(onglet[3:] + "; 1")
                     else:
                         lire("goTab(%s); _setActiveSidebar(%s); 1" % (json.dumps(onglet), json.dumps(onglet)))
@@ -1619,6 +1659,11 @@ def main() -> int:
                          " el.style.scrollBehavior = 'auto'; el.scrollTop = y; el.style.scrollBehavior = b;"
                          " return 1; })(%d)" % defil)
                     _t.sleep(1)
+                    # Erreurs JavaScript depuis le lancement (journal de la page)
+                    err = lire("JSON.stringify((window.__journal || []).filter(function (l) {"
+                               " return /ERREUR|REJET/.test(l); }))")
+                    if err and str(err) != "[]":
+                        print(f"[ecran] {n} erreurs JS : {str(err)[:600]}", flush=True)
                     print(f"[ecran] {n} pret {onglet} {defil}", flush=True)
                 except Exception as ex:
                     print(f"[ecran] {n} KO {onglet} : {ex}", flush=True)
