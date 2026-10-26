@@ -554,6 +554,35 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual([x["type"] for x in p], ["essai", "note"])
         self.assertEqual(p[1]["quand"], demain + "T10:00")
 
+    def test_note_personnalisee(self):
+        import datetime
+        auj = datetime.date.today()
+        il_y_a_3_semaines = (auj - datetime.timedelta(days=21)).isoformat()
+        r = agenda.enregistrer_notes([
+            {"id": "h", "titre": "Sport en salle", "date": il_y_a_3_semaines, "heure": "07:30",
+             "repete": "semaine", "alerte": "15"},
+            {"id": "m", "titre": "Loyer", "date": "2026-01-05", "repete": "mois", "alerte": "aucune"},
+            {"id": "a", "titre": "Fête des mères", "date": "2026-05-31", "repete": "an", "alerte": "semaine"},
+            {"id": "x", "titre": "Bizarre", "date": "2026-11-01", "repete": "jour", "alerte": "999"}])
+        notes = {n["id"]: n for n in r["notes"]}
+        self.assertEqual((notes["x"]["repete"], notes["x"]["alerte"]), ("", ""))   # valeurs inconnues écartées
+        ev = agenda.evenements({}, {}, {}, r["notes"], {"note": "matin"})
+        self.assertIn("RRULE:FREQ=WEEKLY", ev["note-h"])
+        self.assertIn("TRIGGER:-PT15M", ev["note-h"])                 # son alerte, pas celle des notes
+        self.assertIn("RRULE:FREQ=MONTHLY", ev["note-m"])
+        self.assertFalse(any(l.startswith("TRIGGER") for l in ev["note-m"]))   # « aucune »
+        self.assertIn("RRULE:FREQ=YEARLY", ev["note-a"])
+        self.assertIn("TRIGGER:-P6DT15H", ev["note-a"])
+        self.assertIn("TRIGGER:PT9H", ev["note-x"])                   # réglage général des notes
+        # Occurrences : la note hebdomadaire tombe encore cette semaine
+        e = next(x for x in agenda.elements({}, {}, r["notes"]) if x["cle"] == "note-h")
+        jours = agenda._occurrences(e, auj, auj + datetime.timedelta(days=6))
+        self.assertEqual(len(jours), 1)
+        self.assertEqual(jours[0].weekday(), datetime.date.fromisoformat(il_y_a_3_semaines).weekday())
+        a = next(x for x in agenda.elements({}, {}, r["notes"]) if x["cle"] == "note-a")
+        self.assertEqual(agenda._occurrences(a, datetime.date(2028, 1, 1), datetime.date(2028, 12, 31)),
+                         [datetime.date(2028, 5, 31)])
+
 
 if __name__ == "__main__":
     unittest.main()

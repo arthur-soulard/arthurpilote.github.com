@@ -1920,6 +1920,8 @@ label.sv-check, label.sv-inline {
 .ag-essai { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .ag-essai .ag-aide { font-size: 12px; }
 .ag-notif-cats { margin-bottom: 8px; }
+.ag-notif-libre { align-items: center; gap: 10px; margin: -6px 0 14px; }
+.ag-notif-libre .ag-aide { font-size: 12px; }
 @media (max-width: 900px) {
   .ac-cnx { grid-template-columns: 1fr; }
   .ac-layout { grid-template-columns: 1fr; height: auto !important; }
@@ -3940,6 +3942,13 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="fg"><label for="ag-n-texte">Détails</label>
       <textarea id="ag-n-texte" maxlength="2000" placeholder="Adresse, choses à penser…"></textarea></div>
+    <div class="fg-row">
+      <div class="fg"><label for="ag-n-repete">Répéter</label>
+        <select id="ag-n-repete"><option value="">Jamais</option><option value="semaine">Chaque semaine</option>
+          <option value="mois">Chaque mois</option><option value="an">Chaque année</option></select></div>
+      <div class="fg"><label for="ag-n-alerte">Notification sur l'iPhone</label>
+        <select id="ag-n-alerte"></select></div>
+    </div>
     <p class="ac-note" id="ag-n-icloud"></p>
     <div class="mact">
       <button class="btn btn-ghost danger" id="ag-n-suppr" style="margin-right:auto;display:none" onclick="agSupprimerNote()">Supprimer</button>
@@ -24042,7 +24051,7 @@ function dashAgQuandNote(n) {
 function dashAgNotes() {
   if (!_agBootstrapped) return null;
   const auj = todayISO();
-  const l = AG.notes.filter(n => n.date >= auj)
+  const l = AG.notes.map(n => Object.assign({}, n, { date: agNoteProchaine(n, auj) })).filter(n => n.date)
     .sort((a, b) => (a.date + (a.heure || "99")).localeCompare(b.date + (b.heure || "99")));
   const lignes = l.slice(0, 3).map(n => `<div class="dash-note" title="${escHtml(n.texte || n.titre)}"
       onclick="event.stopPropagation();agOuvrirNote('${escHtml(n.id)}', null)">
@@ -24736,10 +24745,32 @@ function agFinNote(n) {
   return String(Math.floor(fin / 60) % 24).padStart(2, "0") + ":" + String(fin % 60).padStart(2, "0");
 }
 
+/** Une note tombe-t-elle ce jour-là ? Répétée : même jour de la semaine, du
+    mois (un mois sans ce jour est sauté, comme iCloud) ou de l'année. */
+function agNoteTombe(n, iso) {
+  if (n.date === iso) return true;
+  if (!n.repete || iso < n.date) return false;
+  if (n.repete === "semaine") return Math.round((spParseISO(iso) - spParseISO(n.date)) / 86400000) % 7 === 0;
+  if (n.repete === "mois") return iso.slice(8) === n.date.slice(8);
+  return n.repete === "an" && iso.slice(5) === n.date.slice(5);
+}
+
+/** La prochaine fois qu'une note tombe, à partir de `iso` (dans les 400 jours), sinon null. */
+function agNoteProchaine(n, iso) {
+  if (n.date >= iso) return n.date;
+  if (!n.repete) return null;
+  const d = spParseISO(iso);
+  for (let i = 0; i < 400; i++) {
+    const j = spDateISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + i));
+    if (agNoteTombe(n, j)) return j;
+  }
+  return null;
+}
+
 /** Ce qui tombe un jour, comme sur le téléphone : par heure, la journée entière en dernier.
     `icloud` : une autre lecture d'iCloud que celle du mois affiché (tuiles de l'accueil). */
 function agDuJour(iso, icloud) {
-  const notes = AG.notes.filter(n => n.date === iso)
+  const notes = AG.notes.filter(n => agNoteTombe(n, iso))
     .map(n => ({ type: "note", id: n.id, titre: n.titre || "Note", heure: n.heure,
                  heureFin: agFinNote(n), texte: n.texte, agenda: "Pilote" }));
   const ic = (icloud || AG.icloud[agFenetre().debut] || []).filter(e => e.debut <= iso && e.fin >= iso)
@@ -24875,8 +24906,16 @@ function agOuvrirNote(id, iso) {
   document.getElementById("ag-n-heure").value = n ? n.heure : "";
   document.getElementById("ag-n-duree").value = n && n.duree ? n.duree : "";
   document.getElementById("ag-n-texte").value = n ? n.texte : "";
-  document.getElementById("ag-n-suppr").style.display = n ? "" : "none";
+  document.getElementById("ag-n-repete").value = n && n.repete || "";
   const cfg = AG.config || {};
+  // « Comme les autres notes » : le réglage de l'onglet Notifications, dit en clair
+  const general = AG_ALERTES_HEURE.find(o => o[0] === ((cfg.alertes || {}).note || ""));
+  document.getElementById("ag-n-alerte").innerHTML =
+    [["", "Comme les autres notes (" + (general ? general[1] : "Pas d'alerte").toLowerCase() + ")"], ["aucune", "Aucune pour cette note"]]
+      .concat(AG_ALERTES_HEURE.slice(1), [["semaine", "Une semaine avant, 9 h"]])
+      .map(([v, nom]) => `<option value="${v}">${escHtml(nom)}</option>`).join("");
+  document.getElementById("ag-n-alerte").value = n && n.alerte || "";
+  document.getElementById("ag-n-suppr").style.display = n ? "" : "none";
   document.getElementById("ag-n-icloud").textContent = cfg.connecte && cfg.calendrier
     ? "La note part aussi dans ton agenda iCloud, quelques secondes après."
     : "Elle reste dans Pilote tant que l'agenda iCloud n'est pas connecté (onglet iCloud).";
@@ -24908,6 +24947,8 @@ async function agEnregistrerNote() {
     heure: document.getElementById("ag-n-heure").value || "",
     duree: spNum(document.getElementById("ag-n-duree").value) || 0,
     texte: document.getElementById("ag-n-texte").value.trim(),
+    repete: document.getElementById("ag-n-repete").value,
+    alerte: document.getElementById("ag-n-alerte").value,
   };
   const notes = AG.noteId ? AG.notes.map(x => x.id === AG.noteId ? note : x) : AG.notes.concat([note]);
   await agEcrireNotes(notes, AG.noteId ? "Note modifiée" : "Note ajoutée");
@@ -24964,7 +25005,7 @@ const AG_NOTIFS = [
   ["pesee", "sante", "scales", "Pesée du mois", "passe au mois suivant dès que la pesée du mois est saisie", AG_ALERTES_RAPPEL, "mois"],
   ["sante-pause", "sante", "hourglass-medium", "Pas de pesée depuis…", "compté depuis la dernière mesure", AG_ALERTES_RAPPEL, "delai"],
   ["sante-objectif", "sante", "target", "Objectifs à date", "ceux de l'onglet Objectifs qui ont une date", AG_ALERTES_DATE],
-  ["note", "agenda", "note-pencil", "Notes de l'agenda", "sans heure : 9 h le jour même", AG_ALERTES_HEURE],
+  ["note", "agenda", "note-pencil", "Notes de l'agenda", "le texte que tu veux ; chaque note peut avoir sa propre notification et se répéter", AG_ALERTES_HEURE],
   ["resume", "agenda", "calendar-check", "Résumé de la semaine", "compte ce qui t'attend : séances, mensualités, dividendes…", AG_ALERTES_RESUME],
   ["sauvegarde", "general", "usb", "Sauvegarde USB en retard", "comptée depuis la dernière sauvegarde sur clé", AG_ALERTES_RAPPEL, "delai"],
   ["ouvrir", "general", "compass", "Pilote pas ouvert depuis…", "recule à chaque lancement de Pilote", AG_ALERTES_RAPPEL, "delai"],
@@ -25036,6 +25077,8 @@ function agRenderNotifs() {
     </div>
     <div class="ac-filtres ag-notif-cats">${pastilles}</div>
     <div class="ag-notifs">${lignes}</div>
+    ${AG.notifCat === "agenda" ? `<div class="ac-btns ag-notif-libre"><button type="button" class="btn btn-ghost btn-sm" onclick="agOuvrirNote(null, null)"><i class="ph ph-plus"></i> Nouvelle notification libre</button>
+      <span class="ag-aide">une note avec ton texte, sa date, son heure et sa répétition</span></div>` : ""}
     <p class="ac-note ag-notifs-pied">Sur l'iPhone, les alertes de Calendrier doivent être autorisées
       (Réglages › Notifications › Calendrier).</p>
     <p class="ac-note" id="ag-notifs-etat">${agEtatHtml()}</p>`;

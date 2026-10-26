@@ -2,6 +2,26 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.26",
+      "date": "2026-10-26",
+      "titre": "Bien plus de notifications sur ton iPhone",
+      "nouveau": [
+        "L'onglet Agenda › Notifications est rangé en pastilles, une par section de Pilote (PEA, CTO, Mes comptes, Prêt, Sports, Patrimoine, Santé, Agenda, Pilote). Coche ce que tu veux : tout est éteint au départ.",
+        "Bouton « Envoyer un essai » : ton iPhone sonne 2 à 3 minutes après, pour vérifier que les notifications arrivent bien.",
+        "Notifications libres : chaque note de l'agenda peut avoir sa propre notification et se répéter chaque semaine, chaque mois ou chaque année.",
+        "Nouveaux rappels : verser sur le PEA et investir chaque mois, anniversaire du PEA (avec le cap des 5 ans), dividendes et achats de chaque CTO, saisie des dépenses du mois et opérations récurrentes, première et dernière mensualité du prêt, objectifs de santé à date.",
+        "Rappels « depuis X jours » : pas de séance de sport, pas de pesée, pas de sauvegarde USB, ou Pilote pas ouvert depuis un moment.",
+        "Résumé de la semaine, le dimanche soir ou le lundi matin : ce qui t'attend (séances, mensualités, dividendes…).",
+        "Nouvelle tuile pour l'accueil : Prochaines notifications. Ajoute-la avec « Modifier les tuiles »."
+      ],
+      "ameliore": [
+        "Les alertes peuvent aussi sonner une semaine avant (dividendes, objectifs, mensualités…)."
+      ],
+      "corrige": [
+        "Une note qui finit à minuit n'est plus comptée comme terminée dans les tuiles de l'agenda."
+      ]
+    },
+    {
       "version": "4.4.25",
       "date": "2026-10-22",
       "titre": "Des notifications sur ton iPhone",

@@ -195,6 +195,15 @@ Calendrier doit être autorisé.
   (l'erreur s'affiche). `agenda.json` garde l'heure (`test`) ; l'essai est
   retiré au premier envoi après une heure, et un minuteur à part relance un
   envoi une heure après (`planifier()` l'aurait annulé).
+* **Notification libre = une note** (26/10/2026, Arthur : « une notif
+  personnalisable, où l'utilisateur peut noter ce qu'il veut ») : chaque note
+  a sa répétition (`repete` : `semaine`, `mois`, `an` → `RRULE` WEEKLY,
+  MONTHLY, YEARLY) et son alerte (`alerte` : `""` = celle de la ligne « Notes
+  de l'agenda », `aucune`, ou une valeur d'`ALERTES_VALEURS`). Le calendrier la
+  montre à chaque occurrence (`agNoteTombe` ; un mois sans le 31 est sauté,
+  comme iCloud), la tuile « Prochaines notes » à la prochaine
+  (`agNoteProchaine`). Bouton « Nouvelle notification libre » dans la pastille
+  Agenda.
 * **Prochaines notifications** (`agenda.prochaines`, `agenda_prochaines`) :
   les 6 prochaines alertes, calculées avec les mêmes règles que l'envoi
   (`_decalage`, `_occurrences`). Servent à la tuile `ag-alertes`.

@@ -40,7 +40,7 @@ Emplacement : <app_dir>/users/<slug>/agenda.json
    "choix": {"sport", "objectifs", "pret"},
    "envoyes": {nom de fichier: empreinte},
    "aNettoyer": [agenda quitte, a vider], "aSupprimer": [agenda « Pilote » quitte],
-   "notes": [{id, titre, date, heure, duree (min), texte}],
+   "notes": [{id, titre, date, heure, duree (min), texte, repete, alerte}],
    "alertes": {type: valeur de ALERTES_VALEURS}, "jours": {rappel de MENSUELS: jour du mois},
    "delais": {rappel de DELAIS: nombre de jours}, "test": "AAAA-MM-JJTHH:MM" (notification d'essai)}
 
@@ -100,6 +100,10 @@ MENSUELS  = ("pesee", "releve", "pea-depot", "pea-investir", "cto-investir", "fi
 # Rappels « depuis X jours » : delai par defaut, et delais proposes
 DELAIS    = {"sport-pause": 7, "sante-pause": 7, "sauvegarde": 30, "ouvrir": 7}
 DELAIS_VALEURS = (2, 3, 4, 5, 7, 10, 14, 21, 30, 45, 60)
+# Note de l'agenda : sa repetition, et son alerte (« » : celle de l'onglet
+# Notifications, « aucune » : pas d'alerte pour cette note)
+REPETITIONS = ("semaine", "mois", "an")
+ALERTES_NOTE = ("aucune",) + ALERTES_VALEURS[1:]
 # Notification d'essai : sonne 2 min apres le clic, retiree une heure plus tard
 TEST_MINUTES = 2
 
@@ -339,10 +343,13 @@ def _horaire(jour: datetime.date, heure, minutes) -> tuple:
 
 
 def _element(cle, type_, titre, jour, debut=None, fin=None, texte="", mois=0, id_=None,
-             alerte=None) -> dict:
-    """alerte : reglage impose (resume de la semaine, essai), sinon celui du type."""
+             alerte=None, regle="") -> dict:
+    """alerte : reglage impose (resume, essai, note qui a le sien), sinon celui
+    du type ; « aucune » : pas d'alerte. mois : repete chaque mois (-1 sans
+    fin) ; regle : autre repetition (REPETITIONS), pour une note."""
     return {"cle": cle, "type": type_, "titre": titre, "jour": jour, "debut": debut,
-            "fin": fin, "texte": str(texte or ""), "mois": mois, "id": id_, "alerte": alerte}
+            "fin": fin, "texte": str(texte or ""), "mois": mois, "id": id_, "alerte": alerte,
+            "regle": regle}
 
 
 def elements(sp: dict, pr: dict, notes: list) -> list:
@@ -387,8 +394,12 @@ def elements(sp: dict, pr: dict, notes: list) -> list:
         if not jour or not n.get("id"):
             continue
         debut, fin = _horaire(jour, n.get("heure"), n.get("duree"))
+        repete = n.get("repete") if n.get("repete") in REPETITIONS else ""
         out.append(_element(f"note-{n['id']}", "note", (n.get("titre") or "").strip() or "Note",
-                            jour, debut, fin, n.get("texte"), id_=n["id"]))
+                            jour, debut, fin, n.get("texte"), id_=n["id"],
+                            mois=-1 if repete == "mois" else 0,
+                            regle={"semaine": "FREQ=WEEKLY", "an": "FREQ=YEARLY"}.get(repete, ""),
+                            alerte=n.get("alerte") or None))
     return out
 
 
@@ -621,7 +632,19 @@ _RESUME_ECARTES = ("sport-pause", "sante-pause", "sauvegarde", "ouvrir", "essai"
 
 
 def _occurrences(e: dict, debut: datetime.date, fin: datetime.date) -> list:
-    """Les jours de `e` entre debut et fin compris (evenement repete chaque mois compris)."""
+    """Les jours de `e` entre debut et fin compris (evenement repete compris)."""
+    if e["regle"] == "FREQ=WEEKLY":
+        jour = e["jour"] + datetime.timedelta(days=7 * max((debut - e["jour"]).days // 7, 0))
+        out = []
+        while jour <= fin:
+            if jour >= debut:
+                out.append(jour)
+            jour += datetime.timedelta(days=7)
+        return out
+    if e["regle"] == "FREQ=YEARLY":
+        return [j for j in (_plus_mois(e["jour"], 12 * k) for k in range(max(debut.year - e["jour"].year, 0),
+                                                                          max(fin.year - e["jour"].year, -1) + 1))
+                if j and debut <= j <= fin]
     if not e["mois"]:
         return [e["jour"]] if debut <= e["jour"] <= fin else []
     out = []
@@ -720,6 +743,8 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
                        "DTEND;VALUE=DATE:" + (e["jour"] + datetime.timedelta(days=1)).strftime("%Y%m%d")]
         if e["mois"]:   # -1 : chaque mois, sans fin
             lignes.append(f"RRULE:FREQ=MONTHLY;COUNT={e['mois']}" if e["mois"] > 0 else "RRULE:FREQ=MONTHLY")
+        elif e["regle"]:
+            lignes.append("RRULE:" + e["regle"])
         if e["texte"]:
             lignes.append("DESCRIPTION:" + _echapper(e["texte"]))
         out[e["cle"]] = lignes + _alarme(e, e["alerte"] or alertes.get(e["type"]))
@@ -1086,6 +1111,9 @@ def enregistrer_notes(notes: list) -> dict:
             "heure": heure if re.fullmatch(r"\d{2}:\d{2}", heure) else "",
             "duree": max(int(_nombre(n.get("duree"))), 0),
             "texte": str(n.get("texte") or "")[:2000],
+            # Notification propre a la note (26/10/2026) : sa repetition, son alerte
+            "repete": n.get("repete") if n.get("repete") in REPETITIONS else "",
+            "alerte": n.get("alerte") if n.get("alerte") in ALERTES_NOTE else "",
         })
     _modifier(lambda d: d.update(notes=propres))   # sans attendre un envoi en cours
     planifier(0.5)
