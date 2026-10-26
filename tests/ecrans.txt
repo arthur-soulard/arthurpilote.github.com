@@ -11,9 +11,10 @@
 #
 # 26/10/2026 (4.4.26) : onglet Notifications en pastilles, bouton d'essai, note répétée. Camille n'a
 # pas d'iCloud : la connexion est simulée dans la page seulement, pour voir le catalogue.
+# Pas de « ; » dans une ligne js: (la liste des écrans est coupée aux « ; ») : des virgules.
 ag-notifs
-js:Object.assign(AG.config,{connecte:true,calendrier:"x"});agRenderNotifs()
-js:AG.notifCat="sport";agRenderNotifs()
-js:AG.notifCat="agenda";agRenderNotifs()
+js:Object.assign(AG.config,{connecte:true,calendrier:"x"}),agRenderNotifs()
+js:AG.notifCat="sport",agRenderNotifs()
+js:AG.notifCat="agenda",agRenderNotifs()
 js:agOuvrirNote(null,null)
 home
