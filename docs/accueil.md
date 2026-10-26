@@ -312,7 +312,8 @@ tuiles Performance dedans (703 px).
 Demandées par Arthur, qui a posé la règle : **toute nouvelle fonctionnalité
 vient avec ses tuiles** (`CLAUDE.md`). `ag-jour` (« Aujourd'hui »),
 `ag-semaine` (« Cette semaine », 7 jours), `ag-notes` (« Prochaines notes » +
-« Ajouter »). Elles relisent `agDuJour` du calendrier et `AG.notes` ; les
+« Ajouter »), et depuis le 26/10/2026 `ag-alertes` (« Prochaines
+notifications », ce qui va sonner sur le téléphone, `agenda_prochaines`). Elles relisent `agDuJour` du calendrier et `AG.notes` ; les
 événements iCloud sont lus à part (`dashAgIcloud`, 10 min). Détail :
 `docs/modules/agenda.md`.
 

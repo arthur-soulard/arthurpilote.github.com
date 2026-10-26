@@ -210,7 +210,7 @@ class Api:
             data["_cache"]["history"] = cache["history"] or data["_cache"].get("history", {})
             storage.save_data(data)
             self._notif_prefs = data.get("notifs", {})
-            agenda.planifier_si("versement", "dividende")
+            agenda.planifier_si("versement", "dividende", "pea-depot", "pea-investir", "pea-anniv", "resume")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -246,6 +246,7 @@ class Api:
     def save_finances(self, data: dict) -> dict:
         try:
             finances.save_data(data or {})
+            agenda.planifier_si("fin-saisie", "fin-recurrent", "resume")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -294,6 +295,7 @@ class Api:
     def save_cto(self, data: dict, vide_voulu: bool = False) -> dict:
         try:
             cto.save_data(data or {}, bool(vide_voulu))
+            agenda.planifier_si("cto-investir", "cto-dividende", "resume")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -323,7 +325,7 @@ class Api:
     def save_patrimoine(self, data: dict) -> dict:
         try:
             patrimoine.save_data(data or {})
-            agenda.planifier_si("releve")
+            agenda.planifier_si("releve", "resume")
             d = patrimoine.load_data()
             return {"ok": True, "net": patrimoine.net_worth(d),
                     "serie": patrimoine.serie_mensuelle(d),
@@ -343,7 +345,7 @@ class Api:
     def save_sante(self, data: dict) -> dict:
         try:
             sante.save_data(data or {})
-            agenda.planifier_si("pesee")
+            agenda.planifier_si("pesee", "sante-pause", "sante-objectif", "resume")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -441,7 +443,10 @@ class Api:
 
     def sauvegarde_run(self) -> dict:
         try:
-            return sauvegarde.run_backup(reason="manuel")
+            res = sauvegarde.run_backup(reason="manuel")
+            if res.get("ok"):
+                agenda.planifier_si("sauvegarde")
+            return res
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -584,10 +589,26 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    def save_agenda_alertes(self, alertes: dict, jours: dict) -> dict:
+    def save_agenda_alertes(self, alertes: dict, jours: dict, delais: dict = None) -> dict:
         """Onglet Notifications : l'alerte de chaque type d'evenement."""
         try:
-            return {"ok": True, **agenda.regler_alertes(alertes or {}, jours or {})}
+            return {"ok": True, **agenda.regler_alertes(alertes or {}, jours or {}, delais or {})}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_agenda_essai(self) -> dict:
+        """Bouton « Envoyer un essai » : une notification dans 2 a 3 minutes."""
+        try:
+            return {"ok": True, **agenda.tester()}
+        except agenda.ErreurAgenda as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def agenda_prochaines(self) -> dict:
+        """Les prochaines notifications du telephone (tuile de l'accueil)."""
+        try:
+            return {"ok": True, "alertes": agenda.prochaines()}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -1191,6 +1212,7 @@ def main() -> int:
             res = sauvegarde.auto_backup_if_due()
             if res.get("ok"):
                 print(f"[app] sauvegarde externe : {res.get('path')}", flush=True)
+                agenda.planifier_si("sauvegarde")
             return res
         except Exception as e:
             print(f"[app] sauvegarde auto KO : {e}", flush=True)

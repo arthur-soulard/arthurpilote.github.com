@@ -1917,6 +1917,9 @@ label.sv-check, label.sv-inline {
 .ag-notif-champ select { width: auto; min-width: 150px; }
 .ag-notif-champ select.ag-notif-jour { min-width: 0; }
 .ag-notifs-pied { margin-bottom: 4px; }
+.ag-essai { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.ag-essai .ag-aide { font-size: 12px; }
+.ag-notif-cats { margin-bottom: 8px; }
 @media (max-width: 900px) {
   .ac-cnx { grid-template-columns: 1fr; }
   .ac-layout { grid-template-columns: 1fr; height: auto !important; }
@@ -11041,7 +11044,7 @@ const NAV_MODULES = {
   "sec-agenda": {
     desc: "Un calendrier de tout ce que Pilote sait dater, tes notes, et ton agenda iCloud sur l'iPhone.",
     pas:  "Ajoute une note dans le calendrier, ou connecte ton agenda iCloud.",
-    tab: "ag-cal", tuiles: ["ag-jour", "ag-notes"] },
+    tab: "ag-cal", tuiles: ["ag-jour", "ag-notes", "ag-alertes"] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -23257,6 +23260,11 @@ const DASH_WIDGETS = [
     render() { return dashAgNotes(); },
   },
   {
+    // Notifications (26/10/2026) : ce qui va sonner sur le téléphone
+    id: "ag-alertes", label: "Prochaines notifications", module: "Agenda", tab: "ag-notifs",
+    render() { return dashAgAlertes(); },
+  },
+  {
     // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
     // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
@@ -24049,6 +24057,37 @@ function dashAgNotes() {
                    onclick="event.stopPropagation();agOuvrirNote(null, null)"><i class="ph ph-plus"></i> Ajouter</button>${autres}</div>` };
 }
 
+/* Tuile « Prochaines notifications » : calculées par Python (agenda_prochaines,
+   mêmes règles que l'envoi), relues après 10 min ou après un réglage de l'onglet
+   Notifications. Rien tant qu'iCloud n'est pas connecté. */
+const _dashAgAl = { lu: 0, liste: [], attente: false };
+
+function dashAgAlertesRelire() { _dashAgAl.lu = 0; }
+
+function dashAgAlertes() {
+  if (!_agBootstrapped || !(AG.config && AG.config.connecte && AG.config.calendrier)) return null;
+  const api = agApi();
+  if (api && api.agenda_prochaines && !_dashAgAl.attente && Date.now() - _dashAgAl.lu > DASH_AG_RELIRE_MS) {
+    _dashAgAl.attente = true;
+    Promise.resolve(api.agenda_prochaines())
+      .then(r => { if (r && r.ok) _dashAgAl.liste = r.alertes || []; })
+      .catch(() => {})
+      .finally(() => { _dashAgAl.lu = Date.now(); _dashAgAl.attente = false; dashRender(); });
+  }
+  const d = new Date(), maintenant = todayISO() + "T" + d.toTimeString().slice(0, 5);
+  const l = _dashAgAl.liste.filter(a => a.quand >= maintenant);
+  const lignes = l.slice(0, 4).map(a => {
+    const iso = a.quand.slice(0, 10), j = dashJours(iso);
+    const jour = j === 0 ? "auj." : j === 1 ? "dem." : j < 7
+      ? spParseISO(iso).toLocaleDateString("fr-FR", { weekday: "short" }) : dashDateCourte(iso);
+    return `<div class="dash-ag ag-t-note" title="${escHtml(a.titre)}"><em>${escHtml(jour)}</em><b>${escHtml(a.quand.slice(11))}</b><span>${escHtml(a.titre)}</span></div>`;
+  }).join("");
+  return { lbl: "Prochaines notifications", val: null, vizCls: "dash-viz-haut",
+           go: l.length ? "" : "Régler les notifications",
+           sub: l.length ? "" : (_dashAgAl.lu ? "Aucune notification réglée." : "Lecture…"),
+           viz: lignes ? `<div class="dash-ags">${lignes}</div>` : "" };
+}
+
 /* ── Tuile « Pense-bête » ────────────────────────────────────────────────────
    S.uiPrefs.penseBete = [{id, texte, date ("AAAA-MM-JJ" ou ""), faite}],
    enregistré avec les préférences de l'utilisateur (pea_data.json, donc dans
@@ -24478,7 +24517,8 @@ function dashWireDnd(box) {
      de passe pour app entre par save_agenda et ne ressort pas.
    ══════════════════════════════════════════════════════════════════════════ */
 const AG = { config: null, calendriers: null, formMdp: false, erreur: "", occupe: false,
-             notes: [], icloud: {}, icloudA: {}, icloudErr: "", noteId: null, envoi: false };
+             notes: [], icloud: {}, icloudA: {}, icloudErr: "", noteId: null, envoi: false,
+             notifCat: "", essaiMsg: "" };
 let _agBootstrapped = false;
 let _agMois = { annee: new Date().getFullYear(), mois: new Date().getMonth() };
 const AG_CHOIX = [
@@ -24880,25 +24920,56 @@ async function agSupprimerNote() {
 
 /* ── Notifications (ag-notifs) ───────────────────────────────────────────
    Une alerte (VALARM) posée par Python sur les événements envoyés à iCloud :
-   l'iPhone la sonne lui-même. Les quatre rappels du bas ne partent que si leur
-   alerte est réglée (agenda.RAPPELS). */
+   l'iPhone la sonne lui-même. Catalogue rangé en pastilles, une par section
+   (26/10/2026) ; les rappels ne partent que si leur alerte est réglée
+   (agenda.RAPPELS). */
 
 const AG_ALERTES_HEURE = [["", "Pas d'alerte"], ["0", "À l'heure"], ["15", "15 min avant"],
   ["30", "30 min avant"], ["60", "1 h avant"], ["matin", "Le matin même, 9 h"], ["veille", "La veille, 18 h"]];
-const AG_ALERTES_JOUR = [["", "Pas d'alerte"], ["matin", "Le jour même, 9 h"], ["veille", "La veille, 18 h"]];
-// [type, icône, nom, aide, options, case de l'onglet iCloud ou null]
+const AG_ALERTES_JOUR = [["", "Pas d'alerte"], ["matin", "Le jour même, 9 h"], ["veille", "La veille, 18 h"],
+  ["semaine", "Une semaine avant, 9 h"]];
+const AG_ALERTES_DATE = [["", "Pas de rappel"]].concat(AG_ALERTES_JOUR.slice(1));
+const AG_ALERTES_RAPPEL = AG_ALERTES_DATE.slice(0, 3);
+const AG_ALERTES_RESUME = [["", "Pas de résumé"], ["dimanche", "Le dimanche, 18 h"], ["lundi", "Le lundi, 8 h"]];
+const AG_DELAIS = [2, 3, 4, 5, 7, 10, 14, 21, 30, 45, 60];   // agenda.DELAIS_VALEURS
+
+// Pastilles de l'onglet : [id, nom, section de NAV_SECTIONS ou null]. Une
+// section masquée dans la barre latérale masque sa pastille (réglages gardés).
+const AG_NOTIF_CATS = [
+  ["pea", "PEA", "sec-pea"], ["cto", "CTO", "sec-cto"], ["comptes", "Mes comptes", "sec-comptes"],
+  ["pret", "Prêt", "sec-pret"], ["sport", "Sports", "sec-sport"], ["patri", "Patrimoine", "sec-patri"],
+  ["sante", "Santé", "sec-sante"], ["agenda", "Agenda", "sec-agenda"], ["general", "Pilote", null],
+];
+// [type, pastille, icône, nom, aide, options, réglage en plus : case de
+// l'onglet iCloud (« sport », « objectifs », « pret »), « mois » (jour du mois)
+// ou « delai » (nombre de jours)]. Seuls les quatre types à case partent sans
+// alerte ; les autres sont des rappels, envoyés seulement si leur alerte est
+// réglée (agenda.RAPPELS).
 const AG_NOTIFS = [
-  ["note",     "note-pencil",       "Notes de l'agenda", "sans heure : 9 h le jour même", AG_ALERTES_HEURE, null],
-  ["sport",    "person-simple-run", "Séances de sport",  "sans heure : 9 h le jour même", AG_ALERTES_HEURE, "sport"],
-  ["objectif", "flag-checkered",    "Objectifs de sport à date", "", AG_ALERTES_JOUR, "objectifs"],
-  ["pret",     "hand-coins",        "Mensualités du prêt", "", AG_ALERTES_JOUR, "pret"],
+  ["versement", "pea", "piggy-bank", "Versements prévus", "ceux de l'onglet Versements", AG_ALERTES_DATE],
+  ["dividende", "pea", "coins", "Dividendes attendus", "ceux de l'onglet Dividendes", AG_ALERTES_DATE],
+  ["pea-depot", "pea", "bank", "Verser sur le PEA", "chaque mois ; passe au mois suivant dès qu'un versement du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
+  ["pea-investir", "pea", "chart-line-up", "Investir ce mois", "chaque mois ; passe au mois suivant dès qu'un achat du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
+  ["pea-anniv", "pea", "cake", "Anniversaire du PEA", "date d'ouverture des Paramètres ; le cap des 5 ans est signalé", AG_ALERTES_DATE],
+  ["cto-dividende", "cto", "coins", "Dividendes attendus", "ceux de chaque compte-titres", AG_ALERTES_DATE],
+  ["cto-investir", "cto", "chart-line-up", "Investir ce mois", "un rappel par compte-titres ; passe au mois suivant dès qu'un achat du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
+  ["fin-saisie", "comptes", "receipt", "Saisir les dépenses du mois", "passe au mois suivant dès qu'une opération est ajoutée ce jour-là ou après", AG_ALERTES_RAPPEL, "mois"],
+  ["fin-recurrent", "comptes", "repeat", "Opérations récurrentes", "la prochaine échéance de chacune : abonnement, loyer, salaire…", AG_ALERTES_DATE],
+  ["pret", "pret", "hand-coins", "Mensualités", "chaque mois", AG_ALERTES_JOUR, "pret"],
+  ["pret-etapes", "pret", "flag-checkered", "Première et dernière mensualité", "", AG_ALERTES_DATE],
+  ["sport", "sport", "person-simple-run", "Séances", "sans heure : 9 h le jour même", AG_ALERTES_HEURE, "sport"],
+  ["objectif", "sport", "flag-checkered", "Objectifs à date", "", AG_ALERTES_JOUR, "objectifs"],
+  ["sport-pause", "sport", "hourglass-medium", "Pas de séance depuis…", "compté depuis la dernière séance saisie", AG_ALERTES_RAPPEL, "delai"],
+  ["releve", "patri", "bank", "Relevé du patrimoine", "chaque mois ; passe au mois suivant dès que le relevé du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
+  ["pesee", "sante", "scales", "Pesée du mois", "passe au mois suivant dès que la pesée du mois est saisie", AG_ALERTES_RAPPEL, "mois"],
+  ["sante-pause", "sante", "hourglass-medium", "Pas de pesée depuis…", "compté depuis la dernière mesure", AG_ALERTES_RAPPEL, "delai"],
+  ["sante-objectif", "sante", "target", "Objectifs à date", "ceux de l'onglet Objectifs qui ont une date", AG_ALERTES_DATE],
+  ["note", "agenda", "note-pencil", "Notes de l'agenda", "sans heure : 9 h le jour même", AG_ALERTES_HEURE],
+  ["resume", "agenda", "calendar-check", "Résumé de la semaine", "compte ce qui t'attend : séances, mensualités, dividendes…", AG_ALERTES_RESUME],
+  ["sauvegarde", "general", "usb", "Sauvegarde USB en retard", "comptée depuis la dernière sauvegarde sur clé", AG_ALERTES_RAPPEL, "delai"],
+  ["ouvrir", "general", "compass", "Pilote pas ouvert depuis…", "recule à chaque lancement de Pilote", AG_ALERTES_RAPPEL, "delai"],
 ];
-const AG_RAPPELS = [
-  ["pesee",     "heartbeat",   "Pesée du mois", "passe au mois suivant dès que la pesée du mois est saisie", true],
-  ["releve",    "bank",        "Relevé du patrimoine", "passe au mois suivant dès que le relevé du mois est saisi", true],
-  ["versement", "piggy-bank",  "Versements PEA prévus", "ceux de l'onglet Versements", false],
-  ["dividende", "coins",       "Dividendes attendus", "ceux de l'onglet Dividendes", false],
-];
+const AG_CASES = { sport: "sport", objectifs: "objectifs", pret: "pret" };
 
 function agSelectHtml(type, options, valeur, inactif) {
   return `<select data-type="${type}" onchange="agReglerNotifs()"${inactif ? " disabled" : ""}>`
@@ -24916,51 +24987,93 @@ async function agOuvrirNotifs() {
   agRenderNotifs();
 }
 
+/** Pastilles affichées : celles dont la section est visible, et « Pilote ». */
+function agNotifCats() {
+  const vis = _modulesVisibles();
+  return AG_NOTIF_CATS.filter(([, , sec]) => !sec || vis.has(sec));
+}
+
 function agRenderNotifs() {
   const box = document.getElementById("ag-notifs-boite");
   if (!box || !AG.config) return;
-  const cfg = AG.config, al = cfg.alertes || {}, jours = cfg.jours || {};
+  const cfg = AG.config, al = cfg.alertes || {}, jours = cfg.jours || {}, delais = cfg.delais || {};
   if (!cfg.connecte || !cfg.calendrier) {
     box.innerHTML = `<p class="ac-note">Les notifications passent par ton agenda iCloud : connecte-le d'abord
         et choisis l'agenda où Pilote écrit.</p>
       <div class="ac-btns"><button type="button" class="btn btn-primary" onclick="goTab('ag-connexion');_setActiveSidebar('ag-connexion')"><i class="ph ph-plug"></i> Connecter iCloud</button></div>`;
     return;
   }
-  const ligne = (ico, nom, aide, champ) => `<div class="ag-notif">
-      <span class="ag-notif-ico"><i class="ph ph-${ico}"></i></span>
-      <span class="ag-notif-nom"><b>${nom}</b>${aide ? `<span class="ag-aide">${aide}</span>` : ""}</span>
-      <span class="ag-notif-champ">${champ}</span></div>`;
-  const deja = AG_NOTIFS.map(([type, ico, nom, aide, options, cas]) => {
-    const coupe = cas && !(cfg.choix || {})[cas];
-    return ligne(ico, nom, coupe ? "pas envoyées : à cocher dans l'onglet iCloud" : aide,
-                 agSelectHtml(type, options, al[type], coupe));
+  const cats = agNotifCats();
+  if (!cats.some(c => c[0] === AG.notifCat)) AG.notifCat = cats[0][0];
+  const coupe = t => t[6] in AG_CASES && !(cfg.choix || {})[AG_CASES[t[6]]];
+  const pastilles = cats.map(([id, nom, sec]) => {
+    const nb = AG_NOTIFS.filter(t => t[1] === id && al[t[0]] && !coupe(t)).length;
+    const lib = id === "pret" && typeof prNom === "function" ? prNom() : nom;
+    return `<button type="button" class="ac-chip${id === AG.notifCat ? " active" : ""}" onclick="AG.notifCat='${id}';agRenderNotifs()">`
+      + `<i class="ph ph-${sec ? NAV_ICONS[sec] : "gear-six"}"></i>${escHtml(lib)}${nb ? ` <small>${nb}</small>` : ""}</button>`;
   }).join("");
   const jourHtml = type => `<select class="ag-notif-jour" data-jour="${type}" onchange="agReglerNotifs()" title="Jour du mois">`
     + Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}"${i + 1 === (jours[type] || 1) ? " selected" : ""}>le ${i + 1 === 1 ? "1er" : i + 1}</option>`).join("")
     + `</select>`;
-  const plus = AG_RAPPELS.map(([type, ico, nom, aide, mensuel]) =>
-    ligne(ico, nom, aide, (mensuel ? jourHtml(type) : "")
-      + agSelectHtml(type, [["", "Pas de rappel"]].concat(AG_ALERTES_JOUR.slice(1)), al[type], false))).join("");
+  const delaiHtml = type => `<select class="ag-notif-jour" data-delai="${type}" onchange="agReglerNotifs()" title="Nombre de jours">`
+    + AG_DELAIS.map(n => `<option value="${n}"${n === delais[type] ? " selected" : ""}>${n} jours</option>`).join("")
+    + `</select>`;
+  const lignes = AG_NOTIFS.filter(t => t[1] === AG.notifCat).map(t => {
+    const [type, , ico, nom, aide, options, plus] = t;
+    const c = coupe(t);
+    const champ = (plus === "mois" ? jourHtml(type) : plus === "delai" ? delaiHtml(type) : "")
+      + agSelectHtml(type, options, al[type], c);
+    const a = c ? "pas envoyées : à cocher dans l'onglet iCloud" : aide;
+    return `<div class="ag-notif">
+      <span class="ag-notif-ico"><i class="ph ph-${ico}"></i></span>
+      <span class="ag-notif-nom"><b>${nom}</b>${a ? `<span class="ag-aide">${a}</span>` : ""}</span>
+      <span class="ag-notif-champ">${champ}</span></div>`;
+  }).join("");
   box.innerHTML = `
-    <div class="ag-notifs-t">Ce que Pilote envoie déjà</div>
-    <div class="ag-notifs">${deja}</div>
-    <div class="ag-notifs-t">Rappels en plus</div>
-    <div class="ag-notifs">${plus}</div>
+    <div class="ag-essai">
+      <button type="button" class="btn btn-ghost btn-sm" id="ag-essai-btn" onclick="agEssai()"><i class="ph ph-bell-ringing"></i> Envoyer un essai</button>
+      <span class="ag-aide" id="ag-essai-msg">${escHtml(AG.essaiMsg || "Une notification d'essai sonne sur l'iPhone 2 à 3 minutes après.")}</span>
+    </div>
+    <div class="ac-filtres ag-notif-cats">${pastilles}</div>
+    <div class="ag-notifs">${lignes}</div>
     <p class="ac-note ag-notifs-pied">Sur l'iPhone, les alertes de Calendrier doivent être autorisées
       (Réglages › Notifications › Calendrier).</p>
     <p class="ac-note" id="ag-notifs-etat">${agEtatHtml()}</p>`;
 }
 
 async function agReglerNotifs() {
-  const alertes = {}, jours = {};
+  // Seule la pastille ouverte est à l'écran : les autres gardent leur réglage
+  const cfg = AG.config || {};
+  const alertes = Object.assign({}, cfg.alertes), jours = Object.assign({}, cfg.jours),
+        delais = Object.assign({}, cfg.delais);
   document.querySelectorAll("#ag-notifs-boite select[data-type]").forEach(s => { alertes[s.dataset.type] = s.value; });
   document.querySelectorAll("#ag-notifs-boite select[data-jour]").forEach(s => { jours[s.dataset.jour] = Number(s.value); });
-  const r = await agApi().save_agenda_alertes(alertes, jours);
+  document.querySelectorAll("#ag-notifs-boite select[data-delai]").forEach(s => { delais[s.dataset.delai] = Number(s.value); });
+  const r = await agApi().save_agenda_alertes(alertes, jours, delais);
   if (r && r.gele) return;
   if (!r || !r.ok) { showToastModern("Réglage non enregistré : " + ((r && r.error) || "?"), "err"); return; }
   AG.config = r;
   agRenderNotifs();
+  dashAgAlertesRelire();
   showToastModern("Enregistré, envoi à iCloud en cours", "ok");
+}
+
+/** Bouton « Envoyer un essai » : Python pose un événement dans 2 à 3 minutes,
+    alerte à l'heure, et l'envoie tout de suite. */
+async function agEssai() {
+  const btn = document.getElementById("ag-essai-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const r = await agApi().save_agenda_essai();
+    if (r && r.gele) return;
+    if (!r || !r.ok) { showToastModern("Essai non envoyé : " + ((r && r.error) || "?"), "err"); return; }
+    AG.essaiMsg = `Envoyé : ton iPhone doit sonner à ${r.heure}. Rien ? Vérifie Réglages › Notifications › Calendrier.`;
+    dashAgAlertesRelire();
+    await agOuvrirNotifs();   // relit l'état de l'envoi (ligne du bas)
+    showToastModern("Essai envoyé à iCloud", "ok");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 /* ── Navigation ────────────────────────────────────────────────────────── */

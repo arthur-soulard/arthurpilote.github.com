@@ -135,36 +135,83 @@ c'est l'iPhone qui la sonne, Pilote fermé ou non. Rien de nouveau ne sort du
 PC : mêmes événements, même agenda. Sur l'iPhone, Réglages › Notifications ›
 Calendrier doit être autorisé.
 
-* **Réglage par type** (`agenda.json` : `alertes`, `jours`) : `""` aucune
-  alerte, `"0"`/`"15"`/`"30"`/`"60"` minutes avant le début, `"matin"` 9 h le
-  jour même, `"veille"` 18 h la veille (`ALERTES_VALEURS`). Un événement « toute
-  la journée » prend `PT9H` (9 h) pour les minutes et pour « matin », `-PT6H`
-  pour « veille ». Avec heure : « matin » = 9 h, ou l'heure même si elle est
-  avant 9 h. Déclencheur **relatif au début** : il vaut pour chaque mois d'un
-  événement répété (mensualités, rappels du mois).
+* **Rangé en pastilles, une par section** (26/10/2026, demande d'Arthur :
+  « une liste énorme de propositions, l'utilisateur coche ce qu'il veut ») :
+  PEA, CTO, Mes comptes, Prêt (nom libre, `prNom()`), Sports, Patrimoine,
+  Santé, Agenda, Pilote. Une section masquée dans la barre latérale masque sa
+  pastille, ses réglages restent. Chaque pastille compte ses alertes réglées.
+  Catalogue : `AG_NOTIFS` (index.html), `agenda.RAPPELS` (Python).
+  `agReglerNotifs` part des réglages en mémoire : seule la pastille ouverte
+  est à l'écran, les autres ne doivent pas être remises à zéro.
+* **Réglage par type** (`agenda.json` : `alertes`, `jours`, `delais`) : `""`
+  aucune alerte, `"0"`/`"15"`/`"30"`/`"60"` minutes avant le début, `"matin"`
+  9 h le jour même, `"veille"` 18 h la veille, `"semaine"` 9 h une semaine
+  avant (`ALERTES_VALEURS`). Un événement « toute la journée » prend `PT9H`
+  (9 h) pour les minutes et pour « matin », `-PT6H` pour « veille »,
+  `-P6DT15H` pour « semaine ». Avec heure : « matin » = 9 h, ou l'heure même
+  si elle est avant 9 h. Déclencheur **relatif au début** : il vaut pour chaque
+  mois d'un événement répété. Le résumé de la semaine n'accepte que
+  `RESUME_VALEURS` (dimanche 18 h, lundi 8 h).
 * **Ce qui part déjà** : notes, séances, objectifs, mensualités. Une case
   décochée dans l'onglet iCloud grise son réglage (« pas envoyées »).
-* **Rappels en plus** (`agenda.RAPPELS`), envoyés **seulement** si leur alerte
-  est réglée (« Pas de rappel » = rien dans l'agenda) :
-  | Rappel | Événement |
-  |---|---|
-  | `pesee` | « ⚖️ Pesée du mois », toute la journée, le jour choisi (1 à 28), répété chaque mois sans fin. Commence au mois suivant dès qu'une pesée du mois est saisie : il ne sonne pas pour rien. Rien tant que Santé n'a aucune mesure |
-  | `releve` | « 📋 Relevé du patrimoine », même principe (`patrimoine.mois_saisi`). Rien sans ligne saisie à la main |
-  | `versement` | un événement par versement prévu du PEA (`depotsPrevus`) |
-  | `dividende` | un événement par dividende attendu du PEA (`divFuture`), nom de la ligne et montant |
+* **Rappels** (`agenda.RAPPELS`), envoyés **seulement** si leur alerte est
+  réglée. Un module jamais utilisé n'a rien à rappeler (règle « Pilote
+  neutre ») :
+  | Pastille | Rappel | Événement |
+  |---|---|---|
+  | PEA | `versement` | un par versement prévu (`depotsPrevus`) |
+  | PEA | `dividende` | un par dividende attendu (`divFuture`), nom de la ligne et montant |
+  | PEA | `pea-depot` | « Verser sur le PEA », du mois (rien sans aucun versement) |
+  | PEA | `pea-investir` | « Investir ce mois », du mois, fait = un achat ce mois-ci |
+  | PEA | `pea-anniv` | prochain anniversaire de `config.ouverture`, « cap des 5 ans » à 5 ans |
+  | CTO | `cto-dividende` | dividendes attendus de chaque CTO, nom du CTO en fin de titre |
+  | CTO | `cto-investir` | un rappel du mois par CTO (clé `cto-investir-<id>`) |
+  | Mes comptes | `fin-saisie` | du mois, fait = une opération ajoutée (`createdAt`) le jour du rappel ou après |
+  | Mes comptes | `fin-recurrent` | prochaine échéance (`nextDue`) de chaque récurrence pas en pause |
+  | Prêt | `pret-etapes` | première et dernière mensualité, si elles sont à venir |
+  | Sports | `sport-pause` | X jours après la dernière séance |
+  | Santé | `pesee` | « Pesée du mois », du mois |
+  | Santé | `sante-pause` | X jours après la dernière mesure |
+  | Santé | `sante-objectif` | objectifs actifs avec une date à venir |
+  | Patrimoine | `releve` | « Relevé du patrimoine », du mois (`patrimoine.mois_saisi`) |
+  | Agenda | `resume` | résumé de la semaine (voir plus bas) |
+  | Pilote | `sauvegarde` | X jours après la dernière sauvegarde USB (`lastBackupAt`, rien sans) |
+  | Pilote | `ouvrir` | aujourd'hui + X jours, recule à chaque envoi, donc à chaque lancement |
+* **Rappels du mois** (`MENSUELS`) : le jour choisi (1 à 28), répété chaque
+  mois sans fin ; commence au mois suivant dès que le mois est fait.
+* **Rappels « depuis X jours »** (`DELAIS`, `DELAIS_VALEURS`) : au plus tôt
+  demain. En retard, ils sonnent le lendemain matin et reculent d'un jour à
+  chaque envoi tant que rien n'est saisi (`_depuis`).
+* **Résumé de la semaine** (`_resume`, appelé par `retenus`) : un événement le
+  dimanche 18 h (semaine qui suit) ou le lundi 8 h (semaine qui commence), alerte
+  à l'heure. Son titre compte ce que Pilote met dans l'agenda ces sept jours
+  (« 🗓️ Ta semaine : 3 séances · 1 mensualité »), le détail jour par jour en
+  description. Refait à chaque envoi : chaque module ajoute `"resume"` à son
+  `planifier_si`. Les rappels « depuis X jours », l'essai et le résumé
+  lui-même ne sont pas comptés.
+* **Envoyer un essai** (`save_agenda_essai` → `agenda.tester`, demande
+  d'Arthur du 26/10/2026 : « je peux pas envoyer de notif test ») : un
+  événement 2 à 3 minutes plus tard, alerte à l'heure, envoyé tout de suite
+  (l'erreur s'affiche). `agenda.json` garde l'heure (`test`) ; l'essai est
+  retiré au premier envoi après une heure, et un minuteur à part relance un
+  envoi une heure après (`planifier()` l'aurait annulé).
+* **Prochaines notifications** (`agenda.prochaines`, `agenda_prochaines`) :
+  les 6 prochaines alertes, calculées avec les mêmes règles que l'envoi
+  (`_decalage`, `_occurrences`). Servent à la tuile `ag-alertes`.
 * Le PEA est lu par `agenda._pea()` (JSON en lecture seule, sous le verrou du
   fichier), **pas** `storage.load_data()`, qui note son résultat pour toute
   l'app (`get_last_load_info`). Fichier illisible : l'envoi s'arrête avec une
   erreur, rien n'est retiré.
 * Envoi : `save_agenda_alertes` enregistre puis envoie dans la seconde.
-  `save_data`, `save_sante` et `save_patrimoine` appellent
-  `agenda.planifier_si(...)` : l'envoi ne repart que si l'un de leurs rappels
-  est réglé (le PEA s'enregistre souvent).
+  `save_data`, `save_cto`, `save_finances`, `save_sante`, `save_patrimoine`
+  et la sauvegarde USB appellent `agenda.planifier_si(...)` : l'envoi ne
+  repart que si l'un de leurs rappels est réglé (le PEA s'enregistre souvent).
 * `_ics` ne cherche la description de l'événement qu'avant `BEGIN:VALARM` :
   celle de l'alerte ne doit pas faire sauter « Ajouté par Pilote. ».
 
 **Pas encore vérifié** : que le vrai iCloud garde l'alerte et que l'iPhone
-sonne (ni sur Mac). Banc et tests seulement.
+sonne (ni sur Mac). Banc et tests seulement. Le bouton « Envoyer un essai »
+(26/10/2026) sert à le vérifier sur le vrai iPhone.
 
 ## Tuiles de l'accueil
 
@@ -173,6 +220,10 @@ nouvelle, module « Agenda » : « Aujourd'hui » (`ag-jour`, disparaît si la
 journée est vide), « Cette semaine » (`ag-semaine`, 7 jours, un événement sur
 plusieurs jours compté une fois, ceux d'aujourd'hui déjà finis écartés),
 « Prochaines notes » (`ag-notes`, toujours là pour son bouton « Ajouter »).
+Quatrième tuile le 26/10/2026, choisie par Arthur avec le catalogue :
+« Prochaines notifications » (`ag-alertes`, ouvre l'onglet Notifications),
+les 4 prochaines alertes de `agenda_prochaines`, relues après 10 min ou un
+réglage (`dashAgAlertesRelire`). Rien tant qu'iCloud n'est pas connecté.
 Mêmes éléments que le calendrier (`agDuJour(iso, icloud)`). Les événements
 iCloud des 7 jours sont lus à part (`_dashAg`, `dashAgIcloud`), seulement si
 « Aujourd'hui » ou « Cette semaine » est affichée, relus après 10 min ; un

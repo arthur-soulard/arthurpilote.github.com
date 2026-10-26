@@ -455,6 +455,105 @@ class TestAgenda(unittest.TestCase):
         finally:
             agenda.planifier = avant
 
+    def test_catalogue_des_rappels(self):
+        import datetime
+        import cto
+        import finances
+        import sante
+        import sauvegarde
+        auj = datetime.date.today()
+        j = lambda n: (auj + datetime.timedelta(days=n)).isoformat()
+        dem = auj + datetime.timedelta(days=1)
+        mois_suivant = (auj.replace(day=1) + datetime.timedelta(days=32)).replace(day=5)
+        sante.save_data({"mesures": [{"id": 1, "date": j(-20), "poids": 70}],
+                         "goals": [{"id": 3, "metric": "poids", "target": 68.5, "date": j(30), "status": "active"},
+                                   {"id": 4, "metric": "poids", "target": 60, "date": j(-3), "status": "active"}]})
+        (storage.get_user_dir() / "pea_data.json").write_text(json.dumps({
+            "config": {"ouverture": dem.replace(year=dem.year - 5).isoformat()},
+            "positions": [{"ticker": "EPA:CW8", "name": "Amundi MSCI World"}],
+            "transactions": [{"id": 1, "type": "Achat", "date": auj.isoformat()}],
+            "depots": [{"id": 1, "date": (auj.replace(day=1) - datetime.timedelta(days=1)).isoformat()}],
+        }), "utf-8")
+        cto.save_data({"comptes": [{"id": "c2", "nom": "TR", "transactions": [],
+                                    "positions": [{"ticker": "AAPL", "name": "Apple"}],
+                                    "divFuture": [{"id": "x", "date": j(10), "ticker": "AAPL", "montant": 1.2}]}]})
+        finances.save_data({"transactions": [{"id": 1, "createdAt": j(-40) + "T10:00:00"}],
+                            "recurrences": [{"id": 5, "label": "Loyer", "type": "expense", "amount": 450,
+                                             "nextDue": j(5), "status": "active"},
+                                            {"id": 6, "label": "En pause", "type": "expense", "amount": 9,
+                                             "nextDue": j(5), "status": "paused"}]})
+        sauvegarde.save_config(dict(sauvegarde.load_config(), lastBackupAt=j(-40) + "T10:00:00"))
+        sports.save_data({"sessions": [{"id": 1, "date": j(-2), "sport": "course"}]})
+        p = pret.load_data()
+        p["pret"].update(date_premier_remboursement=j(10), duree_remboursement=12)
+        pret.save_data(p)
+
+        tout = {t: "matin" for t in agenda.RAPPELS if t != "resume"}
+        r = {e["cle"]: e for e in agenda.rappels(tout, {"pea-investir": 5},
+                                                 {"sport-pause": 3, "ouvrir": 10, "sauvegarde": 999})}
+        self.assertEqual(r["sante-pause"]["jour"], dem)                     # en retard : demain
+        self.assertEqual(r["sante-pause"]["titre"], "⚖️ Pas de pesée depuis 21 jours")
+        self.assertEqual(r["sante-objectif-3"]["titre"], "🎯 Poids · objectif 68,5 kg")
+        self.assertNotIn("sante-objectif-4", r)                              # date passée
+        self.assertEqual((r["pea-anniv"]["jour"], r["pea-anniv"]["titre"]), (dem, "🎂 Le PEA a 5 ans · cap des 5 ans"))
+        self.assertEqual(r["pea-investir"]["jour"], mois_suivant)             # achat ce mois-ci
+        self.assertEqual(r["pea-depot"]["jour"], auj.replace(day=1))          # pas de versement ce mois-ci
+        self.assertEqual(r["cto-dividende-c2-x"]["titre"], "💶 Dividende · Apple · 1,20 € · CTO TR")
+        self.assertEqual(r["cto-investir-c2"]["titre"], "📈 Investir ce mois · CTO TR")
+        self.assertEqual(r["fin-saisie"]["jour"], auj.replace(day=1))
+        self.assertEqual(r["fin-recurrent-5"]["titre"], "🔁 Loyer · −450,00 €")
+        self.assertNotIn("fin-recurrent-6", r)                               # en pause
+        self.assertEqual(r["pret-premiere"]["jour"].isoformat(), j(10))
+        self.assertEqual(r["pret-derniere"]["jour"], agenda._plus_mois(r["pret-premiere"]["jour"], 11))
+        self.assertEqual((r["sport-pause"]["jour"], r["sport-pause"]["titre"]), (dem, "🏃 Pas de séance depuis 3 jours"))
+        self.assertEqual(r["sauvegarde"]["titre"], "💾 Pas de sauvegarde USB depuis 41 jours")   # 999 → 30
+        self.assertEqual(r["ouvrir"]["jour"].isoformat(), j(10))
+        # Chaque rappel part dans l'agenda avec son alerte ; « semaine » sur une date
+        ev = agenda.evenements({}, {}, {}, [], dict(tout, dividende="semaine", **{"cto-dividende": "semaine"}),
+                               list(r.values()))
+        self.assertIn("TRIGGER:-P6DT15H", ev["cto-dividende-c2-x"])
+        self.assertIn("RRULE:FREQ=MONTHLY", ev["pea-investir"])
+        self.assertEqual(len(ev), len(r))
+        # Rien de réglé : rien ne part
+        self.assertEqual(agenda.rappels({}, {}, {}), [])
+
+    def test_resume_essai_et_prochaines(self):
+        import datetime
+        maintenant = datetime.datetime.now()
+        auj = maintenant.date()
+        notes = [{"id": f"n{i}", "titre": f"Note {i}", "date": (auj + datetime.timedelta(days=i)).isoformat()}
+                 for i in range(15)]
+        ev = agenda.evenements({}, {}, {}, notes, {"resume": "dimanche"}, [])
+        self.assertIn("SUMMARY:🗓️ Ta semaine : 7 notes", ev["resume"])
+        self.assertIn("TRIGGER:PT0S", ev["resume"])
+        self.assertTrue(re.search(r"DTSTART:\d{8}T180000", "\n".join(ev["resume"])))
+        e = agenda.retenus({}, {}, {}, [], {"resume": "lundi"})[0]
+        self.assertEqual((e["debut"].weekday(), e["debut"].hour), (0, 8))
+        self.assertGreater(e["debut"], maintenant)
+        self.assertEqual(e["titre"], "🗓️ Ta semaine : rien de prévu dans Pilote")
+        # Réglages acceptés par type
+        propres = agenda._alertes_propres({"resume": "matin", "sport": "dimanche", "objectif": "semaine"})
+        self.assertEqual((propres["resume"], propres["sport"], propres["objectif"]), ("", "", "semaine"))
+        self.assertIn("TRIGGER:-PT10650M", agenda.evenements(           # 18 h 30, 9 h une semaine avant
+            sports.load_data(), {}, {"sport": True}, [], {"sport": "semaine"})["sport-1"])
+        # Essai : rien sans date ou après une heure
+        self.assertEqual(agenda.essai(""), [])
+        self.assertEqual(agenda.essai((maintenant - datetime.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M")), [])
+        agenda.connecter(ID, MDP)
+        agenda.regler("nouveau", {})
+        r = agenda.tester()
+        f = self._fichiers(urllib.parse.urlparse(agenda.config()["calendrier"]).path)
+        essai = next(v for n, v in f.items() if n.endswith("-essai.ics"))
+        self.assertIn("TRIGGER:PT0S", essai)
+        self.assertIn("T" + r["heure"].replace(":", "") + "00", essai)
+        # Prochaines notifications : l'essai d'abord, puis la note de demain à 10 h
+        demain = (auj + datetime.timedelta(days=1)).isoformat()
+        agenda.enregistrer_notes([{"id": "n1", "titre": "Dentiste", "date": demain, "heure": "10:00"}])
+        agenda.regler_alertes({"note": "0"}, {})
+        p = agenda.prochaines()
+        self.assertEqual([x["type"] for x in p], ["essai", "note"])
+        self.assertEqual(p[1]["quand"], demain + "T10:00")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,10 +23,12 @@ ajoutees a la main. Ce qui part dans l'agenda iCloud se choisit dans l'onglet iC
 
 Onglet Notifications (demande d'Arthur du 22/10/2026 : « des notifs sur le
 telephone ») : une alerte (VALARM) posee sur ces evenements, que l'iPhone
-sonne tout seul, Pilote ferme ou non. Plus quatre rappels qui ne partent que
-si leur alerte est reglee (RAPPELS) : pesee du mois et releve du patrimoine
+sonne tout seul, Pilote ferme ou non. Plus un catalogue de rappels qui ne
+partent que si leur alerte est reglee (RAPPELS, 26/10/2026) : rappels du mois
 (un evenement repete chaque mois, qui saute au mois suivant une fois le mois
-fait), versements prevus et dividendes attendus du PEA.
+fait), dates connues (dividendes, versements, anniversaire du PEA, etapes du
+pret), rappels « depuis X jours » (seance, pesee, sauvegarde USB, Pilote pas
+ouvert), resume de la semaine, et une notification d'essai.
 
 Synchronisation : Pilote calcule la liste voulue a partir de sports.json et
 pret.json, liste ce qui est deja dans l'agenda, puis ajoute, remplace ou
@@ -39,7 +41,8 @@ Emplacement : <app_dir>/users/<slug>/agenda.json
    "envoyes": {nom de fichier: empreinte},
    "aNettoyer": [agenda quitte, a vider], "aSupprimer": [agenda « Pilote » quitte],
    "notes": [{id, titre, date, heure, duree (min), texte}],
-   "alertes": {type: valeur de ALERTES_VALEURS}, "jours": {"pesee", "releve": jour du mois}}
+   "alertes": {type: valeur de ALERTES_VALEURS}, "jours": {rappel de MENSUELS: jour du mois},
+   "delais": {rappel de DELAIS: nombre de jours}, "test": "AAAA-MM-JJTHH:MM" (notification d'essai)}
 
 Le mot de passe suit le chemin de celui d'Actus : verifie aupres d'iCloud
 avant d'etre garde, chiffre (DPAPI sous Windows, Trousseau sur Mac), et ne
@@ -62,10 +65,13 @@ import uuid
 import xml.etree.ElementTree as ET
 
 import actus
+import cto
+import finances
 import jsonstore
 import patrimoine
 import pret
 import sante
+import sauvegarde
 import sports
 import storage
 
@@ -76,12 +82,26 @@ REESSAI   = 600     # s : iCloud injoignable, on retente 10 min plus tard
 TROUSSEAU = "Pilote Agenda"
 CHOIX     = ("sport", "objectifs", "pret")
 # Rappels de l'onglet Notifications : envoyes seulement si leur alerte est reglee
-RAPPELS   = ("pesee", "releve", "versement", "dividende")
+# (catalogue du 26/10/2026, range par section dans l'onglet)
+RAPPELS   = ("pesee", "releve", "versement", "dividende",
+             "pea-depot", "pea-investir", "pea-anniv", "cto-investir", "cto-dividende",
+             "fin-saisie", "fin-recurrent", "pret-etapes", "sport-pause",
+             "sante-pause", "sante-objectif", "resume", "sauvegarde", "ouvrir")
 ALERTES   = ("note", "sport", "objectif", "pret") + RAPPELS
 # "" : aucune alerte (un rappel n'est alors pas envoye) ; minutes avant le
-# debut ; « matin » : 9 h le jour meme ; « veille » : 18 h la veille.
+# debut ; « matin » : 9 h le jour meme ; « veille » : 18 h la veille ;
+# « semaine » : 9 h une semaine avant.
 # Un evenement sans heure prend 9 h le jour meme pour les minutes.
-ALERTES_VALEURS = ("", "0", "15", "30", "60", "matin", "veille")
+ALERTES_VALEURS = ("", "0", "15", "30", "60", "matin", "veille", "semaine")
+# Resume de la semaine : le dimanche a 18 h ou le lundi a 8 h
+RESUME_VALEURS = ("", "dimanche", "lundi")
+# Rappels du mois : le jour choisi (1 a 28), passe au mois suivant une fois fait
+MENSUELS  = ("pesee", "releve", "pea-depot", "pea-investir", "cto-investir", "fin-saisie")
+# Rappels « depuis X jours » : delai par defaut, et delais proposes
+DELAIS    = {"sport-pause": 7, "sante-pause": 7, "sauvegarde": 30, "ouvrir": 7}
+DELAIS_VALEURS = (2, 3, 4, 5, 7, 10, 14, 21, 30, 45, 60)
+# Notification d'essai : sonne 2 min apres le clic, retiree une heure plus tard
+TEST_MINUTES = 2
 
 _DAV = "{DAV:}"
 _CAL = "{urn:ietf:params:xml:ns:caldav}"
@@ -117,7 +137,9 @@ def default_data() -> dict:
         "aSupprimer": [],
         "notes":   [],
         "alertes": {},
-        "jours":   {"pesee": 1, "releve": 1},
+        "jours":   {t: 1 for t in MENSUELS},
+        "delais":  dict(DELAIS),
+        "test":    "",
     }
 
 
@@ -316,9 +338,11 @@ def _horaire(jour: datetime.date, heure, minutes) -> tuple:
     return debut, debut + datetime.timedelta(minutes=max(int(_nombre(minutes)), 0) or 60)
 
 
-def _element(cle, type_, titre, jour, debut=None, fin=None, texte="", mois=0, id_=None) -> dict:
+def _element(cle, type_, titre, jour, debut=None, fin=None, texte="", mois=0, id_=None,
+             alerte=None) -> dict:
+    """alerte : reglage impose (resume de la semaine, essai), sinon celui du type."""
     return {"cle": cle, "type": type_, "titre": titre, "jour": jour, "debut": debut,
-            "fin": fin, "texte": str(texte or ""), "mois": mois, "id": id_}
+            "fin": fin, "texte": str(texte or ""), "mois": mois, "id": id_, "alerte": alerte}
 
 
 def elements(sp: dict, pr: dict, notes: list) -> list:
@@ -391,64 +415,287 @@ def _jour_du_mois(jour, fait: bool) -> datetime.date:
     return auj.replace(day=j)
 
 
-def rappels(alertes: dict, jours: dict) -> list:
-    """Les rappels de l'onglet Notifications dont l'alerte est reglee. La pesee
-    et le releve sont un evenement repete chaque mois (mois=-1) qui commence
-    au mois suivant une fois celui-ci fait : la notification ne sonne pas
-    pour rien."""
+def _plus_mois(jour: datetime.date, n: int) -> datetime.date:
+    """Le meme jour n mois plus tard, None si ce mois-la ne l'a pas (le 31) :
+    iCloud saute aussi ce mois pour un evenement repete."""
+    m = jour.month - 1 + n
+    try:
+        return jour.replace(year=jour.year + m // 12, month=m % 12 + 1)
+    except ValueError:
+        return None
+
+
+def _delai(delais: dict, type_: str) -> int:
+    v = int(_nombre((delais or {}).get(type_)))
+    return v if v in DELAIS_VALEURS else DELAIS[type_]
+
+
+def _depuis(dernier: datetime.date, delai: int) -> tuple:
+    """Rappel « depuis X jours » : (jour, nombre de jours ecoules ce jour-la).
+    Au plus tot demain : en retard, il sonne le lendemain matin, et recule
+    d'un jour a chaque envoi tant que rien n'est saisi."""
+    jour = max(dernier + datetime.timedelta(days=delai),
+               datetime.date.today() + datetime.timedelta(days=1))
+    return jour, (jour - dernier).days
+
+
+def _cle(x: dict, jour, i: int) -> str:
+    return re.sub(r"[^A-Za-z0-9_-]", "", str(x.get("id") or "")) or f"{jour}-{i}"
+
+
+def _dividendes(compte: dict, prefixe: str, type_: str, suffixe: str = "") -> list:
+    """Un evenement par dividende attendu (divFuture) d'un PEA ou d'un CTO."""
     out = []
-    mois = datetime.date.today().strftime("%Y-%m")
-    if alertes.get("pesee"):
-        mesures = sante.load_data().get("mesures") or []
-        if mesures:   # Sante jamais utilise : rien a rappeler
+    noms = {p.get("ticker"): p.get("name") for p in compte.get("positions") or []}
+    for i, d in enumerate(compte.get("divFuture") or []):
+        jour = _jour(d.get("date"))
+        if jour:
+            titre = "💶 Dividende · " + str(noms.get(d.get("ticker")) or d.get("ticker") or "")
+            if _nombre(d.get("montant")) > 0:
+                titre += " · " + _euros(d["montant"])
+            out.append(_element(f"{prefixe}-{_cle(d, jour, i)}", type_, titre + suffixe, jour,
+                                texte=d.get("note")))
+    return out
+
+
+def _nom_cto(c: dict) -> str:
+    """Comme la barre laterale (ctoNomSection) : « CTO » suivi du nom du compte."""
+    nom = str(c.get("nom") or "").strip()
+    return nom if nom.upper().startswith("CTO") else ("CTO " + nom).strip()
+
+
+def _achat_ce_mois(compte: dict, mois: str) -> bool:
+    return any(t.get("type") == "Achat" and str(t.get("date") or "").startswith(mois)
+               for t in compte.get("transactions") or [])
+
+
+def _anniversaire(ouverture: datetime.date) -> tuple:
+    """(prochain anniversaire, aujourd'hui compris ; nombre d'annees ce jour-la)."""
+    auj = datetime.date.today()
+    for annee in (auj.year, auj.year + 1):
+        try:
+            jour = ouverture.replace(year=annee)
+        except ValueError:   # ouvert un 29 fevrier
+            jour = datetime.date(annee, 2, 28)
+        if jour >= auj:
+            return jour, annee - ouverture.year
+    return None, 0
+
+
+def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
+    """Les rappels de l'onglet Notifications dont l'alerte est reglee. Les
+    rappels du mois (MENSUELS) sont un evenement repete chaque mois (mois=-1)
+    qui commence au mois suivant une fois celui-ci fait : la notification ne
+    sonne pas pour rien. Un module jamais utilise n'a rien a rappeler."""
+    out = []
+    auj = datetime.date.today()
+    mois = auj.strftime("%Y-%m")
+    if alertes.get("pesee") or alertes.get("sante-pause") or alertes.get("sante-objectif"):
+        sa = sante.load_data()
+        mesures = sa.get("mesures") or []
+        if alertes.get("pesee") and mesures:
             fait = any(str(m.get("date") or "").startswith(mois) for m in mesures)
             out.append(_element("pesee", "pesee", "⚖️ Pesée du mois",
                                 _jour_du_mois(jours.get("pesee"), fait), mois=-1))
+        dates = [d for d in (_jour(m.get("date")) for m in mesures) if d and d <= auj]
+        if alertes.get("sante-pause") and dates:
+            jour, n = _depuis(max(dates), _delai(delais, "sante-pause"))
+            out.append(_element("sante-pause", "sante-pause", f"⚖️ Pas de pesée depuis {n} jours", jour))
+        if alertes.get("sante-objectif"):
+            metriques = {m["id"]: m for m in sante.METRICS}
+            for i, g in enumerate(sa.get("goals") or []):
+                jour = _jour(g.get("date"))
+                if jour and jour >= auj and g.get("status", "active") == "active":
+                    m = metriques.get(g.get("metric")) or {"label": "Objectif", "unit": ""}
+                    cible = f"{_nombre(g.get('target')):g}".replace(".", ",")
+                    titre = f"🎯 {m['label']} · objectif {cible} {m['unit']}".rstrip()
+                    out.append(_element(f"sante-objectif-{_cle(g, jour, i)}", "sante-objectif",
+                                        titre, jour, texte=g.get("note")))
     if alertes.get("releve"):
         pa = patrimoine.load_data()
         # Seules les lignes saisies a la main se relevent chaque mois
         if any(not c.get("archived") and not c.get("auto") for c in pa.get("comptes") or []):
             out.append(_element("releve", "releve", "📋 Relevé du patrimoine",
                                 _jour_du_mois(jours.get("releve"), patrimoine.mois_saisi(pa)), mois=-1))
-    if alertes.get("versement") or alertes.get("dividende"):
+    if any(alertes.get(t) for t in ("versement", "dividende", "pea-depot", "pea-investir", "pea-anniv")):
         pea = _pea()
         if alertes.get("versement"):
             for i, v in enumerate(pea.get("depotsPrevus") or []):
                 jour = _jour(v.get("date"))
                 if jour:
-                    cle = re.sub(r"[^A-Za-z0-9_-]", "", str(v.get("id") or "")) or f"{jour}-{i}"
-                    out.append(_element(f"versement-{cle}", "versement",
+                    out.append(_element(f"versement-{_cle(v, jour, i)}", "versement",
                                         "💶 Versement PEA prévu · " + _euros(v.get("amount")),
                                         jour, texte=v.get("note")))
         if alertes.get("dividende"):
-            noms = {p.get("ticker"): p.get("name") for p in pea.get("positions") or []}
-            for i, d in enumerate(pea.get("divFuture") or []):
-                jour = _jour(d.get("date"))
-                if jour:
-                    cle = re.sub(r"[^A-Za-z0-9_-]", "", str(d.get("id") or "")) or f"{jour}-{i}"
-                    titre = "💶 Dividende · " + str(noms.get(d.get("ticker")) or d.get("ticker") or "")
-                    if _nombre(d.get("montant")) > 0:
-                        titre += " · " + _euros(d["montant"])
-                    out.append(_element(f"dividende-{cle}", "dividende", titre, jour,
-                                        texte=d.get("note")))
+            out += _dividendes(pea, "dividende", "dividende")
+        depots = pea.get("depots") or []
+        if alertes.get("pea-depot") and depots:
+            fait = any(str(d.get("date") or "").startswith(mois) for d in depots)
+            out.append(_element("pea-depot", "pea-depot", "💶 Verser sur le PEA",
+                                _jour_du_mois(jours.get("pea-depot"), fait), mois=-1))
+        if alertes.get("pea-investir") and (pea.get("positions") or pea.get("transactions")):
+            out.append(_element("pea-investir", "pea-investir", "📈 Investir ce mois sur le PEA",
+                                _jour_du_mois(jours.get("pea-investir"), _achat_ce_mois(pea, mois)), mois=-1))
+        ouverture = _jour((pea.get("config") or {}).get("ouverture"))
+        if alertes.get("pea-anniv") and ouverture:
+            jour, n = _anniversaire(ouverture)
+            if jour and n >= 1:
+                titre = f"🎂 Le PEA a {n} an{'s' if n > 1 else ''}" + (" · cap des 5 ans" if n == 5 else "")
+                out.append(_element("pea-anniv", "pea-anniv", titre, jour))
+    if alertes.get("cto-investir") or alertes.get("cto-dividende"):
+        for c in cto.load_data().get("comptes") or []:
+            cid = re.sub(r"[^A-Za-z0-9_-]", "", str(c.get("id") or ""))
+            if not cid:
+                continue
+            if alertes.get("cto-dividende"):
+                out += _dividendes(c, f"cto-dividende-{cid}", "cto-dividende", " · " + _nom_cto(c))
+            if alertes.get("cto-investir") and (c.get("positions") or c.get("transactions")):
+                out.append(_element(f"cto-investir-{cid}", "cto-investir",
+                                    "📈 Investir ce mois · " + _nom_cto(c),
+                                    _jour_du_mois(jours.get("cto-investir"), _achat_ce_mois(c, mois)),
+                                    mois=-1))
+    if alertes.get("fin-saisie") or alertes.get("fin-recurrent"):
+        fi = finances.load_data()
+        tx = fi.get("transactions") or []
+        if alertes.get("fin-saisie") and tx:
+            # Fait : une operation ajoutee ce mois-ci, le jour du rappel ou apres
+            limite = _jour_du_mois(jours.get("fin-saisie"), False).isoformat()
+            fait = any(str(t.get("createdAt") or "")[:10] >= limite for t in tx)
+            out.append(_element("fin-saisie", "fin-saisie", "🧾 Saisir les dépenses du mois",
+                                _jour_du_mois(jours.get("fin-saisie"), fait), mois=-1))
+        if alertes.get("fin-recurrent"):
+            for i, r in enumerate(fi.get("recurrences") or []):
+                jour = _jour(r.get("nextDue"))
+                if jour and jour >= auj and r.get("status") != "paused":
+                    signe = "+" if r.get("type") == "income" else "−"
+                    titre = f"🔁 {str(r.get('label') or 'Récurrent').strip()} · {signe}{_euros(r.get('amount'))}"
+                    out.append(_element(f"fin-recurrent-{_cle(r, jour, i)}", "fin-recurrent", titre,
+                                        jour, texte=r.get("note")))
+    if alertes.get("pret-etapes"):
+        p = pret.load_data().get("pret") or {}
+        premier = _jour(p.get("date_premier_remboursement"))
+        nb = int(_nombre(p.get("duree_remboursement")))
+        if premier and nb > 0:
+            nom = (p.get("nom") or "").strip() or "Prêt"
+            for cle, titre, jour in (("pret-premiere", "🏁 Première mensualité · ", premier),
+                                     ("pret-derniere", "🎉 Dernière mensualité · ", _plus_mois(premier, nb - 1))):
+                if jour and jour >= auj:
+                    out.append(_element(cle, "pret-etapes", titre + nom, jour))
+    if alertes.get("sport-pause"):
+        dates = [d for d in (_jour(s.get("date")) for s in sports.load_data().get("sessions") or [])
+                 if d and d <= auj]
+        if dates:
+            jour, n = _depuis(max(dates), _delai(delais, "sport-pause"))
+            out.append(_element("sport-pause", "sport-pause", f"🏃 Pas de séance depuis {n} jours", jour))
+    if alertes.get("sauvegarde"):
+        derniere = _jour(sauvegarde.load_config().get("lastBackupAt"))
+        if derniere:   # jamais de sauvegarde USB : rien a rappeler
+            jour, n = _depuis(derniere, _delai(delais, "sauvegarde"))
+            out.append(_element("sauvegarde", "sauvegarde", f"💾 Pas de sauvegarde USB depuis {n} jours", jour))
+    if alertes.get("ouvrir"):
+        # Recule a chaque envoi, donc a chaque lancement de Pilote
+        n = _delai(delais, "ouvrir")
+        out.append(_element("ouvrir", "ouvrir", f"🧭 Pilote n'a pas été ouvert depuis {n} jours",
+                            auj + datetime.timedelta(days=n)))
     return out
+
+
+def essai(quand: str) -> list:
+    """La notification d'essai (bouton de l'onglet), tant qu'elle n'a pas plus d'une heure."""
+    try:
+        debut = datetime.datetime.strptime(str(quand or ""), "%Y-%m-%dT%H:%M")
+    except ValueError:
+        return []
+    if debut < datetime.datetime.now() - datetime.timedelta(hours=1):
+        return []
+    return [_element("essai", "essai", "🔔 Essai de Pilote : les notifications arrivent bien",
+                     debut.date(), debut, debut + datetime.timedelta(minutes=15), alerte="0")]
+
+
+# Resume de la semaine : ce qui est compte, au singulier et au pluriel
+_RESUME_NOMS = {"sport": ("séance", "séances"), "note": ("note", "notes"),
+                "objectif": ("objectif", "objectifs"), "pret": ("mensualité", "mensualités"),
+                "dividende": ("dividende", "dividendes"), "cto-dividende": ("dividende", "dividendes"),
+                "versement": ("versement", "versements"), "fin-recurrent": ("opération récurrente", "opérations récurrentes")}
+_RESUME_ECARTES = ("sport-pause", "sante-pause", "sauvegarde", "ouvrir", "essai", "resume")
+
+
+def _occurrences(e: dict, debut: datetime.date, fin: datetime.date) -> list:
+    """Les jours de `e` entre debut et fin compris (evenement repete chaque mois compris)."""
+    if not e["mois"]:
+        return [e["jour"]] if debut <= e["jour"] <= fin else []
+    out = []
+    for k in range(e["mois"] if e["mois"] > 0 else 1200):
+        jour = _plus_mois(e["jour"], k)
+        if jour is None:
+            continue
+        if jour > fin:
+            break
+        if jour >= debut:
+            out.append(jour)
+    return out
+
+
+def _resume(retenus: list, valeur: str) -> list:
+    """Le resume de la semaine : le dimanche 18 h (la semaine qui suit) ou le
+    lundi 8 h (celle qui commence). Son titre compte ce que Pilote met dans
+    l'agenda ces sept jours-la ; il est refait a chaque envoi."""
+    if valeur not in RESUME_VALEURS[1:]:
+        return []
+    maintenant = datetime.datetime.now()
+    jour_sem, heure = (6, 18) if valeur == "dimanche" else (0, 8)
+    jour = maintenant.date() + datetime.timedelta(days=(jour_sem - maintenant.weekday()) % 7)
+    debut = datetime.datetime.combine(jour, datetime.time(heure))
+    if debut <= maintenant:
+        debut += datetime.timedelta(days=7)
+    lundi = debut.date() + datetime.timedelta(days=1 if valeur == "dimanche" else 0)
+    dimanche = lundi + datetime.timedelta(days=6)
+    compte, lignes = {}, []
+    for e in retenus:
+        if e["type"] in _RESUME_ECARTES:
+            continue
+        noms = _RESUME_NOMS.get(e["type"], ("rappel", "rappels"))
+        for j in _occurrences(e, lundi, dimanche):
+            compte[noms] = compte.get(noms, 0) + 1
+            lignes.append((j, e["debut"].strftime("%H:%M") if e["debut"] else "", e["titre"]))
+    if compte:
+        titre = "🗓️ Ta semaine : " + " · ".join(f"{n} {noms[n > 1]}" for noms, n in compte.items())
+    else:
+        titre = "🗓️ Ta semaine : rien de prévu dans Pilote"
+    jours_fr = ("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim.")
+    texte = "\n".join(f"{jours_fr[j.weekday()]} {j.day} {h} {t}".replace("  ", " ")
+                      for j, h, t in sorted(lignes))
+    return [_element("resume", "resume", titre, debut.date(), debut,
+                     debut + datetime.timedelta(minutes=15), texte, alerte="0")]
+
+
+def _decalage(e: dict, valeur: str) -> datetime.timedelta:
+    """Moment de l'alerte par rapport au debut (minuit pour un evenement sans
+    heure), None sans alerte."""
+    if not valeur or valeur not in ALERTES_VALEURS:
+        return None
+    if e["debut"]:
+        minute = e["debut"].hour * 60 + e["debut"].minute
+        matin = max(minute - 9 * 60, 0)
+        avant = {"matin": matin, "veille": minute + 6 * 60, "semaine": matin + 7 * 1440}.get(valeur)
+        return -datetime.timedelta(minutes=int(valeur) if avant is None else avant)
+    return {"veille": -datetime.timedelta(hours=6),
+            "semaine": -datetime.timedelta(days=6, hours=15)}.get(valeur, datetime.timedelta(hours=9))
 
 
 def _alarme(e: dict, valeur: str) -> list:
     """Bloc VALARM : l'iPhone affiche la notification tout seul, Pilote ferme
     ou non. Declenchement relatif au debut, donc valable pour chaque mois
     d'un evenement repete."""
-    if not valeur or valeur not in ALERTES_VALEURS:
+    d = _decalage(e, valeur)
+    if d is None:
         return []
     if e["debut"]:
-        minute = e["debut"].hour * 60 + e["debut"].minute
-        avant = {"matin": max(minute - 9 * 60, 0), "veille": minute + 6 * 60}.get(valeur)
-        if avant is None:
-            avant = int(valeur)
+        avant = int(-d.total_seconds()) // 60
         declencheur = f"-PT{avant}M" if avant else "PT0S"
     else:
         # Toute la journee : le debut est minuit
-        declencheur = "-PT6H" if valeur == "veille" else "PT9H"
+        declencheur = {"veille": "-PT6H", "semaine": "-P6DT15H"}.get(valeur, "PT9H")
     return ["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + _echapper(e["titre"]),
             "TRIGGER:" + declencheur, "END:VALARM"]
 
@@ -463,9 +710,7 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
     rappels (rappels()), deja tries selon leur alerte."""
     out = {}
     alertes = alertes or {}
-    for e in list(elements(sp, pr, notes)) + list(en_plus):
-        if e["type"] in _CASES and not choix.get(_CASES[e["type"]]):
-            continue
+    for e in retenus(sp, pr, choix, notes, alertes, en_plus):
         lignes = ["SUMMARY:" + _echapper(e["titre"])]
         if e["debut"]:
             lignes += ["DTSTART:" + e["debut"].strftime("%Y%m%dT%H%M%S"),
@@ -477,8 +722,45 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
             lignes.append(f"RRULE:FREQ=MONTHLY;COUNT={e['mois']}" if e["mois"] > 0 else "RRULE:FREQ=MONTHLY")
         if e["texte"]:
             lignes.append("DESCRIPTION:" + _echapper(e["texte"]))
-        out[e["cle"]] = lignes + _alarme(e, alertes.get(e["type"]))
+        out[e["cle"]] = lignes + _alarme(e, e["alerte"] or alertes.get(e["type"]))
     return out
+
+
+def retenus(sp: dict, pr: dict, choix: dict, notes: list = (),
+            alertes: dict = None, en_plus: list = ()) -> list:
+    """Ce qui part dans l'agenda : les cases cochees, les rappels, puis le
+    resume de la semaine, qui les compte."""
+    alertes = alertes or {}
+    out = [e for e in list(elements(sp, pr, notes)) + list(en_plus)
+           if not (e["type"] in _CASES and not choix.get(_CASES[e["type"]]))]
+    return out + _resume(out, alertes.get("resume"))
+
+
+def prochaines(n: int = 6) -> list:
+    """Les prochaines notifications qui sonneront sur le telephone (tuile de
+    l'accueil) : [{quand "AAAA-MM-JJTHH:MM", titre, type}], dans l'ordre."""
+    data = _store.load()
+    if not data.get("secret") or not data.get("calendrier"):
+        return []
+    alertes = _alertes_propres(data.get("alertes"))
+    maintenant = datetime.datetime.now()
+    out = []
+    for e in retenus(sports.load_data(), pret.load_data(), data.get("choix") or {},
+                     data.get("notes") or [], alertes,
+                     rappels(alertes, data.get("jours") or {}, data.get("delais"))
+                     + essai(data.get("test"))):
+        d = _decalage(e, e["alerte"] or alertes.get(e["type"]))
+        if d is None:
+            continue
+        for jour in _occurrences(e, (maintenant - datetime.timedelta(days=8)).date(),
+                                 (maintenant + datetime.timedelta(days=400)).date()):
+            debut = (datetime.datetime.combine(jour, e["debut"].time()) if e["debut"]
+                     else datetime.datetime.combine(jour, datetime.time()))
+            if debut + d >= maintenant:
+                out.append({"quand": (debut + d).strftime("%Y-%m-%dT%H:%M"),
+                            "titre": e["titre"], "type": e["type"]})
+                break
+    return sorted(out, key=lambda x: x["quand"])[:n]
 
 
 # ─── Lecture des agendas iCloud (le calendrier de Pilote) ────────────────────
@@ -697,7 +979,8 @@ def _envoyer(data: dict, dossier: str) -> int:
     alertes = data.get("alertes") or {}
     tous = evenements(sports.load_data(), pret.load_data(),
                       data.get("choix") or {}, data.get("notes") or [],
-                      alertes, rappels(alertes, data.get("jours") or {}))
+                      alertes, rappels(alertes, data.get("jours") or {}, data.get("delais"))
+                      + essai(data.get("test")))
     # Les notes d'abord : ecrites a la main pour l'agenda, elles n'attendent
     # pas derriere cinquante seances
     voulus = {prefixe + cle + ".ics": tous[cle]
@@ -734,24 +1017,46 @@ def config() -> dict:
             "notes":      data.get("notes") or [],
             "alertes":    _alertes_propres(data.get("alertes")),
             "jours":      _jours_propres(data.get("jours")),
+            "delais":     {t: _delai(data.get("delais"), t) for t in DELAIS},
             "etat":       _etat_public()}
 
 
 def _alertes_propres(alertes) -> dict:
     alertes = alertes if isinstance(alertes, dict) else {}
-    return {t: alertes.get(t) if alertes.get(t) in ALERTES_VALEURS else "" for t in ALERTES}
+    return {t: alertes.get(t) if alertes.get(t) in (RESUME_VALEURS if t == "resume" else ALERTES_VALEURS)
+            else "" for t in ALERTES}
 
 
 def _jours_propres(jours) -> dict:
     jours = jours if isinstance(jours, dict) else {}
-    return {t: min(max(int(_nombre(jours.get(t))) or 1, 1), 28) for t in ("pesee", "releve")}
+    return {t: min(max(int(_nombre(jours.get(t))) or 1, 1), 28) for t in MENSUELS}
 
 
-def regler_alertes(alertes: dict, jours: dict) -> dict:
+def regler_alertes(alertes: dict, jours: dict, delais: dict = None) -> dict:
     """Onglet Notifications : enregistre, puis envoie dans la seconde."""
-    _modifier(lambda d: d.update(alertes=_alertes_propres(alertes), jours=_jours_propres(jours)))
+    _modifier(lambda d: d.update(alertes=_alertes_propres(alertes), jours=_jours_propres(jours),
+                                 delais={t: _delai(delais, t) for t in DELAIS}))
     planifier(0.5)
     return config()
+
+
+def tester() -> dict:
+    """Bouton « Envoyer un essai » : un evenement dans TEST_MINUTES minutes,
+    alerte a l'heure, envoye tout de suite (l'erreur s'affiche). Retire au
+    premier envoi apres une heure."""
+    data = _store.load()
+    if not data.get("secret") or not data.get("calendrier"):
+        raise ErreurAgenda("config", "Connecte d'abord ton agenda iCloud.")
+    quand = (datetime.datetime.now() + datetime.timedelta(minutes=TEST_MINUTES + 1)).replace(second=0, microsecond=0)
+    _modifier(lambda d: d.update(test=quand.strftime("%Y-%m-%dT%H:%M")))
+    synchroniser()
+    # Retire l'essai une heure apres, meme si rien d'autre ne relance d'envoi
+    # (Pilote ferme avant : au lancement suivant). Minuteur a part : planifier()
+    # l'annulerait au prochain enregistrement.
+    menage = threading.Timer(TEST_MINUTES * 60 + 3720, _synchroniser_en_fond)
+    menage.daemon = True
+    menage.start()
+    return {"heure": quand.strftime("%H:%M")}
 
 
 def planifier_si(*types) -> None:
