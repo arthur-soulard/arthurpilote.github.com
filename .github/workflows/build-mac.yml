@@ -535,13 +535,18 @@ jobs:
 
   # Icone de Pilote.app a l'accent, comme chez Arthur (macOS 26, ecran « Apps ») :
   # app rangee dans Applications et gardee dans le Dock, lancee a l'accent par
-  # defaut puis passee au vert, puis fermee. Captures du Dock et d'« Apps »
-  # (ecrans 91 a 9x) apres chaque facon de faire relire l'icone a macOS.
+  # defaut puis passee au vert, puis fermee. Une machine par facon de faire
+  # relire l'icone a macOS (les caches ne se melangent pas) ; captures du Dock,
+  # d'« Apps » et de l'icone que macOS rend pour le paquet (ecrans <n>1 a <n>4).
   icone-mac:
     needs: build-mac
     if: ${{ !cancelled() }}
     timeout-minutes: 25
     runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        essai: [1, 2, 3, 4]
 
     steps:
       - name: Checkout
@@ -558,6 +563,7 @@ jobs:
       - name: Icone apres un changement de couleur
         run: |
           set +e
+          E=${{ matrix.essai }}
           APP=/Applications/Pilote.app
           ditto -x -k art/Pilote-mac.zip /Applications
           xattr -dr com.apple.quarantine "$APP"
@@ -566,49 +572,62 @@ jobs:
           killall Dock; sleep 6
           B=$(osascript -e 'tell application "Finder" to get bounds of window of desktop' | tr -d ' ')
           W=$(echo "$B" | cut -d, -f3); H=$(echo "$B" | cut -d, -f4)
-          dock() { screencapture -x -R"0,$((H-140)),$W,140" "$1"; }
+          dock() { screencapture -x -R"0,$((H-140)),$W,140" "ecran-$E$1.png"; }
+          rendue() {
+            osascript -l JavaScript -e 'ObjC.import("AppKit"); var i=$.NSWorkspace.sharedWorkspace.iconForFile("'"$APP"'"); i.setSize({width:128,height:128}); $.NSBitmapImageRep.imageRepWithData(i.TIFFRepresentation).representationUsingTypeProperties(4, $()).writeToFileAtomically("'"$PWD/ecran-$E$1.png"'", true)' > /dev/null
+          }
           apps() {
+            for i in $(seq 1 90); do mdfind "kMDItemCFBundleIdentifier == 'io.github.arthur-soulard.pilote'" | grep -q . && break; sleep 2; done
+            sleep 5
             open -a Apps 2>/dev/null || open -a Launchpad
             sleep 4
             osascript -e 'tell application "System Events" to keystroke "Pilote"'
-            sleep 3
-            screencapture -x "$1"
+            sleep 4
+            screencapture -x "ecran-$E$1.png"
             osascript -e 'tell application "System Events" to key code 53'
             sleep 2
           }
           LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
-          relire() { touch "$APP"; "$LSREG" -f "$APP"; mdimport "$APP" 2>/dev/null; sleep 8; }
           # Lancee au prune (accent par defaut), passee au vert par le pont (icone
-          # posee par-dessus le paquet, NSWorkspace), puis fermee
+          # posee par-dessus le paquet par Pilote 4.4.30), puis fermee
           PILOTE_ECRANS='home;js:pywebview.api.set_app_icon_color("#16a34a")' "$APP/Contents/MacOS/Pilote" > icone.log 2>&1 &
           PID=$!
           for i in $(seq 1 120); do grep -q "\[ecran\] fin" icone.log && break; sleep 1; done
           sleep 3
           kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 5
-          # A : icone par-dessus, paquet relu (date, LaunchServices, Spotlight)
-          relire
-          dock ecran-91.png                          # 91 : Dock sans redemarrage
+          case $E in
+            1) NOM="icone par-dessus + reglage d'apparence des icones resauve (SkyLight)"
+               FAIT=$(osascript -l JavaScript -e 'ObjC.import("Foundation"); $.NSBundle.bundleWithPath("/System/Library/PrivateFrameworks/SkyLight.framework").load; var c = $.NSClassFromString("SLSIconAppearanceConfiguration"); if (c.isNil()) { "classe absente" } else { c.fetchCurrentIconAppearanceConfiguration.save; "resauve" }' 2>&1) ;;
+            2) NOM="icone par-dessus + caches d'icones vides"
+               sudo rm -rf /Library/Caches/com.apple.iconservices.store
+               rm -rf "$(getconf DARWIN_USER_CACHE_DIR)com.apple.iconservices" "$(getconf DARWIN_USER_CACHE_DIR)com.apple.dock.iconcache"
+               sudo killall iconservicesd iconservicesagent 2>/dev/null; killall iconservicesagent 2>/dev/null
+               FAIT="caches retires" ;;
+            3) NOM="icone du paquet remplacee (violet) + numero de build change"
+               rm -f "$APP/Icon"$'\r'; xattr -d com.apple.FinderInfo "$APP" 2>/dev/null
+               ICNS="$APP/Contents/Resources/$(defaults read "$APP/Contents/Info" CFBundleIconFile | sed 's/\.icns$//').icns"
+               python3 -m pip install --quiet --break-system-packages pillow > pip.log 2>&1 || python3 -m pip install --quiet pillow >> pip.log 2>&1
+               FAIT=$(python3 -c "from PIL import Image; Image.new('RGBA', (1024, 1024), (124, 58, 237, 255)).save('$ICNS'); print('icns ecrit')" 2>&1 | tail -n 1)
+               plutil -replace CFBundleVersion -string "$(date +%s)" "$APP/Contents/Info.plist" ;;
+            4) NOM="icone par-dessus + numero de build change"
+               plutil -replace CFBundleVersion -string "$(date +%s)" "$APP/Contents/Info.plist"
+               FAIT="build change" ;;
+          esac
+          touch "$APP"; "$LSREG" -f "$APP"; mdimport "$APP" 2>/dev/null
+          sleep 10
+          dock 1                                     # <n>1 : Dock sans redemarrage
           killall Dock; sleep 8
-          dock ecran-92.png                          # 92 : apres redemarrage du Dock
-          sleep 20; apps ecran-93.png                # 93 : Apps
-          # B : icone par-dessus retiree, l'icone du paquet elle-meme remplacee (violet)
-          osascript -l JavaScript -e 'ObjC.import("AppKit"); $.NSWorkspace.sharedWorkspace.setIconForFileOptions($(), "'"$APP"'", 0)'
-          ICNS="$APP/Contents/Resources/$(defaults read "$APP/Contents/Info" CFBundleIconFile | sed 's/\.icns$//').icns"
-          python3 -m pip install --quiet --break-system-packages pillow > /dev/null 2>&1 || python3 -m pip install --quiet pillow > /dev/null 2>&1
-          python3 -c "from PIL import Image; Image.new('RGBA', (1024, 1024), (124, 58, 237, 255)).save('$ICNS', sizes=[(16,16),(32,32),(128,128),(256,256),(512,512),(1024,1024)])"
-          relire
-          dock ecran-94.png                          # 94 : Dock sans redemarrage
-          killall Dock; sleep 8
-          dock ecran-95.png                          # 95 : apres redemarrage du Dock
-          sleep 10; apps ecran-96.png                # 96 : Apps
-          SIGN=$(codesign --verify "$APP" 2>&1 | tr '\n' ' ' | head -c 300)
-          # L'app modifiee demarre-t-elle encore ?
+          dock 2                                     # <n>2 : apres redemarrage du Dock
+          rendue 3                                   # <n>3 : icone que macOS rend pour le paquet
+          apps 4                                     # <n>4 : Apps, recherche « Pilote »
+          SIGN=$(codesign --verify "$APP" 2>&1 | tr '\n' ' ' | head -c 200)
+          # L'app (peut-etre modifiee) demarre-t-elle encore ?
           PILOTE_DIAG=1 "$APP/Contents/MacOS/Pilote" > relance.log 2>&1 &
           PID=$!
           UP=KO; for i in $(seq 1 60); do curl -fsS http://127.0.0.1:7438/ping > /dev/null 2>&1 && { UP="$i s"; break; }; sleep 1; done
           for i in $(seq 1 40); do grep -q "fenetre ouverte" relance.log && break; sleep 1; done
           RELANCE="ping $UP ; $(grep -o 'fenetre ouverte ([a-z]*)' relance.log || echo 'pas de fenetre')"
-          kill $PID 2>/dev/null; SLS="(non essaye)"
+          kill $PID 2>/dev/null
           # Taille et qualite : les plus grandes qui tiennent en 45 morceaux
           for REGLAGE in "1024 40" "900 30" "800 24" "720 18" "600 14" "500 10"; do
             set -- $REGLAGE
@@ -635,7 +654,7 @@ jobs:
               echo "::notice title=Ecran $K $i/$M::$ligne" >> icone.lignes
             done < morceaux.txt
           done
-          echo "::notice title=Icone mac::macOS $(sw_vers -productVersion) ; ecran $W x $H ; $TOTAL morceaux ; icns : $ICNS ; signature : ${SIGN:-valide} ; relance : $RELANCE ; $(ls -la "$APP" | tr -d '\r' | tr '\n' ' ') ; $(grep -E 'appicon|\[ecran\]|Traceback|Error' icone.log | tr '\n' ' ' | head -c 1200)"
+          echo "::notice title=Icone mac $E::$NOM ; $FAIT ; macOS $(sw_vers -productVersion) ; $TOTAL morceaux ; signature : ${SIGN:-valide} ; relance : $RELANCE ; $(grep -E 'appicon|Traceback|Error' icone.log | tr '\n' ' ' | head -c 600)"
 
       - name: Icone (1)
         if: always()
@@ -652,3 +671,4 @@ jobs:
       - name: Icone (5)
         if: always()
         run: sed -n '37,45p' icone.lignes 2>/dev/null || true
+
