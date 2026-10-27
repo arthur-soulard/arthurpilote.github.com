@@ -586,9 +586,9 @@ jobs:
           NOM="chemin reel de Pilote : lancement, Enregistrer en vert, fermeture, mise a jour"
           # 81 : Apps deja ouvert avant (orange du build attendu), comme chez Arthur
           apps 1
-          # Lancee au prune (accent par defaut), passee au vert par le pont comme
-          # par le bouton Enregistrer des Parametres
-          PILOTE_ECRANS='home;js:pywebview.api.set_app_icon_color("#16a34a")' "$APP/Contents/MacOS/Pilote" > icone.log 2>&1 &
+          # Lancee au prune (accent par defaut), passee au vert comme par le bouton
+          # Enregistrer des Parametres (saveConfig : save_ui_prefs, puis l'icone)
+          PILOTE_ECRANS='home;js:pywebview.api.save_ui_prefs(Object.assign(S.uiPrefs,{accent:"#16a34a"})).then(()=>pywebview.api.set_app_icon_color("#16a34a"))' "$APP/Contents/MacOS/Pilote" > icone.log 2>&1 &
           PID=$!
           for i in $(seq 1 120); do grep -q "\[ecran\] fin" icone.log && break; sleep 1; done
           sleep 8
@@ -612,13 +612,15 @@ jobs:
           sleep 8
           kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 5
           dock 5                                     # 85 : apres la mise a jour, app fermee (vert)
-          FAIT="$SECOND ; apres la mise a jour : $(grep 'appicon' maj.log | tr '\n' ' ')"
+          FAIT="$SECOND ; apres la mise a jour : $(grep 'appicon' maj.log | tr '\n' ' ') ; accent enregistre : $(grep -o '"accent": *"[^"]*"' "$HOME/Library/Application Support/Pilote/Donnees/users/"*/pea_data.json | head -n 1)"
           SIGN=$(codesign --verify "$APP" 2>&1 | tr '\n' ' ' | head -c 200)
+          RESTES=$(pgrep -f "Pilote.app/Contents/MacOS/Pilote" | wc -l | tr -d ' ')
+          pkill -9 -f "Pilote.app/Contents/MacOS/Pilote"; sleep 3
           PILOTE_DIAG=1 "$APP/Contents/MacOS/Pilote" > relance.log 2>&1 &
           PID=$!
           UP=KO; for i in $(seq 1 60); do curl -fsS http://127.0.0.1:7438/ping > /dev/null 2>&1 && { UP="$i s"; break; }; sleep 1; done
           for i in $(seq 1 40); do grep -q "fenetre ouverte" relance.log && break; sleep 1; done
-          RELANCE="ping $UP ; $(grep -o 'fenetre ouverte ([a-z]*)' relance.log || echo 'pas de fenetre')"
+          RELANCE="$RESTES Pilote restes ouverts avant ; ping $UP ; $(grep -o 'fenetre ouverte ([a-z]*)' relance.log || echo 'pas de fenetre')"
           kill $PID 2>/dev/null
           # Taille et qualite : les plus grandes qui tiennent en 45 morceaux
           for REGLAGE in "1024 40" "900 30" "800 24" "720 18" "600 14" "500 10"; do
