@@ -153,6 +153,16 @@ Python attend pendant ce temps (`[pile]`). Elles varient avec la charge du PC
   ne se recolorent que sur demande explicite : bouton « 🎨 Recolorer les raccourcis »
   dans Paramètres → Général (`Api.apply_icon_to_shortcuts`, via WScript.Shell).
 * L'icône gravée dans le `.exe` reste celle du build : elle ne peut pas changer à chaud.
+* **Mac** (27/10/2026) : mêmes fonctions, autre cible. `apply_to_window` change
+  l'icône du Dock tant que Pilote tourne (`NSApplication.setApplicationIconImage_`,
+  sur le fil principal par `AppHelper.callAfter`), à partir d'un PNG 512 px
+  (`png_for`, `Donnees/icones/pilote_<hex>.png`). Le bouton devient « Recolorer
+  Pilote.app » : `NSWorkspace.setIcon_forFile_options_` pose l'icône sur le paquet
+  (fichier `Icon\r` à sa racine, Finder, Launchpad, Dock au repos) et note la
+  couleur dans `Donnees/icones/app_mac.txt`. Une mise à jour remplace Pilote.app et
+  efface ce fichier : `restore_app_mac()`, appelée par `_paint_accent_icon`, la remet
+  au lancement suivant. Refusé dans une copie en lecture seule (`mac_a_deplacer`).
+  Polices du « P » : Arial Bold du système, sinon Helvetica.
 * Pillow est déclaré dans les `hiddenimports` de `build/pilote.spec` (import paresseux).
 
 ## Premier lancement lent après un démarrage du PC (4.4.21)

@@ -9,6 +9,11 @@ puis l'applique :
   * aux raccourcis .lnk (Bureau, menu Demarrer, barre des taches epinglee)
     via WScript.Shell, uniquement si l'utilisateur le demande explicitement
 
+Sur Mac, les memes fonctions agissent sur l'icone du Dock pendant que Pilote
+tourne (NSApplication) et, sur demande, sur celle de Pilote.app (Finder, Dock
+au repos) via NSWorkspace. Une mise a jour remplace Pilote.app et efface
+cette icone : elle est remise au lancement suivant (restore_app_mac).
+
 Le rendu reprend exactement assets/make_icon.py : carre arrondi, lisere
 interne, "P" blanc centre, supersampling 4x + LANCZOS, .ico multi-resolution
 a PNG embarques (net de 16 a 256 px).
@@ -66,6 +71,9 @@ def _find_bold_font(size: int):
     for c in ("C:/Windows/Fonts/segoeuib.ttf",
               "C:/Windows/Fonts/arialbd.ttf",
               "C:/Windows/Fonts/calibrib.ttf",
+              "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+              "/Library/Fonts/Arial Bold.ttf",
+              "/System/Library/Fonts/Helvetica.ttc",
               "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
         if Path(c).exists():
             try:
@@ -154,6 +162,84 @@ def ico_for(color: str) -> Optional[Path]:
         return None
 
 
+def png_for(color: str) -> Optional[Path]:
+    """Mac : meme icone en un seul PNG 512 px (NSImage le met a l'echelle)."""
+    color = _norm_color(color)
+    path = icons_dir() / ("pilote_" + color[1:] + ".png")
+    if path.exists() and path.stat().st_size > 0:
+        return path
+    try:
+        base = _rgb(color)
+        tmp = path.with_suffix(".png.tmp")
+        _render_tile(512, base, _darken(base)).save(tmp, format="PNG")
+        os.replace(tmp, path)
+        return path
+    except Exception as e:
+        print(f"[appicon] generation KO ({color}) : {e}", flush=True)
+        return None
+
+
+# ─── Mac : Dock et Pilote.app ─────────────────────────────────────────────────
+
+_MAC_MARQUE = "app_mac.txt"     # couleur posee sur Pilote.app, pour la remettre apres une mise a jour
+
+
+def _apply_dock_mac(color: str) -> bool:
+    path = png_for(color)
+    if not path:
+        return False
+    try:
+        from AppKit import NSApplication, NSImage
+        from PyObjCTools import AppHelper
+        image = NSImage.alloc().initWithContentsOfFile_(str(path))
+        if image is None:
+            return False
+        # AppKit veut le fil principal ; on est appele depuis le pont ou un evenement
+        AppHelper.callAfter(NSApplication.sharedApplication().setApplicationIconImage_, image)
+        return True
+    except Exception as e:
+        print(f"[appicon] Dock KO : {e}", flush=True)
+        return False
+
+
+def _apply_app_mac(color: str) -> dict:
+    import updater
+    bundle = updater._bundle_mac()
+    if bundle is None:
+        return {"ok": False, "error": "seulement dans l'app compilée", "count": 0}
+    if updater.mac_a_deplacer():
+        return {"ok": False, "error": "rangez d'abord Pilote dans Applications", "count": 0}
+    path = png_for(color)
+    if not path:
+        return {"ok": False, "error": "Pillow indisponible", "count": 0}
+    try:
+        from AppKit import NSImage, NSWorkspace
+        image = NSImage.alloc().initWithContentsOfFile_(str(path))
+        if image is None or not NSWorkspace.sharedWorkspace().setIcon_forFile_options_(image, str(bundle), 0):
+            return {"ok": False, "error": "macOS a refusé de changer l'icône", "count": 0}
+        (icons_dir() / _MAC_MARQUE).write_text(_norm_color(color), encoding="utf-8")
+        return {"ok": True, "count": 1, "paths": [str(bundle)], "ico": str(path)}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "count": 0}
+
+
+def restore_app_mac() -> None:
+    """Au lancement : une mise a jour a remplace Pilote.app (plus de fichier
+    « Icon\\r » dans le paquet) alors qu'une couleur y avait ete posee."""
+    if sys.platform != "darwin":
+        return
+    try:
+        import updater
+        marque = icons_dir() / _MAC_MARQUE
+        bundle = updater._bundle_mac()
+        if bundle is None or not marque.exists() or (bundle / "Icon\r").exists():
+            return
+        r = _apply_app_mac(marque.read_text(encoding="utf-8").strip())
+        print(f"[appicon] icone de Pilote.app remise : {r.get('ok')}", flush=True)
+    except Exception as e:
+        print(f"[appicon] icone de Pilote.app KO : {e}", flush=True)
+
+
 # ─── Application a la fenetre en cours ────────────────────────────────────────
 
 def _main_hwnd() -> int:
@@ -183,7 +269,9 @@ def _main_hwnd() -> int:
 
 
 def apply_to_window(color: str) -> bool:
-    """Change l'icone de la fenetre + de la vignette barre des taches."""
+    """Change l'icone de la fenetre + de la vignette barre des taches (Mac : du Dock)."""
+    if sys.platform == "darwin":
+        return _apply_dock_mac(color)
     if sys.platform != "win32":
         return False
     path = ico_for(color)
@@ -248,7 +336,10 @@ def apply_to_shortcuts(color: str) -> dict:
     """
     Repointe l'icone des raccourcis Pilote vers le .ico recolore.
     Passe par WScript.Shell (aucune dependance supplementaire).
+    Mac : change l'icone de Pilote.app.
     """
+    if sys.platform == "darwin":
+        return _apply_app_mac(color)
     if sys.platform != "win32":
         return {"ok": False, "error": "Windows uniquement", "count": 0}
     path = ico_for(color)

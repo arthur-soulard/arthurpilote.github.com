@@ -11,6 +11,9 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 * Côté JS : `USERS_STATE`, `_loadUsers(force)`, `renderHomeUsers()`, `switchUser(slug)`
   (bascule + `location.reload()`), `openUserModal(slug|null)`, `renderUsersList()`,
   `_renderUserPill()` (pastille en bas de sidebar), `userAvatarHtml(u, cls)`.
+  La pastille de la sidebar prend `var(--accent)` (demande d'Arthur, 27/10/2026) :
+  elle suit la couleur d'accent comme l'icône de l'app, sans redessin. La couleur
+  propre de chaque utilisateur (`u.color`) reste celle de l'accueil et de la liste.
 * `server.with_pin_flags(state)` ajoute `hasPin` à chaque utilisateur — utilisé pour
   afficher le cadenas 🔒.
 * **Bascule sans fuite (4.3.14)** : le fichier visé par une écriture est choisi côté

@@ -112,7 +112,8 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
   `webview.start()`.
 * **⌘ au lieu de Ctrl** pour les raccourcis et dans les bulles d'aide ;
   `.txt-win` / `.txt-mac` pour « ce PC » / « ce Mac », `.win-seul` pour un réglage
-  propre à Windows (recolorer les raccourcis).
+  propre à Windows (le bouton « Recolorer les raccourcis » l'était jusqu'au
+  27/10/2026 ; il recolore désormais Pilote.app, voir `docs/demarrage-et-icone.md`).
 * **Menus en français** : `plateforme.LOCALISATION_MAC`, passée à `webview.start`.
 * **`private_mode` reste à sa valeur par défaut**, comme sous Windows : l'idée
   d'origine (`private_mode=False` « comme sous Windows ») reposait sur une erreur,
@@ -172,7 +173,8 @@ sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
 | Quoi | Où | Sur Mac aujourd'hui |
 |---|---|---|
 | Déplacement de la fenêtre, Agrandir, taille de l'écran, taille gardée | `index.html`, `app.py` | réglé (étape 3) : barre de titre du système, zone utile de l'écran |
-| Remise au premier plan, icône à l'accent, raccourcis `.lnk` | `app.py`, `appicon.py` | sans effet (exceptions rattrapées) |
+| Remise au premier plan | `app.py` | sans effet (exceptions rattrapées) |
+| Icône à l'accent, raccourcis `.lnk` | `appicon.py` | réglé (27/10/2026) : Dock pendant que Pilote tourne, bouton « Recolorer Pilote.app », remise après une mise à jour |
 | Coins arrondis de l'écran de chargement (DWM) | `splash.py` | sans effet |
 | Détection des clés USB (`GetLogicalDrives`, numéro de série) | `sauvegarde.py` | réglé (étape 4) : `/Volumes` et `diskutil` |
 | OCR (`ocr_win.ps1`, Windows.Media.Ocr) | `sante.py` | réglé (étape 5) : Vision d'Apple |
