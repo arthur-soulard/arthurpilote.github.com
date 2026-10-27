@@ -60,8 +60,9 @@ qu'un `mailto:` sans messagerie installée n'ouvre rien d'utile (chez Arthur, le
 **Exporter et Importer retirés de l'accueil** (4.4.12, demande d'Arthur) : ils
 faisaient doublon avec Paramètres → Données & application (`doExport`,
 `doImportDialog`), où ils restent, comme les raccourcis Ctrl+E / Ctrl+I (⌘ sur
-Mac) et « Importer un fichier » des Premiers pas. Gestes rares, et Importer
-remplace toutes les données : pas à un clic de l'accueil.
+Mac). Gestes rares, et Importer remplace toutes les données : pas à un clic de
+l'accueil. « Importer un fichier » a aussi quitté l'étape 1 des Premiers pas
+(27/10/2026) : un nouvel utilisateur le prenait pour l'import d'un relevé.
 
 Depuis la 4.1.4, `homeRender()` ne fait plus que la salutation et la date : **les tuiles
 sont déléguées à `dashRender()`** (voir « Accueil : tableau de bord modulaire »). Il n'y

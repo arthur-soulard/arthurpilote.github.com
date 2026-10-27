@@ -11231,7 +11231,6 @@ async function _showWelcomeIfFirstRun() {
         </ul>
         ${recoverySection}
         <div class="pp-acts">
-          <button class="btn btn-ghost" data-pp-import><i class="ph ph-upload-simple"></i> Importer un fichier</button>
           <span class="pp-sp"></span>
           <button class="btn btn-primary" data-pp-go="2">Continuer <i class="ph ph-arrow-right"></i></button>
         </div>
@@ -11341,14 +11340,9 @@ async function _showWelcomeIfFirstRun() {
   }
   ov.querySelector("[data-pp-fin]").onclick = () => terminer(null);
 
-  // L'import recharge l'app : l'assistant ne revient pas si le PEA est rempli
-  ov.querySelector("[data-pp-import]").onclick = () => {
-    ov.remove();
-    // Le même import que Paramètres (boîte de dialogue, contrôles et copie de
-    // sécurité côté Python) : l'ancien chemin par FileReader n'en avait aucun
-    // et pouvait donner des identifiants NaN (ARC-08)
-    doImportDialog();
-  };
+  // Plus de bouton « Importer un fichier » ici (27/10/2026, demande d'Arthur) :
+  // un nouvel utilisateur le prenait pour l'import d'un relevé, alors qu'il
+  // remplace le PEA par un fichier de Pilote. Il reste dans Paramètres.
   // Branche les boutons "récupérer ces données"
   ov.querySelectorAll("[data-recover-idx]").forEach(btn => {
     btn.onclick = async () => {
