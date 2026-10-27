@@ -2,6 +2,17 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.27",
+      "date": "2026-10-27",
+      "titre": "Tes pense-bêtes sur ton iPhone",
+      "nouveau": [
+        "Les pense-bêtes de l'accueil qui ont une date peuvent faire sonner ton iPhone : règle-le dans Agenda › Notifications, pastille Pilote (le jour même, la veille ou une semaine avant)."
+      ],
+      "ameliore": [
+        "Le bouton « Nouvelle notification libre » est maintenant en haut de l'onglet Notifications, bien visible. La notification ainsi créée sonne à l'heure par défaut."
+      ]
+    },
+    {
       "version": "4.4.26",
       "date": "2026-10-26",
       "titre": "Bien plus de notifications sur ton iPhone",

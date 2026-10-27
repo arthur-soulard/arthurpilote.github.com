@@ -9,12 +9,9 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 26/10/2026 (4.4.26) : onglet Notifications en pastilles, bouton d'essai, note répétée. Camille n'a
-# pas d'iCloud : la connexion est simulée dans la page seulement, pour voir le catalogue.
-# Pas de « ; » dans une ligne js: (la liste des écrans est coupée aux « ; ») : des virgules.
+# 27/10/2026 (4.4.27) : bouton « Nouvelle notification libre » en haut, pense-bêtes
+# dans la pastille Pilote. Camille n'a pas d'iCloud : connexion simulée dans la page
+# seulement. Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 ag-notifs
-js:Object.assign(AG.config,{connecte:true,calendrier:"x"}),agRenderNotifs()
-js:AG.notifCat="sport",agRenderNotifs()
-js:AG.notifCat="agenda",agRenderNotifs()
-js:agOuvrirNote(null,null)
-home
+js:Object.assign(AG.config,{connecte:true,calendrier:"x"}),AG.notifCat="general",agRenderNotifs()
+js:agOuvrirNote(null,null,true)
