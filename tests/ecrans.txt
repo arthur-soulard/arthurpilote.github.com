@@ -11,6 +11,13 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 27/10/2026 : aucun écran. L'icône de Pilote.app à l'accent se vérifie dans le
-# job icone-mac (macOS 26 : Dock et « Apps »).
+# 27/10/2026 (4.4.32) : Premiers pas rouverts, puis terminés avec le prénom
+# « Lou » : sur l'accueil, la pastille de l'utilisateur doit dire « Lou », pas
+# « Moi » ni l'ancien nom.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
+# Avant : l'utilisateur redevient « Moi », comme sur une installation neuve
+# (le prénom n'est demandé qu'à lui). Les Premiers pas ne s'ouvrent que sur un
+# PEA vide : vidé le temps de les ouvrir.
+js:pywebview.api.update_user(USERS_STATE.active,"Moi",null,null).then(()=>_loadUsers(true)).then(()=>{renderHomeUsers(),_renderUserPill()})
+js:window._pp=[S.positions,S.transactions,S.depots],S.positions=[],S.transactions=[],S.depots=[],S.uiPrefs.premiersPas=false,_showWelcomeIfFirstRun().then(()=>{[S.positions,S.transactions,S.depots]=window._pp})
+js:document.getElementById("pp-prenom").value="Lou",document.querySelector("[data-pp-fin]").click()

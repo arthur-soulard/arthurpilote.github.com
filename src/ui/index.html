@@ -11297,7 +11297,7 @@ async function _showWelcomeIfFirstRun() {
       if (!r || !r.ok) { showToastModern("Prénom non enregistré : Paramètres → Utilisateurs permet de le saisir.", "warn"); return; }
       await _loadUsers(true);
       _renderUserPill();
-      if (typeof homeRenderGreeting === "function") homeRenderGreeting();
+      renderHomeUsers();   // pastilles de l'accueil (redessine aussi la salutation)
     }).catch(() => {});
   };
 
