@@ -9,8 +9,9 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 27/10/2026 (4.4.28) : Premiers pas d'un nouvel utilisateur. L'étape 1 (prénom) est
-# la capture du premier job, sur un utilisateur vierge. Ici l'étape 3 (ce qu'il faut
-# avoir par module) : PEA de Camille vidé dans la page seulement, tous les modules
-# cochés. Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
-js:S.positions=[],S.transactions=[],S.depots=[],S.uiPrefs.premiersPas=false,_showWelcomeIfFirstRun().then(()=>document.querySelectorAll(".pp-mods>.pp-mod>input").forEach(i=>i.click())||document.querySelector("#pp-suite").click())
+# 27/10/2026 (4.4.28) : Premiers pas d'un nouvel utilisateur (la capture du premier
+# job montre l'avertissement Gatekeeper du test d'installation, pas l'app). Étape 1 :
+# Camille renommée « Moi » (comme une installation neuve) pour faire apparaître le
+# prénom, PEA vidé dans la page seulement. Étape 3 (vue sur Mac le 27/10) : retirée.
+# Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
+js:pywebview.api.update_user(USERS_STATE.active,"Moi",null,null).then(()=>_loadUsers(true)).then(()=>{S.positions=[],S.transactions=[],S.depots=[],S.uiPrefs.premiersPas=false,_showWelcomeIfFirstRun()})
