@@ -103,6 +103,11 @@ Autres pistes :
   (Nextcloud, Infomaniak…) relié au téléphone par DAVx⁵, ou iCloud + DAVx⁵ sur
   Android. Toutes gratuites, mais lourdes pour Arthur ou pour l'utilisateur.
   L'Agenda reste sur iCloud seul (`docs/modules/agenda.md`).
+- **Logo Pilote sur les notifications de l'iPhone** : écarté par Arthur le
+  27/10/2026. C'est l'app Calendrier qui sonne, donc son icône. Il faudrait une
+  vraie app iPhone (compte Apple à 99 €/an) ou une page web ajoutée à l'écran
+  d'accueil, avec Web Push : notifications seulement Pilote ouvert, page hébergée
+  en ligne, données hors du PC. Pas de préfixe « Pilote · » non plus.
 
 **Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
