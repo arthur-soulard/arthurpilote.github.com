@@ -599,8 +599,8 @@ jobs:
             7) NOM="module de tuile du Dock (NSDockTilePlugIn)"
                P="$APP/Contents/PlugIns/PiloteDock.docktileplugin"
                mkdir -p "$P/Contents/MacOS"
-               cp build/dock/Info.plist "$P/Contents/Info.plist"
-               FAIT="clang : $(clang -bundle -fobjc-arc -framework Cocoa -o "$P/Contents/MacOS/PiloteDock" build/dock/PiloteDock.m 2>&1 | tail -n 3 | tr '\n' ' ')"
+               cp build/PiloteDock-Info.plist "$P/Contents/Info.plist"
+               FAIT="clang : $(clang -bundle -fobjc-arc -framework Cocoa -o "$P/Contents/MacOS/PiloteDock" build/PiloteDock.m 2>&1 | tail -n 3 | tr '\n' ' ')"
                plutil -insert NSDockTilePlugIn -string PiloteDock.docktileplugin "$APP/Contents/Info.plist"
                codesign --force --deep -s - "$APP" > /dev/null 2>&1
                "$LSREG" -f "$APP"
