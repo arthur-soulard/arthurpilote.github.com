@@ -648,6 +648,7 @@ jobs:
               echo "::notice title=Ecran $K $i/$M::$ligne" >> icone.lignes
             done < morceaux.txt
           done
+          echo "::notice title=Journaux::maj : $(grep -vE '^\s*$' maj.log | tail -n 12 | tr '\n' ' ' | head -c 1500) || relance : $(grep -vE '^\s*$' relance.log | grep -iE 'server|instance|port|appicon|erreur|error|Traceback' | tail -n 10 | tr '\n' ' ' | head -c 1200)"
           echo "::notice title=Icone mac $E::$NOM ; $FAIT ; macOS $(sw_vers -productVersion) ; $TOTAL morceaux ; signature : ${SIGN:-valide} ; relance : $RELANCE ; $(grep -E 'appicon|Traceback|Error' icone.log | tr '\n' ' ' | head -c 600)"
 
       - name: Icone (1)
