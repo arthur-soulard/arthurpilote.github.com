@@ -181,3 +181,18 @@ probablement effacé tout le dossier, `Donnees` compris. Non essayé, évidemmen
   branche `mac` échouent aussi sur une erreur JavaScript au démarrage.
 * `Api.open_url` n'ouvre plus que `http`, `https` et `mailto` (sous Windows,
   `webbrowser.open` passe par `os.startfile`, qui lançait aussi un programme).
+
+## Page de la release et WebView2 (27/10/2026)
+
+* La page d'une release ne montre plus la liste des commits : `build/notes_release.py`
+  écrit le mode d'emploi (quel fichier pour Windows ou Mac, SmartScreen, ligne du
+  Terminal) puis la fiche de la version tirée de `nouveautes.json`
+  (`body_path` dans `release.yml`). Testé par `tests/test_notes_release.py`.
+* Le Setup vérifie WebView2 comme pywebview (`_is_chromium`, winforms.py : valeur
+  `pv` sous `EdgeUpdate\Clients\{F3017226-…}`, HKCU puis HKLM 32 bits). Absent, il
+  télécharge l'installateur officiel de Microsoft au clic sur Installer
+  (`NextButtonClick`, page de téléchargement d'Inno) et le lance en `/silent /install`
+  (par utilisateur, sans droits administrateur). Sans WebView2, pywebview se rabat sur
+  Internet Explorer : page vide. Une mise à jour silencieuse n'est pas concernée.
+  **Non essayé sur un PC sans WebView2** : compilé, lien vérifié (installateur de
+  Microsoft, 1,9 Mo), clé `pv` présente lue sur le PC d'Arthur (`reg query`).

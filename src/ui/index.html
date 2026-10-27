@@ -2591,6 +2591,12 @@ button.pp-first:focus-visible { outline: 2px solid var(--accent); outline-offset
   transition: color .15s, transform .15s; }
 button.pp-first:hover .pp-first-go { color: var(--accent-text); transform: translate(2px, -2px); }
 .pp-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); margin-top: 1rem; }
+/* Prénom d'un nouvel utilisateur (étape 1) et ce qu'il faut avoir pour un module (étape 3) */
+.pp-prenom { display: flex; align-items: center; gap: 12px; margin-bottom: .9rem; }
+label[for="pp-prenom"] { font-size: 13px; font-weight: 600; color: var(--txt); white-space: nowrap; }
+.pp-prenom input { flex: 1; max-width: 340px; }
+.pp-besoin { display: flex; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--txt3); }
+.pp-besoin .ph { flex: none; margin-top: 2px; }
 /* Chemin du dossier des données, en clair (Premiers pas, Paramètres → Données) :
    un clic sur le chemin le sélectionne, « Ouvrir » ouvre le dossier. Une seule
    ligne : l'étape 1 des Premiers pas tient à 1366 × 720 (643 px sur 646 avec un
@@ -11045,10 +11051,13 @@ const NAV_MODULES = {
   "sec-actus": {
     desc: "La boîte Gmail qui reçoit tes newsletters, lue dans Pilote.",
     pas:  "Connecte ta boîte Gmail : l'onglet Connexion explique comment.",
+    // Ce qu'il faut avoir avant de commencer (Premiers pas, étape 3)
+    besoin: "Il te faut un compte Gmail avec la validation en deux étapes activée.",
     tab: "ac-connexion", tuiles: [] },
   "sec-agenda": {
     desc: "Un calendrier de tout ce que Pilote sait dater, tes notes, et ton agenda iCloud sur l'iPhone.",
     pas:  "Ajoute une note dans le calendrier, ou connecte ton agenda iCloud.",
+    besoin: "Pour l'iPhone : un compte Apple avec la double authentification. Sans iPhone, le calendrier marche quand même.",
     tab: "ag-cal", tuiles: ["ag-jour", "ag-notes", "ag-alertes"] },
 };
 
@@ -11120,10 +11129,11 @@ async function _showWelcomeIfFirstRun() {
   // espace il s'agit — les donnees des autres utilisateurs ne sont jamais
   // reprises ici.
   let identitySection = "";
+  let me = null;
   try {
     const st = (typeof _loadUsers === "function") ? await _loadUsers() : null;
+    if (st) me = st.users.find(u => u.slug === st.active) || st.users[0];
     if (st && st.users.length > 1) {
-      const me = st.users.find(u => u.slug === st.active) || st.users[0];
       identitySection = `
         <div class="pp-who">${userAvatarHtml(me)}
           <span>Espace de <strong>${escHtml(me.label)}</strong>, vierge.
@@ -11180,6 +11190,15 @@ async function _showWelcomeIfFirstRun() {
 
   const nom = (typeof homeDisplayName === "function") ? homeDisplayName() : "";
   const welcomeTitle = nom ? "Bienvenue, <em>" + escHtml(nom) + "</em>" : "Bienvenue sur Pilote";
+  // Une installation neuve crée l'utilisateur « Moi » : on demande le prénom,
+  // qui devient son nom (accueil, pastille, choix de l'utilisateur)
+  const aNommer = !!(me && ["Moi", "Mon PEA", "default"].includes(me.label));
+  const prenomSection = aNommer ? `
+        <div class="pp-prenom">
+          <label for="pp-prenom">Ton prénom</label>
+          <input id="pp-prenom" type="text" maxlength="40" autocomplete="given-name"
+            placeholder="Pour t'accueillir et nommer ton espace">
+        </div>` : "";
 
   const ov = document.createElement("div");
   ov.id = "ov-welcome";
@@ -11193,6 +11212,7 @@ async function _showWelcomeIfFirstRun() {
         <h2 class="pp-h" id="pp-t1">${welcomeTitle}</h2>
         <p class="pp-lead">Pilote rassemble tes suivis personnels (bourse, budget, prêt,
           sport, santé…) dans une seule application, qui tourne entièrement sur ton ordinateur.</p>
+        ${prenomSection}
         ${identitySection}
         <ul class="pp-points">
           <li title="Pilote ne demande sur internet que les cours de tes titres (à Yahoo Finance, sans les quantités ni les montants) et les mises à jour (à GitHub)."><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
@@ -11256,10 +11276,28 @@ async function _showWelcomeIfFirstRun() {
     ov.querySelectorAll(".pp-prog span").forEach((b, i) => b.classList.toggle("on", i < n));
     ov.querySelector(".pp").scrollTop = 0;
     const st = ov.querySelector(`.pp-step[data-pp="${n}"]`);
-    const cible = st && st.querySelector(n === 2 ? ".pp-mods input" : ".btn-primary");
+    const cible = st && st.querySelector(n === 2 ? ".pp-mods input" : n === 1 && champPrenom ? "#pp-prenom" : ".btn-primary");
     if (cible) cible.focus();
   };
   ov.querySelectorAll("[data-pp-go]").forEach(b => { b.onclick = () => aller(+b.dataset.ppGo); });
+
+  const champPrenom = ov.querySelector("#pp-prenom");
+  if (champPrenom) {
+    champPrenom.onkeydown = e => { if (e.key === "Enter") aller(2); };
+    setTimeout(() => champPrenom.focus(), 60);
+  }
+  // Le prénom devient le nom de l'utilisateur, comme dans Paramètres → Utilisateurs
+  const nommer = () => {
+    const prenom = champPrenom ? champPrenom.value.trim() : "";
+    const api = window.pywebview && pywebview.api;
+    if (!prenom || !me || !(api && api.update_user)) return;
+    api.update_user(me.slug, prenom, null, null).then(async r => {
+      if (!r || !r.ok) { showToastModern("Prénom non enregistré : Paramètres → Utilisateurs permet de le saisir.", "warn"); return; }
+      await _loadUsers(true);
+      _renderUserPill();
+      if (typeof homeRenderGreeting === "function") homeRenderGreeting();
+    }).catch(() => {});
+  };
 
   const majCompte = () => {
     const n = choix().length;
@@ -11277,7 +11315,8 @@ async function _showWelcomeIfFirstRun() {
       return `<button type="button" class="pp-first" data-pp-ouvrir="${m.tab || "home"}"
                 title="Ouvrir ${escHtml(s.label)}">
           <span class="pp-mod-ico"><i class="ph ph-${NAV_ICONS[s.id] || "circle"}"></i></span>
-          <span class="pp-first-txt"><b>${escHtml(s.label)}</b><span>${escHtml(m.pas || "")}</span></span>
+          <span class="pp-first-txt"><b>${escHtml(s.label)}</b><span>${escHtml(m.pas || "")}</span>${m.besoin
+            ? `<span class="pp-besoin"><i class="ph ph-info"></i> ${escHtml(m.besoin)}</span>` : ""}</span>
           <i class="ph ph-arrow-up-right pp-first-go"></i>
         </button>`;
     }).join("");
@@ -11294,6 +11333,7 @@ async function _showWelcomeIfFirstRun() {
     S.uiPrefs.premiersPas = true;
     if (hist && hist.version) S.uiPrefs.nouveautesVues = hist.version;
     _enregistrerUiPrefs();
+    nommer();
     ov.remove();
     _reconstruireSidebar();
     if (typeof dashRender === "function") dashRender();

@@ -6,7 +6,114 @@ serveur. Les cours sont actualisés automatiquement depuis Yahoo Finance.
 
 ▶ [Vidéo de présentation](https://drive.google.com/file/d/1jA8N2ddIVyI6T9nbTnmhDlv6lp5w70gn/view?usp=drive_link)
 
-## ✨ Les huit modules
+## Installer Pilote
+
+### Ce qu'il faut avoir
+
+| | Windows | Mac |
+|---|---|---|
+| Ordinateur | Windows 10 ou 11, 64 bits | Mac à puce Apple (M1 et suivants). **Pas un Mac Intel** |
+| Système essayé | Windows 11 (Windows sur processeur ARM : pas essayé) | macOS 15 Sequoia (un macOS plus ancien n'a pas été essayé) |
+| Composant | Microsoft Edge WebView2, qui dessine la fenêtre. Déjà là sur Windows 11 et sur un Windows 10 à jour ; sinon, le programme d'installation l'ajoute | rien |
+| Internet | pour l'installation, les cours de bourse et les mises à jour. Sans connexion, Pilote s'ouvre et montre les derniers cours connus | pareil |
+
+Pilote n'a pas besoin de compte. Seuls trois modules, facultatifs, demandent quelque chose
+de plus :
+
+- **Actus** : un compte Gmail avec la validation en deux étapes activée (Pilote s'y
+  connecte avec un mot de passe d'application, que l'onglet Connexion t'aide à créer) ;
+- **Agenda**, pour le voir et le faire sonner sur ton iPhone : un compte Apple avec la
+  double authentification (l'onglet iCloud explique comment créer un mot de passe pour
+  app). Sans iPhone, le calendrier marche quand même ;
+- **Santé**, pour lire des captures de l'app FitDays : sur Windows, le français ou
+  l'anglais parmi les langues de Windows (c'est le cas d'un Windows en français). La
+  saisie à la main marche partout.
+
+### Sur Windows
+
+1. Télécharger **`Pilote_Setup.exe`** depuis la [dernière version](../../releases/latest)
+   (rubrique *Assets*, en bas de la page).
+2. Le lancer. Si Windows affiche « Windows a protégé votre ordinateur » : *Informations
+   complémentaires*, puis *Exécuter quand même*. Ce message vient de ce que Pilote n'est
+   pas signé (un certificat est payant).
+3. Suivre l'assistant. Il ne demande pas de mot de passe administrateur : Pilote
+   s'installe pour toi seul, dans ton dossier `AppData`.
+4. Lancer Pilote depuis le menu Démarrer ou le raccourci du bureau.
+
+### Sur Mac
+
+**Le plus simple : une ligne dans le Terminal** (Applications → Utilitaires → Terminal).
+La copier, la coller, puis Entrée :
+
+```bash
+curl -fL https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
+```
+
+Elle télécharge Pilote, le range dans Applications et l'ouvre. Aucun réglage à faire :
+l'avertissement de macOS sur les apps non signées ne vise que les fichiers téléchargés
+par un navigateur.
+
+**Ou par le navigateur :**
+
+1. Télécharger **`Pilote_Mac.zip`** depuis la [dernière version](../../releases/latest).
+   Le Mac le décompresse tout seul en **Pilote**.
+2. Ouvrir Pilote. Il n'est pas signé par Apple (pas de compte développeur payant) :
+   macOS refuse de l'ouvrir. Fermer le message.
+3. Ouvrir **Réglages Système → Confidentialité et sécurité**, descendre jusqu'au message
+   sur Pilote et cliquer sur **Ouvrir quand même**, puis confirmer avec le mot de passe
+   du Mac. Ce n'est à faire qu'une fois.
+4. Ouvert depuis Téléchargements, Pilote propose de se ranger lui-même dans le dossier
+   Applications : accepter (sans ça, il ne pourrait pas se mettre à jour).
+
+### Ensuite
+
+Les mises à jour se font depuis Pilote : au lancement, il te montre ce que change la
+nouvelle version et l'installe si tu le veux. Tes données restent en place.
+
+## Premier lancement
+
+Un assistant en trois étapes s'ouvre :
+
+1. **Bienvenue** : ton prénom (il nomme ton espace) et l'endroit où vivent tes données ;
+2. **Tes modules** : coche ce que tu veux suivre, le reste est masqué (Paramètres →
+   Modules le remet) ;
+3. **Par où commencer** : le premier geste de chaque module, et ce qu'il faut avoir pour
+   ceux qui en demandent.
+
+Plusieurs personnes peuvent partager l'ordinateur : chacune a son espace (Paramètres →
+Utilisateurs), et peut le protéger par un code PIN.
+
+## En cas de souci
+
+**Windows : « Windows a protégé votre ordinateur ».** Normal pour une app non signée :
+*Informations complémentaires*, puis *Exécuter quand même*.
+
+**Windows : Pilote s'ouvre sur une fenêtre vide.** WebView2 manque, en général parce que
+le PC n'avait pas internet pendant l'installation. Relance `Pilote_Setup.exe` avec une
+connexion : il l'ajoute, tes données restent en place.
+
+**Windows : « Pilote est déjà installé pour tous les utilisateurs ».** Une très ancienne
+installation est dans Program Files. Désinstalle-la depuis les Paramètres de Windows (tes
+données restent dans son dossier), puis relance le programme d'installation.
+
+**Windows : Pilote ne démarre plus après une mise à jour.** Relance le `Pilote_Setup.exe`
+de la dernière version : tes données sont conservées.
+
+**Mac : macOS refuse d'ouvrir Pilote.** Passe par la ligne du Terminal ci-dessus, ou par
+*Ouvrir quand même* dans Réglages Système → Confidentialité et sécurité. Sur un Mac Intel,
+Pilote ne peut pas fonctionner.
+
+**Les cours ne bougent pas.** Pilote a besoin d'internet pour les actualiser ; sans
+connexion, il garde les derniers connus. Le bouton Actualiser est en haut de la fenêtre.
+
+**Santé : la lecture des captures FitDays échoue sur Windows.** Ajoute le français ou
+l'anglais dans Paramètres de Windows → Heure et langue → Langue, puis réessaie.
+
+**Désinstaller.** Windows : Paramètres → Applications. Mac : glisser Pilote d'Applications
+à la Corbeille. Dans les deux cas, tes données restent sur le disque (voir « Où sont les
+données ») : réinstaller Pilote les retrouve.
+
+## ✨ Les modules
 
 **PEA** : positions, transactions, versements, dividendes, wishlist, expositions sectorielle
 et géographique, courbe du capital comparée à des indices, prochain achat et simulateur
@@ -32,6 +139,9 @@ remplissent seuls), biens immobiliers et leur crédit, valeur nette et son évol
 **Actus** : la boîte Gmail qui reçoit tes newsletters, lue dans Pilote, avec un mot de passe
 d'application Google gardé chiffré par Windows, ou dans le Trousseau sur Mac.
 
+**Agenda** : un calendrier de tout ce que Pilote sait dater, tes notes, et ton agenda
+iCloud, qui fait sonner ton iPhone.
+
 Chaque module se masque s'il ne sert pas.
 
 ## ⚙ Transverse
@@ -43,54 +153,6 @@ Chaque module se masque s'il ne sert pas.
 - **Thèmes** clair et sombre, couleur d'accent au choix
 - **Sauvegarde** sur clé USB ou dans un dossier, avec restauration
 - **Mise à jour automatique** depuis les releases GitHub
-
-## 📦 Installation
-
-### Sur Windows
-
-1. Télécharger la dernière version : [Releases](../../releases/latest)
-2. Lancer **`Pilote_Setup.exe`**
-3. Si Windows SmartScreen affiche un avertissement : « Informations complémentaires »,
-   puis « Exécuter quand même » (Pilote n'est pas signé : un certificat est payant)
-4. Suivre l'assistant, puis lancer Pilote depuis le menu Démarrer ou le raccourci du bureau
-
-Si Pilote ne démarre plus après une mise à jour, relance le Setup de la dernière version :
-tes données sont conservées.
-
-### Sur Mac (puce Apple uniquement, M1 et suivants)
-
-**Le plus simple : une ligne dans le Terminal** (Applications → Utilitaires → Terminal).
-La copier, la coller, puis Entrée :
-
-```bash
-curl -fL https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
-```
-
-Elle télécharge Pilote, le range dans Applications et l'ouvre. Aucun réglage à faire :
-l'avertissement de macOS sur les apps non signées ne vise que les fichiers téléchargés
-par un navigateur.
-
-**Ou par le navigateur :**
-
-1. Télécharger **`Pilote_Mac.zip`** depuis la dernière version : [Releases](../../releases/latest).
-   Le Mac le décompresse tout seul en **Pilote**. Il ne fonctionne pas sur un Mac Intel.
-2. Ouvrir Pilote. Il n'est pas signé par Apple (pas de compte développeur payant) :
-   macOS refuse de l'ouvrir. Fermer le message.
-3. Ouvrir **Réglages Système → Confidentialité et sécurité**, descendre jusqu'au message
-   sur Pilote et cliquer sur **Ouvrir quand même**, puis confirmer avec le mot de passe
-   du Mac. Ce n'est à faire qu'une fois.
-4. Ouvert depuis Téléchargements, Pilote propose de se ranger lui-même dans le dossier
-   Applications : accepter (sans ça, il ne pourrait pas se mettre à jour).
-
-Les mises à jour suivantes sont faites par Pilote lui-même. Les données vivent dans
-`~/Library/Application Support/Pilote/Donnees`, hors de l'app : la remplacer ne les touche pas.
-
-### Compatibilité
-
-- **Windows 10 / 11 x64**, avec Microsoft Edge WebView2 Runtime (préinstallé sur Windows 11
-  et sur Windows 10 à jour). Windows sur processeur ARM : non essayé.
-- **Mac à puce Apple** (M1 et suivants), essayé sur macOS 15 Sequoia
-- Connexion internet pour les cours ; sans elle, Pilote montre les derniers cours connus
 
 ## 🔒 Confidentialité
 
@@ -104,6 +166,8 @@ compte, ni serveur, ni mesure d'audience. Il contacte seulement :
 | justETF, Euronext, iShares, Amundi | quand un ETF détenu n'a pas encore de composition connue, ou sur « Mettre à jour les données » | l'identifiant public de l'ETF (ISIN) |
 | Gmail | si tu actives Actus | ton adresse et ton mot de passe d'application, pour lire ta boîte |
 | Expéditeurs des newsletters | à l'ouverture d'un mail, si tu affiches ses images | ton adresse IP et l'heure d'ouverture |
+| iCloud | si tu connectes l'Agenda | ton identifiant Apple et ton mot de passe pour app ; tes notes et ce que tu coches |
+| Microsoft | à l'installation sur Windows, seulement si WebView2 manque | ton adresse IP, pour télécharger WebView2 |
 
 Sources des données : cours de Yahoo Finance ; compositions d'ETF d'iShares, d'Amundi et de
 justETF. Ce sont des sources non officielles, utilisées sans garantie.
@@ -112,6 +176,14 @@ Pilote calcule à partir de tes saisies et de tes règles. Il ne donne pas de co
 investissement.
 
 Pour signaler une faille de sécurité : voir [SECURITY.md](SECURITY.md).
+
+## 📂 Où sont les données
+
+- Windows : `%LocalAppData%\Programs\Suivi PEA\Donnees\` (nom historique du dossier
+  d'installation), un dossier par utilisateur dans `users/`
+- Mac : `~/Library/Application Support/Pilote/Donnees/`
+
+Le chemin exact s'affiche aussi dans Pilote : Paramètres → Données.
 
 ## 🛠 Développement
 
@@ -123,14 +195,6 @@ Pour signaler une faille de sécurité : voir [SECURITY.md](SECURITY.md).
 
 L'architecture, les données sur disque et les règles du projet sont décrites dans
 [CLAUDE.md](CLAUDE.md) et les fiches de [docs/](docs/).
-
-## 📂 Où sont les données
-
-- Windows : `%LocalAppData%\Programs\Suivi PEA\Donnees\` (nom historique du dossier
-  d'installation), un dossier par utilisateur dans `users/`
-- Mac : `~/Library/Application Support/Pilote/Donnees/`
-
-Le chemin exact s'affiche aussi dans Pilote : Paramètres → Données.
 
 ## 📜 Licence
 

@@ -83,6 +83,9 @@ Name: "{autodesktop}\{#AppName}";           Filename: "{app}\{#AppExeName}"; Ico
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\icon.ico"; Tasks: quicklaunchicon
 
 [Run]
+; WebView2 absent du PC : installe a partir du programme telecharge par
+; NextButtonClick (voir WebView2Present)
+Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Installation de Microsoft Edge WebView2..."; Flags: waituntilterminated; Check: WebView2Telecharge
 ; Lancement normal apres installation manuelle (case a cocher)
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 ; Mise a jour automatique (updater.py lance ce Setup en /VERYSILENT apres avoir
@@ -184,6 +187,69 @@ begin
            + 'dans son dossier Donnees), puis relance ce programme d''installation.',
            mbError, MB_OK);
     Result := False;
+  end;
+end;
+
+// WebView2 dessine la fenetre de Pilote. Sans lui, pywebview se rabat sur
+// Internet Explorer et Pilote s'ouvre sur une page vide. Il est fourni avec
+// Windows 11 et un Windows 10 a jour, mais peut manquer sur un Windows 10
+// ancien. Meme lecture du registre que pywebview (_is_chromium dans
+// winforms.py) : version "pv", cote utilisateur ou cote machine.
+const
+  WEBVIEW2_CLE = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+  WEBVIEW2_URL = 'https://go.microsoft.com/fwlink/p/?LinkId=2124703';
+  WEBVIEW2_EXE = 'MicrosoftEdgeWebview2Setup.exe';
+
+var
+  PageWebView2: TDownloadWizardPage;
+
+function WebView2Present(): Boolean;
+var
+  V: String;
+begin
+  Result := True;
+  if RegQueryStringValue(HKCU, WEBVIEW2_CLE, 'pv', V) and (V <> '') and (V <> '0.0.0.0') then
+    Exit;
+  if RegQueryStringValue(HKLM32, WEBVIEW2_CLE, 'pv', V) and (V <> '') and (V <> '0.0.0.0') then
+    Exit;
+  Result := False;
+end;
+
+function WebView2Telecharge(): Boolean;
+begin
+  Result := FileExists(ExpandConstant('{tmp}\' + WEBVIEW2_EXE));
+end;
+
+procedure InitializeWizard();
+begin
+  PageWebView2 := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), nil);
+end;
+
+// Au clic sur Installer : si WebView2 manque, on telecharge son installateur
+// officiel (lien de Microsoft), lance par [Run]. Une mise a jour silencieuse n'est pas
+// concernee : Pilote tournait, donc WebView2 est la. Sans connexion, on
+// installe quand meme et on dit quoi faire.
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if (CurPageID <> wpReady) or WizardSilent or WebView2Present() then
+    Exit;
+  PageWebView2.Clear;
+  PageWebView2.Add(WEBVIEW2_URL, WEBVIEW2_EXE, '');
+  PageWebView2.Show;
+  try
+    try
+      PageWebView2.Download;
+    except
+      MsgBox('Pilote a besoin de Microsoft Edge WebView2, absent de ce PC, et son '
+             + 'installation n''a pas pu ' + #$00EA + 'tre t' + #$00E9 + 'l' + #$00E9 + 'charg' + #$00E9 + 'e.' + #13#10#13#10
+             + 'Pilote s''installe quand m' + #$00EA + 'me. Ensuite, connecte-toi ' + #$00E0 + ' internet et '
+             + 'relance ce programme d''installation : il ajoutera WebView2. '
+             + 'Sans lui, Pilote s''ouvre sur une fen' + #$00EA + 'tre vide.',
+             mbInformation, MB_OK);
+    end;
+  finally
+    PageWebView2.Hide;
   end;
 end;
 

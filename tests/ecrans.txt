@@ -9,9 +9,8 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 27/10/2026 (4.4.27) : bouton « Nouvelle notification libre » en haut, pense-bêtes
-# dans la pastille Pilote. Camille n'a pas d'iCloud : connexion simulée dans la page
-# seulement. Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
-ag-notifs
-js:Object.assign(AG.config,{connecte:true,calendrier:"x"}),AG.notifCat="general",agRenderNotifs()
-js:agOuvrirNote(null,null,true)
+# 27/10/2026 (4.4.28) : Premiers pas d'un nouvel utilisateur. L'étape 1 (prénom) est
+# la capture du premier job, sur un utilisateur vierge. Ici l'étape 3 (ce qu'il faut
+# avoir par module) : PEA de Camille vidé dans la page seulement, tous les modules
+# cochés. Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
+js:S.positions=[],S.transactions=[],S.depots=[],S.uiPrefs.premiersPas=false,_showWelcomeIfFirstRun().then(()=>document.querySelectorAll(".pp-mods>.pp-mod>input").forEach(i=>i.click())||document.querySelector("#pp-suite").click())

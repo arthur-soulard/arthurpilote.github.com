@@ -86,6 +86,13 @@ de `NAV_SECTIONS` y ajoute son entrée** (sinon sa carte reste sans texte).
   les tuiles des modules choisis, `S.uiPrefs.premiersPas = true` et
   `nouveautesVues` = la version installée (un nouvel utilisateur n'a pas de
   « nouveautés » à lire).
+* **Prénom et prérequis** (27/10/2026, Pilote prêt pour d'autres utilisateurs) : si
+  l'utilisateur s'appelle encore « Moi » (installation neuve), l'étape 1 demande son
+  prénom, enregistré par `Api.update_user` en fin d'assistant (vide : il reste « Moi »).
+  L'étape 3 dit sous la carte d'un module ce qu'il faut avoir (`besoin` dans
+  `NAV_MODULES` : Gmail en deux étapes pour Actus, compte Apple pour l'Agenda).
+  Avec le prénom ET une ancienne installation détectée, l'étape 1 défile de 18 px à
+  1366 × 720 (cas rare : une installation extérieure à côté d'un PC neuf).
 * S'affiche si le PEA est vide **et** `premiersPas` absent : une seule fois par
   utilisateur. Jusqu'à la 4.3.36, l'écran de bienvenue revenait à chaque lancement
   tant que le PEA restait vide, même pour qui ne s'en sert pas. Un utilisateur déjà
