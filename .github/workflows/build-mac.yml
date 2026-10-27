@@ -437,21 +437,29 @@ jobs:
       - name: Captures
         run: |
           DEBUT=$(( (${{ matrix.lot }} - 1) * 3 ))
-          ECRANS=$(grep -v '^[[:space:]]*#' tests/ecrans.txt | sed '/^[[:space:]]*$/d' | sed -n "$((DEBUT+1)),$((DEBUT+3))p" | paste -sd ';' -)
+          LIGNES=$(grep -v '^[[:space:]]*#' tests/ecrans.txt | sed '/^[[:space:]]*$/d' | sed -n "$((DEBUT+1)),$((DEBUT+3))p")
+          # « plein » en tete de ligne : capture de tout l'ecran (Dock compris)
+          ECRANS=$(echo "$LIGNES" | sed 's/^plein //' | paste -sd ';' -)
+          PLEINS=" $(echo "$LIGNES" | grep -n '^plein ' | cut -d: -f1 | tr '\n' ' ' || true) "
           if [ -z "$ECRANS" ]; then echo "lot ${{ matrix.lot }} : aucun ecran"; exit 0; fi
           ditto -x -k art/Pilote-mac.zip .
           python3 tests/donnees_exemple.py "$HOME/Library/Application Support/Pilote/Donnees"
           PILOTE_ECRANS="$ECRANS" Pilote.app/Contents/MacOS/Pilote > ecrans.log 2>&1 &
           PID=$!
           # Chaque « [ecran] n pret » de l'app : une capture de sa fenetre
-          # (cadre lu par System Events), sinon de tout l'ecran
+          # (cadre lu par System Events), sinon de tout l'ecran ; tout l'ecran
+          # aussi pour une ligne « plein »
           FAITES=0
           for i in $(seq 1 300); do
             N=$(grep -c "\[ecran\] [0-9]* pret" ecrans.log || true)
             while [ "$FAITES" -lt "$N" ]; do
               FAITES=$((FAITES+1))
               NOM=$(printf "ecran-%02d" $((DEBUT+FAITES)))
-              CADRE=$(osascript -e 'tell application "System Events" to tell process "Pilote" to get {position, size} of window 1' 2>/dev/null | tr -d ' ')
+              CADRE=""
+              case "$PLEINS" in
+                *" $FAITES "*) sleep 1 ;;
+                *) CADRE=$(osascript -e 'tell application "System Events" to tell process "Pilote" to get {position, size} of window 1' 2>/dev/null | tr -d ' ') ;;
+              esac
               screencapture -x ${CADRE:+-R"$CADRE"} "$NOM.png" || echo "capture $FAITES impossible"
             done
             grep -q "\[ecran\] fin" ecrans.log && break

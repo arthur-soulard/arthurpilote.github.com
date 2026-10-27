@@ -152,6 +152,8 @@ sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
   et `premiersPas` : rien ne s'ouvre par-dessus l'écran.
 * **`tests/ecrans.txt`** : les écrans à photographier, une ligne par capture
   (onglet, puis défilement en px). **À mettre à jour à chaque fonctionnalité.**
+  Une ligne qui commence par `plein ` est capturée en plein écran, Dock compris
+  (27/10/2026, pour voir l'icône à l'accent).
 * **`PILOTE_ECRANS`** (`app.py`, `_diag_ecrans`) : ouvre chaque écran
   (`goTab`, puis défilement sans l'effet « en douceur » de la page) et écrit
   « [ecran] n pret » ; le job prend alors la capture de la fenêtre (cadre lu
