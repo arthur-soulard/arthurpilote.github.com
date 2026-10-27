@@ -24,6 +24,7 @@ import os
 import sys
 import struct
 import subprocess
+import threading
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
@@ -218,9 +219,45 @@ def _apply_app_mac(color: str) -> dict:
         if image is None or not NSWorkspace.sharedWorkspace().setIcon_forFile_options_(image, str(bundle), 0):
             return {"ok": False, "error": "macOS a refusé de changer l'icône", "count": 0}
         (icons_dir() / _MAC_MARQUE).write_text(_norm_color(color), encoding="utf-8")
+        _rafraichir_mac(bundle, color)
         return {"ok": True, "count": 1, "paths": [str(bundle)], "ico": str(path)}
     except Exception as e:
         return {"ok": False, "error": str(e), "count": 0}
+
+
+_LSREGISTER = ("/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+               "LaunchServices.framework/Support/lsregister")
+
+
+def _rafraichir_mac(bundle: Path, color: str) -> None:
+    """macOS garde l'ancienne icone en cache : sans ceci, « Apps » et le Dock
+    (app fermee) restent a l'orange du build ou a la couleur d'avant. Essais du
+    27/10/2026 sur macOS 26 (job icone-mac) : « Apps » se met a jour quand le
+    paquet est signale modifie (date, LaunchServices, Spotlight) ; le Dock
+    seulement apres redemarrage de iconservicesagent PUIS du Dock (le Dock seul,
+    ou le paquet relu, ne suffisent pas). Aucun mot de passe : tout est a la
+    session. Le Dock disparait une seconde : seulement quand la couleur change
+    (ou apres une mise a jour), jamais a chaque lancement (_sync_app_mac)."""
+    def lancer(*cmd):
+        try:
+            subprocess.run(list(cmd), capture_output=True, timeout=20)
+        except Exception as e:
+            print(f"[appicon] {cmd[0]} KO : {e}", flush=True)
+    os.utime(bundle)
+    lancer(_LSREGISTER, "-f", str(bundle))
+    lancer("/usr/bin/mdimport", str(bundle))
+    try:
+        cache = subprocess.run(["/usr/bin/getconf", "DARWIN_USER_CACHE_DIR"],
+                               capture_output=True, text=True, timeout=5).stdout.strip()
+        for nom in ("com.apple.iconservices", "com.apple.dock.iconcache"):
+            if cache and (Path(cache) / nom).exists():
+                lancer("/bin/rm", "-rf", str(Path(cache) / nom))
+    except Exception as e:
+        print(f"[appicon] cache d'icones KO : {e}", flush=True)
+    lancer("/usr/bin/killall", "iconservicesagent")
+    lancer("/usr/bin/killall", "Dock")
+    # Le Dock relance redemande l'icone de l'app ouverte : on la repose
+    threading.Timer(3.0, _apply_dock_mac, args=(color,)).start()
 
 
 def _sync_app_mac(color: str) -> None:

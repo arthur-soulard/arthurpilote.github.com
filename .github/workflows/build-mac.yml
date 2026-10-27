@@ -535,18 +535,17 @@ jobs:
 
   # Icone de Pilote.app a l'accent, comme chez Arthur (macOS 26, ecran « Apps ») :
   # app rangee dans Applications et gardee dans le Dock, lancee a l'accent par
-  # defaut puis passee au vert, puis fermee. Une machine par facon de faire
-  # relire l'icone a macOS (les caches ne se melangent pas) ; captures du Dock,
-  # d'« Apps » et de l'icone que macOS rend pour le paquet (ecrans <n>1 a <n>4).
+  # defaut puis passee au vert, puis fermee, puis remplacee comme par une mise a
+  # jour. Captures du Dock et d'« Apps » (ecrans 81 a 85). Les essais qui ont
+  # mene a appicon._rafraichir_mac : docs/demarrage-et-icone.md.
   icone-mac:
     needs: build-mac
     if: ${{ !cancelled() }}
     timeout-minutes: 25
     runs-on: macos-26
     strategy:
-      fail-fast: false
       matrix:
-        essai: [5, 6, 7]
+        essai: [8]
 
     steps:
       - name: Checkout
@@ -573,9 +572,6 @@ jobs:
           B=$(osascript -e 'tell application "Finder" to get bounds of window of desktop' | tr -d ' ')
           W=$(echo "$B" | cut -d, -f3); H=$(echo "$B" | cut -d, -f4)
           dock() { screencapture -x -R"0,$((H-140)),$W,140" "ecran-$E$1.png"; }
-          rendue() {
-            osascript -l JavaScript -e 'ObjC.import("AppKit"); var i=$.NSWorkspace.sharedWorkspace.iconForFile("'"$APP"'"); i.setSize({width:128,height:128}); $.NSBitmapImageRep.imageRepWithData(i.TIFFRepresentation).representationUsingTypeProperties(4, $()).writeToFileAtomically("'"$PWD/ecran-$E$1.png"'", true)' > /dev/null
-          }
           apps() {
             for i in $(seq 1 90); do mdfind "kMDItemCFBundleIdentifier == 'io.github.arthur-soulard.pilote'" | grep -q . && break; sleep 2; done
             sleep 5
@@ -587,51 +583,37 @@ jobs:
             osascript -e 'tell application "System Events" to key code 53'
             sleep 2
           }
-          LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
-          ICONES="$HOME/Library/Application Support/Pilote/Donnees/icones"
-          python3 -m pip install --quiet --break-system-packages pillow > pip.log 2>&1 || python3 -m pip install --quiet pillow >> pip.log 2>&1
-          carre() { mkdir -p "$ICONES"; python3 -c "from PIL import Image; Image.new('RGBA', (512, 512), $1).save('$ICONES/dock.png')"; }
-          signal() { osascript -l JavaScript -e 'ObjC.import("Foundation"); $.NSDistributedNotificationCenter.defaultCenter.postNotificationNameObjectUserInfoDeliverImmediately("io.github.arthur-soulard.pilote.icone", $(), $(), true)' > /dev/null; sleep 4; }
-          FAIT=""
-          case $E in
-            6) NOM="Apps deja ouvert avant le changement de couleur"
-               apps 1 ;;                             # 61 : Apps avant (orange attendu)
-            7) NOM="module de tuile du Dock (NSDockTilePlugIn)"
-               P="$APP/Contents/PlugIns/PiloteDock.docktileplugin"
-               mkdir -p "$P/Contents/MacOS"
-               cp build/PiloteDock-Info.plist "$P/Contents/Info.plist"
-               FAIT="clang : $(clang -bundle -fobjc-arc -framework Cocoa -o "$P/Contents/MacOS/PiloteDock" build/PiloteDock.m 2>&1 | tail -n 3 | tr '\n' ' ')"
-               plutil -insert NSDockTilePlugIn -string PiloteDock.docktileplugin "$APP/Contents/Info.plist"
-               codesign --force --deep -s - "$APP" > /dev/null 2>&1
-               "$LSREG" -f "$APP"
-               carre "(22, 163, 74, 255)"
-               killall Dock; sleep 8
-               dock 1                                # 71 : app jamais lancee, Dock relance (vert attendu)
-               carre "(124, 58, 237, 255)"; signal
-               dock 2 ;;                             # 72 : apres la notification (violet attendu)
-          esac
-          # Lancee au prune (accent par defaut), passee au vert par le pont (icone
-          # posee par-dessus le paquet par Pilote 4.4.30), puis fermee
+          NOM="chemin reel de Pilote : lancement, Enregistrer en vert, fermeture, mise a jour"
+          # 81 : Apps deja ouvert avant (orange du build attendu), comme chez Arthur
+          apps 1
+          # Lancee au prune (accent par defaut), passee au vert par le pont comme
+          # par le bouton Enregistrer des Parametres
           PILOTE_ECRANS='home;js:pywebview.api.set_app_icon_color("#16a34a")' "$APP/Contents/MacOS/Pilote" > icone.log 2>&1 &
           PID=$!
           for i in $(seq 1 120); do grep -q "\[ecran\] fin" icone.log && break; sleep 1; done
-          sleep 3
+          sleep 8
+          dock 2                                     # 82 : app ouverte apres le changement (vert)
           kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 5
-          case $E in
-            5) NOM="icone par-dessus + caches d'icones de la session seulement (sans mot de passe)"
-               rm -rf "$(getconf DARWIN_USER_CACHE_DIR)com.apple.iconservices" "$(getconf DARWIN_USER_CACHE_DIR)com.apple.dock.iconcache"
-               killall iconservicesagent 2>/dev/null
-               FAIT="$(ls "$(getconf DARWIN_USER_CACHE_DIR)" | grep -i icon | tr '\n' ' ')"
-               killall Dock; sleep 8
-               dock 1                                # 51 : Dock (vert ?)
-               apps 2 ;;                             # 52 : Apps
-            6) touch "$APP"; "$LSREG" -f "$APP"; mdimport "$APP" 2>/dev/null; sleep 10
-               apps 2 ;;                             # 62 : Apps apres (vert ?)
-            7) carre "(124, 58, 237, 255)"; signal
-               dock 3 ;;                             # 73 : app fermee (violet du module attendu)
-          esac
+          dock 3                                     # 83 : app fermee (vert)
+          sleep 10; apps 4                           # 84 : Apps (vert)
+          # Second lancement sans changement : le Dock ne doit pas redemarrer
+          "$APP/Contents/MacOS/Pilote" > second.log 2>&1 &
+          PID=$!
+          for i in $(seq 1 40); do grep -q "fenetre ouverte" second.log && break; sleep 1; done
+          sleep 5
+          SECOND="$(grep -c 'icone de Pilote.app' second.log) recoloration(s) au second lancement"
+          kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 3
+          # Mise a jour : le paquet est remplace (orange, sans icone posee), la
+          # couleur notee doit revenir au lancement suivant
+          rm -rf "$APP"; ditto -x -k art/Pilote-mac.zip /Applications; xattr -dr com.apple.quarantine "$APP"
+          "$APP/Contents/MacOS/Pilote" > maj.log 2>&1 &
+          PID=$!
+          for i in $(seq 1 40); do grep -q "fenetre ouverte" maj.log && break; sleep 1; done
+          sleep 8
+          kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 5
+          dock 5                                     # 85 : apres la mise a jour, app fermee (vert)
+          FAIT="$SECOND ; apres la mise a jour : $(grep 'appicon' maj.log | tr '\n' ' ')"
           SIGN=$(codesign --verify "$APP" 2>&1 | tr '\n' ' ' | head -c 200)
-          # L'app (peut-etre modifiee) demarre-t-elle encore ?
           PILOTE_DIAG=1 "$APP/Contents/MacOS/Pilote" > relance.log 2>&1 &
           PID=$!
           UP=KO; for i in $(seq 1 60); do curl -fsS http://127.0.0.1:7438/ping > /dev/null 2>&1 && { UP="$i s"; break; }; sleep 1; done
