@@ -176,7 +176,7 @@ sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
 |---|---|---|
 | Déplacement de la fenêtre, Agrandir, taille de l'écran, taille gardée | `index.html`, `app.py` | réglé (étape 3) : barre de titre du système, zone utile de l'écran |
 | Remise au premier plan | `app.py` | sans effet (exceptions rattrapées) |
-| Icône à l'accent, raccourcis `.lnk` | `appicon.py` | réglé (4.4.29-4.4.30) : Dock pendant que Pilote tourne, Pilote.app recolorée seule au lancement et à l'enregistrement |
+| Icône à l'accent, raccourcis `.lnk` | `appicon.py` | réglé (4.4.29-4.4.31) : Dock pendant que Pilote tourne, Pilote.app recolorée seule au lancement et à l'enregistrement, caches du Dock et d'« Apps » rafraîchis (job `icone-mac`, macOS 26) |
 | Coins arrondis de l'écran de chargement (DWM) | `splash.py` | sans effet |
 | Détection des clés USB (`GetLogicalDrives`, numéro de série) | `sauvegarde.py` | réglé (étape 4) : `/Volumes` et `diskutil` |
 | OCR (`ocr_win.ps1`, Windows.Media.Ocr) | `sante.py` | réglé (étape 5) : Vision d'Apple |

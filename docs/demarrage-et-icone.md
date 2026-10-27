@@ -161,13 +161,39 @@ Python attend pendant ce temps (`[pile]`). Elles varient avec la charge du PC
   retiré, le réglage redevient `.win-seul`), `_sync_app_mac` pose l'icône sur le
   paquet par `NSWorkspace.setIcon_forFile_options_` (fichier `Icon\r` vide à sa
   racine, image dans ses attributs étendus : Finder, Launchpad, Dock au repos) et
-  note la couleur dans `Donnees/icones/app_mac.txt`. Rien n'est réécrit si la
-  couleur notée est la même et que `Icon\r` existe ; une mise à jour remplace
-  Pilote.app et efface ce fichier, l'icône revient donc au lancement suivant.
+  note dans `Donnees/icones/app_mac.txt` une empreinte (couleur, `CFBundleVersion`,
+  emplacement du paquet, `_empreinte_mac`). Rien n'est réécrit si l'empreinte est
+  la même et que `Icon\r` existe ; une mise à jour change la version (et remplace
+  le paquet), l'icône revient donc au lancement suivant. La couleur seule ne
+  suffisait pas (4.4.30) : une app déjà lancée une fois garde son `Icon\r`.
   Rien dans une copie en lecture seule (`mac_a_deplacer`). Sur plusieurs
   utilisateurs, l'app fermée garde la couleur du dernier qui l'a ouverte.
   Vu sur le Mac de GitHub (27/10/2026) : l'icône que macOS rend pour le paquet
   fermé (`iconForFile`) et le Finder sont à la nouvelle couleur.
+* **Caches d'icônes de macOS (4.4.31)**. En 4.4.30, chez Arthur (macOS 26),
+  « Apps » restait à l'orange du build et le Dock, app fermée, à la couleur
+  d'avant. Le Dock et « Apps » gardent l'icône en cache. Essais du 27/10/2026
+  (job `icone-mac`, macOS 26.6, Pilote dans Applications et gardé dans le Dock) :
+
+  | Essai | Dock, app fermée | « Apps » déjà ouvert |
+  |---|---|---|
+  | rien de plus | orange | orange |
+  | `killall Dock` seul | orange | — |
+  | paquet relu (date, `lsregister -f`, `mdimport`) | orange | **à jour** |
+  | réglage d'apparence resauvé (SkyLight, privé) | orange | — |
+  | icône du paquet (`.icns`) remplacée, numéro de build changé | orange | à jour |
+  | module de tuile du Dock (`NSDockTilePlugIn`) | orange | — |
+  | caches de la session retirés, `killall iconservicesagent` puis `killall Dock` | **à jour** | — |
+  | idem avec le cache système (`sudo`) | à jour | — |
+
+  D'où `_rafraichir_mac`, après chaque icône posée : paquet relu, caches
+  d'icônes de la session retirés, `iconservicesagent` puis le Dock relancés,
+  icône de l'app ouverte reposée 3 s plus tard. Aucun mot de passe. Le Dock
+  disparaît une seconde : seulement quand la couleur change ou après une mise à
+  jour, jamais à un lancement ordinaire. Remplacer l'`.icns` du paquet
+  invaliderait sa signature : écarté. Le job `icone-mac` rejoue le chemin réel
+  (Apps ouvert avant, Enregistrer en vert, fermeture, second lancement, mise à
+  jour simulée).
   Polices du « P » : Arial Bold du système, sinon Helvetica.
 * Pillow est déclaré dans les `hiddenimports` de `build/pilote.spec` (import paresseux).
 
