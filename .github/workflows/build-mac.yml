@@ -475,7 +475,7 @@ jobs:
             open -R "$APP" || true
             sleep 4
             screencapture -x ecran-99.png || true
-            echo "::notice title=Icone app::$(ls -la "$APP" | tr '\n' ' ') | xattr : $(xattr "$APP" | tr '\n' ' ') | $(grep appicon ecrans.log | tr '\n' ' ' | head -c 800)"
+            echo "::notice title=Icone app::$(ls -la "$APP" | tr -d '\r' | tr '\n' ' ') | xattr : $(xattr "$APP" | tr '\n' ' ') | $(grep appicon ecrans.log | tr '\n' ' ' | head -c 800)"
           fi
           # Taille et qualite : les plus grandes qui tiennent en 45 morceaux
           # de 3800 caracteres (5 etapes de 9 annotations)

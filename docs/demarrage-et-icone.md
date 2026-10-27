@@ -156,12 +156,18 @@ Python attend pendant ce temps (`[pile]`). Elles varient avec la charge du PC
 * **Mac** (27/10/2026) : mêmes fonctions, autre cible. `apply_to_window` change
   l'icône du Dock tant que Pilote tourne (`NSApplication.setApplicationIconImage_`,
   sur le fil principal par `AppHelper.callAfter`), à partir d'un PNG 512 px
-  (`png_for`, `Donnees/icones/pilote_<hex>.png`). Le bouton devient « Recolorer
-  Pilote.app » : `NSWorkspace.setIcon_forFile_options_` pose l'icône sur le paquet
-  (fichier `Icon\r` à sa racine, Finder, Launchpad, Dock au repos) et note la
-  couleur dans `Donnees/icones/app_mac.txt`. Une mise à jour remplace Pilote.app et
-  efface ce fichier : `restore_app_mac()`, appelée par `_paint_accent_icon`, la remet
-  au lancement suivant. Refusé dans une copie en lecture seule (`mac_a_deplacer`).
+  (`png_for`, `Donnees/icones/pilote_<hex>.png`). Dans le même appel, sans bouton
+  (demande d'Arthur, 4.4.30 ; le bouton « Recolorer Pilote.app » de la 4.4.29 est
+  retiré, le réglage redevient `.win-seul`), `_sync_app_mac` pose l'icône sur le
+  paquet par `NSWorkspace.setIcon_forFile_options_` (fichier `Icon\r` vide à sa
+  racine, image dans ses attributs étendus : Finder, Launchpad, Dock au repos) et
+  note la couleur dans `Donnees/icones/app_mac.txt`. Rien n'est réécrit si la
+  couleur notée est la même et que `Icon\r` existe ; une mise à jour remplace
+  Pilote.app et efface ce fichier, l'icône revient donc au lancement suivant.
+  Rien dans une copie en lecture seule (`mac_a_deplacer`). Sur plusieurs
+  utilisateurs, l'app fermée garde la couleur du dernier qui l'a ouverte.
+  Vu sur le Mac de GitHub (27/10/2026) : l'icône que macOS rend pour le paquet
+  fermé (`iconForFile`) et le Finder sont à la nouvelle couleur.
   Polices du « P » : Arial Bold du système, sinon Helvetica.
 * Pillow est déclaré dans les `hiddenimports` de `build/pilote.spec` (import paresseux).
 
