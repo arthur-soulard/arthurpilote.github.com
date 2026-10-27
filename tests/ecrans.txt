@@ -11,10 +11,6 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 27/10/2026 : icône de Pilote.app à l'accent, sans bouton. 1) Dock prune
-# (accent par défaut) posé au lancement. 2) couleur passée au vert par le pont.
-# Une fois l'app fermée, le job ajoute l'icône que macOS rend pour Pilote.app
-# (écran 98) et le Finder (écran 99) : elles doivent être vertes.
+# 27/10/2026 : aucun écran. L'icône de Pilote.app à l'accent se vérifie dans le
+# job icone-mac (macOS 26 : Dock et « Apps »).
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
-plein home
-plein js:pywebview.api.set_app_icon_color("#16a34a")

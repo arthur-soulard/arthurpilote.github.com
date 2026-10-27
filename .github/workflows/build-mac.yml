@@ -532,3 +532,105 @@ jobs:
             ecran-*.png
             ecrans.log
           if-no-files-found: ignore
+
+  # Icone de Pilote.app a l'accent, comme chez Arthur (macOS 26, ecran « Apps ») :
+  # app rangee dans Applications et gardee dans le Dock, lancee a l'accent par
+  # defaut puis passee au vert, puis fermee. Captures du Dock et d'« Apps »
+  # (ecrans 91 a 9x) apres chaque facon de faire relire l'icone a macOS.
+  icone-mac:
+    needs: build-mac
+    if: ${{ !cancelled() }}
+    timeout-minutes: 25
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: App du build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: pilote-mac
+          path: art
+
+      - name: Icone apres un changement de couleur
+        run: |
+          set +e
+          APP=/Applications/Pilote.app
+          ditto -x -k art/Pilote-mac.zip /Applications
+          xattr -dr com.apple.quarantine "$APP"
+          python3 tests/donnees_exemple.py "$HOME/Library/Application Support/Pilote/Donnees"
+          defaults write com.apple.dock persistent-apps -array-add "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>file://$APP/</string><key>_CFURLStringType</key><integer>15</integer></dict></dict></dict>"
+          killall Dock; sleep 6
+          B=$(osascript -e 'tell application "Finder" to get bounds of window of desktop' | tr -d ' ')
+          W=$(echo "$B" | cut -d, -f3); H=$(echo "$B" | cut -d, -f4)
+          dock() { screencapture -x -R"0,$((H-140)),$W,140" "$1"; }
+          apps() {
+            open -a Apps 2>/dev/null || open -a Launchpad
+            sleep 4
+            osascript -e 'tell application "System Events" to keystroke "Pilote"'
+            sleep 3
+            screencapture -x "$1"
+            osascript -e 'tell application "System Events" to key code 53'
+            sleep 2
+          }
+          N=91
+          prendre() { dock "ecran-$N.png"; N=$((N+1)); apps "ecran-$N.png"; N=$((N+1)); }
+          # Lancee au prune (accent par defaut), passee au vert par le pont
+          PILOTE_ECRANS='home;js:pywebview.api.set_app_icon_color("#16a34a")' "$APP/Contents/MacOS/Pilote" > icone.log 2>&1 &
+          PID=$!
+          for i in $(seq 1 120); do grep -q "\[ecran\] fin" icone.log && break; sleep 1; done
+          sleep 3
+          dock "ecran-$N.png"; N=$((N+1))            # 91 : app ouverte
+          kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 5
+          prendre                                    # 92-93 : app fermee, rien de plus
+          SLS=$(osascript -l JavaScript -e 'ObjC.import("Foundation"); $.NSBundle.bundleWithPath("/System/Library/PrivateFrameworks/SkyLight.framework").load; var c = $.NSClassFromString("SLSIconAppearanceConfiguration"); if (c.isNil()) { "classe absente" } else { c.fetchCurrentIconAppearanceConfiguration.save; "reglage resauve" }' 2>&1)
+          sleep 6
+          prendre                                    # 94-95 : apres le reglage d'apparence resauve
+          killall Dock; sleep 8
+          prendre                                    # 96-97 : apres redemarrage du Dock
+          # Taille et qualite : les plus grandes qui tiennent en 45 morceaux
+          for REGLAGE in "1024 40" "900 30" "800 24" "720 18" "600 14" "500 10"; do
+            set -- $REGLAGE
+            TOTAL=0
+            for f in ecran-*.png; do
+              [ -f "$f" ] || continue
+              sips -s format jpeg -s formatOptions $2 -Z $1 "$f" --out "${f%.png}.jpg" > /dev/null
+              T=$(base64 -i "${f%.png}.jpg" | tr -d '\n' | wc -c | tr -d ' ')
+              TOTAL=$((TOTAL + (T + 3799) / 3800))
+            done
+            [ "$TOTAL" -le 45 ] && break
+          done
+          : > icone.lignes
+          for f in ecran-*.jpg; do
+            [ -f "$f" ] || continue
+            K=$(echo "$f" | sed 's/[^0-9]//g' | sed 's/^0*//')
+            base64 -i "$f" | tr -d '\n' | fold -w 3800 > morceaux.txt
+            echo >> morceaux.txt
+            M=$(grep -c . morceaux.txt)
+            i=0
+            while read -r ligne; do
+              [ -n "$ligne" ] || continue
+              i=$((i+1))
+              echo "::notice title=Ecran $K $i/$M::$ligne" >> icone.lignes
+            done < morceaux.txt
+          done
+          echo "::notice title=Icone mac::macOS $(sw_vers -productVersion) ; ecran $W x $H ; $TOTAL morceaux ; SkyLight : $SLS ; $(ls -la "$APP" | tr -d '\r' | tr '\n' ' ') ; $(grep -E 'appicon|\[ecran\]|Traceback|Error' icone.log | tr '\n' ' ' | head -c 1200)"
+
+      - name: Icone (1)
+        if: always()
+        run: sed -n '1,9p' icone.lignes 2>/dev/null || true
+      - name: Icone (2)
+        if: always()
+        run: sed -n '10,18p' icone.lignes 2>/dev/null || true
+      - name: Icone (3)
+        if: always()
+        run: sed -n '19,27p' icone.lignes 2>/dev/null || true
+      - name: Icone (4)
+        if: always()
+        run: sed -n '28,36p' icone.lignes 2>/dev/null || true
+      - name: Icone (5)
+        if: always()
+        run: sed -n '37,45p' icone.lignes 2>/dev/null || true
