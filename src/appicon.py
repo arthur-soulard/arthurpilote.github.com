@@ -9,10 +9,10 @@ puis l'applique :
   * aux raccourcis .lnk (Bureau, menu Demarrer, barre des taches epinglee)
     via WScript.Shell, uniquement si l'utilisateur le demande explicitement
 
-Sur Mac, les memes fonctions agissent sur l'icone du Dock pendant que Pilote
-tourne (NSApplication) et, sur demande, sur celle de Pilote.app (Finder, Dock
-au repos) via NSWorkspace. Une mise a jour remplace Pilote.app et efface
-cette icone : elle est remise au lancement suivant (restore_app_mac).
+Sur Mac, apply_to_window agit sur l'icone du Dock pendant que Pilote tourne
+(NSApplication) et sur celle de Pilote.app (Finder, Launchpad, Dock au repos)
+via NSWorkspace, sans bouton. Une mise a jour remplace Pilote.app et efface
+cette icone : elle est remise au lancement suivant (_sync_app_mac).
 
 Le rendu reprend exactement assets/make_icon.py : carre arrondi, lisere
 interne, "P" blanc centre, supersampling 4x + LANCZOS, .ico multi-resolution
@@ -223,19 +223,21 @@ def _apply_app_mac(color: str) -> dict:
         return {"ok": False, "error": str(e), "count": 0}
 
 
-def restore_app_mac() -> None:
-    """Au lancement : une mise a jour a remplace Pilote.app (plus de fichier
-    « Icon\\r » dans le paquet) alors qu'une couleur y avait ete posee."""
-    if sys.platform != "darwin":
-        return
+def _sync_app_mac(color: str) -> None:
+    """Pilote.app suit la couleur toute seule : au lancement et a chaque
+    changement d'accent. Rien a faire si elle l'a deja (meme couleur notee et
+    fichier « Icon\\r » present ; une mise a jour remplace le paquet et l'efface)."""
     try:
         import updater
-        marque = icons_dir() / _MAC_MARQUE
         bundle = updater._bundle_mac()
-        if bundle is None or not marque.exists() or (bundle / "Icon\r").exists():
+        if bundle is None or updater.mac_a_deplacer():
             return
-        r = _apply_app_mac(marque.read_text(encoding="utf-8").strip())
-        print(f"[appicon] icone de Pilote.app remise : {r.get('ok')}", flush=True)
+        marque = icons_dir() / _MAC_MARQUE
+        deja = marque.read_text(encoding="utf-8").strip() if marque.exists() else ""
+        if deja == _norm_color(color) and (bundle / "Icon\r").exists():
+            return
+        r = _apply_app_mac(color)
+        print(f"[appicon] icone de Pilote.app : {r.get('ok')} {r.get('error') or ''}", flush=True)
     except Exception as e:
         print(f"[appicon] icone de Pilote.app KO : {e}", flush=True)
 
@@ -271,7 +273,9 @@ def _main_hwnd() -> int:
 def apply_to_window(color: str) -> bool:
     """Change l'icone de la fenetre + de la vignette barre des taches (Mac : du Dock)."""
     if sys.platform == "darwin":
-        return _apply_dock_mac(color)
+        ok = _apply_dock_mac(color)
+        _sync_app_mac(color)
+        return ok
     if sys.platform != "win32":
         return False
     path = ico_for(color)
@@ -336,10 +340,7 @@ def apply_to_shortcuts(color: str) -> dict:
     """
     Repointe l'icone des raccourcis Pilote vers le .ico recolore.
     Passe par WScript.Shell (aucune dependance supplementaire).
-    Mac : change l'icone de Pilote.app.
     """
-    if sys.platform == "darwin":
-        return _apply_app_mac(color)
     if sys.platform != "win32":
         return {"ok": False, "error": "Windows uniquement", "count": 0}
     path = ico_for(color)

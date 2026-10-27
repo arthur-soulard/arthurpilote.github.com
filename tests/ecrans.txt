@@ -11,13 +11,10 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 27/10/2026 : icône à l'accent sur Mac. 1) accent bleu : la pastille du profil en
-# bas de la barre latérale doit être bleue. 2) Paramètres → Général, bouton
-# « Recolorer Pilote.app » appuyé : son résultat s'écrit à côté du bouton.
-# 3) tout l'écran : icône du Dock à l'accent par défaut (prune), posée au
-# lancement. 4) second lot, app neuve : Dock passé au vert par le pont.
+# 27/10/2026 : icône de Pilote.app à l'accent, sans bouton. 1) Dock prune
+# (accent par défaut) posé au lancement. 2) couleur passée au vert par le pont.
+# Une fois l'app fermée, le job ajoute l'icône que macOS rend pour Pilote.app
+# (écran 98) et le Finder (écran 99) : elles doivent être vertes.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
-js:S.uiPrefs.accent="#2563eb",applyAccent("#2563eb"),goTab("home")
-js:openSettings("general").then(()=>applyIconToShortcuts())
-plein js:closeOv("ov-config"),goTab("home")
+plein home
 plein js:pywebview.api.set_app_icon_color("#16a34a")

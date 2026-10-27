@@ -466,6 +466,17 @@ jobs:
             sleep 1
           done
           kill $PID 2>/dev/null || true
+          # Icone de Pilote.app une fois fermee (lot qui change la couleur) :
+          # celle que macOS rend pour le paquet (ecran 98), et le Finder (ecran 99)
+          if echo "$LIGNES" | grep -q set_app_icon_color; then
+            sleep 2
+            APP="$PWD/Pilote.app"
+            osascript -l JavaScript -e 'ObjC.import("AppKit"); var i=$.NSWorkspace.sharedWorkspace.iconForFile("'"$APP"'"); i.setSize({width:256,height:256}); $.NSBitmapImageRep.imageRepWithData(i.TIFFRepresentation).representationUsingTypeProperties(4, $()).writeToFileAtomically("'"$PWD"'/ecran-98.png", true)' || echo "icone illisible"
+            open -R "$APP" || true
+            sleep 4
+            screencapture -x ecran-99.png || true
+            echo "::notice title=Icone app::$(ls -la "$APP" | tr '\n' ' ') | xattr : $(xattr "$APP" | tr '\n' ' ') | $(grep appicon ecrans.log | tr '\n' ' ' | head -c 800)"
+          fi
           # Taille et qualite : les plus grandes qui tiennent en 45 morceaux
           # de 3800 caracteres (5 etapes de 9 annotations)
           for REGLAGE in "1024 45" "1024 35" "1024 27" "900 24" "800 20" "720 16" "600 12"; do

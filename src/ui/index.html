@@ -4311,19 +4311,17 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
               <button type="button" class="btn btn-ghost btn-sm" data-zoom-btn="1.3" onclick="setZoomPref(1.3)">130 %</button>
             </div>
           </div>
-          <div class="fg">
+          <div class="fg win-seul">
             <label>Icône de l'application</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" onclick="applyIconToShortcuts()"
-                      style="font-size:11px"><i class="ph ph-palette"></i>
-                <span class="txt-win">Recolorer les raccourcis</span><span class="txt-mac">Recolorer Pilote.app</span></button>
+                      style="font-size:11px"><i class="ph ph-palette"></i> Recolorer les raccourcis</button>
               <span id="cfg-icon-state" style="font-size:10px;color:var(--txt3);font-family:var(--mono)">
-                <span class="txt-win">Bureau, menu Démarrer et barre des tâches</span><span class="txt-mac">Finder, Launchpad et Dock</span></span>
+                Bureau, menu Démarrer et barre des tâches</span>
             </div>
             <p class="set-lead" style="margin:8px 0 0">
-              <span class="txt-win">La vignette de la fenêtre prend déjà la couleur d'accent à chaque démarrage.
-              Ce bouton applique la même couleur aux raccourcis Windows.</span><span class="txt-mac">L'icône du Dock prend déjà la couleur d'accent
-              pendant que Pilote est ouvert. Ce bouton la donne aussi à Pilote.app, même fermée.</span>
+              La vignette de la fenêtre prend déjà la couleur d'accent à chaque démarrage.
+              Ce bouton applique la même couleur aux raccourcis Windows.
             </p>
           </div>
           <div class="fg">
@@ -11940,7 +11938,7 @@ async function openConfig() {
   setGoSection("general");
 }
 
-/** Recolore aussi les raccourcis Windows (Bureau, Démarrer, barre des tâches), ou Pilote.app sur Mac. */
+/** Recolore aussi les raccourcis Windows (Bureau, Démarrer, barre des tâches). */
 async function applyIconToShortcuts() {
   const st = document.getElementById("cfg-icon-state");
   const api = (window.pywebview && window.pywebview.api) || null;
@@ -11954,12 +11952,11 @@ async function applyIconToShortcuts() {
   try {
     const r = await api.apply_icon_to_shortcuts(color);
     if (r && r.ok) {
-      if (st) st.textContent = EST_MAC ? "Pilote.app recolor\u00e9e"
-        : r.count + " raccourci" + (r.count > 1 ? "s" : "") + " recolor\u00e9" + (r.count > 1 ? "s" : "");
-      showToastModern(EST_MAC ? "Ic\u00f4ne appliqu\u00e9e \u00e0 Pilote.app" : "Ic\u00f4ne appliqu\u00e9e aux raccourcis", "ok");
+      if (st) st.textContent = r.count + " raccourci" + (r.count > 1 ? "s" : "") + " recolor\u00e9" + (r.count > 1 ? "s" : "");
+      showToastModern("Ic\u00f4ne appliqu\u00e9e aux raccourcis", "ok");
     } else {
       if (st) st.textContent = (r && r.error) || "\u00c9chec";
-      showToastModern((EST_MAC ? "Ic\u00f4ne non modifi\u00e9e : " : "Raccourcis non modifi\u00e9s : ") + ((r && r.error) || "?"), "warn");
+      showToastModern("Raccourcis non modifi\u00e9s : " + ((r && r.error) || "?"), "warn");
     }
   } catch (e) {
     if (st) st.textContent = "Erreur";

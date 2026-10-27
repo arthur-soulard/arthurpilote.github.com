@@ -1126,7 +1126,6 @@ def _paint_accent_icon() -> None:
         import appicon
         accent = (storage.load_data().get("uiPrefs") or {}).get("accent")
         appicon.apply_to_window(accent or appicon.DEFAULT_COLOR)
-        appicon.restore_app_mac()
     except Exception as e:
         print(f"[app] icone accent KO : {e}", flush=True)
 
