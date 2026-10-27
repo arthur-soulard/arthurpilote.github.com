@@ -1920,8 +1920,6 @@ label.sv-check, label.sv-inline {
 .ag-essai { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .ag-essai .ag-aide { font-size: 12px; }
 .ag-notif-cats { margin-bottom: 8px; }
-.ag-notif-libre { align-items: center; gap: 10px; margin: -6px 0 14px; }
-.ag-notif-libre .ag-aide { font-size: 12px; }
 @media (max-width: 900px) {
   .ac-cnx { grid-template-columns: 1fr; }
   .ac-layout { grid-template-columns: 1fr; height: auto !important; }
@@ -24895,10 +24893,13 @@ function agOuvrirJour(iso) {
   document.getElementById("ov-ag-jour").classList.add("open");
 }
 
-function agOuvrirNote(id, iso) {
+/** libre : ouverte par « Nouvelle notification libre » (onglet Notifications) :
+    même note, titrée comme telle, qui sonne à l'heure par défaut. */
+function agOuvrirNote(id, iso, libre) {
   const n = id ? AG.notes.find(x => x.id === id) : null;
   AG.noteId = n ? n.id : null;
-  document.getElementById("ag-note-titre").textContent = n ? "Modifier la note" : "Nouvelle note";
+  document.getElementById("ag-note-titre").textContent = n ? "Modifier la note"
+    : libre ? "Nouvelle notification libre" : "Nouvelle note";
   document.getElementById("ag-n-titre").value = n ? n.titre : "";
   document.getElementById("ag-n-date").value  = n ? n.date : (iso || spDateISO(new Date()));
   document.getElementById("ag-n-heure").value = n ? n.heure : "";
@@ -24912,7 +24913,7 @@ function agOuvrirNote(id, iso) {
     [["", "Comme les autres notes (" + (general ? general[1] : "Pas d'alerte").toLowerCase() + ")"], ["aucune", "Aucune pour cette note"]]
       .concat(AG_ALERTES_HEURE.slice(1), [["semaine", "Une semaine avant, 9 h"]])
       .map(([v, nom]) => `<option value="${v}">${escHtml(nom)}</option>`).join("");
-  document.getElementById("ag-n-alerte").value = n && n.alerte || "";
+  document.getElementById("ag-n-alerte").value = n ? n.alerte || "" : libre ? "0" : "";
   document.getElementById("ag-n-suppr").style.display = n ? "" : "none";
   document.getElementById("ag-n-icloud").textContent = cfg.connecte && cfg.calendrier
     ? "La note part aussi dans ton agenda iCloud, quelques secondes après."
@@ -25007,6 +25008,7 @@ const AG_NOTIFS = [
   ["resume", "agenda", "calendar-check", "Résumé de la semaine", "compte ce qui t'attend : séances, mensualités, dividendes…", AG_ALERTES_RESUME],
   ["sauvegarde", "general", "usb", "Sauvegarde USB en retard", "comptée depuis la dernière sauvegarde sur clé", AG_ALERTES_RAPPEL, "delai"],
   ["ouvrir", "general", "compass", "Pilote pas ouvert depuis…", "recule à chaque lancement de Pilote", AG_ALERTES_RAPPEL, "delai"],
+  ["pense-bete", "general", "push-pin", "Pense-bêtes datés", "ceux de la tuile Pense-bête de l'accueil qui ont une date et ne sont pas cochés", AG_ALERTES_DATE],
 ];
 const AG_CASES = { sport: "sport", objectifs: "objectifs", pret: "pret" };
 
@@ -25070,13 +25072,12 @@ function agRenderNotifs() {
   }).join("");
   box.innerHTML = `
     <div class="ag-essai">
+      <button type="button" class="btn btn-primary btn-sm" onclick="agOuvrirNote(null, null, true)"><i class="ph ph-plus"></i> Nouvelle notification libre</button>
       <button type="button" class="btn btn-ghost btn-sm" id="ag-essai-btn" onclick="agEssai()"><i class="ph ph-bell-ringing"></i> Envoyer un essai</button>
       <span class="ag-aide" id="ag-essai-msg">${escHtml(AG.essaiMsg || "Une notification d'essai sonne sur l'iPhone 2 à 3 minutes après.")}</span>
     </div>
     <div class="ac-filtres ag-notif-cats">${pastilles}</div>
     <div class="ag-notifs">${lignes}</div>
-    ${AG.notifCat === "agenda" ? `<div class="ac-btns ag-notif-libre"><button type="button" class="btn btn-ghost btn-sm" onclick="agOuvrirNote(null, null)"><i class="ph ph-plus"></i> Nouvelle notification libre</button>
-      <span class="ag-aide">une note avec ton texte, sa date, son heure et sa répétition</span></div>` : ""}
     <p class="ac-note ag-notifs-pied">Sur l'iPhone, les alertes de Calendrier doivent être autorisées
       (Réglages › Notifications › Calendrier).</p>
     <p class="ac-note" id="ag-notifs-etat">${agEtatHtml()}</p>`;

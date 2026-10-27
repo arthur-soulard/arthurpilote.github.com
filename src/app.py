@@ -231,6 +231,7 @@ class Api:
                     return {"ok": False, "error": "pea_data.json illisible : rien n'est ecrit"}
                 d["uiPrefs"] = prefs or {}
                 storage.save_data(d)
+            agenda.planifier_si("pense-bete")   # les pense-betes vivent dans uiPrefs
             return {"ok": True, "uiPrefs": d["uiPrefs"]}
         except Exception as e:
             return {"ok": False, "error": str(e)}

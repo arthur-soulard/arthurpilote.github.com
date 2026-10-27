@@ -27,8 +27,9 @@ sonne tout seul, Pilote ferme ou non. Plus un catalogue de rappels qui ne
 partent que si leur alerte est reglee (RAPPELS, 26/10/2026) : rappels du mois
 (un evenement repete chaque mois, qui saute au mois suivant une fois le mois
 fait), dates connues (dividendes, versements, anniversaire du PEA, etapes du
-pret), rappels « depuis X jours » (seance, pesee, sauvegarde USB, Pilote pas
-ouvert), resume de la semaine, et une notification d'essai.
+pret, pense-betes dates de l'accueil), rappels « depuis X jours » (seance,
+pesee, sauvegarde USB, Pilote pas ouvert), resume de la semaine, et une
+notification d'essai.
 
 Synchronisation : Pilote calcule la liste voulue a partir de sports.json et
 pret.json, liste ce qui est deja dans l'agenda, puis ajoute, remplace ou
@@ -86,7 +87,7 @@ CHOIX     = ("sport", "objectifs", "pret")
 RAPPELS   = ("pesee", "releve", "versement", "dividende",
              "pea-depot", "pea-investir", "pea-anniv", "cto-investir", "cto-dividende",
              "fin-saisie", "fin-recurrent", "pret-etapes", "sport-pause",
-             "sante-pause", "sante-objectif", "resume", "sauvegarde", "ouvrir")
+             "sante-pause", "sante-objectif", "resume", "sauvegarde", "ouvrir", "pense-bete")
 ALERTES   = ("note", "sport", "objectif", "pret") + RAPPELS
 # "" : aucune alerte (un rappel n'est alors pas envoye) ; minutes avant le
 # debut ; « matin » : 9 h le jour meme ; « veille » : 18 h la veille ;
@@ -553,6 +554,13 @@ def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
             if jour and n >= 1:
                 titre = f"🎂 Le PEA a {n} an{'s' if n > 1 else ''}" + (" · cap des 5 ans" if n == 5 else "")
                 out.append(_element("pea-anniv", "pea-anniv", titre, jour))
+    if alertes.get("pense-bete"):
+        # Pense-betes de l'accueil (uiPrefs du PEA) : ceux qui ont une date a venir
+        for i, n in enumerate((_pea().get("uiPrefs") or {}).get("penseBete") or []):
+            jour = _jour(n.get("date"))
+            if jour and jour >= auj and not n.get("faite") and str(n.get("texte") or "").strip():
+                out.append(_element(f"pense-bete-{_cle(n, jour, i)}", "pense-bete",
+                                    "📌 " + str(n["texte"]).strip()[:200], jour))
     if alertes.get("cto-investir") or alertes.get("cto-dividende"):
         for c in cto.load_data().get("comptes") or []:
             cid = re.sub(r"[^A-Za-z0-9_-]", "", str(c.get("id") or ""))
@@ -627,7 +635,7 @@ def essai(quand: str) -> list:
 _RESUME_NOMS = {"sport": ("séance", "séances"), "note": ("note", "notes"),
                 "objectif": ("objectif", "objectifs"), "pret": ("mensualité", "mensualités"),
                 "dividende": ("dividende", "dividendes"), "cto-dividende": ("dividende", "dividendes"),
-                "versement": ("versement", "versements"), "fin-recurrent": ("opération récurrente", "opérations récurrentes")}
+                "versement": ("versement", "versements"), "pense-bete": ("pense-bête", "pense-bêtes"), "fin-recurrent": ("opération récurrente", "opérations récurrentes")}
 _RESUME_ECARTES = ("sport-pause", "sante-pause", "sauvegarde", "ouvrir", "essai", "resume")
 
 

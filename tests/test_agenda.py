@@ -554,6 +554,21 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual([x["type"] for x in p], ["essai", "note"])
         self.assertEqual(p[1]["quand"], demain + "T10:00")
 
+    def test_pense_betes_dates(self):
+        import datetime
+        auj = datetime.date.today()
+        j = lambda n: (auj + datetime.timedelta(days=n)).isoformat()
+        (storage.get_user_dir() / "pea_data.json").write_text(json.dumps({"uiPrefs": {"penseBete": [
+            {"id": 1, "texte": "Appeler la banque", "date": j(3), "faite": False},
+            {"id": 2, "texte": "Déjà fait", "date": j(3), "faite": True},
+            {"id": 3, "texte": "Sans date", "date": "", "faite": False},
+            {"id": 4, "texte": "Dépassé", "date": j(-1), "faite": False}]}}), "utf-8")
+        r = agenda.rappels({"pense-bete": "veille"}, {})
+        self.assertEqual([(e["cle"], e["titre"], e["jour"].isoformat()) for e in r],
+                         [("pense-bete-1", "📌 Appeler la banque", j(3))])
+        self.assertIn("TRIGGER:-PT6H", agenda.evenements({}, {}, {}, [], {"pense-bete": "veille"}, r)["pense-bete-1"])
+        self.assertEqual(agenda.rappels({}, {}), [])
+
     def test_note_personnalisee(self):
         import datetime
         auj = datetime.date.today()

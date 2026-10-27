@@ -177,6 +177,7 @@ Calendrier doit être autorisé.
   | Agenda | `resume` | résumé de la semaine (voir plus bas) |
   | Pilote | `sauvegarde` | X jours après la dernière sauvegarde USB (`lastBackupAt`, rien sans) |
   | Pilote | `ouvrir` | aujourd'hui + X jours, recule à chaque envoi, donc à chaque lancement |
+  | Pilote | `pense-bete` | pense-bêtes de l'accueil (`uiPrefs.penseBete` du PEA) datés, à venir, pas cochés ; titre « 📌 texte ». `save_ui_prefs` relance l'envoi (27/10/2026) |
 * **Rappels du mois** (`MENSUELS`) : le jour choisi (1 à 28), répété chaque
   mois sans fin ; commence au mois suivant dès que le mois est fait.
 * **Rappels « depuis X jours »** (`DELAIS`, `DELAIS_VALEURS`) : au plus tôt
@@ -202,8 +203,10 @@ Calendrier doit être autorisé.
   de l'agenda », `aucune`, ou une valeur d'`ALERTES_VALEURS`). Le calendrier la
   montre à chaque occurrence (`agNoteTombe` ; un mois sans le 31 est sauté,
   comme iCloud), la tuile « Prochaines notes » à la prochaine
-  (`agNoteProchaine`). Bouton « Nouvelle notification libre » dans la pastille
-  Agenda.
+  (`agNoteProchaine`). Bouton « Nouvelle notification libre » en haut de
+  l'onglet, à côté de l'essai (27/10/2026 : Arthur ne l'avait pas vu dans la
+  pastille Agenda) ; ouverte par lui, la note sonne à l'heure par défaut
+  (`agOuvrirNote(null, null, true)`).
 * **Prochaines notifications** (`agenda.prochaines`, `agenda_prochaines`) :
   les 6 prochaines alertes, calculées avec les mêmes règles que l'envoi
   (`_decalage`, `_occurrences`). Servent à la tuile `ag-alertes`.
