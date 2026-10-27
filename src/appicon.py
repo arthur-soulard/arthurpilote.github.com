@@ -182,7 +182,7 @@ def png_for(color: str) -> Optional[Path]:
 
 # ─── Mac : Dock et Pilote.app ─────────────────────────────────────────────────
 
-_MAC_MARQUE = "app_mac.txt"     # couleur posee sur Pilote.app, pour la remettre apres une mise a jour
+_MAC_MARQUE = "app_mac.txt"     # empreinte de l'icone posee sur Pilote.app (_empreinte_mac)
 
 
 def _apply_dock_mac(color: str) -> bool:
@@ -218,7 +218,7 @@ def _apply_app_mac(color: str) -> dict:
         image = NSImage.alloc().initWithContentsOfFile_(str(path))
         if image is None or not NSWorkspace.sharedWorkspace().setIcon_forFile_options_(image, str(bundle), 0):
             return {"ok": False, "error": "macOS a refusé de changer l'icône", "count": 0}
-        (icons_dir() / _MAC_MARQUE).write_text(_norm_color(color), encoding="utf-8")
+        (icons_dir() / _MAC_MARQUE).write_text(_empreinte_mac(bundle, color), encoding="utf-8")
         _rafraichir_mac(bundle, color)
         return {"ok": True, "count": 1, "paths": [str(bundle)], "ico": str(path)}
     except Exception as e:
@@ -260,9 +260,22 @@ def _rafraichir_mac(bundle: Path, color: str) -> None:
     threading.Timer(3.0, _apply_dock_mac, args=(color,)).start()
 
 
+def _empreinte_mac(bundle: Path, color: str) -> str:
+    """Couleur + version + emplacement du paquet : une nouvelle version (mise a
+    jour) ou une app deplacee se recolore meme si elle porte deja un « Icon\\r »
+    (une app deja lancee une fois, comme celle du test, en garde un)."""
+    try:
+        import plistlib
+        with open(bundle / "Contents" / "Info.plist", "rb") as f:
+            version = plistlib.load(f).get("CFBundleVersion", "")
+    except Exception:
+        version = ""
+    return f"{_norm_color(color)} {version} {bundle}"
+
+
 def _sync_app_mac(color: str) -> None:
     """Pilote.app suit la couleur toute seule : au lancement et a chaque
-    changement d'accent. Rien a faire si elle l'a deja (meme couleur notee et
+    changement d'accent. Rien a faire si elle l'a deja (meme empreinte notee et
     fichier « Icon\\r » present ; une mise a jour remplace le paquet et l'efface)."""
     try:
         import updater
@@ -271,7 +284,7 @@ def _sync_app_mac(color: str) -> None:
             return
         marque = icons_dir() / _MAC_MARQUE
         deja = marque.read_text(encoding="utf-8").strip() if marque.exists() else ""
-        if deja == _norm_color(color) and (bundle / "Icon\r").exists():
+        if deja == _empreinte_mac(bundle, color) and (bundle / "Icon\r").exists():
             return
         r = _apply_app_mac(color)
         print(f"[appicon] icone de Pilote.app : {r.get('ok')} {r.get('error') or ''}", flush=True)

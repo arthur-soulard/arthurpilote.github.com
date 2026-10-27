@@ -606,6 +606,9 @@ jobs:
           # Mise a jour : le paquet est remplace (orange, sans icone posee), la
           # couleur notee doit revenir au lancement suivant
           rm -rf "$APP"; ditto -x -k art/Pilote-mac.zip /Applications; xattr -dr com.apple.quarantine "$APP"
+          # (l'app du build a ete lancee une fois par build-mac : elle porte deja
+          # une icone posee, au prune ; une nouvelle version doit la recolorer)
+          plutil -replace CFBundleVersion -string 99.0.0 "$APP/Contents/Info.plist"
           "$APP/Contents/MacOS/Pilote" > maj.log 2>&1 &
           PID=$!
           for i in $(seq 1 40); do grep -q "fenetre ouverte" maj.log && break; sleep 1; done
