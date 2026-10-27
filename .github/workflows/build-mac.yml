@@ -546,7 +546,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        essai: [1, 2, 3, 4]
+        essai: [5, 6, 7]
 
     steps:
       - name: Checkout
@@ -588,6 +588,28 @@ jobs:
             sleep 2
           }
           LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+          ICONES="$HOME/Library/Application Support/Pilote/Donnees/icones"
+          python3 -m pip install --quiet --break-system-packages pillow > pip.log 2>&1 || python3 -m pip install --quiet pillow >> pip.log 2>&1
+          carre() { mkdir -p "$ICONES"; python3 -c "from PIL import Image; Image.new('RGBA', (512, 512), $1).save('$ICONES/dock.png')"; }
+          signal() { osascript -l JavaScript -e 'ObjC.import("Foundation"); $.NSDistributedNotificationCenter.defaultCenter.postNotificationNameObjectUserInfoDeliverImmediately("io.github.arthur-soulard.pilote.icone", $(), $(), true)' > /dev/null; sleep 4; }
+          FAIT=""
+          case $E in
+            6) NOM="Apps deja ouvert avant le changement de couleur"
+               apps 1 ;;                             # 61 : Apps avant (orange attendu)
+            7) NOM="module de tuile du Dock (NSDockTilePlugIn)"
+               P="$APP/Contents/PlugIns/PiloteDock.docktileplugin"
+               mkdir -p "$P/Contents/MacOS"
+               cp build/dock/Info.plist "$P/Contents/Info.plist"
+               FAIT="clang : $(clang -bundle -fobjc-arc -framework Cocoa -o "$P/Contents/MacOS/PiloteDock" build/dock/PiloteDock.m 2>&1 | tail -n 3 | tr '\n' ' ')"
+               plutil -insert NSDockTilePlugIn -string PiloteDock.docktileplugin "$APP/Contents/Info.plist"
+               codesign --force --deep -s - "$APP" > /dev/null 2>&1
+               "$LSREG" -f "$APP"
+               carre "(22, 163, 74, 255)"
+               killall Dock; sleep 8
+               dock 1                                # 71 : app jamais lancee, Dock relance (vert attendu)
+               carre "(124, 58, 237, 255)"; signal
+               dock 2 ;;                             # 72 : apres la notification (violet attendu)
+          esac
           # Lancee au prune (accent par defaut), passee au vert par le pont (icone
           # posee par-dessus le paquet par Pilote 4.4.30), puis fermee
           PILOTE_ECRANS='home;js:pywebview.api.set_app_icon_color("#16a34a")' "$APP/Contents/MacOS/Pilote" > icone.log 2>&1 &
@@ -596,30 +618,18 @@ jobs:
           sleep 3
           kill $PID; sleep 2; kill -9 $PID 2>/dev/null; sleep 5
           case $E in
-            1) NOM="icone par-dessus + reglage d'apparence des icones resauve (SkyLight)"
-               FAIT=$(osascript -l JavaScript -e 'ObjC.import("Foundation"); $.NSBundle.bundleWithPath("/System/Library/PrivateFrameworks/SkyLight.framework").load; var c = $.NSClassFromString("SLSIconAppearanceConfiguration"); if (c.isNil()) { "classe absente" } else { c.fetchCurrentIconAppearanceConfiguration.save; "resauve" }' 2>&1) ;;
-            2) NOM="icone par-dessus + caches d'icones vides"
-               sudo rm -rf /Library/Caches/com.apple.iconservices.store
+            5) NOM="icone par-dessus + caches d'icones de la session seulement (sans mot de passe)"
                rm -rf "$(getconf DARWIN_USER_CACHE_DIR)com.apple.iconservices" "$(getconf DARWIN_USER_CACHE_DIR)com.apple.dock.iconcache"
-               sudo killall iconservicesd iconservicesagent 2>/dev/null; killall iconservicesagent 2>/dev/null
-               FAIT="caches retires" ;;
-            3) NOM="icone du paquet remplacee (violet) + numero de build change"
-               rm -f "$APP/Icon"$'\r'; xattr -d com.apple.FinderInfo "$APP" 2>/dev/null
-               ICNS="$APP/Contents/Resources/$(defaults read "$APP/Contents/Info" CFBundleIconFile | sed 's/\.icns$//').icns"
-               python3 -m pip install --quiet --break-system-packages pillow > pip.log 2>&1 || python3 -m pip install --quiet pillow >> pip.log 2>&1
-               FAIT=$(python3 -c "from PIL import Image; Image.new('RGBA', (1024, 1024), (124, 58, 237, 255)).save('$ICNS'); print('icns ecrit')" 2>&1 | tail -n 1)
-               plutil -replace CFBundleVersion -string "$(date +%s)" "$APP/Contents/Info.plist" ;;
-            4) NOM="icone par-dessus + numero de build change"
-               plutil -replace CFBundleVersion -string "$(date +%s)" "$APP/Contents/Info.plist"
-               FAIT="build change" ;;
+               killall iconservicesagent 2>/dev/null
+               FAIT="$(ls "$(getconf DARWIN_USER_CACHE_DIR)" | grep -i icon | tr '\n' ' ')"
+               killall Dock; sleep 8
+               dock 1                                # 51 : Dock (vert ?)
+               apps 2 ;;                             # 52 : Apps
+            6) touch "$APP"; "$LSREG" -f "$APP"; mdimport "$APP" 2>/dev/null; sleep 10
+               apps 2 ;;                             # 62 : Apps apres (vert ?)
+            7) carre "(124, 58, 237, 255)"; signal
+               dock 3 ;;                             # 73 : app fermee (violet du module attendu)
           esac
-          touch "$APP"; "$LSREG" -f "$APP"; mdimport "$APP" 2>/dev/null
-          sleep 10
-          dock 1                                     # <n>1 : Dock sans redemarrage
-          killall Dock; sleep 8
-          dock 2                                     # <n>2 : apres redemarrage du Dock
-          rendue 3                                   # <n>3 : icone que macOS rend pour le paquet
-          apps 4                                     # <n>4 : Apps, recherche « Pilote »
           SIGN=$(codesign --verify "$APP" 2>&1 | tr '\n' ' ' | head -c 200)
           # L'app (peut-etre modifiee) demarre-t-elle encore ?
           PILOTE_DIAG=1 "$APP/Contents/MacOS/Pilote" > relance.log 2>&1 &
