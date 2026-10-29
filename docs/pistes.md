@@ -41,6 +41,10 @@ Autres pistes :
   `vocabulaire.json` reste sur le disque, plus lu par l'app. Le code, sa fiche et le
   mode PDF d'`ocr_win.ps1` vivent dans l'historique git (commit `bb71143` et avant).
 
+- **Onglets masqués rappelés dans la barre latérale** (ligne « 2 masqués » au bas
+  d'une section, 4.4.33) : retirée en 4.4.34, « si on veut masqué c'est pas pour le
+  voir ici ». Ce qui est caché se retrouve dans Paramètres, Masqués, et nulle part ailleurs.
+
 - **Version mobile / PWA** : écartée par Arthur en 4.1.4 pour la sécurité des données.
   Les JSON sont en clair et le PIN ne chiffre rien ; exposer le serveur local, même
   derrière un VPN, sortait les données du PC. Si la question revient, le prérequis

@@ -1403,9 +1403,15 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
 
 /* ══ Paramètres : colonne de sections + panneau ══ */
 .set-layout { display: grid; grid-template-columns: 186px 1fr; gap: 18px; align-items: start; }
-.set-nav { display: flex; flex-direction: column; gap: 3px; }
+/* Une entrée par module (4.4.34) : la colonne défile seule quand elle dépasse
+   la fenêtre (1366 × 720 : 490 px), même hauteur que le panneau */
+.set-nav {
+  display: flex; flex-direction: column; gap: 2px;
+  max-height: min(calc(100vh - 232px), 620px); overflow-y: auto; scrollbar-width: thin;
+  padding: 3px; margin: -3px;     /* place pour le contour du focus, que le défilement couperait */
+}
 .set-nav-btn {
-  text-align: left; padding: 9px 12px; border-radius: 8px;
+  flex: none; text-align: left; padding: 6px 12px; border-radius: 8px;
   font-size: 12.5px; font-weight: 600; color: var(--txt2);
   border: 1px solid transparent; background: transparent; cursor: pointer;
   font-family: var(--font); display: flex; align-items: center; gap: 9px;
@@ -1417,7 +1423,7 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .set-nav-ico { width: 17px; text-align: center; font-size: 14px; opacity: .9; }
-.set-body { min-width: 0; max-height: min(64vh, 620px); overflow-y: auto; padding-right: 4px; }
+.set-body { min-width: 0; max-height: min(calc(100vh - 232px), 620px); overflow-y: auto; padding-right: 4px; }
 .set-sec { display: none; }
 .set-sec.active { display: block; }
 .set-sec h3 {
@@ -1460,6 +1466,30 @@ button.set-res:hover { background: var(--hover); }
 @media (prefers-reduced-motion: reduce) {
   .set-trouve { animation: none; background: var(--accent-soft); }
 }
+/* Colonne : titre « Mes modules » (comme les titres de la barre latérale),
+   puis un simple trait avant les réglages de l'app */
+.set-nav-grp {
+  padding: 10px 12px 2px; font-size: 10.5px; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--txt2); user-select: none;
+}
+.set-nav-grp:empty { padding: 0; margin: 5px 12px; border-top: 1px solid var(--brd); }
+/* Masqués : une case par module (_cfgRenderMasques). Petits textes en --txt2 :
+   --txt3 n'a que 2,8:1 en thème clair */
+.set-masq-liste { display: flex; flex-direction: column; gap: 10px; }
+.set-masq { border: 1px solid var(--brd); border-radius: 12px; background: var(--bg2); padding: 10px 14px 4px; }
+.set-masq-h { display: flex; align-items: baseline; gap: 8px; padding-bottom: 8px; }
+.set-masq-ico {
+  align-self: center; flex: none; width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-text); font-size: 15px;
+}
+.set-masq-h b { font-size: 13.5px; font-weight: 600; color: var(--txt); }
+.set-masq-h small { font-size: 11px; color: var(--txt2); }
+.set-masq-grp { display: grid; grid-template-columns: 64px 1fr; gap: 10px; border-top: 1px solid var(--brd); padding: 3px 0; }
+.set-masq-type { padding-top: 10px; font-size: 11px; color: var(--txt2); }
+.set-masq-ligne { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.set-masq-nom { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; color: var(--txt); }
+.set-masq-nom small { font-size: 11px; color: var(--txt2); }
+.set-masq-vide { margin: 0; font-size: 12px; color: var(--txt2); }
 
 /* ── Patrimoine ─────────────────────────────────────────────────────────── */
 .pa-split { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; align-items: center; }
@@ -1729,7 +1759,7 @@ label.sv-check, label.sv-inline {
 .sv-row .sv-row-size { margin-left: auto; color: var(--txt3); font-size: 10px; }
 @media (max-width: 720px) {
   .set-layout { grid-template-columns: 1fr; }
-  .set-nav { flex-direction: row; flex-wrap: wrap; }
+  .set-nav { flex-direction: row; flex-wrap: wrap; max-height: none; }
   .set-cherche { flex-basis: 100%; }
   .set-nav-btn.active { box-shadow: none; border-color: var(--accent); }
 }
@@ -2030,23 +2060,6 @@ body { font-variant-numeric: tabular-nums; }
 .sb-sub .sb-item { padding: 6px 12px; font-size: 13px; font-weight: 400; }
 .sb-home { margin-bottom: 10px; }
 .sb-bottom { border-top-color: var(--brd); }
-/* « 2 masqués » au bas d'une section : ses onglets cachés à l'œil, réaffichables d'un clic */
-.sb-masques, .sb-masque {
-  display: flex; align-items: center; gap: 6px; width: 100%;
-  background: none; border: none; cursor: pointer; text-align: left;
-  font-family: var(--font); color: var(--txt3); border-radius: 8px;
-}
-.sb-masques { padding: 5px 12px; font-size: 11.5px; margin-top: 2px; }
-.sb-masques .ph { font-size: 13px; }
-.sb-masques-chev { font-size: 10px !important; transition: transform .15s; }
-.sb-masques.open .sb-masques-chev { transform: rotate(180deg); }
-.sb-masques:hover, .sb-masque:hover { color: var(--txt); background: var(--hover); }
-.sb-masques-liste { display: none; flex-direction: column; gap: 1px; }
-.sb-masques.open + .sb-masques-liste { display: flex; }
-.sb-masque { padding: 5px 12px 5px 31px; font-size: 12.5px; }
-.sb-masque > span { flex: 1; }
-.sb-masque .ph { font-size: 13px; opacity: 0; transition: opacity .12s; }
-.sb-masque:hover .ph, .sb-masque:focus-visible .ph { opacity: 1; color: var(--accent-text); }
 /* Deux tas de sections, « Bourse » et « Vie perso » (4.4.2) : de simples
    titres ; les sections se déplacent en glissant leur en-tête */
 .sb-grp {
@@ -4337,14 +4350,25 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
                 onclick="setGoSection('accueil')"><span class="set-nav-ico"><i class="ph ph-house"></i></span>Accueil</button>
         <button type="button" class="set-nav-btn" data-set="nav"
                 onclick="setGoSection('nav')"><span class="set-nav-ico"><i class="ph ph-squares-four"></i></span>Modules</button>
-        <button type="button" class="set-nav-btn" data-set="pea"
+        <button type="button" class="set-nav-btn" data-set="masques"
+                onclick="setGoSection('masques')"><span class="set-nav-ico"><i class="ph ph-eye-slash"></i></span>Masqués</button>
+        <!-- Un réglage par module coché, dans l'ordre de la barre latérale (_setNavModules) -->
+        <div class="set-nav-grp" id="set-nav-mods">Mes modules</div>
+        <button type="button" class="set-nav-btn" data-set="pea" data-mod="sec-pea"
                 onclick="setGoSection('pea')"><span class="set-nav-ico"><i class="ph ph-chart-line-up"></i></span>PEA</button>
-        <button type="button" class="set-nav-btn" data-set="comptes"
+        <button type="button" class="set-nav-btn" data-set="cto" data-mod="sec-cto"
+                onclick="setGoSection('cto')"><span class="set-nav-ico"><i class="ph ph-briefcase"></i></span>CTO</button>
+        <button type="button" class="set-nav-btn" data-set="actus" data-mod="sec-actus"
+                onclick="setGoSection('actus')"><span class="set-nav-ico"><i class="ph ph-newspaper"></i></span>Actus</button>
+        <button type="button" class="set-nav-btn" data-set="agenda" data-mod="sec-agenda"
+                onclick="setGoSection('agenda')"><span class="set-nav-ico"><i class="ph ph-calendar-blank"></i></span>Agenda</button>
+        <button type="button" class="set-nav-btn" data-set="comptes" data-mod="sec-comptes"
                 onclick="setGoSection('comptes')"><span class="set-nav-ico"><i class="ph ph-wallet"></i></span>Mes comptes</button>
-        <button type="button" class="set-nav-btn" data-set="pret"
+        <button type="button" class="set-nav-btn" data-set="pret" data-mod="sec-pret"
                 onclick="setGoSection('pret')"><span class="set-nav-ico"><i class="ph ph-hand-coins"></i></span><span class="pr-nom">Prêt</span></button>
-        <button type="button" class="set-nav-btn" data-set="sport"
+        <button type="button" class="set-nav-btn" data-set="sport" data-mod="sec-sport"
                 onclick="setGoSection('sport')"><span class="set-nav-ico"><i class="ph ph-person-simple-run"></i></span>Sports</button>
+        <div class="set-nav-grp" id="set-nav-app"></div>
         <button type="button" class="set-nav-btn" data-set="sauvegarde"
                 onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-usb"></i></span>Sauvegarde USB</button>
         <button type="button" class="set-nav-btn" data-set="donnees"
@@ -4436,17 +4460,45 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
             restent sur <span class="txt-win">ce PC</span><span class="txt-mac">ce Mac</span>
             et reviennent quand tu le recoches.</p>
           <div class="pp-mods" id="cfg-modules"></div>
+        </div>
 
-          <h3 style="margin-top:22px">Masqué</h3>
-          <p class="set-lead">Ce que tu as masqué avec l'icône <i class="ph ph-eye-slash"></i> se restaure ici.
-            Un onglet se réaffiche aussi depuis le bas de sa section, dans la barre de gauche.</p>
-          <div class="fg" id="cfg-hidden-section">
-            <label>Onglets masqués <span style="color:var(--txt3);font-weight:400">(icône œil sur la barre latérale)</span></label>
-            <div id="cfg-hidden-list" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;min-height:22px"></div>
+        <!-- ──── MASQUÉS : une case par module où quelque chose est caché ──── -->
+        <div class="set-sec" data-sec="masques">
+          <h3>Masqués</h3>
+          <p class="set-lead">Ce que tu as caché avec l'icône <i class="ph ph-eye-slash"></i>, rangé par
+            module. « Réafficher » le remet à sa place.</p>
+          <div class="set-masq-liste" id="cfg-masques"></div>
+        </div>
+
+        <!-- ──── CTO ──── -->
+        <div class="set-sec" data-sec="cto">
+          <h3>CTO</h3>
+          <p class="set-lead">Le nom et le courtier de chaque compte-titres. La grille de frais se règle
+            dans la Stratégie du compte.</p>
+          <div class="set-res-liste" id="cfg-cto"></div>
+          <div class="set-links" style="margin-top:10px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(() => ctoOuvrirCompte(null), 'ov-cto-compte')"><i class="ph ph-plus"></i> Nouveau CTO</button>
           </div>
-          <div class="fg" id="cfg-hidden-cards-section">
-            <label>Blocs masqués <span style="color:var(--txt3);font-weight:400">(icône œil sur les tableaux / graphiques)</span></label>
-            <div id="cfg-hidden-cards-list" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;min-height:22px"></div>
+        </div>
+
+        <!-- ──── ACTUS ──── -->
+        <div class="set-sec" data-sec="actus">
+          <h3>Actus</h3>
+          <p class="set-lead">La boîte Gmail où arrivent tes newsletters.</p>
+          <div class="set-res-liste" id="cfg-actus"></div>
+          <div class="set-links" style="margin-top:10px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ac-connexion')"><i class="ph ph-plug"></i> Connexion à la boîte</button>
+          </div>
+        </div>
+
+        <!-- ──── AGENDA ──── -->
+        <div class="set-sec" data-sec="agenda">
+          <h3>Agenda</h3>
+          <p class="set-lead">Ton agenda iCloud, et les alertes que Pilote y pose pour ton iPhone.</p>
+          <div class="set-res-liste" id="cfg-agenda"></div>
+          <div class="set-links" style="margin-top:10px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ag-connexion')"><i class="ph ph-cloud"></i> iCloud</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ag-notifs')"><i class="ph ph-bell"></i> Notifications</button>
           </div>
         </div>
 
@@ -4483,9 +4535,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           <h3>Mes comptes</h3>
           <p class="set-lead">Les listes qui alimentent la saisie des transactions.</p>
           <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenCategories()"><i class="ph ph-squares-four"></i> Catégories &amp; emoji</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenSources()"><i class="ph ph-credit-card"></i> Sources</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');finOpenRecurrences()"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(finOpenCategories, 'ov-fin-cats')"><i class="ph ph-squares-four"></i> Catégories &amp; emoji</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(finOpenSources, 'ov-fin-srcs')"><i class="ph ph-credit-card"></i> Sources</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(finOpenRecurrences, 'ov-fin-recs')"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
           </div>
         </div>
 
@@ -4494,8 +4546,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           <h3 class="pr-nom">Prêt</h3>
           <p class="set-lead">Montant, échéances, taux et frais se règlent dans l'onglet dédié.</p>
           <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm"
-                    onclick="closeOv('ov-config');goTab('pr-params');_setActiveSidebar('pr-params')">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('pr-params')">
               Ouvrir les paramètres du prêt →</button>
           </div>
         </div>
@@ -4505,9 +4556,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           <h3>Sports</h3>
           <p class="set-lead">Ajoute tes propres sports et choisis les informations à saisir pour chacun.</p>
           <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenCustomSports()"><i class="ph ph-medal"></i> Mes sports</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenSubtypes()"><i class="ph ph-pencil-simple"></i> Types de séance</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="closeOv('ov-config');spOpenRoutines()"><i class="ph ph-arrow-counter-clockwise"></i> Routines</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(spOpenCustomSports, 'ov-sp-sports')"><i class="ph ph-medal"></i> Mes sports</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(spOpenSubtypes, 'ov-sp-subtypes')"><i class="ph ph-pencil-simple"></i> Types de séance</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(spOpenRoutines, 'ov-sp-routines')"><i class="ph ph-arrow-counter-clockwise"></i> Routines</button>
           </div>
         </div>
 
@@ -11645,7 +11696,9 @@ function setGoSection(id) {
   // l'ouverture de sa section, pas à chaque ouverture des paramètres.
   if (id === "sauvegarde") svRefresh();
   if (id === "accueil" && typeof dashRenderConfig === "function") dashRenderConfig();
-  if (id === "nav") { cfgRenderModules(); _cfgRenderMasques(); }
+  if (id === "nav") cfgRenderModules();
+  if (id === "masques") _cfgRenderMasques();
+  if (id === "cto" || id === "actus" || id === "agenda") cfgRenderModule(id);
   if (id === "maj") majRenderSection();
   if (id === "donnees") _cheminDonnees().then(c => {
     const el = document.getElementById("cfg-dossier");
@@ -11671,39 +11724,178 @@ function cfgModule(secId, on) {
   if (typeof dashRender === "function") dashRender();
   cfgRenderModules();
   _cfgRenderMasques();
+  _setNavModules();
 }
 
-/* Onglets et blocs masqués avec l'œil, restaurables un par un */
+/* Les sections de NAV_SECTIONS dans l'ordre de la barre latérale (un CTO
+   ou plusieurs : une seule fois « sec-cto ») */
+function _setOrdreModules() {
+  const ids = [];
+  _navOrdre(_navBlocs()).forEach(k => {
+    const id = k.split("@")[0];
+    if (id !== "" && !ids.includes(id)) ids.push(id);
+  });
+  return ids;
+}
+
+/* Colonne des Paramètres : un réglage par module coché, rangé comme la barre latérale */
+function _setNavModules() {
+  const titre = document.getElementById("set-nav-mods");
+  if (!titre) return;
+  const vis = _modulesVisibles();
+  let apres = titre;
+  _setOrdreModules().forEach(id => {
+    const b = document.querySelector(`#set-nav .set-nav-btn[data-mod="${id}"]`);
+    if (!b) return;                    // Patrimoine, Santé : rien à régler ici
+    b.style.display = vis.has(id) ? "" : "none";
+    apres.after(b);
+    apres = b;
+  });
+  titre.style.display = document.querySelector('#set-nav .set-nav-btn[data-mod]:not([style*="none"])') ? "" : "none";
+  // Section affichée d'un module qu'on vient de décocher : retour à Modules
+  const actif = document.querySelector("#set-nav .set-nav-btn.active");
+  if (actif && actif.style.display === "none") setGoSection("nav");
+}
+
+/* Ouvre la fenêtre d'un module depuis les Paramètres : ils s'effacent le temps
+   qu'elle est ouverte, puis reviennent sur la même section. (Ces fenêtres sont
+   plus haut dans la page : ouvertes telles quelles, elles passaient dessous.) */
+function _setParDessus(ouvrir, ovId) {
+  const cfg = document.getElementById("ov-config");
+  const ov = document.getElementById(ovId);
+  const sec = (document.querySelector(".set-sec.active") || {}).dataset;
+  cfg.classList.remove("open");
+  ouvrir();
+  const revenir = () => { cfg.classList.add("open"); if (sec && sec.sec) setGoSection(sec.sec); };
+  if (!ov || !ov.classList.contains("open")) { revenir(); return; }   // refusée (fichier pas lu…)
+  const obs = new MutationObserver(() => {
+    if (ov.classList.contains("open")) return;
+    obs.disconnect();
+    revenir();
+  });
+  obs.observe(ov, { attributes: true, attributeFilter: ["class"] });
+}
+
+/* Ferme les Paramètres et ouvre l'onglet d'un module (Connexion, iCloud…) */
+function _setAllerOnglet(id) {
+  closeOv("ov-config");
+  goTab(id);
+  _setActiveSidebar(id);
+}
+
+/* Sections CTO, Actus, Agenda : l'état du module, relu à chaque ouverture */
+function cfgRenderModule(id) {
+  const ligne = (ico, titre, sous, bouton) => `<div class="set-res">
+      <span class="set-nav-ico"><i class="ph ph-${ico}"></i></span>
+      <span class="set-res-txt"><b>${titre}</b>${sous ? `<small>${sous}</small>` : ""}</span>${bouton || ""}</div>`;
+  if (id === "cto") {
+    const box = document.getElementById("cfg-cto");
+    if (!box) return;
+    const comptes = (typeof ctoComptes === "function") ? ctoComptes() : [];
+    box.innerHTML = comptes.length
+      ? comptes.map(c => {
+          const k = courtierDe(c.courtier);
+          return ligne("briefcase", escHtml(ctoNomSection(c)), escHtml(k ? k.nom : "Grille personnalisée"),
+            `<button type="button" class="btn btn-ghost btn-sm" data-cpt="${escHtml(c.id)}"><i class="ph ph-gear-six"></i> Réglages du compte</button>`);
+        }).join("")
+      : `<p class="set-lead" style="margin:0">Aucun CTO pour l'instant.</p>`;
+    box.querySelectorAll("[data-cpt]").forEach(b => {
+      b.onclick = () => _setParDessus(() => ctoOuvrirCompte(b.dataset.cpt), "ov-cto-compte");
+    });
+  }
+  if (id === "actus") {
+    const box = document.getElementById("cfg-actus");
+    if (!box) return;
+    const cfg = (typeof AC !== "undefined" && AC.config) || {};
+    box.innerHTML = cfg.connecte
+      ? ligne("check-circle", `Connectée à ${escHtml(cfg.adresse)}`, "Relevée toutes les 3 minutes tant que Pilote est ouvert")
+      : ligne("envelope-simple", "Pas encore de boîte", "Connexion à la boîte : l'adresse Gmail et un mot de passe d'application");
+  }
+  if (id === "agenda") {
+    const box = document.getElementById("cfg-agenda");
+    if (!box) return;
+    const cfg = (typeof AG !== "undefined" && AG.config) || {};
+    box.innerHTML = cfg.connecte
+      ? ligne("check-circle", `Connecté à ${escHtml(cfg.adresse)}`, "Tes notes et ce que tu coches partent sur ton iPhone")
+      : ligne("cloud", "Pas encore relié à iCloud", "iCloud : ton identifiant Apple et un mot de passe pour app");
+  }
+}
+
+/* ─── Paramètres → Masqués : une case par module où quelque chose est caché ───
+   Les onglets cachés à l'œil (hiddenSidebar), les blocs (hiddenCards), et le
+   module entier quand il est décoché. Les écrans du PEA servent aussi aux CTO :
+   un bloc caché sur l'un l'est sur l'autre, il est donc dans les deux cases.
+   Les onglets des CTO, eux, sont communs à tous les CTO. */
 function _cfgRenderMasques() {
-  const hiddenList = document.getElementById("cfg-hidden-list");
-  if (hiddenList) {
-    // Un onglet retiré de l'app (ceux de Formation, 11/10/2026) reste dans les
-    // réglages de qui l'avait masqué : il n'a plus rien à restaurer.
-    // Ceux d'un module décoché se retrouvent dans la grille des modules.
-    const vis = _modulesVisibles();
-    const hidden = ((S.uiPrefs && S.uiPrefs.hiddenSidebar) || [])
-      .filter(id => SIDEBAR_ITEMS.some(x => x.id === id))
-      .filter(id => { const sec = _navSectionOf(id); return !sec || vis.has(sec.id); });
-    hiddenList.innerHTML = hidden.length === 0
-      ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Aucun onglet masqué</span>'
-      : hidden.map(id => {
-          const it = SIDEBAR_ITEMS.find(x => x.id === id);
-          const label = it ? it.label : id;
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showSidebarItem('${id}');_cfgRenderMasques()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
-        }).join("");
-  }
-  // Blocs masqués
-  const hiddenCardsList = document.getElementById("cfg-hidden-cards-list");
-  if (hiddenCardsList) {
-    const hidden = (S.uiPrefs && S.uiPrefs.hiddenCards) || [];
-    hiddenCardsList.innerHTML = hidden.length === 0
-      ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Aucun bloc masqué</span>'
-      : hidden.map(id => {
-          const it = CARD_ITEMS.find(x => x.id === id);
-          const label = it ? it.label : id;
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showCard('${id}');_cfgRenderMasques()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
-        }).join("");
-  }
+  const box = document.getElementById("cfg-masques");
+  if (!box) return;
+  const vis = _modulesVisibles();
+  // Un onglet retiré de l'app (ceux de Formation, 11/10/2026) reste dans les
+  // réglages de qui l'avait masqué : il n'a plus rien à restaurer.
+  const hid = ((S.uiPrefs && S.uiPrefs.hiddenSidebar) || []).filter(id => SIDEBAR_ITEMS.some(x => x.id === id));
+  const comptes = (typeof ctoComptes === "function") ? ctoComptes() : [];
+  const avecCto = vis.has("sec-cto") && comptes.length > 0;
+  const ctoDe = tab => NAV_SECTIONS.find(s => s.id === "sec-cto").children.some(c => c.id === "cto-" + tab);
+  // Un bloc : son onglet, celui du pane qui le contient (card-strat → strat)
+  const blocs = ((S.uiPrefs && S.uiPrefs.hiddenCards) || []).map(id => {
+    const it = CARD_ITEMS.find(x => x.id === id);
+    const pane = it && document.getElementById(id) && document.getElementById(id).closest(".pane");
+    if (!pane) return null;
+    const tab = pane.id.replace(/^pane-/, "");
+    const parts = it.label.split(" · ");
+    return { id, tab, nom: parts.length > 1 ? parts.slice(1).join(" · ") : it.label,
+             onglet: (SIDEBAR_ITEMS.find(x => x.id === tab) || {}).label || parts[0] };
+  }).filter(Boolean);
+
+  const ligne = (act, id, nom, sous) => `<div class="set-masq-ligne">
+      <span class="set-masq-nom">${nom}${sous ? `<small>${sous}</small>` : ""}</span>
+      <button type="button" class="btn btn-ghost btn-sm" data-act="${act}" data-id="${escHtml(id)}"><i class="ph ph-arrow-u-up-left"></i> Réafficher</button>
+    </div>`;
+  const groupe = (type, lignes) => lignes.length
+    ? `<div class="set-masq-grp"><span class="set-masq-type">${type}</span><div>${lignes.join("")}</div></div>` : "";
+
+  const cases = [];
+  _setOrdreModules().forEach(secId => {
+    const s = NAV_SECTIONS.find(x => x.id === secId);
+    if (!s) return;
+    const off = !vis.has(s.id);
+    // Module décoché : ses onglets reviennent tous avec lui
+    const onglets = off ? [] : s.children.filter(c => hid.includes(c.id))
+      .map(c => ligne("tab", c.id, escHtml(c.label)));
+    let mesBlocs;
+    if (s.id === "sec-cto") {
+      mesBlocs = avecCto ? blocs.filter(b => ctoDe(b.tab))
+        .map(b => ligne("card", b.id, escHtml(b.nom), escHtml(b.onglet) + " · aussi caché sur le PEA")) : [];
+    } else {
+      mesBlocs = blocs.filter(b => (_navSectionOf(b.tab) || {}).id === s.id)
+        .map(b => ligne("card", b.id, escHtml(b.nom),
+          escHtml(b.onglet) + (s.id === "sec-pea" && avecCto && ctoDe(b.tab) ? " · aussi caché sur tes CTO" : "")));
+    }
+    if (!off && !onglets.length && !mesBlocs.length) return;
+    let titre = s.label, sous = "";
+    if (s.id === "sec-cto" && comptes.length === 1) titre = ctoNomSection(comptes[0]);
+    else if (s.id === "sec-cto" && comptes.length > 1) sous = `réglage commun à tes ${comptes.length} comptes-titres`;
+    cases.push(`<div class="set-masq">
+        <div class="set-masq-h">
+          <span class="set-masq-ico"><i class="ph ph-${NAV_ICONS[s.id] || "circle"}"></i></span>
+          <b>${escHtml(titre)}</b>${sous ? `<small>${sous}</small>` : ""}
+        </div>
+        ${off ? groupe("Module", [ligne("mod", s.id, "Tout le module", "décoché dans Modules")]) : ""}
+        ${groupe("Onglets", onglets)}
+        ${groupe("Blocs", mesBlocs)}
+      </div>`);
+  });
+
+  box.innerHTML = cases.length ? cases.join("")
+    : `<p class="set-masq-vide">Rien n'est masqué pour l'instant.</p>`;
+  box.querySelectorAll("[data-act]").forEach(b => { b.onclick = () => {
+    const { act, id } = b.dataset;
+    if (act === "mod") { cfgModule(id, true); return; }   // redessine tout
+    if (act === "tab") _showSidebarItem(id);
+    else _showCard(id);
+    _cfgRenderMasques();
+    _setNavModules();          // un module dont tous les onglets étaient cachés revient
+  }; });
 }
 
 /* ─── Paramètres → recherche : les réglages des sections, puis ce qui est
@@ -11734,6 +11926,7 @@ function setChercher(q) {
     const id = sec.dataset.sec;
     if (id === "recherche") return;
     const nav = document.querySelector(`#set-nav .set-nav-btn[data-set="${id}"]`);
+    if (nav && nav.style.display === "none") return;     // module décoché
     const secNom = nav ? nav.textContent.replace(/\s+/g, " ").trim() : "";
     const ico = (nav && nav.querySelector("i.ph")) ? nav.querySelector("i.ph").className : "ph ph-gear-six";
     if (secNom && trouve(secNom)) {
@@ -12113,9 +12306,10 @@ async function openConfig() {
   _renderAccentPicker();
   _wireThemeButtons();
   document.getElementById("cfg-ouverture").addEventListener("input", updateConfigRecap);
-  // Modules, onglets et blocs masqués
+  // Modules, onglets et blocs masqués, un réglage par module coché
   cfgRenderModules();
   _cfgRenderMasques();
+  _setNavModules();
   // Affiche la version de l'app
   try {
     const vEl = document.getElementById("cfg-version");
@@ -14889,7 +15083,6 @@ function _setActiveSidebar(id) {
    Jusqu'a la 4.3.17 elle etait enregistree (S.uiPrefs.navOpen, desormais
    ignore) et la section du lancement precedent restait ouverte. */
 let _navOuverte = "";
-let _navMasquesOuvert = "";   // section dont la liste « masqués » est dépliée
 
 function _navToggleSection(secId) {
   const el = document.querySelector(`.sb-sec[data-sec="${secId}"]`);
@@ -14980,18 +15173,6 @@ function _injectSidebar() {
                  <span class="sb-eye-btn" data-hide="${it.base}" title="Masquer cet onglet"><i class="ph ph-eye-slash"></i></span>
                </button>`;
     });
-    // Les onglets masqués à l'œil se retrouvent là où on les a cachés
-    const caches = b.enfants.filter(c => hidden.includes(c.base));
-    if (caches.length) {
-      const ouv = (cle === _navMasquesOuvert);
-      html += `<button class="sb-masques${ouv ? " open" : ""}" data-masques="${escHtml(cle)}" aria-expanded="${ouv}">
-                 <i class="ph ph-eye-slash"></i><span>${caches.length} masqué${caches.length > 1 ? "s" : ""}</span>
-                 <i class="ph ph-caret-down sb-masques-chev"></i>
-               </button>
-               <div class="sb-masques-liste">${caches.map(c =>
-                 `<button class="sb-masque" data-montrer="${escHtml(c.base)}" title="Réafficher cet onglet">
-                    <span>${c.label}</span><i class="ph ph-arrow-u-up-left"></i></button>`).join("")}</div>`;
-    }
     html += `</div></div>`;
   });
 
@@ -15020,18 +15201,6 @@ function _injectSidebar() {
       goTab(el.dataset.tab);
       _setActiveSidebar(el.dataset.tab);
     };
-  });
-
-  document.querySelectorAll(".sb-masques").forEach(el => {
-    el.onclick = () => {
-      const ouv = !el.classList.contains("open");
-      el.classList.toggle("open", ouv);
-      el.setAttribute("aria-expanded", ouv);
-      _navMasquesOuvert = ouv ? el.dataset.masques : "";
-    };
-  });
-  document.querySelectorAll(".sb-masque").forEach(el => {
-    el.onclick = () => _showSidebarItem(el.dataset.montrer);
   });
 
   const side = document.getElementById("app-sidebar");
@@ -15155,17 +15324,12 @@ function _hideSidebarItem(id) {
               || { id: "pos" };
     goTab(next.id);
   }
-  // Redessinée plutôt que retouchée : la ligne « masqués » de la section
-  // (et celles de tous les CTO) se met à jour, une section vide disparaît
+  // Redessinée plutôt que retouchée : l'onglet part de tous les CTO,
+  // une section vide disparaît
   _reconstruireSidebar();
   const label = SIDEBAR_ITEMS.find(x => x.id === id)?.label || id;
-  // Le dernier onglet d'une section masqué : la section part, le module avec
-  const secId = (_navSectionOf(id) || {}).id || "";
-  const resteSec = secId && document.querySelector(`.sb-sec[data-sec^="${secId}"] .sb-masques`);
   if (typeof showToastModern === "function")
-    showToastModern(resteSec
-      ? `« ${label} » masqué. Pour le réafficher : en bas de la section, ligne « masqué »`
-      : `« ${label} » masqué. Pour le réafficher : Paramètres, Modules`, "info");
+    showToastModern(`« ${label} » masqué. Pour le réafficher : Paramètres, Masqués`, "info");
 }
 
 function _showSidebarItem(id) {
@@ -15216,7 +15380,7 @@ function _hideCard(id) {
   if (el) el.style.display = "none";
   const label = CARD_ITEMS.find(x => x.id === id)?.label || id;
   if (typeof showToastModern === "function")
-    showToastModern(`« ${label} » masqué — restaurable dans ⚙ Paramètres`, "info");
+    showToastModern(`« ${label} » masqué. Pour le réafficher : Paramètres, Masqués`, "info");
 }
 
 function _showCard(id) {

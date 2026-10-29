@@ -2,6 +2,20 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.34",
+      "date": "2026-10-29",
+      "titre": "Des Paramètres rangés par module",
+      "nouveau": [
+        "Une entrée « Masqués » dans les Paramètres : tout ce que tu as caché avec l'œil, dans une case par module. Un onglet « Dividendes » caché dans le PEA et un autre dans le CTO ne se confondent plus.",
+        "Le CTO, Actus et Agenda ont maintenant leur section dans les Paramètres, comme le PEA, Mes comptes, le Prêt et les Sports."
+      ],
+      "ameliore": [
+        "Les sections des modules suivent l'ordre de ta barre de gauche, et celles d'un module décoché disparaissent.",
+        "Catégories, Sources, Récurrents, Mes sports, Types de séance et Routines s'ouvrent sans fermer les Paramètres : tu y reviens en les quittant.",
+        "La ligne « 2 masqués » au bas des sections de la barre de gauche est retirée : elle prenait de la place pour rien. Ce qui est caché se retrouve dans Paramètres, Masqués."
+      ]
+    },
+    {
       "version": "4.4.33",
       "date": "2026-10-29",
       "titre": "Retrouver ce qui est caché, et Trade Republic sans mélange",
