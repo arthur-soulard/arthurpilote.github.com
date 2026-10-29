@@ -2,6 +2,18 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.35",
+      "date": "2026-10-29",
+      "titre": "Sports et Mes comptes se règlent dans les Paramètres",
+      "ameliore": [
+        "Dans Paramètres, Mes comptes : tes catégories (emoji, couleur, sous-catégories), tes sources de paiement et tes récurrents se modifient directement, sans ouvrir d'autre fenêtre.",
+        "Dans Paramètres, Sports : tu ajoutes, modifies ou supprimes tes sports, tes types de séance (sport à choisir) et tes routines sur place."
+      ],
+      "corrige": [
+        "Dans les catégories de Mes comptes, la case de l'emoji d'une nouvelle sous-catégorie était bien trop large."
+      ]
+    },
+    {
       "version": "4.4.34",
       "date": "2026-10-29",
       "titre": "Des Paramètres rangés par module",

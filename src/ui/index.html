@@ -965,7 +965,7 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
   color: var(--txt); font-family: var(--font);
 }
 /* La case emoji garde sa largeur, seul le nom s'etire */
-.fin-add-line input.fin-ico-in { flex: 0 0 46px; font-size: 15px; padding: 6px 4px; }
+.fin-add-line input.fin-ico-in { flex: 0 0 46px; min-width: 0; font-size: 15px; padding: 6px 4px; }  /* sans min-width, 207 px */
 
 /* Modale récurrents */
 .fin-rec-row {
@@ -1490,6 +1490,15 @@ button.set-res:hover { background: var(--hover); }
 .set-masq-nom { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; color: var(--txt); }
 .set-masq-nom small { font-size: 11px; color: var(--txt2); }
 .set-masq-vide { margin: 0; font-size: 12px; color: var(--txt2); }
+/* Mes comptes et Sports : les listes de leurs fenêtres, ici en entier (_setCorps) */
+.set-sec h3.set-sous {
+  margin: 22px 0 8px; padding-top: 14px; border-top: 1px solid var(--brd);
+  font-family: var(--font); font-size: 14px; font-weight: 600;
+}
+.set-sec .set-lead + h3.set-sous, .set-sec .set-lead + div > h3.set-sous:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+[data-corps] #fin-cats-list, [data-corps] #fin-srcs-list, [data-corps] #fin-recs-list {
+  max-height: none !important; overflow: visible !important;
+}
 
 /* ── Patrimoine ─────────────────────────────────────────────────────────── */
 .pa-split { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; align-items: center; }
@@ -3879,7 +3888,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       En plus des sports livrés avec Pilote, tu peux créer les tiens et choisir
       exactement les informations à saisir pour chacun.
     </p>
-    <div class="sp-slist" id="sp-sports-list"></div>
+    <div class="set-corps" id="corps-sp-sports"><div class="sp-slist" id="sp-sports-list"></div></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-sports')">Fermer</button>
       <button class="btn btn-primary" onclick="spOpenCustomSport(null)"><i class="ph ph-plus"></i> Nouveau sport</button>
@@ -3920,6 +3929,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div class="modal" style="max-width:480px">
     <h2>Routines</h2>
     <div class="m-note">Un nom de circuit que tu réutilises d'une séance de muscu à l'autre — « Circuit abdos », « Gainage », « Haut du corps »…</div>
+    <div class="set-corps" id="corps-sp-routines">
     <div id="sp-routines-list" style="margin-bottom:1rem"></div>
     <div class="fg">
       <label>Nouvelle routine</label>
@@ -3928,6 +3938,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
                onkeydown="if(event.key==='Enter'){event.preventDefault();spAddRoutine();}">
         <button class="btn btn-primary" onclick="spAddRoutine()">Ajouter</button>
       </div>
+    </div>
     </div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-routines')">Fermer</button>
@@ -3939,6 +3950,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 <div class="ov" id="ov-sp-subtypes" onclick="if(event.target===this)closeOv('ov-sp-subtypes')">
   <div class="modal" style="max-width:480px">
     <h2 id="sp-subtypes-title">Types de séance</h2>
+    <div class="set-corps" id="corps-sp-subtypes">
     <div id="sp-subtypes-list" style="margin-bottom:1rem"></div>
     <div class="fg">
       <label>Nouveau type</label>
@@ -3947,6 +3959,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
                onkeydown="if(event.key==='Enter'){event.preventDefault();spAddSubtype();}">
         <button class="btn btn-primary" onclick="spAddSubtype()">Ajouter</button>
       </div>
+    </div>
     </div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-sp-subtypes')">Fermer</button>
@@ -4121,6 +4134,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div class="modal" style="max-width:620px">
     <h2>▦ Gérer les catégories</h2>
 
+    <div class="set-corps" id="corps-fin-cats">
     <div class="fg">
       <label>Filtrer</label>
       <div class="fin-toggle">
@@ -4137,6 +4151,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <input id="fin-newcat-name" type="text" placeholder="Nouvelle catégorie…">
       <input id="fin-newcat-color" type="color" value="#7c3aed" style="width:38px;height:34px;padding:2px;cursor:pointer">
       <button class="btn btn-primary btn-sm" onclick="finAddCategory()"><i class="ph ph-plus"></i> Ajouter</button>
+    </div>
     </div>
 
     <div class="mact">
@@ -4166,11 +4181,13 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div class="modal" style="max-width:460px">
     <h2>⊳ Sources de paiement</h2>
 
+    <div class="set-corps" id="corps-fin-srcs">
     <div id="fin-srcs-list" style="max-height:55vh;overflow-y:auto;padding-right:6px"></div>
 
     <div class="fin-add-line">
       <input id="fin-newsrc-name" type="text" placeholder="Ex. Compte joint, Revolut…">
       <button class="btn btn-primary btn-sm" onclick="finAddSource()"><i class="ph ph-plus"></i> Ajouter</button>
+    </div>
     </div>
 
     <div class="mact">
@@ -4186,7 +4203,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <span>↻ Transactions récurrentes</span>
       <button class="btn btn-primary btn-sm" onclick="finOpenRecEdit()"><i class="ph ph-plus"></i> Nouveau</button>
     </h2>
-    <div id="fin-recs-list" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="set-corps" id="corps-fin-recs"><div id="fin-recs-list" style="max-height:60vh;overflow-y:auto"></div></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-fin-recs')">Fermer</button>
     </div>
@@ -4534,10 +4551,16 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <div class="set-sec" data-sec="comptes">
           <h3>Mes comptes</h3>
           <p class="set-lead">Les listes qui alimentent la saisie des transactions.</p>
-          <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(finOpenCategories, 'ov-fin-cats')"><i class="ph ph-squares-four"></i> Catégories &amp; emoji</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(finOpenSources, 'ov-fin-srcs')"><i class="ph ph-credit-card"></i> Sources</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(finOpenRecurrences, 'ov-fin-recs')"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
+          <!-- Listes des fenêtres Catégories, Sources, Récurrents, déplacées ici
+               à l'ouverture de la section (_setCorps) -->
+          <h3 class="set-sous">Catégories &amp; emoji</h3>
+          <div data-corps="corps-fin-cats"></div>
+          <h3 class="set-sous">Sources de paiement</h3>
+          <div data-corps="corps-fin-srcs"></div>
+          <h3 class="set-sous">Transactions récurrentes</h3>
+          <div data-corps="corps-fin-recs"></div>
+          <div class="set-links" style="margin-top:10px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="finOpenRecEdit()"><i class="ph ph-plus"></i> Nouveau récurrent</button>
           </div>
         </div>
 
@@ -4555,10 +4578,21 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <div class="set-sec" data-sec="sport">
           <h3>Sports</h3>
           <p class="set-lead">Ajoute tes propres sports et choisis les informations à saisir pour chacun.</p>
-          <div class="set-links">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(spOpenCustomSports, 'ov-sp-sports')"><i class="ph ph-medal"></i> Mes sports</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(spOpenSubtypes, 'ov-sp-subtypes')"><i class="ph ph-pencil-simple"></i> Types de séance</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="_setParDessus(spOpenRoutines, 'ov-sp-routines')"><i class="ph ph-arrow-counter-clockwise"></i> Routines</button>
+          <p class="set-lead" id="cfg-sp-off" style="display:none">Le module Sports n'est pas encore chargé.</p>
+          <div id="cfg-sp-corps">
+            <h3 class="set-sous">Mes sports</h3>
+            <div data-corps="corps-sp-sports"></div>
+            <div class="set-links" style="margin-top:8px">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="spOpenCustomSport(null)"><i class="ph ph-plus"></i> Nouveau sport</button>
+            </div>
+            <h3 class="set-sous">Types de séance</h3>
+            <div class="fg">
+              <label for="cfg-sp-st-sport">Sport</label>
+              <select id="cfg-sp-st-sport" style="max-width:250px" onchange="_spSport=this.value;spRenderSubtypes()"></select>
+            </div>
+            <div data-corps="corps-sp-subtypes"></div>
+            <h3 class="set-sous">Routines</h3>
+            <div data-corps="corps-sp-routines"></div>
           </div>
         </div>
 
@@ -11699,6 +11733,7 @@ function setGoSection(id) {
   if (id === "nav") cfgRenderModules();
   if (id === "masques") _cfgRenderMasques();
   if (id === "cto" || id === "actus" || id === "agenda") cfgRenderModule(id);
+  if (id === "comptes" || id === "sport") _setCorps(id);
   if (id === "maj") majRenderSection();
   if (id === "donnees") _cheminDonnees().then(c => {
     const el = document.getElementById("cfg-dossier");
@@ -11774,6 +11809,48 @@ function _setParDessus(ouvrir, ovId) {
     revenir();
   });
   obs.observe(ov, { attributes: true, attributeFilter: ["class"] });
+}
+
+/* Mes comptes et Sports (4.4.35) : les listes de leurs fenêtres (Catégories,
+   Sources, Récurrents, Mes sports, Types de séance, Routines) se modifient
+   directement dans les Paramètres. Un seul exemplaire de chaque liste
+   (.set-corps) : il vient ici à l'ouverture de la section, et retourne dans sa
+   fenêtre quand celle-ci s'ouvre ailleurs (onglet, crayon d'une séance) :
+   _corpsDansFenetre. Les fonctions de rendu, qui visent leurs id, n'ont rien
+   à savoir de l'endroit où est la liste. */
+function _setCorps(sec) {
+  document.querySelectorAll(`.set-sec[data-sec="${sec}"] [data-corps]`).forEach(h => {
+    const c = document.getElementById(h.dataset.corps);
+    if (c && c.parentNode !== h) h.appendChild(c);
+  });
+  try {
+    if (sec === "comptes") {
+      finCatsFilter(_finCatFilter || "expense");
+      finRenderSrcsList();
+      finRenderRecsList();
+    }
+    if (sec === "sport") {
+      const ok = typeof SP !== "undefined" && !!SP;
+      document.getElementById("cfg-sp-off").style.display = ok ? "none" : "";
+      document.getElementById("cfg-sp-corps").style.display = ok ? "" : "none";
+      if (!ok) return;
+      spRenderCustomSports();
+      spRenderRoutines();
+      // Types de séance : ceux d'un sport à choisir (les sports qui en ont)
+      const avec = SP_CATALOG.filter(s => (s.fields || []).includes("subtype"));
+      if (!avec.some(s => s.id === _spSport) && avec.length) _spSport = avec[0].id;
+      document.getElementById("cfg-sp-st-sport").innerHTML = avec.map(s =>
+        `<option value="${escHtml(s.id)}"${s.id === _spSport ? " selected" : ""}>${escHtml(s.label)}</option>`).join("");
+      spRenderSubtypes();
+    }
+  } catch (e) { console.warn("[parametres]", sec, e); }
+}
+
+/* Remet une liste dans sa fenêtre, juste avant les boutons du bas */
+function _corpsDansFenetre(corpsId, ovId) {
+  const c = document.getElementById(corpsId);
+  const m = document.querySelector(`#${ovId} .modal`);
+  if (c && m && c.parentNode !== m) m.insertBefore(c, m.querySelector(".mact"));
 }
 
 /* Ferme les Paramètres et ouvre l'onglet d'un module (Connexion, iCloud…) */
@@ -17046,6 +17123,7 @@ function finDeleteTx(id) {
 // CATÉGORIES
 // ════════════════════════════════════════════════════════
 function finOpenCategories() {
+  _corpsDansFenetre("corps-fin-cats", "ov-fin-cats");
   finCatsFilter("expense");
   document.getElementById("ov-fin-cats").classList.add("open");
 }
@@ -17179,6 +17257,7 @@ function finDeleteSub(catId, subId) {
 // SOURCES
 // ════════════════════════════════════════════════════════
 function finOpenSources() {
+  _corpsDansFenetre("corps-fin-srcs", "ov-fin-srcs");
   finRenderSrcsList();
   document.getElementById("ov-fin-srcs").classList.add("open");
 }
@@ -17225,6 +17304,7 @@ function finDeleteSrc(id) {
 // RÉCURRENTS
 // ════════════════════════════════════════════════════════
 function finOpenRecurrences() {
+  _corpsDansFenetre("corps-fin-recs", "ov-fin-recs");
   finRenderRecsList();
   document.getElementById("ov-fin-recs").classList.add("open");
 }
@@ -17285,7 +17365,7 @@ function finOpenRecEdit(id) {
     document.getElementById("fin-rec-sub").value = r.subcategoryId || "";
     document.getElementById("fin-rec-src").value = r.sourceId || "";
   }
-  document.getElementById("ov-fin-rec-edit").classList.add("open");
+  openOvTop("ov-fin-rec-edit");   // au-dessus des Paramètres aussi (Mes comptes)
 }
 function finSetRecType(type) {
   _finRecModalType = type;
@@ -17792,6 +17872,7 @@ let _spSportColor     = SP_SPORT_COLORS[0];
 /** Liste de gestion (depuis les Parametres). */
 function spOpenCustomSports() {
   if (!SP) { showToastModern("Module sport non charg\u00e9", "warn"); return; }
+  _corpsDansFenetre("corps-sp-sports", "ov-sp-sports");
   spRenderCustomSports();
   document.getElementById("ov-sp-sports").classList.add("open");
 }
@@ -18061,6 +18142,7 @@ async function spDeleteSession() {
 
 function spOpenRoutines() {
   if (!SP) { showToastModern("Module sport non chargé", "warn"); return; }
+  _corpsDansFenetre("corps-sp-routines", "ov-sp-routines");
   spRenderRoutines();
   document.getElementById("sp-r-name").value = "";
   document.getElementById("ov-sp-routines").classList.add("open");
@@ -18126,6 +18208,7 @@ async function spDeleteRoutine(id) {
 
 function spOpenSubtypes() {
   if (!SP) return;
+  _corpsDansFenetre("corps-sp-subtypes", "ov-sp-subtypes");
   document.getElementById("sp-subtypes-title").textContent =
     "Types de séance — " + spSportById(_spSport).label;
   document.getElementById("sp-st-name").value = "";

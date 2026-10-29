@@ -11,14 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 29/10/2026 (4.4.34) : Paramètres rangés par module.
+# 29/10/2026 (4.4.35) : Sports et Mes comptes réglés dans les Paramètres.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 # Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. Dividendes masqué dans le PEA et dans le CTO, bloc Règles masqué :
-#    Paramètres, Masqués, une case PEA et une case CTO Exemple. Colonne avec
-#    « Mes modules » ; aucune ligne « masqués » dans la barre de gauche.
-# 2. Section CTO : CTO Exemple, Trade Republic, « Réglages du compte ».
-# 3. Section Mes comptes, puis Récurrents ouvert depuis les Paramètres.
-js:_hideSidebarItem("div"),_hideSidebarItem("cto-div"),_hideCard("card-strat"),_navToggleSection("sec-pea"),openSettings("masques")
-js:openSettings("cto")
-js:openSettings("comptes").then(()=>document.querySelector(".set-sec[data-sec=comptes]>.set-links>.btn:last-child").click())
+# 1. Paramètres, Mes comptes : les catégories modifiables sur place.
+# 2. Paramètres, Sports : Mes sports, Nouveau sport, Types de séance.
+# 3. Même section, défilée jusqu'aux Routines (champ « Nouvelle routine »).
+js:openSettings("comptes")
+js:openSettings("sport")
+js:openSettings("sport").then(()=>document.getElementById("sp-r-name").scrollIntoView())

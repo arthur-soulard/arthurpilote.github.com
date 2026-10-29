@@ -20,9 +20,9 @@ titre « Mes modules » et une entrée par module, puis un trait et les réglage
 | cto        | chaque CTO (nom, courtier) avec « Réglages du compte », « Nouveau CTO » |
 | actus      | état de la boîte Gmail, renvoi vers l'onglet `ac-connexion`         |
 | agenda     | état d'iCloud, renvois vers `ag-connexion` et `ag-notifs`           |
-| comptes    | catégories & emoji, sources, récurrents                             |
+| comptes    | catégories & emoji, sources, récurrents : les listes, modifiables sur place (4.4.35) |
 | pret       | renvoi vers l'onglet `pr-params`                                    |
-| sport      | mes sports, types de séance, routines                               |
+| sport      | mes sports, types de séance, routines : modifiables sur place (4.4.35) |
 | sauvegarde | destination USB, sauvegarde auto, rotation, restauration            |
 | donnees    | dossier (chemin en clair + Ouvrir), export/import, réinitialisation, version |
 | maj        | version installée, vérification, version proposée, historique       |
@@ -40,9 +40,22 @@ appelée à l'ouverture et par `cfgModule` ; la recherche ignore aussi leur sect
 Patrimoine et Santé n'ont rien à régler ici, donc pas d'entrée. Les sections CTO,
 Actus et Agenda sont relues à chaque ouverture (`cfgRenderModule`).
 
-* **Fenêtres d'un module ouvertes depuis les Paramètres** (`_setParDessus(ouvrir, ovId)`) :
-  Catégories, Sources, Récurrents, Mes sports, Types de séance, Routines, Réglages du
-  compte d'un CTO. Les Paramètres s'effacent le temps qu'elle est ouverte et reviennent
+* **Mes comptes et Sports réglés sur place (4.4.35)** : Arthur « reste sur sa faim »
+  avec des boutons qui ouvrent une fenêtre ; il veut ajouter ou supprimer un sport,
+  changer les catégories, directement. Les listes des six fenêtres (Catégories,
+  Sources, Récurrents, Mes sports, Types de séance, Routines) sont enveloppées dans un
+  `.set-corps` (`corps-fin-cats`…) : **un seul exemplaire**, que `_setCorps(sec)` place
+  dans les `[data-corps]` de la section à son ouverture, et que `_corpsDansFenetre`
+  remet dans sa fenêtre quand on l'ouvre d'ailleurs (boutons de l'onglet Mes comptes,
+  crayons de la fenêtre d'une séance). Les rendus visent leurs id : rien à savoir de
+  l'endroit. Ne pas dupliquer les listes (les champs « Ajouter » ont des id). Types de
+  séance : un sélecteur des sports qui en ont (`subtype` dans leurs champs) règle
+  `_spSport`, sans effet ailleurs (la fenêtre d'une séance le repose à l'ouverture).
+  Les sous-fenêtres passent devant (9600) : `ov-sp-sport`, `ov-fin-icon` déjà,
+  `ov-fin-rec-edit` depuis la 4.4.35. Listes en entier ici (plus de `max-height`).
+* **Fenêtre d'un module ouverte depuis les Paramètres** (`_setParDessus(ouvrir, ovId)`) :
+  Réglages du compte d'un CTO (jusqu'à la 4.4.34, aussi les six fenêtres ci-dessus).
+  Les Paramètres s'effacent le temps qu'elle est ouverte et reviennent
   sur la même section quand elle se ferme (un `MutationObserver` sur sa classe). Pourquoi
   pas `openOvTop` : ces `.ov` sont plus haut dans la page que `ov-config`, et leurs
   sous-fenêtres (`ov-fin-rec-edit`…) s'ouvrent à 9500 ; monter la première à 9600 les
