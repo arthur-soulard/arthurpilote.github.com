@@ -11,13 +11,27 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 27/10/2026 (4.4.32) : Premiers pas rouverts, puis terminés avec le prénom
-# « Lou » : sur l'accueil, la pastille de l'utilisateur doit dire « Lou », pas
-# « Moi » ni l'ancien nom.
+# 29/10/2026 (4.4.33) : retrouver ce qui est masqué.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
-# Avant : l'utilisateur redevient « Moi », comme sur une installation neuve
-# (le prénom n'est demandé qu'à lui). Les Premiers pas ne s'ouvrent que sur un
-# PEA vide : vidé le temps de les ouvrir.
-js:pywebview.api.update_user(USERS_STATE.active,"Moi",null,null).then(()=>_loadUsers(true)).then(()=>{renderHomeUsers(),_renderUserPill()})
-js:window._pp=[S.positions,S.transactions,S.depots],S.positions=[],S.transactions=[],S.depots=[],S.uiPrefs.premiersPas=false,_showWelcomeIfFirstRun().then(()=>{[S.positions,S.transactions,S.depots]=window._pp})
-js:document.getElementById("pp-prenom").value="Lou",document.querySelector("[data-pp-fin]").click()
+# Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
+# 1. Positions du PEA : « Importer des relevés » à côté d'« Ajouter ».
+# 2. Wishlist et Stratégie masquées : au bas de la section PEA, « 2 masqués »
+#    déplié, avec les deux onglets.
+# 3. Paramètres, « masqu » tapé dans la recherche : réglages « Masqué », puis
+#    les deux onglets avec « Réafficher ».
+pos
+js:_hideSidebarItem("wish"),_hideSidebarItem("strat"),_navToggleSection("sec-pea"),document.querySelector(".sb-sec[data-sec=sec-pea]>.sb-sub>.sb-masques").click()
+js:openSettings("general").then(()=>{document.getElementById("set-cherche").value="masqu",setChercher("masqu")})
+#
+# 29/10/2026 (4.4.33) : relevé Trade Republic qui mélange le PEA et le CTO
+# (colonne account_type). Relevé fictif en base64, titres déjà suivis par
+# Camille (ISIN posé sur la ligne) : l'aperçu s'affiche sans attendre Yahoo.
+# 4. CTO Exemple : l'achat du CTO seul dans l'aperçu, bandeau « 2 opérations
+#    du PEA » avec « Les importer dans le PEA ».
+# 5. Même fichier importé : la fenêtre reste ouverte, « 1 déjà dans Pilote »,
+#    le bouton vers le PEA en bouton principal.
+# 6. Clic sur ce bouton : l'import du PEA (versement + achat), bandeau
+#    « Déjà dans CTO Exemple ».
+js:goTab("cto-tx@c1"),S.positions[0].isin="IE00B4L5Y983",ctoOuvrirImport(),_ctoImpFichiers=[{nom:"export.csv",b64:"ImRhdGV0aW1lIiwiZGF0ZSIsImFjY291bnRfdHlwZSIsImNhdGVnb3J5IiwidHlwZSIsImFzc2V0X2NsYXNzIiwibmFtZSIsInN5bWJvbCIsInNoYXJlcyIsInByaWNlIiwiYW1vdW50IiwiZmVlIiwidGF4IiwiY3VycmVuY3kiLCJvcmlnaW5hbF9hbW91bnQiLCJvcmlnaW5hbF9jdXJyZW5jeSIsImZ4X3JhdGUiLCJkZXNjcmlwdGlvbiIsInRyYW5zYWN0aW9uX2lkIiwiY291bnRlcnBhcnR5X25hbWUiLCJjb3VudGVycGFydHlfaWJhbiIsInBheW1lbnRfcmVmZXJlbmNlIiwibWNjX2NvZGUiCiIyMDI2LTEwLTIwVDA5OjAwOjAwWiIsIjIwMjYtMTAtMjAiLCJERUZBVUxUIiwiQ0FTSCIsIlRSQU5TRkVSX09VVCIsIiIsIiIsIiIsIiIsIiIsIi0zMDAuMDAwMDAwIiwiIiwiIiwiRVVSIiwiIiwiIiwiIiwiVmVyc2VtZW50IFBFQSIsImUwIiwiIiwiIiwiIiwiIgoiMjAyNi0xMC0yMFQwOTowMDowMFoiLCIyMDI2LTEwLTIwIiwiUEVBIiwiQ0FTSCIsIlRSQU5TRkVSX0lOIiwiIiwiIiwiIiwiIiwiIiwiMzAwLjAwMDAwMCIsIiIsIiIsIkVVUiIsIiIsIiIsIiIsIlZlcnNlbWVudCBQRUEiLCJlMSIsIiIsIiIsIiIsIiIKIjIwMjYtMTAtMjBUMTA6MDA6MDBaIiwiMjAyNi0xMC0yMCIsIlBFQSIsIlRSQURJTkciLCJCVVkiLCJGVU5EIiwiTVNDSSBXb3JsZCBTd2FwIFBFQSIsIklFMDAwMlhaU0hPMSIsIjQwLjAwMDAwMDAwMDAiLCI3LjI1MDAwMDAwMDAiLCItMjkwLjAwIiwiIiwiIiwiRVVSIiwiIiwiIiwiIiwiU2F2aW5ncyBwbGFuIGV4ZWN1dGlvbiBJRTAwMDJYWlNITzEgSVNIQVJFUyBNU0NJIFdPUkxEIFNXQVAgUEVBLCBxdWFudGl0eTogNDAiLCJlMiIsIiIsIiIsIiIsIiIKIjIwMjYtMTAtMjBUMTA6MDU6MDBaIiwiMjAyNi0xMC0yMCIsIkRFRkFVTFQiLCJUUkFESU5HIiwiQlVZIiwiRlVORCIsIkNvcmUgTVNDSSBXb3JsZCBVU0QgKEFjYykiLCJJRTAwQjRMNVk5ODMiLCIwLjUwMDAwMDAwMDAiLCIxMTAuMDAwMDAwMDAwMCIsIi01NS4wMCIsIiIsIiIsIkVVUiIsIiIsIiIsIiIsIlNhdmluZ3MgcGxhbiBleGVjdXRpb24gSUUwMEI0TDVZOTgzIElTSEFSRVMgQ09SRSBNU0NJIFdPUkxELCBxdWFudGl0eTogMC41IiwiZTMiLCIiLCIiLCIiLCIiCg=="}],ctoImportLancer()
+js:goTab("cto-tx@c1"),S.positions[0].isin="IE00B4L5Y983",ctoOuvrirImport(),_ctoImpFichiers=[{nom:"export.csv",b64:"ImRhdGV0aW1lIiwiZGF0ZSIsImFjY291bnRfdHlwZSIsImNhdGVnb3J5IiwidHlwZSIsImFzc2V0X2NsYXNzIiwibmFtZSIsInN5bWJvbCIsInNoYXJlcyIsInByaWNlIiwiYW1vdW50IiwiZmVlIiwidGF4IiwiY3VycmVuY3kiLCJvcmlnaW5hbF9hbW91bnQiLCJvcmlnaW5hbF9jdXJyZW5jeSIsImZ4X3JhdGUiLCJkZXNjcmlwdGlvbiIsInRyYW5zYWN0aW9uX2lkIiwiY291bnRlcnBhcnR5X25hbWUiLCJjb3VudGVycGFydHlfaWJhbiIsInBheW1lbnRfcmVmZXJlbmNlIiwibWNjX2NvZGUiCiIyMDI2LTEwLTIwVDA5OjAwOjAwWiIsIjIwMjYtMTAtMjAiLCJERUZBVUxUIiwiQ0FTSCIsIlRSQU5TRkVSX09VVCIsIiIsIiIsIiIsIiIsIiIsIi0zMDAuMDAwMDAwIiwiIiwiIiwiRVVSIiwiIiwiIiwiIiwiVmVyc2VtZW50IFBFQSIsImUwIiwiIiwiIiwiIiwiIgoiMjAyNi0xMC0yMFQwOTowMDowMFoiLCIyMDI2LTEwLTIwIiwiUEVBIiwiQ0FTSCIsIlRSQU5TRkVSX0lOIiwiIiwiIiwiIiwiIiwiIiwiMzAwLjAwMDAwMCIsIiIsIiIsIkVVUiIsIiIsIiIsIiIsIlZlcnNlbWVudCBQRUEiLCJlMSIsIiIsIiIsIiIsIiIKIjIwMjYtMTAtMjBUMTA6MDA6MDBaIiwiMjAyNi0xMC0yMCIsIlBFQSIsIlRSQURJTkciLCJCVVkiLCJGVU5EIiwiTVNDSSBXb3JsZCBTd2FwIFBFQSIsIklFMDAwMlhaU0hPMSIsIjQwLjAwMDAwMDAwMDAiLCI3LjI1MDAwMDAwMDAiLCItMjkwLjAwIiwiIiwiIiwiRVVSIiwiIiwiIiwiIiwiU2F2aW5ncyBwbGFuIGV4ZWN1dGlvbiBJRTAwMDJYWlNITzEgSVNIQVJFUyBNU0NJIFdPUkxEIFNXQVAgUEVBLCBxdWFudGl0eTogNDAiLCJlMiIsIiIsIiIsIiIsIiIKIjIwMjYtMTAtMjBUMTA6MDU6MDBaIiwiMjAyNi0xMC0yMCIsIkRFRkFVTFQiLCJUUkFESU5HIiwiQlVZIiwiRlVORCIsIkNvcmUgTVNDSSBXb3JsZCBVU0QgKEFjYykiLCJJRTAwQjRMNVk5ODMiLCIwLjUwMDAwMDAwMDAiLCIxMTAuMDAwMDAwMDAwMCIsIi01NS4wMCIsIiIsIiIsIkVVUiIsIiIsIiIsIiIsIlNhdmluZ3MgcGxhbiBleGVjdXRpb24gSUUwMEI0TDVZOTgzIElTSEFSRVMgQ09SRSBNU0NJIFdPUkxELCBxdWFudGl0eTogMC41IiwiZTMiLCIiLCIiLCIiLCIiCg=="}],ctoImportLancer().then(()=>ctoImportValider())
+js:goTab("cto-tx@c1"),_etatPea().positions[0].isin="IE0002XZSHO1",ctoOuvrirImport(),_ctoImpFichiers=[{nom:"export.csv",b64:"ImRhdGV0aW1lIiwiZGF0ZSIsImFjY291bnRfdHlwZSIsImNhdGVnb3J5IiwidHlwZSIsImFzc2V0X2NsYXNzIiwibmFtZSIsInN5bWJvbCIsInNoYXJlcyIsInByaWNlIiwiYW1vdW50IiwiZmVlIiwidGF4IiwiY3VycmVuY3kiLCJvcmlnaW5hbF9hbW91bnQiLCJvcmlnaW5hbF9jdXJyZW5jeSIsImZ4X3JhdGUiLCJkZXNjcmlwdGlvbiIsInRyYW5zYWN0aW9uX2lkIiwiY291bnRlcnBhcnR5X25hbWUiLCJjb3VudGVycGFydHlfaWJhbiIsInBheW1lbnRfcmVmZXJlbmNlIiwibWNjX2NvZGUiCiIyMDI2LTEwLTIwVDA5OjAwOjAwWiIsIjIwMjYtMTAtMjAiLCJERUZBVUxUIiwiQ0FTSCIsIlRSQU5TRkVSX09VVCIsIiIsIiIsIiIsIiIsIiIsIi0zMDAuMDAwMDAwIiwiIiwiIiwiRVVSIiwiIiwiIiwiIiwiVmVyc2VtZW50IFBFQSIsImUwIiwiIiwiIiwiIiwiIgoiMjAyNi0xMC0yMFQwOTowMDowMFoiLCIyMDI2LTEwLTIwIiwiUEVBIiwiQ0FTSCIsIlRSQU5TRkVSX0lOIiwiIiwiIiwiIiwiIiwiIiwiMzAwLjAwMDAwMCIsIiIsIiIsIkVVUiIsIiIsIiIsIiIsIlZlcnNlbWVudCBQRUEiLCJlMSIsIiIsIiIsIiIsIiIKIjIwMjYtMTAtMjBUMTA6MDA6MDBaIiwiMjAyNi0xMC0yMCIsIlBFQSIsIlRSQURJTkciLCJCVVkiLCJGVU5EIiwiTVNDSSBXb3JsZCBTd2FwIFBFQSIsIklFMDAwMlhaU0hPMSIsIjQwLjAwMDAwMDAwMDAiLCI3LjI1MDAwMDAwMDAiLCItMjkwLjAwIiwiIiwiIiwiRVVSIiwiIiwiIiwiIiwiU2F2aW5ncyBwbGFuIGV4ZWN1dGlvbiBJRTAwMDJYWlNITzEgSVNIQVJFUyBNU0NJIFdPUkxEIFNXQVAgUEVBLCBxdWFudGl0eTogNDAiLCJlMiIsIiIsIiIsIiIsIiIKIjIwMjYtMTAtMjBUMTA6MDU6MDBaIiwiMjAyNi0xMC0yMCIsIkRFRkFVTFQiLCJUUkFESU5HIiwiQlVZIiwiRlVORCIsIkNvcmUgTVNDSSBXb3JsZCBVU0QgKEFjYykiLCJJRTAwQjRMNVk5ODMiLCIwLjUwMDAwMDAwMDAiLCIxMTAuMDAwMDAwMDAwMCIsIi01NS4wMCIsIiIsIiIsIkVVUiIsIiIsIiIsIiIsIlNhdmluZ3MgcGxhbiBleGVjdXRpb24gSUUwMEI0TDVZOTgzIElTSEFSRVMgQ09SRSBNU0NJIFdPUkxELCBxdWFudGl0eTogMC41IiwiZTMiLCIiLCIiLCIiLCIiCg=="}],ctoImportLancer().then(()=>document.querySelector("#cto-imp-autre>button").click())

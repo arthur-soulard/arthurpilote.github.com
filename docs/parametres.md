@@ -38,6 +38,28 @@ plus que les onglets des modules affichés (ceux d'un module décoché reviennen
 case). Restaurer un onglet ou un bloc redessine la liste sur place
 (`_cfgRenderMasques`) : avant, `openConfig()` renvoyait sur Général.
 
+**Retrouver ce qui est masqué (4.4.33, 29/10/2026).** Arthur trouvait compliqué de
+retrouver un onglet ou un réglage caché. Deux chemins de plus, sans rien changer à
+`hiddenSidebar` ni `hiddenCards` :
+
+* **Barre latérale** : au bas d'une section, une ligne « 2 masqués » (œil barré) liste
+  les onglets de la section cachés à l'œil ; un clic sur l'un le réaffiche
+  (`_showSidebarItem`). Écrite par `_injectSidebar`, dépliée ou non selon
+  `_navMasquesOuvert` (en mémoire). `_hideSidebarItem` redessine maintenant la barre
+  (`_reconstruireSidebar`) au lieu de retirer l'élément, pour que la ligne apparaisse
+  tout de suite. Le dernier onglet d'une section masqué emporte la section : il revient
+  par Modules (le message le dit).
+* **Recherche en haut des Paramètres** (`#set-cherche`, `setChercher`) : chaque mot
+  tapé doit se trouver, sans tenir compte des accents ni de la casse, dans le nom d'une
+  section, un titre `h3`, un libellé `.fg > label`, un bouton `.btn` ou le nom d'une
+  carte de module (`_SET_CHERCHABLES`). Rien n'est indexé à l'avance : les sections
+  sont lues telles qu'elles sont (un élément caché en `display:none`, ou `.win-seul`
+  sur Mac, est ignoré). Les résultats s'affichent dans la section `data-sec="recherche"` ;
+  un clic ouvre la section et fait clignoter le réglage (`_setAllerA`, qui retrouve
+  l'élément par son texte si la section l'a redessiné à l'ouverture). Dessous,
+  « Masqué » : modules décochés, onglets et blocs cachés, avec « Réafficher » sur place.
+  Choisir une section dans la colonne, ou vider le champ, referme la recherche.
+
 **Données & app (section `donnees`).** Depuis la 4.4.20 (19/10/2026), le chemin du dossier
 de l'utilisateur actif s'écrit en clair (`#cfg-dossier`, rempli par `setGoSection`
 via `_cheminDonnees()`, relu à chaque ouverture : il suit un changement

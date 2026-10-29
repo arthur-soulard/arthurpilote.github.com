@@ -190,10 +190,17 @@ point ou à la virgule.
 * Repris : `BUY`, `SELL`, `SAVINGS_PLAN_EXECUTED` (plan), `BENEFITS_SAVEBACK`
   de la catégorie TRADING (Saveback), types `*ROUND_UP` (arrondi),
   `STOCKPERK`/`BONUS` (offert), `DIVIDEND` (montant crédité), `SPLIT`
-  (division). Ignorés : **toute ligne de la catégorie CASH** (carte, virements,
-  intérêts, Saveback versé, cadeau), classes hors actions et fonds (le
-  Bitcoin : Arthur l'a voulu hors du CTO le 12/10/2026, il n'est pas conservé
-  sur le compte-titres). Types inconnus : listés, jamais devinés.
+  (division). Ignorés : **toute ligne de la catégorie CASH** du compte
+  principal (carte, virements, intérêts, Saveback versé, cadeau), classes hors
+  actions et fonds (le Bitcoin : Arthur l'a voulu hors du CTO le 12/10/2026,
+  il n'est pas conservé sur le compte-titres). Types inconnus : listés,
+  jamais devinés.
+* **PEA de Trade Republic dans le même export** (4.4.33) : colonne
+  `account_type` (`PEA` ou `DEFAULT`), chaque opération porte son `compte` ;
+  l'import ne garde que celles du compte ouvert et propose d'importer les
+  autres dans leur compte. Les virements vers le PEA deviennent ses
+  versements. Détail : `docs/import-releves.md`, « Trade Republic : PEA et
+  CTO dans le même export ».
 * Ordre des opérations : date, puis heure (`datetime`) : une division passe
   avant la vente du même jour.
 

@@ -103,6 +103,16 @@ def save_data(data: dict, vide_voulu: bool = False) -> None:
 #     la nouvelle entree, ici avec un nouvel ISIN (ETP argent x3 de WisdomTree,
 #     1 part -> 10). Ni prix ni montant ;
 #   - aucun dividende sur la periode : leur ligne reste a voir.
+#
+# PEA de Trade Republic (France) : un meme export melange ses lignes et celles
+# du compte-titres. `account_type` les distingue : « PEA », ou « DEFAULT » pour
+# le compte-titres (lignes d'un vrai export publiees avec les tests d'OZAXE/
+# portfolio-app, puis un vrai export melange, 29/10/2026 ; « JUNIOR » chez
+# Portfolio Performance, compte d'un enfant). Un versement vers le PEA tient en
+# deux lignes a la meme seconde : DEFAULT TRANSFER_OUT et PEA TRANSFER_IN,
+# « Versement PEA ». Chaque operation porte donc son `compte` : l'interface
+# n'importe que celles du compte ouvert et montre les autres a part. Un ancien
+# export sans cette colonne : compte vide, tout va dans le compte ouvert.
 
 COLONNES_REQUISES = {"date", "category", "type", "symbol", "shares", "price", "amount"}
 
@@ -129,6 +139,13 @@ ESPECES = {
     "CUSTOMER_OUTBOUND_REQUEST", "TRANSFER_INSTANT_OUTBOUND",
     "CARD_TRANSACTION", "CARD_TRANSACTION_INTERNATIONAL", "INTEREST_PAYMENT",
 }
+# Especes du PEA : un virement entrant est un versement du PEA, un virement
+# sortant un retrait (le CTO, lui, deduit ses versements de ses ordres). Les
+# autres lignes d'especes du PEA (interets, prime…) sont listees, pas devinees.
+VERSEMENTS_PEA = {"CUSTOMER_INBOUND", "CUSTOMER_INPAYMENT", "TRANSFER_INSTANT_INBOUND",
+                  "TRANSFER_INBOUND", "TRANSFER_IN"}
+RETRAITS_PEA = {"CUSTOMER_OUTBOUND_REQUEST", "TRANSFER_INSTANT_OUTBOUND", "TRANSFER_OUTBOUND",
+                "TRANSFER_OUT"}
 # Classes d'actifs suivies : actions et fonds (ETF). Obligations, crypto et
 # fonds prives ne sont pas des titres cotes que Yahoo sait valoriser.
 CLASSES = {"STOCK": "action", "FUND": "etf", "ETF": "etf", "": None}
@@ -189,22 +206,32 @@ def _secondes(txt: str):
     return datetime.datetime(*map(int, m.groups()), tzinfo=datetime.timezone.utc).timestamp()
 
 
+def _compte(row: dict) -> str:
+    """Colonne account_type -> « PEA », « CTO » (DEFAULT ou tout autre compte),
+    ou « » quand l'export ne le dit pas."""
+    v = (row.get("account_type") or "").strip().upper()
+    return "PEA" if v == "PEA" else "CTO" if v else ""
+
+
 def lire_csv_tr(texte: str) -> dict:
     """Lit un export CSV de Trade Republic.
 
     Renvoie {ok, operations, ignores, inconnues, erreur} :
-      operations : [{trId, date, quand, type ("Achat"|"Vente"|"Dividende"|"Division"),
-                     origine, isin, nom, nomLong, classe ("action"|"etf"), qty,
-                     cours, montant, frais, taxe, alerte}], dans l'ordre ou elles
-                     ont eu lieu (`quand` : date et heure de la ligne)
+      operations : [{trId, date, quand, type ("Achat"|"Vente"|"Dividende"|"Division"
+                     |"Versement"|"Retrait"), origine, isin, nom, nomLong,
+                     classe ("action"|"etf"), qty, cours, montant, frais, taxe,
+                     alerte, compte}], dans l'ordre ou elles ont eu lieu
+                     (`quand` : date et heure de la ligne)
         -> montant : le flux d'especes de la ligne, en valeur absolue
            (achat : debite ; vente et dividende : credite) ;
-        -> origine : ordre, plan, saveback, arrondi, offert, dividende, division ;
+        -> origine : ordre, plan, saveback, arrondi, offert, dividende, division,
+           especes (Versement ou Retrait : virement du PEA seulement) ;
         -> une Division porte aussi isinAvant, nomAvant, qtyAvant, trIdAvant :
            qtyAvant parts de isinAvant deviennent qty parts de isin ;
-        -> alerte : texte si les chiffres ne collent pas (montant ≠ qte × cours ± frais).
+        -> alerte : texte si les chiffres ne collent pas (montant ≠ qte × cours ± frais) ;
+        -> compte : « PEA », « CTO », ou « » (export sans colonne account_type).
       ignores    : {"especes": n, "classe": n} lignes laissees de cote, par raison
-      inconnues  : [{type, categorie, nom, date}] types que Pilote ne connait pas
+      inconnues  : [{type, categorie, nom, date, compte}] lignes que Pilote ne reprend pas
     """
     texte = (texte or "").lstrip("﻿")
     if not texte.strip():
@@ -230,14 +257,31 @@ def lire_csv_tr(texte: str) -> dict:
         nom = row.get("name", "")
         date = _date(row.get("date") or row.get("datetime"))
         quand = row.get("datetime") or row.get("date") or ""
+        compte = _compte(row)
         if typ in DIVIDENDES:
             sens, origine = "Dividende", "dividende"
         elif typ in ESPECES or cat == "CASH":
-            ignores["especes"] += 1
+            # Ligne du compte especes qui dit d'ou vient un achat : quel que soit
+            # le compte de l'achat (l'origine seule en depend)
             if typ == "BENEFITS_SAVEBACK" and row.get("symbol"):
                 saveback.append((date, row["symbol"].upper(), abs(_nombre(row.get("amount")) or 0)))
             elif typ == "GIFT":
                 cadeaux.append((_secondes(quand), abs(_nombre(row.get("amount")) or 0)))
+            elif compte == "PEA":
+                # Montant arrive sur le compte, frais de depot deduits (`fee` negatif)
+                net = (_nombre(row.get("amount")) or 0) + (_nombre(row.get("fee")) or 0)
+                sens = "Versement" if typ in VERSEMENTS_PEA and net > 0 \
+                    else "Retrait" if typ in RETRAITS_PEA and net < 0 else ""
+                if sens:
+                    operations.append({
+                        "trId": row.get("transaction_id", ""), "date": date, "quand": quand, "type": sens,
+                        "origine": "especes", "isin": "", "nom": "", "nomLong": "", "classe": "action",
+                        "qty": 0, "cours": None, "montant": round(abs(net), 2), "frais": 0, "taxe": 0,
+                        "alerte": "", "compte": compte})
+                else:
+                    inconnues.append({"type": typ, "categorie": cat, "nom": nom, "date": date, "compte": compte})
+                continue
+            ignores["especes"] += 1
             continue
         elif typ in ACHATS or typ in VENTES:
             sens = "Achat" if typ in ACHATS else "Vente"
@@ -245,10 +289,10 @@ def lire_csv_tr(texte: str) -> dict:
             if origine == "ordre" and row.get("description", "").lower().startswith("savings plan"):
                 origine = "plan"
         elif cat == "CORPORATE_ACTION" and typ == "SPLIT":
-            divisions.setdefault(quand, []).append(row)
+            divisions.setdefault((compte, quand), []).append(row)
             continue
         else:
-            inconnues.append({"type": typ, "categorie": cat, "nom": nom, "date": date})
+            inconnues.append({"type": typ, "categorie": cat, "nom": nom, "date": date, "compte": compte})
             continue
 
         classe = CLASSES.get(row.get("asset_class", "").upper(), False)
@@ -268,7 +312,7 @@ def lire_csv_tr(texte: str) -> dict:
               "origine": origine, "isin": isin, "nom": nom, "nomLong": m.group(1) if m else "",
               "classe": classe or "etf",
               "qty": qty, "cours": cours, "montant": round(montant, 2),
-              "frais": round(frais, 2), "taxe": round(taxe, 2), "alerte": ""}
+              "frais": round(frais, 2), "taxe": round(taxe, 2), "alerte": "", "compte": compte}
         alertes = []
         if not _ISIN.match(isin):
             alertes.append("ISIN illisible")
@@ -300,7 +344,7 @@ def lire_csv_tr(texte: str) -> dict:
     for o in list(operations):
         if o["type"] not in ("Achat", "Vente") or not o["quand"]:
             continue
-        cle = (o["isin"], o["type"], o["quand"], o["cours"])
+        cle = (o["compte"], o["isin"], o["type"], o["quand"], o["cours"])
         f = fusion.setdefault(cle, o)
         if f is o:
             continue
@@ -328,13 +372,15 @@ def lire_csv_tr(texte: str) -> dict:
         if o:
             o["origine"] = "offert"
 
-    # Division : l'ancienne ligne sortie et la nouvelle entree, a la meme seconde
-    for quand, lignes in divisions.items():
+    # Division : l'ancienne ligne sortie et la nouvelle entree, a la meme
+    # seconde, sur le meme compte (un titre tenu sur le PEA et sur le CTO en
+    # donne deux paires a la meme seconde)
+    for (compte, quand), lignes in divisions.items():
         avant = [r for r in lignes if (_nombre(r.get("shares")) or 0) < 0]
         apres = [r for r in lignes if (_nombre(r.get("shares")) or 0) > 0]
         if len(avant) != 1 or len(apres) != 1:
             inconnues += [{"type": "SPLIT", "categorie": "CORPORATE_ACTION", "nom": r.get("name", ""),
-                           "date": _date(r.get("date") or quand)} for r in lignes]
+                           "date": _date(r.get("date") or quand), "compte": compte} for r in lignes]
             continue
         a, b = avant[0], apres[0]
         classe = CLASSES.get(b.get("asset_class", "").upper(), False)
@@ -348,7 +394,7 @@ def lire_csv_tr(texte: str) -> dict:
             "nomLong": "", "isinAvant": a.get("symbol", "").upper(), "nomAvant": a.get("name", ""),
             "classe": classe or "etf", "qty": abs(_nombre(b.get("shares"))),
             "qtyAvant": abs(_nombre(a.get("shares"))), "cours": None, "montant": 0,
-            "frais": 0, "taxe": 0, "alerte": ""})
+            "frais": 0, "taxe": 0, "alerte": "", "compte": compte})
 
     # Dans l'ordre ou elles ont eu lieu : une division avant la vente du meme jour
     operations.sort(key=lambda o: (o["date"], o["quand"], o["trId"]))

@@ -2,6 +2,22 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.33",
+      "date": "2026-10-29",
+      "titre": "Retrouver ce qui est caché, et Trade Republic sans mélange",
+      "nouveau": [
+        "Une recherche en haut des Paramètres : tape « PIN », « couleur » ou « sauvegarde », et le bon réglage s'ouvre. Les modules, onglets et blocs que tu as cachés y apparaissent aussi, avec un bouton pour les réafficher."
+      ],
+      "ameliore": [
+        "Un onglet caché avec l'œil se retrouve en bas de sa section, dans la barre de gauche : la ligne « 2 masqués » le liste, un clic le réaffiche.",
+        "Dans le PEA, « Importer des relevés » est maintenant aussi dans les Positions, à côté d'« Ajouter », plus seulement dans les Transactions.",
+        "Importé dans le PEA, l'export Trade Republic reprend aussi tes virements vers le PEA comme versements."
+      ],
+      "corrige": [
+        "Un export Trade Republic qui contient à la fois ton PEA et ton compte-titres ne mélange plus les deux : l'import ne garde que les opérations du compte ouvert, et un bouton importe les autres dans leur compte."
+      ]
+    },
+    {
       "version": "4.4.32",
       "date": "2026-10-27",
       "titre": "Ton prénom tout de suite sur l'accueil",

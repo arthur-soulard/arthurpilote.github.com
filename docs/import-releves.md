@@ -141,7 +141,9 @@ d'Arthur, les CSV et XML de courtiers) sont restées **identiques**.
 ## Sortie de `releves.lire`
 
 Celle de `cto.lire_csv_tr` (`trId, date, quand, type, origine, isin, nom, nomLong,
-classe, qty, cours, montant, frais, taxe, alerte`), plus `banque`, et trois types :
+classe, qty, cours, montant, frais, taxe, alerte, compte`), plus `banque`, et trois types :
+(`compte` : « PEA » ou « CTO » quand le fichier le dit, seulement l'export Trade
+Republic pour l'instant, voir plus bas ; absent ou vide sinon)
 
 * **Versement / Retrait** (`origine: "especes"`, montant) : versés dans `S.depots`
   sur le PEA ; **ignorés sur un CTO** (ses versements se déduisent des ordres).
@@ -233,9 +235,70 @@ lu comme CSV, séparateur deviné. Un .zip est ouvert (deux niveaux au plus).
   **n'est pas retirée** du net (898,75 − 4,60 = 894,15 CHF pour ASML).
 * Titre coté en euros : son montant en euros (exact) ; sinon conversion.
 
+### Trade Republic : PEA et CTO dans le même export (29/10/2026, 4.4.33)
+
+Demande d'Arthur : « sur certains relevés Trade Republic, CTO et PEA sont
+mélangés dans les ordres » ; Pilote doit le comprendre, que le relevé soit
+importé dans le CTO ou dans le PEA. Avant, tout allait dans le compte ouvert :
+les achats du PEA atterrissaient dans le CTO, et inversement.
+
+* **Ce que dit le fichier** : la colonne `account_type` vaut `PEA` pour le PEA
+  de Trade Republic, `DEFAULT` pour le compte-titres (et le compte espèces).
+  Sources : les lignes d'un vrai export publiées avec les tests
+  d'OZAXE/portfolio-app (PR n° 3 de ce dépôt, sans licence : lu, rien
+  recopié), puis un vrai export mélangé fourni par Arthur le 29/10/2026.
+  Portfolio Performance a aussi vu `JUNIOR` (compte d'un enfant, Allemagne).
+* **Versement vers le PEA** (vrai export) : deux lignes à la même seconde,
+  `DEFAULT` `CASH` `TRANSFER_OUT` « Versement PEA » (sortie du compte espèces)
+  et `PEA` `CASH` `TRANSFER_IN` « Versement PEA » (arrivée sur le PEA). Un
+  virement reçu de l'extérieur directement sur le PEA : `PEA` `TRANSFER_INBOUND`.
+* **Lecture** (`cto.lire_csv_tr`) : chaque opération porte son `compte`
+  (`_compte` : « PEA », « CTO » pour toute autre valeur, « » sans la
+  colonne). Les virements entrants du PEA (`VERSEMENTS_PEA`) deviennent des
+  **versements du PEA**, les sortants (`RETRAITS_PEA`) des retraits ; toute
+  autre ligne d'espèces du PEA (intérêts, `PEA_MARKETING`…) est listée parmi
+  les inconnues, pas devinée. Les espèces du compte principal restent
+  ignorées, comme avant. Un ordre en plusieurs morceaux ne se fusionne qu'au
+  sein d'un même compte ; une **division** d'un titre tenu sur les deux
+  comptes donne deux paires de lignes à la même seconde : elles se lisent
+  compte par compte (avant, les quatre lignes passaient en « inconnues »).
+  Saveback et action offerte se reconnaissent quel que soit le compte.
+* **Interface, choix d'Arthur (« trier + bouton »)** : l'aperçu ne garde que
+  les opérations du compte ouvert (`_ctoImpSeparer`) ; celles de l'autre
+  compte s'affichent dans un bandeau (« Ce fichier contient aussi 11
+  opérations du PEA (5 achats, 6 versements) : elles ne vont pas dans ce
+  CTO ») avec un bouton **« Les importer dans le PEA »**
+  (`ctoImportVersCompte`) qui ouvre l'onglet Transactions de l'autre compte
+  et relance l'import avec les mêmes fichiers. Chaque compte garde son
+  aperçu, ses doublons et son Retour. Depuis le PEA, le bouton vise le CTO,
+  celui de Trade Republic s'il y en a plusieurs (`_ctoImpCibles`) ; sans
+  aucun CTO, le bandeau dit de le créer. Après « Importer », la fenêtre reste
+  ouverte quand il reste des opérations de l'autre compte (celles d'ici
+  passent « déjà dans Pilote », le bouton devient le bouton principal) ; une
+  fois l'autre compte importé, le bandeau dit « Déjà dans … ». Une opération
+  de l'autre compte déjà présente ici (import fait avant la 4.4.33) est
+  signalée, à supprimer à la main.
+* **Écarté** : un seul clic qui range dans les deux comptes à la fois (Retour
+  n'aurait annulé que le compte affiché, et l'aperçu aurait mélangé deux
+  comptes).
+* **Vérifié** sur le vrai export mélangé : l'ancien lecteur et le nouveau
+  lisent les mêmes 127 opérations, identiques champ par champ ; 5 étaient des
+  achats du PEA qui partaient dans le compte ouvert ; s'y ajoutent les 6
+  versements du PEA. Sur le banc (données de Camille) : 122 opérations au
+  CTO, puis 11 au PEA par le bouton, chaque titre du PEA sur sa cotation
+  parisienne « vérifiée », taxe de 0,4 % comptée dans les frais, aucun
+  doublon au second import. Les exports sans PEA (ceux d'Arthur, les 6 de
+  Portfolio Performance) se lisent exactement comme avant.
+* **Non couvert** : un avis PDF d'un ordre passé sur le PEA de Trade Republic
+  (aucun exemple trouvé : il est lu comme avant, dans le compte ouvert) ; les
+  actions gratuites (`CORPORATE_ACTION` `BONUS_ISSUE`, vues sur un PEA chez
+  OZAXE) restent listées, pas reprises ; une ligne `JUNIOR` compte comme le
+  CTO.
+
 ### Tableurs
 
-* **Trade Republic** : `cto.lire_csv_tr` (fiche du CTO).
+* **Trade Republic** : `cto.lire_csv_tr` (fiche du CTO), PEA et CTO séparés
+  par la colonne `account_type` (ci-dessus).
 * **Degiro, relevé de compte** (Account.csv) : dividendes moins la retenue à la
   source, versements. Les ordres viennent du rapport des transactions (montants
   en euros). Le CSV « Transactions » de Degiro passe par le lecteur universel :
@@ -277,8 +340,9 @@ Yahoo (`_vers_eur`, cache par devise et date le temps d'une lecture).
 
 ## Interface
 
-* Bouton **« Importer des relevés »** dans l'onglet Transactions (PEA et CTO) et
-  dans la barre du CTO. Fenêtre `ov-cto-import` : choix d'un ou plusieurs
+* Bouton **« Importer des relevés »** dans l'onglet Transactions (PEA et CTO),
+  dans la barre du CTO, et dans l'en-tête des Positions du PEA (4.4.33).
+  Fenêtre `ov-cto-import` : choix d'un ou plusieurs
   fichiers, colonnes si besoin, aperçu, « Importer ». Rien n'est écrit avant ;
   un seul `pushUndo` (Retour annule tout l'import).
 * **Déjà là** (`ctoImportDeja`) : même `trId` ; ou même opération saisie à la

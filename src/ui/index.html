@@ -1428,6 +1428,38 @@ label:has(> input[type="checkbox"]:not(:checked)) + .pr-part { display: none; }
   font-size: 11.5px; color: var(--txt3); margin: 0 0 16px; line-height: 1.5;
 }
 .set-links { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+/* Recherche des Paramètres (setChercher) */
+.set-cherche {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 8px;
+  padding: 0 10px; border: 1px solid var(--brd); border-radius: 999px; background: var(--bg2);
+  color: var(--txt3); cursor: text;
+}
+.set-cherche:focus-within { border-color: var(--accent); }
+.set-cherche .ph { font-size: 14px; flex-shrink: 0; }
+.set-cherche input {
+  flex: 1; min-width: 0; border: none; background: none; outline: none; box-shadow: none;
+  padding: 8px 0; font-size: 12.5px; font-family: var(--font); color: var(--txt);
+}
+.set-res-liste { display: flex; flex-direction: column; gap: 4px; }
+.set-res {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 12px; border: 1px solid var(--brd); border-radius: 10px;
+  background: var(--bg2); color: var(--txt); font-family: var(--font);
+}
+button.set-res { cursor: pointer; }
+button.set-res:hover { background: var(--hover); }
+.set-res-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; }
+.set-res-txt b { font-weight: 600; }
+.set-res-txt small { font-size: 11px; color: var(--txt3); }
+.set-res-go { color: var(--txt3); font-size: 13px; }
+.set-trouve { animation: setTrouve 1.8s ease-out; border-radius: 8px; }
+@keyframes setTrouve {
+  0%, 30% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); }
+  100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .set-trouve { animation: none; background: var(--accent-soft); }
+}
 
 /* ── Patrimoine ─────────────────────────────────────────────────────────── */
 .pa-split { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; align-items: center; }
@@ -1698,6 +1730,7 @@ label.sv-check, label.sv-inline {
 @media (max-width: 720px) {
   .set-layout { grid-template-columns: 1fr; }
   .set-nav { flex-direction: row; flex-wrap: wrap; }
+  .set-cherche { flex-basis: 100%; }
   .set-nav-btn.active { box-shadow: none; border-color: var(--accent); }
 }
 
@@ -1997,6 +2030,23 @@ body { font-variant-numeric: tabular-nums; }
 .sb-sub .sb-item { padding: 6px 12px; font-size: 13px; font-weight: 400; }
 .sb-home { margin-bottom: 10px; }
 .sb-bottom { border-top-color: var(--brd); }
+/* « 2 masqués » au bas d'une section : ses onglets cachés à l'œil, réaffichables d'un clic */
+.sb-masques, .sb-masque {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  background: none; border: none; cursor: pointer; text-align: left;
+  font-family: var(--font); color: var(--txt3); border-radius: 8px;
+}
+.sb-masques { padding: 5px 12px; font-size: 11.5px; margin-top: 2px; }
+.sb-masques .ph { font-size: 13px; }
+.sb-masques-chev { font-size: 10px !important; transition: transform .15s; }
+.sb-masques.open .sb-masques-chev { transform: rotate(180deg); }
+.sb-masques:hover, .sb-masque:hover { color: var(--txt); background: var(--hover); }
+.sb-masques-liste { display: none; flex-direction: column; gap: 1px; }
+.sb-masques.open + .sb-masques-liste { display: flex; }
+.sb-masque { padding: 5px 12px 5px 31px; font-size: 12.5px; }
+.sb-masque > span { flex: 1; }
+.sb-masque .ph { font-size: 13px; opacity: 0; transition: opacity .12s; }
+.sb-masque:hover .ph, .sb-masque:focus-visible .ph { opacity: 1; color: var(--accent-text); }
 /* Deux tas de sections, « Bourse » et « Vie perso » (4.4.2) : de simples
    titres ; les sections se déplacent en glissant leur en-tête */
 .sb-grp {
@@ -2523,6 +2573,15 @@ label.cto-imp-col select { font: inherit; font-size: 12px; padding: 4px 6px; bac
 .cto-imp-fichier { cursor: pointer; }
 .cto-imp-resume { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--txt2); margin-bottom: 4px; }
 .cto-imp-resume b { color: var(--txt); font-weight: 600; }
+/* Opérations de l'autre compte (export Trade Republic du PEA et du CTO) */
+.cto-imp-autre { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px;
+  padding: 10px 12px; border: 1px solid var(--brd); border-radius: 10px; background: var(--bg2);
+  font-size: 13px; line-height: 1.5; color: var(--txt2); }
+.cto-imp-autre > .ph { font-size: 17px; color: var(--accent-text); }
+.cto-imp-autre-txt { flex: 1; min-width: 240px; }
+.cto-imp-autre-txt b { color: var(--txt); font-weight: 600; }
+.cto-imp-autre-txt .cto-ecart { display: block; margin-top: 4px; }
+.cto-imp-autre-fait { color: var(--g); font-size: 12.5px; white-space: nowrap; }
 .cto-imp-h { font-size: 13.5px; font-weight: 600; margin: 1rem 0 .3rem; }
 .cto-imp-ops { max-height: 300px; overflow-y: auto; }
 .cto-imp-ops tr.cto-dup td { color: var(--txt3); }
@@ -2838,6 +2897,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div class="card" id="card-pos">
     <div class="card-h">
       <span class="card-t">Lignes en portefeuille</span>
+      <!-- Sur un CTO, le même bouton est dans la barre du compte (ctoRenderBarre) -->
+      <button class="btn btn-sm btn-ghost pea-seul" onclick="ctoOuvrirImport()" title="Avis d'opéré PDF, export CSV, Excel ou XML de ta banque"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
       <button class="btn btn-sm btn-ghost" onclick="openAddPos()"><i class="ph ph-plus"></i> Ajouter</button>
     </div>
     <div class="tw"><table>
@@ -4262,6 +4323,12 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="set-layout">
       <!-- Colonne de gauche : une entrée par domaine de l'app -->
       <div class="set-nav" id="set-nav">
+        <label class="set-cherche">
+          <i class="ph ph-magnifying-glass"></i>
+          <input id="set-cherche" type="search" placeholder="Chercher un réglage" autocomplete="off"
+                 spellcheck="false" aria-label="Chercher un réglage ou un élément masqué"
+                 oninput="setChercher(this.value)">
+        </label>
         <button type="button" class="set-nav-btn active" data-set="general"
                 onclick="setGoSection('general')"><span class="set-nav-ico"><i class="ph ph-gear-six"></i></span>Général</button>
         <button type="button" class="set-nav-btn" data-set="users"
@@ -4287,6 +4354,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       </div>
 
       <div class="set-body">
+
+        <!-- ──── RÉSULTATS DE LA RECHERCHE (setChercher) ──── -->
+        <div class="set-sec" data-sec="recherche" id="set-resultats"></div>
 
         <!-- ──── GÉNÉRAL ──── -->
         <div class="set-sec active" data-sec="general">
@@ -4368,7 +4438,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           <div class="pp-mods" id="cfg-modules"></div>
 
           <h3 style="margin-top:22px">Masqué</h3>
-          <p class="set-lead">Ce que tu as masqué avec l'icône <i class="ph ph-eye-slash"></i> se restaure ici.</p>
+          <p class="set-lead">Ce que tu as masqué avec l'icône <i class="ph ph-eye-slash"></i> se restaure ici.
+            Un onglet se réaffiche aussi depuis le bas de sa section, dans la barre de gauche.</p>
           <div class="fg" id="cfg-hidden-section">
             <label>Onglets masqués <span style="color:var(--txt3);font-weight:400">(icône œil sur la barre latérale)</span></label>
             <div id="cfg-hidden-list" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;min-height:22px"></div>
@@ -4990,6 +5061,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div style="margin-top:.6rem"><button class="btn btn-primary btn-sm" onclick="ctoImportColonnes()">Lire avec ces colonnes</button></div>
     </div>
     <div id="cto-imp-etape2" style="display:none">
+      <div id="cto-imp-autre" class="cto-imp-autre" style="display:none"></div>
       <div id="cto-imp-resume" class="cto-imp-resume"></div>
       <h3 class="cto-imp-h">Titres : la cotation en euros suivie par Pilote</h3>
       <p class="pac-dim">Pilote propose la cotation en euros dont le cours colle aux prix que tu as payés (« vérifiée ») ; change-la si besoin.</p>
@@ -11561,6 +11633,8 @@ function _renderAccentPicker() {
 
 /** Bascule sur une section de la modale (general, users, pea, sport…). */
 function setGoSection(id) {
+  // Une section choisie dans la colonne referme la recherche
+  if (id !== "recherche") { const c = document.getElementById("set-cherche"); if (c) c.value = ""; }
   document.querySelectorAll("#set-nav .set-nav-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.set === id));
   document.querySelectorAll(".set-sec").forEach(el =>
@@ -11630,6 +11704,120 @@ function _cfgRenderMasques() {
           return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--brd2);border-radius:99px;padding:4px 10px;font-size:11px;font-family:var(--mono)">${label}<button onclick="_showCard('${id}');_cfgRenderMasques()" style="background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1" title="Restaurer"><i class="ph ph-arrow-u-up-left"></i></button></span>`;
         }).join("");
   }
+}
+
+/* ─── Paramètres → recherche : les réglages des sections, puis ce qui est
+   masqué (modules décochés, onglets et blocs cachés à l'œil), réaffichable
+   sur place. Rien d'indexé à l'avance : on lit les sections telles qu'elles sont. ─── */
+let _setAvantRecherche = "general";
+const _SET_CHERCHABLES = "h3, .fg > label, .btn, .pp-mod-txt > b";
+const _setCourt = txt => txt.split(" (")[0];   // sans la précision entre parenthèses
+
+function _setNorm(t) {
+  return String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ").trim();
+}
+
+function setChercher(q) {
+  const res = document.getElementById("set-resultats");
+  if (!res) return;
+  const mots = _setNorm(q).split(" ").filter(Boolean);
+  const actif = document.querySelector(".set-sec.active");
+  if (!mots.length) { if (actif === res) setGoSection(_setAvantRecherche); return; }
+  if (actif && actif !== res) _setAvantRecherche = actif.dataset.sec;
+  const trouve = t => { const n = _setNorm(t); return mots.every(m => n.includes(m)); };
+  const mac = document.documentElement.classList.contains("os-mac");
+
+  // Réglages : le nom de la section, ses titres, libellés et boutons
+  const reglages = [], vus = new Set();
+  document.querySelectorAll(".set-sec[data-sec]").forEach(sec => {
+    const id = sec.dataset.sec;
+    if (id === "recherche") return;
+    const nav = document.querySelector(`#set-nav .set-nav-btn[data-set="${id}"]`);
+    const secNom = nav ? nav.textContent.replace(/\s+/g, " ").trim() : "";
+    const ico = (nav && nav.querySelector("i.ph")) ? nav.querySelector("i.ph").className : "ph ph-gear-six";
+    if (secNom && trouve(secNom)) {
+      reglages.push({ sec: id, el: null, txt: secNom, secNom: "Section", ico });
+      vus.add(id + "|" + _setNorm(secNom));
+    }
+    sec.querySelectorAll(_SET_CHERCHABLES).forEach(el => {
+      if (mac && el.closest(".win-seul")) return;
+      if (el.closest('[style*="display:none"], [style*="display: none"]')) return;
+      const txt = el.textContent.replace(/\s+/g, " ").trim();
+      const court = _setCourt(txt);
+      const cle = id + "|" + _setNorm(court);
+      if (court.length < 3 || vus.has(cle) || !trouve(txt)) return;
+      vus.add(cle);
+      reglages.push({ sec: id, el, txt: court, secNom, ico });
+    });
+  });
+
+  // Masqué : un module décoché, puis les onglets et blocs cachés à l'œil
+  const masques = [];
+  const vis = _modulesVisibles();
+  const hid = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
+  NAV_SECTIONS.filter(s => !vis.has(s.id)).forEach(s => {
+    if (trouve(`${s.label} module masque cache`))
+      masques.push({ html: `Module <b>${escHtml(s.label)}</b>`, faire: () => cfgModule(s.id, true) });
+  });
+  hid.forEach(id => {
+    const it = SIDEBAR_ITEMS.find(x => x.id === id);
+    const sec = _navSectionOf(id);
+    if (!it || (sec && !vis.has(sec.id))) return;   // revient avec son module
+    if (trouve(`${it.label} ${sec ? sec.label : ""} onglet masque cache`))
+      masques.push({ html: `Onglet <b>${it.label}</b>${sec ? " · " + escHtml(sec.label) : ""}`,
+                     faire: () => { _showSidebarItem(id); _cfgRenderMasques(); } });
+  });
+  ((S.uiPrefs && S.uiPrefs.hiddenCards) || []).forEach(id => {
+    const it = CARD_ITEMS.find(x => x.id === id);
+    if (it && trouve(`${it.label} bloc masque cache`))
+      masques.push({ html: `Bloc <b>${escHtml(it.label)}</b>`,
+                     faire: () => { _showCard(id); _cfgRenderMasques(); } });
+  });
+
+  let html = `<h3>Résultats</h3>`;
+  if (!reglages.length && !masques.length)
+    html += `<p class="set-lead">Rien trouvé pour « ${escHtml(q.trim())} ». Les modules,
+      onglets et blocs masqués apparaissent aussi ici.</p>`;
+  if (reglages.length)
+    html += `<div class="set-res-liste">${reglages.slice(0, 30).map((r, i) =>
+      `<button type="button" class="set-res" data-i="${i}">
+         <span class="set-nav-ico"><i class="${r.ico}"></i></span>
+         <span class="set-res-txt"><b>${escHtml(r.txt)}</b><small>${escHtml(r.secNom)}</small></span>
+         <i class="ph ph-arrow-right set-res-go"></i></button>`).join("")}</div>`;
+  if (masques.length)
+    html += `<h3 style="margin-top:18px">Masqué</h3><div class="set-res-liste">${masques.map((m, i) =>
+      `<div class="set-res">
+         <span class="set-nav-ico"><i class="ph ph-eye-slash"></i></span>
+         <span class="set-res-txt"><span>${m.html}</span></span>
+         <button type="button" class="btn btn-ghost btn-sm" data-m="${i}"><i class="ph ph-arrow-u-up-left"></i> Réafficher</button>
+       </div>`).join("")}</div>`;
+  res.innerHTML = html;
+  res.querySelectorAll(".set-res[data-i]").forEach(b => { b.onclick = () => _setAllerA(reglages[+b.dataset.i]); });
+  res.querySelectorAll("[data-m]").forEach(b => { b.onclick = () => {
+    masques[+b.dataset.m].faire();
+    setChercher(document.getElementById("set-cherche").value);
+  }; });
+  if (actif !== res) setGoSection("recherche");
+}
+
+/* Ouvre la section d'un résultat et fait clignoter le réglage trouvé */
+function _setAllerA(r) {
+  setGoSection(r.sec);
+  if (!r.el) return;
+  // Une section redessinée à l'ouverture (Modules, Accueil) a remplacé
+  // l'élément trouvé : on reprend celui qui porte le même texte
+  const el = r.el.isConnected ? r.el
+    : [...document.querySelectorAll(`.set-sec[data-sec="${r.sec}"]`)]
+        .flatMap(s => [...s.querySelectorAll(_SET_CHERCHABLES)])
+        .find(x => _setCourt(x.textContent.replace(/\s+/g, " ").trim()) === r.txt);
+  if (!el) return;
+  const cible = el.closest(".fg, .pp-mod") || el;
+  cible.scrollIntoView({ block: "center" });
+  cible.classList.remove("set-trouve");
+  void cible.offsetWidth;          // relance l'animation
+  cible.classList.add("set-trouve");
+  setTimeout(() => cible.classList.remove("set-trouve"), 1800);
 }
 
 /* ══════════ Sauvegarde externe (clé USB) ══════════ */
@@ -11895,6 +12083,9 @@ async function openSettings(section) {
 }
 
 async function openConfig() {
+  // Rouverte, la fenêtre ne garde pas une recherche d'avant
+  const cherche = document.getElementById("set-cherche");
+  if (cherche && cherche.value) { cherche.value = ""; setGoSection(_setAvantRecherche); }
   document.getElementById("cfg-prenom").value  = S.prenom  || "";
   document.getElementById("cfg-banque").value   = S.banque  || "";
   document.getElementById("cfg-ouverture").value = S.ouverture || "";
@@ -14698,6 +14889,7 @@ function _setActiveSidebar(id) {
    Jusqu'a la 4.3.17 elle etait enregistree (S.uiPrefs.navOpen, desormais
    ignore) et la section du lancement precedent restait ouverte. */
 let _navOuverte = "";
+let _navMasquesOuvert = "";   // section dont la liste « masqués » est dépliée
 
 function _navToggleSection(secId) {
   const el = document.querySelector(`.sb-sec[data-sec="${secId}"]`);
@@ -14788,6 +14980,18 @@ function _injectSidebar() {
                  <span class="sb-eye-btn" data-hide="${it.base}" title="Masquer cet onglet"><i class="ph ph-eye-slash"></i></span>
                </button>`;
     });
+    // Les onglets masqués à l'œil se retrouvent là où on les a cachés
+    const caches = b.enfants.filter(c => hidden.includes(c.base));
+    if (caches.length) {
+      const ouv = (cle === _navMasquesOuvert);
+      html += `<button class="sb-masques${ouv ? " open" : ""}" data-masques="${escHtml(cle)}" aria-expanded="${ouv}">
+                 <i class="ph ph-eye-slash"></i><span>${caches.length} masqué${caches.length > 1 ? "s" : ""}</span>
+                 <i class="ph ph-caret-down sb-masques-chev"></i>
+               </button>
+               <div class="sb-masques-liste">${caches.map(c =>
+                 `<button class="sb-masque" data-montrer="${escHtml(c.base)}" title="Réafficher cet onglet">
+                    <span>${c.label}</span><i class="ph ph-arrow-u-up-left"></i></button>`).join("")}</div>`;
+    }
     html += `</div></div>`;
   });
 
@@ -14816,6 +15020,18 @@ function _injectSidebar() {
       goTab(el.dataset.tab);
       _setActiveSidebar(el.dataset.tab);
     };
+  });
+
+  document.querySelectorAll(".sb-masques").forEach(el => {
+    el.onclick = () => {
+      const ouv = !el.classList.contains("open");
+      el.classList.toggle("open", ouv);
+      el.setAttribute("aria-expanded", ouv);
+      _navMasquesOuvert = ouv ? el.dataset.masques : "";
+    };
+  });
+  document.querySelectorAll(".sb-masque").forEach(el => {
+    el.onclick = () => _showSidebarItem(el.dataset.montrer);
   });
 
   const side = document.getElementById("app-sidebar");
@@ -14929,9 +15145,6 @@ function _hideSidebarItem(id) {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.save_ui_prefs) {
     try { window.pywebview.api.save_ui_prefs(S.uiPrefs); } catch(e) {}
   }
-  // Retire visuellement de la sidebar sans rechargement (un onglet de CTO :
-  // de la section de chaque CTO)
-  document.querySelectorAll(`.sb-item[data-tab="${id}"], .sb-item[data-tab^="${id}@"]`).forEach(el => el.remove());
   // Si cet onglet etait actif, basculer sur un voisin de la meme section
   // (l'onglet, pas le pane : cto-pos montre pane-pos)
   if (document.body.dataset.activeTab === id) {
@@ -14940,15 +15153,19 @@ function _hideSidebarItem(id) {
     const next = (sec && sec.children.find(c => c.id !== id && !hid.includes(c.id)))
               || SIDEBAR_ITEMS.find(c => c.id !== id && !hid.includes(c.id))
               || { id: "pos" };
-    goTab(next.id); _setActiveSidebar(next.id);
+    goTab(next.id);
   }
-  // La section peut etre devenue vide (celles de tous les CTO à la fois)
-  document.querySelectorAll(".sb-sec").forEach(s => { if (!s.querySelector(".sb-item[data-tab]")) s.remove(); });
-  const side = document.getElementById("app-sidebar");
-  if (side) _navTitresVides(side);
+  // Redessinée plutôt que retouchée : la ligne « masqués » de la section
+  // (et celles de tous les CTO) se met à jour, une section vide disparaît
+  _reconstruireSidebar();
   const label = SIDEBAR_ITEMS.find(x => x.id === id)?.label || id;
+  // Le dernier onglet d'une section masqué : la section part, le module avec
+  const secId = (_navSectionOf(id) || {}).id || "";
+  const resteSec = secId && document.querySelector(`.sb-sec[data-sec^="${secId}"] .sb-masques`);
   if (typeof showToastModern === "function")
-    showToastModern(`« ${label} » masqué — restaurable dans ⚙ Paramètres`, "info");
+    showToastModern(resteSec
+      ? `« ${label} » masqué. Pour le réafficher : en bas de la section, ligne « masqué »`
+      : `« ${label} » masqué. Pour le réafficher : Paramètres, Modules`, "info");
 }
 
 function _showSidebarItem(id) {
@@ -22378,7 +22595,8 @@ async function ctoImportLancer() {
   catch (e) { r = { ok: false, erreur: String(e) }; }
   const erreurs = ((r && r.documents) || []).filter(d => d.erreur).map(d => d.nom + " : " + d.erreur);
   if (r && r.aChoisir) { ctoImportColonnesRender(r.aChoisir); return; }
-  if (!r || !r.ok || !r.operations.length) {
+  const autres = (r && r.ok) ? _ctoImpSeparer(r) : [];
+  if (!r || !r.ok || (!r.operations.length && !autres.length)) {
     document.getElementById("cto-imp-etape1").style.display = "";
     document.getElementById("cto-imp-colonnes").style.display = "none";
     msg.textContent = (r && r.erreur) || (erreurs.length ? erreurs.join(" · ")
@@ -22387,8 +22605,44 @@ async function ctoImportLancer() {
   }
   msg.textContent = "Recherche de la cotation en euros de chaque titre…";
   await ctoImportAnalyser(r);
+  _ctoImp.autres = autres;
   msg.textContent = "";
   ctoImportRender();
+}
+
+/* Export Trade Republic qui mélange le PEA et le compte-titres (colonne
+   account_type, lue par cto.lire_csv_tr : chaque opération porte son
+   « compte ») : seules celles du compte ouvert restent dans l'aperçu. Les
+   autres sont rendues à part : ctoImportRender les montre, avec un bouton qui
+   rouvre l'import sur leur compte. Sans « compte » (autres banques, ancien
+   export) : tout reste, comme avant. */
+function _ctoImpSeparer(r) {
+  const ici = _estCto() ? "CTO" : "PEA";
+  const autres = r.operations.filter(o => o.compte && o.compte !== ici);
+  r.operations = r.operations.filter(o => !o.compte || o.compte === ici);
+  r.inconnues = (r.inconnues || []).filter(x => !x.compte || x.compte === ici);
+  return autres;
+}
+
+/* Les comptes où envoyer les opérations de l'autre compte : le PEA, ou depuis
+   le PEA, le CTO (celui de Trade Republic quand il y en a plusieurs) */
+function _ctoImpCibles() {
+  if (_estCto()) return [{ id: "pea", nom: "le PEA" }];
+  const tous = ctoComptes();
+  const tr = tous.filter(c => c.courtier === "trade-republic");
+  return (tous.length > 1 && tr.length ? tr : tous).map(c => ({ id: c.id, nom: ctoNomSection(c) }));
+}
+
+/* Rouvre l'import sur ce compte, avec les fichiers déjà choisis */
+async function ctoImportVersCompte(id) {
+  const fichiers = _ctoImpFichiers;
+  closeOv("ov-cto-import");
+  goTab(id === "pea" ? "tx" : "cto-tx@" + id);
+  if (_compteActif !== id) { showToastModern("Ce compte n'a pas pu s'ouvrir", "err"); return; }
+  ctoOuvrirImport();
+  _ctoImpFichiers = fichiers;
+  document.getElementById("cto-imp-msg").textContent = "Lecture…";
+  await ctoImportLancer();
 }
 
 /* Tableau dont Pilote ne reconnaît pas les colonnes : l'utilisateur les indique */
@@ -22543,6 +22797,38 @@ function ctoImportRender() {
   const versements = I.ops.filter(o => o.type === "Versement" || o.type === "Retrait").length;
   const docs = I.documents.map(d => d.erreur ? `<span class="cto-ecart" title="${escHtml(d.erreur)}"><i class="ph ph-warning"></i> ${escHtml(d.nom)} : non lu</span>`
     : `<span>${escHtml(d.nom)} (${escHtml(d.banque || "?")}) : ${d.operations} op.</span>`);
+  // Opérations de l'autre compte (export Trade Republic du PEA et du CTO, _ctoImpSeparer)
+  const autres = I.autres || [];
+  const boite = document.getElementById("cto-imp-autre");
+  boite.style.display = autres.length ? "" : "none";
+  if (autres.length) {
+    const det = [["Achat", "achat"], ["Vente", "vente"], ["Dividende", "dividende"], ["Division", "division"],
+                 ["Versement", "versement"], ["Retrait", "retrait"]].map(([t, l]) => {
+      const k = autres.filter(o => o.type === t).length;
+      return k ? k + " " + l + (k > 1 ? "s" : "") : "";
+    }).filter(Boolean).join(", ");
+    // Identifiants de la banque déjà enregistrés dans un compte
+    const trIds = e => new Set([...(e.transactions || []), ...(e.divReceived || []),
+      ...(Array.isArray(e.depots) ? e.depots : [])].map(x => x.trId).filter(Boolean));
+    // Déjà dans ce compte : importées avant que Pilote sépare les deux comptes
+    const ici = trIds(S);
+    const deja = autres.filter(o => ici.has(o.trId)).length;
+    // Déjà toutes dans l'autre compte : plus de bouton
+    const cibles = _ctoImpCibles().map(c => {
+      const la = trIds((c.id === "pea" ? _etatPea() : ctoEtat(c.id)) || {});
+      return { ...c, fait: autres.every(o => la.has(o.trId)) };
+    });
+    I.resteAilleurs = cibles.some(c => !c.fait);
+    const plus = autres.length > 1;
+    boite.innerHTML = `<i class="ph ph-arrows-split"></i>
+      <span class="cto-imp-autre-txt">Ce fichier contient aussi <b>${autres.length} opération${plus ? "s" : ""}
+        ${_estCto() ? "du PEA" : "du compte-titres"}</b> (${det}) : ${plus ? "elles ne vont" : "elle ne va"} pas dans
+        ${_estCto() ? "ce CTO" : "le PEA"}.${cibles.length ? "" : " Crée d'abord ton CTO (le + à côté de « Bourse », dans la barre de gauche), puis importe ce fichier depuis lui."}
+        ${deja ? `<span class="cto-ecart"><i class="ph ph-warning"></i> ${deja} de ces opérations ${deja > 1 ? "sont" : "est"} pourtant déjà dans ce compte (import fait avant que Pilote sépare le PEA et le CTO) : à supprimer à la main.</span>` : ""}</span>
+      ${cibles.map(c => c.fait ? `<span class="cto-imp-autre-fait"><i class="ph ph-check"></i> Déjà dans ${escHtml(c.nom)}</span>`
+        : `<button class="btn btn-sm ${nouvelles.length ? "btn-ghost" : "btn-primary"}" data-id="${escHtml(c.id)}"
+        onclick="ctoImportVersCompte(this.dataset.id)">${plus ? "Les importer" : "L'importer"} dans ${escHtml(c.nom)}</button>`).join("")}`;
+  }
   document.getElementById("cto-imp-resume").innerHTML = `
     <span><b>${nouvelles.length}</b> nouvelle(s)</span>
     <span>${compte(o => o.deja && o.type !== "Taxe", "déjà dans Pilote")}</span>
@@ -22677,7 +22963,11 @@ function ctoImportValider() {
     nTaxes++;
   });
   persist();
-  closeOv("ov-cto-import");
+  // Le fichier contient aussi des opérations de l'autre compte, pas encore
+  // importées là-bas : la fenêtre reste ouverte et se relit (celles d'ici
+  // « déjà dans Pilote »), avec son bouton vers l'autre compte
+  const fichiers = I.resteAilleurs ? _ctoImpFichiers : null;
+  if (!fichiers) closeOv("ov-cto-import");
   _ctoImp = null;
   _ctoImpFichiers = [];
   renderAll();
@@ -22691,6 +22981,11 @@ function ctoImportValider() {
     + (nTaxes ? ", " + nTaxes + " taxe" + (nTaxes > 1 ? "s" : "") + " ajoutée" + (nTaxes > 1 ? "s" : "") + " aux frais" : "")
     + " (Retour pour annuler)", "ok");
   if (sautees.length) showToastModern("Division laissée de côté, ancienne ligne absente du compte : " + sautees.join(", "), "warn");
+  if (fichiers) {
+    document.getElementById("cto-imp-ok").style.display = "none";
+    _ctoImpFichiers = fichiers;
+    ctoImportLancer();
+  }
 }
 
 /* ── Navigation ────────────────────────────────────────────────────────── */
