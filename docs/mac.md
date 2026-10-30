@@ -126,8 +126,8 @@ secours de 20 s. Rien de cassé, mais la marge est mince.
 ## Build Mac
 
 * `build/pilote-mac.spec` : à part de `pilote.spec` pour que le build Windows ne
-  bouge pas. Même piège : `ui/vendor` doit rester dans les `datas` (`pypdf`, retiré
-  en 4.4.37 avec la lecture des PDF, n'est plus dans les `hiddenimports`). L'icône est
+  bouge pas. Même piège : `ui/vendor` doit rester dans les `datas`, et `pypdf`
+  dans les `hiddenimports` (import des relevés PDF, comme `pilote.spec`). L'icône est
   `assets/icon.ico` (la même que Windows ; `icon_512.png` est exclue de git), convertie en `.icns` par PyInstaller.
 * **`BUNDLE_ID = "io.github.arthur-soulard.pilote"`** : l'identité de l'app pour
   macOS (autorisations, préférences). Comme l'`AppId` de `installer.iss`, ne

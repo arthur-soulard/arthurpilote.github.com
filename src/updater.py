@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import os
+import socket
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -245,7 +247,37 @@ def _fetch(current: str) -> None:
         with _lock:
             _state["checked"] = True
             # Dit a l'ecran : jusqu'a la 4.4.20, un echec s'affichait « A jour »
-            _state["erreur"] = "Vérification impossible : pas de connexion à GitHub"
+            _state["erreur"] = "Vérification impossible : " + _cause(e)
+
+
+def _cause(e: Exception) -> str:
+    """Cause d'un echec de verification, dite a l'utilisateur.
+
+    Jusqu'a la 4.4.37, toute erreur s'affichait « pas de connexion a GitHub »,
+    meme chez quelqu'un dont le navigateur ouvrait GitHub : il fallait son
+    update.log pour savoir quoi faire. L'ordre compte : un refus de certificat
+    est aussi un SSLError, un ValueError et un OSError."""
+    if isinstance(e, urllib.error.HTTPError):
+        return f"GitHub a refusé la demande (erreur {e.code}), réessaie plus tard"
+    if isinstance(e, urllib.error.URLError) and isinstance(e.reason, BaseException):
+        e = e.reason
+    if isinstance(e, ssl.SSLCertVerificationError):
+        return ("certificat de GitHub refusé (antivirus qui inspecte les connexions, "
+                "ou date et heure du PC fausses)")
+    if isinstance(e, ssl.SSLError):
+        return "connexion sécurisée à GitHub interrompue (antivirus ou réseau filtré)"
+    if isinstance(e, (socket.timeout, TimeoutError)):
+        return "GitHub ne répond pas à temps (réseau lent, ou proxy d'école ou d'entreprise)"
+    if isinstance(e, socket.gaierror):
+        return "adresse de GitHub introuvable (pas d'Internet, ou réseau qui passe par un proxy)"
+    if isinstance(e, (PermissionError, ConnectionRefusedError, ConnectionResetError,
+                      ConnectionAbortedError)):
+        return "connexion à GitHub bloquée (pare-feu ou antivirus qui bloque Pilote)"
+    if isinstance(e, OSError):
+        return "pas de connexion à GitHub"
+    if isinstance(e, ValueError):
+        return "réponse de GitHub illisible, réessaie plus tard"
+    return "erreur inattendue (détail dans update.log)"
 
 
 # ── Fiche des nouveautes ─────────────────────────────────────────────────────

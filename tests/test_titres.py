@@ -1,12 +1,9 @@
-"""Catalogue des titres de l'import (src/titres_connus.py, 4.4.37) et refus
-des PDF (releves.py). Sans internet."""
-import base64
+"""Catalogue des titres de l'import (src/titres_connus.py, 4.4.37). Sans internet."""
 import os
 import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-import releves        # noqa: E402
 import titres_connus  # noqa: E402
 
 
@@ -65,13 +62,6 @@ class Cotations(unittest.TestCase):
     def test_catalogue_a_la_main(self):
         isins = [t[0] for t in titres_connus.TITRES]
         self.assertEqual(len(isins), len(set(isins)), "ISIN en double")
-
-
-class PlusDePdf(unittest.TestCase):
-    def test_pdf_refuse_avec_un_message(self):
-        r = releves.lire([{"nom": "avis.pdf", "b64": base64.b64encode(b"%PDF-1.4\n...").decode()}])
-        self.assertEqual(r["operations"], [])
-        self.assertIn("CSV", r["documents"][0]["erreur"])
 
 
 if __name__ == "__main__":

@@ -2932,7 +2932,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="card-h">
       <span class="card-t">Lignes en portefeuille</span>
       <!-- Sur un CTO, le même bouton est dans la barre du compte (ctoRenderBarre) -->
-      <button class="btn btn-sm btn-ghost pea-seul" onclick="ctoOuvrirImport()" title="Export CSV (ou Excel) de l'historique des opérations de ta banque"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
+      <button class="btn btn-sm btn-ghost pea-seul" onclick="ctoOuvrirImport()" title="Export CSV de ta banque (conseillé), ou ses avis d'opéré en PDF"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
       <button class="btn btn-sm btn-ghost" onclick="openAddPos()"><i class="ph ph-plus"></i> Ajouter</button>
     </div>
     <div class="tw"><table>
@@ -2958,7 +2958,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <h2 class="cto-vide-t">Ton compte-titres, comme le PEA</h2>
       <p class="cto-vide-p">Positions, courbe du capital, dividendes, expositions et stratégie, pour chacun de
         tes comptes-titres. Choisis ton courtier : les frais et la stratégie s'y adaptent. Ton historique
-        s'importe depuis l'export CSV de ta banque ou de ton courtier.</p>
+        s'importe depuis les relevés de ta banque ou de ton courtier (CSV, PDF…).</p>
       <button class="btn btn-primary" onclick="ctoOuvrirCompte(null)"><i class="ph ph-plus"></i> Créer mon CTO</button>
       <p class="cto-vide-note" id="cto-vide-note"></p>
     </div>
@@ -3019,7 +3019,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <select id="tx-filter-sector" onchange="renderTx()" style="font-family:var(--mono);background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rad);padding:5px 8px;font-size:11px;color:var(--txt)">
           <option value="">Tous secteurs</option>
         </select>
-        <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()" title="Export CSV (ou Excel) de l'historique des opérations de ta banque"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
+        <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()" title="Export CSV de ta banque (conseillé), ou ses avis d'opéré en PDF"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
         <button class="btn btn-sm btn-ghost" onclick="openAddTx()"><i class="ph ph-plus"></i> Ajouter</button>
       </div>
     </div>
@@ -5143,14 +5143,14 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <div class="modal cto-import">
     <h2 id="cto-imp-titre">Importer des relevés</h2>
     <div id="cto-imp-etape1">
-      <p class="cto-imp-aide-p">Choisis un ou plusieurs exports <b>CSV</b> de ta banque ou de ton courtier (l'historique des opérations, depuis son espace client) : Pilote reconnaît la banque tout seul. Les PDF ne sont pas lus.</p>
+      <p class="cto-imp-aide-p">Choisis un ou plusieurs fichiers de ta banque ou de ton courtier : Pilote reconnaît la banque tout seul. <b>Le plus sûr : l'export CSV</b> de l'historique des opérations, depuis ton espace client. Ta banque n'en propose pas ? Ses avis d'opéré en PDF marchent aussi.</p>
       <ul class="cto-imp-aide">
-        <li><b>CSV, ou le même fichier en Excel (.xlsx ou .xls), LibreOffice ou XML</b> : <b>Fortuneo</b> (historique des opérations de bourse, le .zip tel quel), <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>.</li>
-        <li><b>Tout autre tableau</b> : Pilote reconnaît ses colonnes, ou te demande lesquelles prendre.</li>
+        <li><b>Conseillé : CSV</b> (ou le même fichier en Excel, LibreOffice ou XML) : <b>Fortuneo</b> (historique des opérations de bourse, le .zip tel quel), <b>Trade Republic</b> (Profil → Relevés → Export des transactions), <b>Degiro</b> (relevé de compte), <b>Interactive Brokers</b> (Flex Query), <b>Saxo</b>, <b>Trading 212</b>, <b>eToro</b> (activité du compte), <b>XTB</b>, <b>Revolut</b>. Tout autre tableau : Pilote reconnaît ses colonnes, ou te demande lesquelles prendre.</li>
+        <li><b>Sinon, PDF</b> : avis d'opéré, avis de dividende et relevés de <b>BoursoBank</b>, <b>Bourse Direct</b>, <b>Fortuneo</b>, <b>Trade Republic</b>, <b>Saxo</b>, <b>Keytrade</b>, rapport des transactions et relevé de compte de <b>Degiro</b>. L'avis d'opéré d'une autre banque (Crédit Agricole, BNP, Société Générale, LCL…) est lu s'il tient debout (parts × cours = montant) : vérifie-le dans l'aperçu.</li>
       </ul>
       <p class="pac-dim">Pilote te montre tout avant d'enregistrer quoi que ce soit, et un document importé deux fois ne compte rien en double.</p>
       <label class="btn btn-primary cto-imp-fichier"><i class="ph ph-files"></i> Choisir les fichiers
-        <input type="file" id="cto-imp-input" accept=".csv,.xlsx,.xls,.ods,.xml,.txt,.tsv,.htm,.html,.zip,text/csv,application/zip" multiple onchange="ctoImportLire(this)" hidden></label>
+        <input type="file" id="cto-imp-input" accept=".csv,.pdf,.xlsx,.xls,.ods,.xml,.txt,.tsv,.htm,.html,.zip,text/csv,application/pdf,application/zip" multiple onchange="ctoImportLire(this)" hidden></label>
       <p class="pac-dim" id="cto-imp-msg"></p>
     </div>
     <div id="cto-imp-colonnes" style="display:none">
@@ -22898,7 +22898,7 @@ async function ctoPlansCopier() {
 }
 
 /* ── Import des relevés de banque et de courtier (PEA et CTO) ─────────── */
-/* Python lit les fichiers (releves.lire : CSV, Excel, XML ; banque
+/* Python lit les fichiers (releves.lire : PDF, CSV, Excel, XML ; banque
    reconnue seule, voir docs/import-releves.md) ; ici : la cotation en euros
    de chaque ISIN (/isin, vérifiée sur les prix payés), ce qui est déjà dans
    le compte affiché, puis l'aperçu. Rien n'est enregistré avant « Importer ».
@@ -22946,7 +22946,7 @@ function ctoOuvrirImport() {
   openOvTop("ov-cto-import");
 }
 
-/* Contenu d'un fichier en base64, pour le pont pywebview (un .xlsx ou un .zip n'est pas du texte) */
+/* Contenu d'un fichier en base64, pour le pont pywebview (un PDF n'est pas du texte) */
 async function _ctoImpBase64(f) {
   const octets = new Uint8Array(await f.arrayBuffer());
   let bin = "";

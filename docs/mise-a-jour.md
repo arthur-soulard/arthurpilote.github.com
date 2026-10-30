@@ -38,6 +38,16 @@ et `OutputBaseFilename`). Son existence est vérifiée (302 attendu) avant de pr
 quoi que ce soit, et `hasUpdate` exige maintenant une `downloadUrl` : proposer une
 mise à jour sans installeur ne mènerait qu'à un échec.
 
+**Échec dit avec sa cause (prévu en 4.4.37).** Quand l'API et la page échouent toutes
+les deux, l'écran affiche « Vérification impossible : » suivi de la cause lue dans
+l'erreur de la page (`_cause`) : certificat refusé (antivirus qui inspecte le HTTPS,
+horloge fausse), délai dépassé (réseau lent, proxy), adresse introuvable, connexion
+bloquée (pare-feu, `WinError 10013`), erreur HTTP avec son code, réponse illisible.
+Jusqu'à la 4.4.37, tout s'affichait « pas de connexion à GitHub », y compris chez
+un utilisateur dont le navigateur ouvrait GitHub. Il fallait alors son
+`update.log` pour savoir quoi faire. Classement vérifié le 30/10/2026 sur de vraies
+pannes (badssl.com, hôte `.invalid`, port fermé, adresse muette, 404).
+
 **Lire le vrai journal depuis une session Claude.** L'app Claude pour Windows est un
 paquet MSIX : un terminal lancé depuis elle voit une copie *virtualisée* de
 `%APPDATA%` (`...\Packages\Claude_...\LocalCache\Roaming\`). Un `python src/app.py`

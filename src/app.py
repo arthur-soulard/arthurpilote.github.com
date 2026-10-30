@@ -302,7 +302,7 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     def releves_lire(self, fichiers: list) -> dict:
-        """Releves de banque ou de courtier (CSV, Excel, XML, en base64)
+        """Releves de banque ou de courtier (PDF, CSV, Excel, XML, en base64)
         -> operations a valider dans le PEA ou un CTO (rien n'est ecrit).
         Voir releves.py et docs/import-releves.md."""
         try:
@@ -1487,7 +1487,7 @@ def main() -> int:
             _t.sleep(16)                  # apres l'echantillonneur du demarrage
             # D'abord les bibliotheques importees a la demande : bien embarquees
             # dans l'app ? (meme piege qu'ocr_win.ps1 : tout marche en dev)
-            for mod in ("PIL.Image",):
+            for mod in ("pypdf", "PIL.Image"):
                 try:
                     __import__(mod)
                     print(f"[module] {mod} OK", flush=True)

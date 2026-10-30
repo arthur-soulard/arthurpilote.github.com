@@ -16,3 +16,5 @@ setuptools<81; sys_platform == "win32"
 # anciennes, les seules qui s'y installent (audit du 20/10/2026, SUP-05)
 pillow==12.3.0; python_version >= "3.10"
 pillow==10.4.0; python_version < "3.10"
+pypdf==6.19.0; python_version >= "3.9"
+pypdf==5.9.0; python_version < "3.9"

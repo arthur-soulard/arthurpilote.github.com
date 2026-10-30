@@ -42,6 +42,17 @@ if tag:
 if len(set(versions.values())) != 1 or None in versions.values():
     erreurs.append("versions differentes : %s" % versions)
 
+# Date de la fiche = jour du tag : la fiche de la 4.4.36, ecrite la veille,
+# affichait le 29/10 dans l'historique pour une version sortie le 30/10.
+# A la main seulement : la CI tourne a l'heure UTC, un tag pousse apres
+# minuit (heure de Paris) y tomberait la veille.
+if tag and not en_ci and tete:
+    import datetime
+    date_fiche = json.loads(lire("src/nouveautes.json"))["versions"][0].get("date")
+    if date_fiche != datetime.date.today().isoformat():
+        erreurs.append("fiche %s datee du %s, pas d'aujourd'hui (%s)"
+                       % (tete, date_fiche, datetime.date.today().isoformat()))
+
 with tempfile.TemporaryDirectory() as tmp:
     for nom in sorted(os.listdir(os.path.join(RACINE, "src"))):
         if nom.endswith(".py"):

@@ -313,7 +313,8 @@ _BRUIT = {"sa", "se", "nv", "ag", "plc", "spa", "sca", "kgaa", "ab", "asa", "oyj
           "et", "and", "act", "actions", "action", "ord", "nom", "port", "reg", "prov", "a", "b",
           "c", "ex", "eo", "s", "nouv", "nouvelles", "cat", "ordinaire", "dl", "on", "o", "n",
           "inh", "nam", "namens", "akt", "vz", "st", "sf", "shs", "adr", "ads", "cl", "class",
-          "registered", "ordinary", "shares", "sp", "br", "rc", "dr", "hd", "hld", "hldgs"}
+          "registered", "ordinary", "shares", "sp", "br", "rc", "dr", "hd", "hld", "hldgs",
+          "new", "ets"}
 _ETF = re.compile(r"\b(etf|etc|etn|etp|ucits|tracker|opcvm|fcp|sicav|msci|s p|stoxx|ftse|index|fund)\b")
 
 
@@ -348,12 +349,12 @@ def _construire():
         # Noms d'actions seulement : le nom d'un ETF ne se compare pas mot à
         # mot (« Amundi MSCI World » ressemble à dix autres fonds)
         if not _ETF.search(_norm(nom)):
-            noms += [(frozenset(mots_utiles(n)), isin, 0) for n in [nom] + [a for a in autres.split("|") if a]]
+            noms += [(tuple(mots_utiles(n)), isin, 0) for n in [nom] + [a for a in autres.split("|") if a]]
     for isin, sym, nom, genre in LISTES:
         if sym not in par_isin.setdefault(isin, []):
             par_isin[isin].append(sym)
         if genre == "action" and not _ETF.search(_norm(nom)):
-            noms.append((frozenset(mots_utiles(nom)), isin, 1))
+            noms.append((tuple(mots_utiles(nom)), isin, 1))
     _index = (par_isin, [n for n in noms if n[0]])
     return _index
 
@@ -361,6 +362,13 @@ def _construire():
 def cotations(isin: str) -> list:
     """Les tickers Yahoo connus d'un ISIN (sa place d'origine, Xetra…), ou []."""
     return list(_construire()[0].get((isin or "").strip().upper(), []))
+
+
+def par_ticker(sym: str) -> str:
+    """L'ISIN d'un ticker Yahoo du catalogue (« ZAL.DE » -> DE000ZAL1111), ou ""
+    (exports qui ne donnent que le ticker : XTB)."""
+    sym = (sym or "").strip().upper()
+    return next((isin for isin, syms in _construire()[0].items() if sym in syms), "")
 
 
 def par_nom(nom: str) -> list:
@@ -374,13 +382,24 @@ def par_nom(nom: str) -> list:
     n = _norm(nom)
     if not n or _ETF.search(n):
         return []
-    mots = set(mots_utiles(nom))
-    trouves = [(len(m), -src, isin) for m, isin, src in _construire()[1] if m <= mots]
+    mots = mots_utiles(nom)
+    if not mots:
+        return []
+    # Un mot du catalogue vaut un mot du nom lu, ou son début (Xetra abrège :
+    # « ADVANCED MIC.DEV. » pour Advanced Micro Devices). Le premier mot du
+    # catalogue doit être l'un des deux premiers du nom lu (« GROUPE SEB ») :
+    # Skyworks Solutions n'est pas Solutions 30.
+    va = lambda t, u: u == t or (len(t) >= 3 and u.startswith(t))
+    tete, ens = mots[:2], set(mots)
+    trouves = []
+    for m, isin, src in _construire()[1]:
+        if any(va(m[0], u) for u in tete) and all(t in ens or any(va(t, u) for u in mots) for t in m):
+            trouves.append((len(m), sum(t in ens for t in m), -src, isin))
     if not trouves:
         return []
-    best = max(t[0] for t in trouves)
+    best = max(t[:2] for t in trouves)
     out = []
-    for _, _, isin in sorted(t for t in trouves if t[0] == best)[::-1]:
+    for *_, isin in sorted(t for t in trouves if t[:2] == best)[::-1]:
         if isin not in out:
             out.append(isin)
     return out[:4]

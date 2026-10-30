@@ -6,9 +6,14 @@ Pilote ne « devine » rien : chaque banque a ses règles de lecture, écrites e
 vérifiées sur de vrais documents (exemples anonymisés des tests de Portfolio
 Performance et d'Export-To-Ghostfolio, voir docs/import-releves.md).
 
-  CSV seulement depuis la 4.4.37 (demande d'Arthur, 30/10/2026) : la
-      lecture des PDF (avis d'opéré, pypdf) est retirée, un PDF reçoit un
-      message qui renvoie vers l'export CSV de la banque.
+  PDF (texte lu par pypdf) : Fortuneo (avis d'opéré, coupons, taxe sur les
+      transactions financières, relevé des liquidités du PEA), BoursoBank
+      (opérations de bourse et sur OPC, coupons), Bourse Direct (relevés
+      d'opérations), Saxo (rapports de trade, de dividende, de virement, en
+      anglais ou en allemand), Degiro (rapport des transactions), Trade
+      Republic (avis en français), et l'avis d'opéré d'une autre banque par
+      le lecteur universel (_avis_generique : repris seulement si ses
+      chiffres tiennent ensemble).
   CSV / Excel (.xlsx, .xls) / LibreOffice (.ods) / HTML / XML : Trade
       Republic (cto.lire_csv_tr), Degiro (relevé de compte), Interactive
       Brokers (Flex Query CSV ou XML), Saxo (transactions), Trading 212, et
@@ -35,6 +40,9 @@ import xml.etree.ElementTree as ET
 
 import cto
 
+_ISIN = r"[A-Z]{2}[A-Z0-9]{9}\d"
+# Montant à la française : « 1 234,56 », « 5 058,16 », « +4 973,82 », « -0,50 »
+_MT = r"[-+]?\d{1,3}(?:[  .]\d{3})*,\d+"
 _MOIS = {"jan": 1, "janv": 1, "janvier": 1, "feb": 2, "fev": 2, "fevr": 2, "fevrier": 2,
          "mar": 3, "mars": 3, "mrz": 3, "apr": 4, "avr": 4, "avril": 4, "may": 5, "mai": 5,
          "jun": 6, "juin": 6, "jul": 7, "juil": 7, "juillet": 7, "aug": 8, "aou": 8, "aout": 8,
@@ -131,6 +139,9 @@ class _Lot:
 
     def __init__(self, banque: str):
         self.banque, self.ops, self._vus = banque, [], {}
+        # Lignes écartées, par raison : affichées dans l'aperçu. Créé ici pour
+        # tous les lecteurs (le lecteur universel plantait sans, 4.4.37)
+        self.ignores = {}
 
     def ajoute(self, type_, date, isin="", nom="", qty=0.0, cours=None, montant=0.0,
                frais=0.0, taxe=0.0, quand="", ref="", origine=None, classe=None, alerte=""):
@@ -187,6 +198,843 @@ def _vers_eur(montant, devise, date):
         _fx_cache[cle] = taux
     taux = _fx_cache[cle]
     return montant / taux if taux else None
+
+
+# ─── PDF ──────────────────────────────────────────────────────────────────────
+
+def texte_pdf(data: bytes, mode: str = "plain") -> str:
+    """Texte d'un PDF. `mode` « layout » : pypdf replace chaque mot a sa place
+    sur la page (lignes reconstituees d'apres les positions), utile quand le
+    document ecrit ses colonnes l'une apres l'autre."""
+    from pypdf import PdfReader   # bibliothèque ajoutée en 4.4.3 (requirements.txt)
+    lecteur = PdfReader(io.BytesIO(data))
+    if lecteur.is_encrypted:
+        try:
+            if not lecteur.decrypt(""):
+                raise ValueError
+        except Exception:
+            raise ValueError("PDF protégé par un mot de passe : ouvre-le et enregistre-le sans mot de passe")
+    pages = []
+    for p in lecteur.pages:
+        try:
+            pages.append(p.extract_text(extraction_mode=mode) or "")
+        except Exception:
+            pages.append("")
+    return _norm_texte("\n".join(pages))
+
+
+# Ce que les PDF de banque glissent dans leurs nombres et leurs mots : espaces
+# insecables ou fines entre les milliers (« 1 234,56 »), signe moins
+# typographique (« −12,50 »), apostrophe courbe (« d’opéré »), accents
+# decomposes (« e » + accent), ligatures (« ﬁ »), cesures invisibles.
+_ESPACES = re.compile("[\u00a0\u202f\u2007\u2009\u2002-\u2006\u2008\u200a]")
+
+
+def _norm_texte(t: str) -> str:
+    t = unicodedata.normalize("NFC", t or "")
+    t = _ESPACES.sub(" ", t)
+    t = t.replace("\u00ad", "").replace("\u2019", "'").replace("\u2018", "'")
+    t = re.sub("[\u2212\u2013](?=\\s?\\d)", "-", t)
+    for lig, rem in (("\ufb00", "ff"), ("\ufb01", "fi"), ("\ufb02", "fl"), ("\ufb03", "ffi"), ("\ufb04", "ffl")):
+        t = t.replace(lig, rem)
+    return t
+
+
+def _montants(ligne: str) -> list:
+    return [_n(x) for x in re.findall(_MT, ligne or "")]
+
+
+def _ligne_apres(t: str, motif: str) -> str:
+    """La ligne qui suit celle où apparaît `motif` (regex), ou ""."""
+    m = re.search(motif + r"[^\n]*\n([^\n]*)", t)
+    return m.group(1) if m else ""
+
+
+# Fortuneo (Arkéa Direct Bank) ─────────────────────────────────────────────────
+
+def _fortuneo(t: str, lot: _Lot):
+    if re.search(r"AVIS D.OP[ÉE]RATIONS", t):
+        # Un bloc par titre (« ACTION : ORANGE (FR0000133308) »), une ou plusieurs
+        # exécutions par bloc (« 26-03-2024 Référence 94R6134018440990 »)
+        titres = list(re.finditer(r"(ACTION|TRACKER|OPCVM|OBLIGATION|DROIT|CERTIFICAT|WARRANT|[A-Z]{3,})\s*:\s*"
+                                  r"(.+?)\s*\((" + _ISIN + r")\)", t))
+        for i, b in enumerate(titres):
+            fin = titres[i + 1].start() if i + 1 < len(titres) else len(t)
+            bloc = t[b.end():fin]
+            execs = list(re.finditer(r"(\d{2}-\d{2}-\d{4})\s+Référence\s+(\S+)", bloc))
+            for j, e in enumerate(execs):
+                seg = bloc[e.start():execs[j + 1].start() if j + 1 < len(execs) else len(bloc)]
+                sens = re.search(r"Sens\s+(Achat|Vente|Souscription|Rachat)", seg)
+                qte = re.search(r"Quantité\s+([\d  ,.]+?)\s+(?:Cours|Val\.\s*Liquidative)\s+(" + _MT + r"|[\d  ]+)", seg)
+                if not (sens and qte):
+                    continue
+                heure = re.search(r"(\d{2}:\d{2}:\d{2})", seg)
+                brut = re.search(r"Montant Brut\s+(" + _MT + ")", seg)
+                net = re.search(r"Montant NET\s+(" + _MT + ")", seg)
+                frais = sum(_n(x) or 0 for x in re.findall(
+                    r"(?:Courtage et Commission|Droits entrée/sortie)\s+(" + _MT + ")", seg))
+                date = _date_fr(e.group(1))
+                # La référence seule ne suffit pas : deux ordres du même avis la
+                # partagent parfois (Crédit Agricole et Orange, 04/07/2023)
+                lot.ajoute("Vente" if sens.group(1) in ("Vente", "Rachat") else "Achat", date,
+                           b.group(3), b.group(2), _n(qte.group(1)), _n(qte.group(2)),
+                           _n(brut.group(1)) if brut else 0, frais,
+                           quand=date + ("T" + heure.group(1) if heure else ""),
+                           ref=f"fo:{e.group(2)}:{b.group(3)}:{_n(qte.group(1))}",
+                           classe=_classe(b.group(1), b.group(2)),
+                           alerte="" if net else "montant net illisible")
+    elif "ENCAISSEMENT COUPON" in t:
+        b = re.search(r"(ACTION|TRACKER|OPCVM|OBLIGATION)\s+(\S.*?)\s*\((" + _ISIN + r")\)", t) \
+            or re.search(r"()(\S.*?)\s*\((" + _ISIN + r")\)", t)
+        d = re.search(r"(\d{2}/\d{2}/\d{4})", t)
+        q = re.search(r"Quantité\s+([\d  ,.]+)", t)
+        net = re.search(r"Montant Net\s+(" + _MT + ")", t)
+        if b and d and net:
+            lot.ajoute("Dividende", _date_fr(d.group(1)), b.group(3), b.group(2),
+                       _n(q.group(1)) if q else 0, montant=_n(net.group(1)))
+    elif "TAXE SUR LES" in t and "TRANSACTIONS FINANCIERES" in t:
+        titres = list(re.finditer(r"(\S.*?)\s*\((" + _ISIN + r")\)", t))
+        for i, b in enumerate(titres):
+            bloc = t[b.end():titres[i + 1].start() if i + 1 < len(titres) else len(t)]
+            d = re.search(r"(\d{2}-\d{2}-\d{4})", bloc)
+            m = re.search(r"Montant de la TTF\s*:\s*(" + _MT + ")", bloc) \
+                or re.search(r"(" + _MT + r")\s*\n\s*Montant de la TTF", bloc)
+            if d and m:
+                lot.ajoute("Taxe", _date_fr(d.group(1)), b.group(2), b.group(1), montant=_n(m.group(1)),
+                           origine="taxe")
+    elif re.search(r"LIQUIDITES sur PEA", t):
+        # Relevé annuel des espèces du PEA : seuls les versements et retraits
+        # (les ordres n'y ont pas d'ISIN : ils viennent des avis d'opéré)
+        an = re.search(r"Ancien solde au \d{2}/\d{2}/(\d{4})", t) or re.search(r"Nouveau Solde au \d{2}/\d{2}/(\d{4})", t)
+        if an:
+            for m in re.finditer(r"^(\d{2})/(\d{2})\s+(VERSEMENT|RETRAIT|REGULARISATION)\b.*?(" + _MT + r")\s*$", t, re.M):
+                date = f"{an.group(1)}-{m.group(2)}-{m.group(1)}"
+                if m.group(3) == "REGULARISATION":
+                    # Sens inconnu (débit ou crédit ?) : montrée, pas reprise
+                    lot.inconnues.append({"type": "REGULARISATION " + m.group(4), "categorie": "Fortuneo",
+                                          "nom": "", "date": date})
+                    continue
+                lot.ajoute("Versement" if m.group(3) == "VERSEMENT" else "Retrait", date,
+                           montant=_n(m.group(4)), origine="especes")
+    elif "RESULTAT D'OST" in t or "RÉSULTAT D'OST" in t:
+        s = re.search(r"souscription de\s+([\d  ,.]+)\s+titre\(s\)\s+(.+?)\s*\((" + _ISIN + r")\)", t, re.S)
+        m = re.search(r"montant net de\s*:\s*-?\s*(" + _MT + ")", t)
+        d = re.search(r"Au\s+(\d{1,2}\s+\S+\s+\d{4})", t)
+        if s and m and d:
+            qty = _n(s.group(1))
+            lot.ajoute("Achat", _date_fr(d.group(1)), s.group(3), s.group(2), qty,
+                       _n(m.group(1)) / qty if qty else None, _n(m.group(1)), origine="ordre")
+    else:
+        return False
+    return True
+
+
+# BoursoBank ───────────────────────────────────────────────────────────────────
+
+def _boursobank(t: str, lot: _Lot):
+    if "COUPONS REMBOURSEMENTS" in t:
+        for m in re.finditer(r"^(\d{2}/\d{2}/\d{4})\s+([\d  ,.]+?)\s+(.+?)\s*\((" + _ISIN + r")\)\s*(.*)$", t, re.M):
+            mts = _montants(m.group(5))
+            if mts:
+                lot.ajoute("Dividende", _date_fr(m.group(1)), m.group(4), m.group(3),
+                           _n(m.group(2)), montant=mts[-1])
+        return True
+    if not re.search(r"OPERATION (DE BOURSE|SUR OPC)", t):
+        return False
+    sens = re.search(r"\b(ACHAT|VENTE)\s+COMPTANT|\b(SOUSCRIPTION|REPRISE|RACHAT)\s+(?:SICAV|F\.C\.P\.|FCP|OPC)", t)
+    ligne = re.search(r"^(\d{2}/\d{2}/\d{4})\s+([\d  ,.]+?)\s+(\S.*?)(?:\s+Référence.*)?$", t, re.M)
+    isin = re.search(r"Code ISIN\s*:\s*(" + _ISIN + ")", t)
+    cours = re.search(r"(?:Cours exécuté|Valeur liquidative)\s*:\s*([\d  ,.]+?)\s*([A-Z]{3})", t)
+    if not (sens and ligne and isin and cours):
+        return True
+    achat = (sens.group(1) or sens.group(2)) in ("ACHAT", "SOUSCRIPTION")
+    qty = _n(ligne.group(2))
+    net = _montants(_ligne_apres(t, r"Montant net au (?:débit|crédit) de votre compte"))
+    entete = re.search(r"^[^\n]*Montant net au (?:débit|crédit) de votre compte", t, re.M).group(0) \
+        if net else ""
+    cv = re.search(r"Contrevalorisation en EURO\s+[\d,.]+\s+(" + _MT + r")\s*EUR", t)
+    taxe = 0.0
+    if cv:                                  # titre étranger : contre-valeur en euros
+        brut = _n(cv.group(1))
+    elif "Montant brut" in entete and net:  # « brut, commission, [frais TTF], net » sur une ligne
+        brut = net[0]
+        if "Commission Frais" in entete and len(net) == 4:
+            taxe = net[2]
+    else:                                   # « Montant transaction brut … » puis la ligne des montants
+        brut = (_montants(_ligne_apres(t, r"Montant (?:transaction )?brut")) or [None])[0]
+    total = net[-1] if net else None
+    heure = re.search(r"(\d{2}:\d{2}:\d{2})", t)
+    ref = re.search(r"Référence\s*:\s*(\S+)", t)
+    date = _date_fr(ligne.group(1))
+    frais = abs((total or 0) - (brut or 0)) - taxe if total and brut else 0
+    devise = cours.group(2)
+    prix = _n(cours.group(1)) if devise == "EUR" else (brut / qty if brut and qty else None)
+    lot.ajoute("Achat" if achat else "Vente", date, isin.group(1), ligne.group(3), qty, prix, brut,
+               frais, taxe, quand=date + ("T" + heure.group(1) if heure else ""),
+               ref="bb:" + ref.group(1) if ref else "",
+               classe=_classe(ligne.group(3), "OPC" if "OPC" in t[:200] else ""),
+               alerte="" if total else "montant net illisible")
+    return True
+
+
+# Bourse Direct ────────────────────────────────────────────────────────────────
+
+def _boursedirect(t: str, lot: _Lot):
+    if "Avis d'Opération" not in t and "relevé d'opérations" not in t:
+        return False
+    lignes = t.splitlines()
+    tete = re.compile(r"^\s*(\d{2}/\d{2}/\d{4})\s+(.+?)\s+(" + _ISIN + r")\s+(.+?)\s+(" + _MT + r")\s*$")
+    esp = re.compile(r"^\s*(\d{2}/\d{2}/\d{4})\s+((?:INVESTISSEMENT|VIREMENT|RETRAIT|REMBOURSEMENT)\s+ESPECES)\s+(.*?)\s*(" + _MT + r")\s*$")
+    autre = re.compile(r"^\s*(\d{2}/\d{2}/\d{4})\s+(.+?)\s+(" + _MT + r")\s*$")
+    i = 0
+    while i < len(lignes):
+        ln = lignes[i]
+        m = tete.match(ln)
+        if m:
+            date, typ, isin, nom, total = _date_fr(m.group(1)), m.group(2).strip(), m.group(3), m.group(4), _n(m.group(5))
+            det = []
+            i += 1
+            while i < len(lignes) and not re.match(r"^\s*\d{2}/\d{2}/\d{4}\s", lignes[i]) and "Sous réserve" not in lignes[i]:
+                det.append(lignes[i])
+                i += 1
+            d = " ".join(det)
+            v = lambda cle: _n((re.search(cle + r"\s*:\s*([-+]?[\d  ,.]+)", d) or [None, None])[1])
+            heure = re.search(r"Execution\s*:\s*(\d{2}:\d{2}:\d{2})", d)
+            quand = date + ("T" + heure.group(1) if heure else "")
+            if typ.startswith(("ACHAT", "VENTE")):
+                brut = v("BRUT") or 0
+                taxe = v("TAXE ETRANG") or 0
+                lot.ajoute("Achat" if typ.startswith("ACHAT") else "Vente", date, isin, nom, v("QUANTITE"),
+                           v("COURS"), brut, abs(total - brut) - taxe if brut else 0, taxe, quand=quand)
+            elif typ.startswith("COUPON") or "DIVIDENDE" in typ:
+                lot.ajoute("Dividende", date, isin, nom, v("QUANTITE"), montant=total)
+            elif "TAXE TRANSACT" in typ:
+                lot.ajoute("Taxe", date, isin, nom, montant=total, origine="taxe")
+            else:
+                lot.inconnues.append({"type": typ, "categorie": "Bourse Direct", "nom": nom, "date": date})
+            continue
+        m = esp.match(ln)
+        if m:
+            lot.ajoute("Retrait" if m.group(2).startswith("RETRAIT") else "Versement",
+                       _date_fr(m.group(1)), montant=_n(m.group(4)), origine="especes")
+        else:
+            m = autre.match(ln)
+            if m and not ln.strip().startswith("Le "):
+                lot.inconnues.append({"type": m.group(2).strip()[:40], "categorie": "Bourse Direct",
+                                      "nom": "", "date": _date_fr(m.group(1))})
+        i += 1
+    return True
+
+
+# Saxo (rapports PDF en anglais ou en allemand) ────────────────────────────────
+
+def _saxo(t: str, lot: _Lot):
+    if "Saxo" not in t:
+        return False
+    dev = re.search(r"(?:Currency|Währung|Devise)\s*:\s*([A-Z]{3})", t)
+    devise = dev.group(1) if dev else "EUR"
+    # « 1.234,56 » (EU), « 16'997.84 » ou « 19.50 » (Saxo CH), « 49 »
+    num = r"-?\d{1,3}(?:[.']\d{3})*,\d+|-?\d{1,3}(?:'\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?"
+    if re.search(r"Trade Details Report|Bericht zu Trade-Details|Trade details", t):
+        blocs = re.split(r"\n(?=Instrument\s)", t)
+        for b in blocs[1:]:
+            # Le nom est parfois sur la ligne suivante : il reste vide, l'import
+            # reprend alors celui de la cotation trouvée par l'ISIN
+            nom = re.search(r"Instrument\s*(.*?)\s*(?:Trade time|Handelszeit)\s+(\d{2}-\w{3}-\d{4})\s+(\d{2}:\d{2}:\d{2})", b)
+            isin = re.search(r"ISIN\s+(" + _ISIN + ")", b)
+            sens = re.search(r"(?:B/S|K/V)\s+(Buy|Sell|Kauf|Verkauf)", b)
+            qte = re.search(r"(?:Quantity|Menge)\s+(" + num + ")", b)
+            part = re.search(r"^(?:Share Amount|Aktienbetrag)\s.*?(" + num + r")\s*$", b, re.M)
+            net = re.search(r"^(?:Net Amount|Nettobetrag)\s.*?(" + num + r")\s*$", b, re.M)
+            ref = re.search(r"(?:Trade ID|Trade-ID)\s+(\d+)", b)
+            if not (nom and isin and sens and qte and part and net):
+                continue
+            date = _date_fr(nom.group(2))
+            brut = _vers_eur(abs(_n(part.group(1))), devise, date)
+            total = _vers_eur(abs(_n(net.group(1))), devise, date)
+            if brut is None or total is None:
+                lot.inconnues.append({"type": "devise " + devise, "categorie": "Saxo", "nom": nom.group(1), "date": date})
+                continue
+            achat = sens.group(1) in ("Buy", "Kauf")
+            lot.ajoute("Achat" if achat else "Vente", date, isin.group(1), nom.group(1), abs(_n(qte.group(1))),
+                       None, brut, abs(total - brut), quand=date + "T" + nom.group(3),
+                       ref="sx:" + ref.group(1) if ref else "")
+    elif re.search(r"Corporate Action Detail|Kapitalmaßnahme", t):
+        isin = re.search(r"ISIN\s+(" + _ISIN + ")", t)
+        desc = re.search(r"(?:Description|Beschreibung)\s+(.+?)\s+(?:Dividend per share|Dividende pro Aktie)", t)
+        qty = re.search(r"(?:Eligible quantity|Berechtigte Menge|Geeignete Menge)\s+(" + num + ")", t)
+        net = re.search(r"^(?:Net Amount|Nettobetrag)\s.*?(" + num + r")\s*$", t, re.M)
+        # Lignes « ID, date ex, date d'enregistrement, date de comptabilisation
+        # (parfois « - »), date de paiement, montant, taux, montant comptabilisé »
+        lignes = re.findall(r"\d{6,}\s+\d{2}-\w{3}-\d{4}\s+\S+\s+\S+\s+(\d{2}-\w{3}-\d{4})\s+(?:" + num + r")\s+(?:"
+                            + num + r")\s+(" + num + r")\s*$", t, re.M)
+        if isin and lignes:
+            date = _date_fr(lignes[0][0])
+            # Net : la ligne « Net Amount » si elle est là, sinon dividende + retenue à la source
+            mt = abs(_n(net.group(1))) if net else sum(_n(x[1]) for x in lignes)
+            mt = _vers_eur(abs(mt), devise, date)
+            if mt is not None:
+                lot.ajoute("Dividende", date, isin.group(1), desc.group(1) if desc else "",
+                           abs(_n(qty.group(1))) if qty else 0, montant=mt)
+    elif re.search(r"Cash Transfer|Bargeldtransfer", t):
+        for m in re.finditer(r"^(Deposit|Einlage|Withdrawal|Auszahlung)\s+\d+\s+(\d{2}-\w{3}-\d{4})\s.*?(" + num + r")\s*$", t, re.M):
+            date = _date_fr(m.group(2))
+            mt = _vers_eur(abs(_n(m.group(3))), devise, date)
+            if mt is not None:
+                lot.ajoute("Versement" if m.group(1) in ("Deposit", "Einlage") else "Retrait", date,
+                           montant=mt, origine="especes")
+    return True
+
+
+# Degiro (rapport des transactions en PDF) ─────────────────────────────────────
+
+def _degiro_pdf(t: str, lot: _Lot):
+    if "DEGIRO" not in t.upper() or not re.search(r"Transactions du|Transactions from|Transacties van", t):
+        return False
+    # Trois variantes vues : montants suivis de « EUR » (2022, 2024), sans
+    # frais ni lieu d'exécution (échange de titres à 00:00), et le format de
+    # 2025 sans devise après les montants, dans la devise du compte (« Montant
+    # CHF » dans l'en-tête). Une ligne par exécution ; un nom trop long continue
+    # sur la ligne suivante (ignorée).
+    Q = r"-?\d{1,3}(?:[ .]\d{3})*(?:,\d+)?"
+    P = r"\d{1,3}(?:[ .]\d{3})*(?:,\d+)?"
+    A = r"-?\d{1,3}(?:[ .]\d{3})*,\d{2}"
+    debut = r"^(\d{2}-\d{2}-\d{4}) (\d{2}:\d{2}) (.+?) (" + _ISIN + r") (?:[A-Z][A-Z0-9]{1,5} ){1,2}(" + Q + r") (" + P + r") ([A-Z]{3}) (" + A + r") [A-Z]{3} "
+    ancien = re.compile(debut + r"(" + A + r") EUR(?: (\d+,\d+))?(?: (" + A + r"))?(?: EUR)? (" + A + r") EUR$", re.M)
+    nouveau = re.compile(debut + r"(" + A + r")(?: (\d+,\d+))?(?: (" + A + r"))?(?: (" + A + r"))? (" + A + r")$", re.M)
+    base = re.search(r"locale\s+([A-Z]{3})\s+change", t)
+    base = base.group(1) if base else "EUR"
+    for m in list(ancien.finditer(t)) or list(nouveau.finditer(t)):
+        date = _date_fr(m.group(1))
+        qty = _n(m.group(5))
+        # Frais : l'écart entre le montant et le net (« Montant négocié »). En
+        # 2025, la colonne « frais AutoFX » n'est pas retirée du net : 898,75 −
+        # 4,60 = 894,15 CHF pour ASML, avec −2,25 d'AutoFX à côté.
+        valeur, total = _n(m.group(9)), _n(m.group(m.re.groups))
+        frais, dev_cpt = abs(abs(valeur) - abs(total)), ("EUR" if m.re is ancien else base)
+        # Titre coté en euros : son montant en euros est exact ; sinon conversion
+        brut = abs(_n(m.group(8))) if m.group(7) == "EUR" else _vers_eur(abs(valeur), dev_cpt, date)
+        frais = _vers_eur(abs(frais), dev_cpt, date) if frais else 0
+        if not qty or brut is None:
+            continue
+        lot.ajoute("Achat" if qty > 0 else "Vente", date, m.group(4), m.group(3), abs(qty), None,
+                   brut, frais or 0, quand=f"{date}T{m.group(2)}:00")
+    return True
+
+
+# Degiro, relevé de compte en PDF (4.4.37) ────────────────────────────────────
+# Une ligne par mouvement : « date heure [date de valeur] produit ISIN
+# description devise montant devise solde », en français, anglais ou allemand
+# (exemples de Portfolio Performance : AccountStatement_french01/02,
+# Kontoauszug03-17). Repris : ordres (« Achat 6 X@53,25 EUR », « Kauf 600 zu je
+# 0,96 EUR ») et leurs frais (même heure, même ISIN), dividendes nets de
+# l'impôt, dépôts. Un montant en devise prend la contrepartie en euros de la
+# ligne de change (« Opération de change - Crédit EUR 22,59 », « Währungswechsel
+# (Ausbuchung) EUR -1.000,18 »), sinon le cours du jour. Un ordre aussi présent
+# dans le rapport des transactions est repéré par l'import (même jour, même
+# quantité, même cours).
+# Montant à la française (« 1.164,45 », « 5 487,72 ») ou à l'anglaise (« 1,365.14 »)
+_DG_MT = r"-?\d{1,3}(?:[ .]\d{3})*,\d{2}|-?\d{1,3}(?:,\d{3})*\.\d{2}"
+_DG_LIGNE = re.compile(r"^(\d{2}-\d{2}-\d{4}) (\d{2}:\d{2})(?: \d{2}-\d{2}-\d{4})? (.+?) ([A-Z]{3}) (" + _DG_MT
+                       + r") [A-Z]{3} (?:" + _DG_MT + r")$", re.M)
+_DG_ORDRE = re.compile(r"(?i)^(achat|vente|kauf|verkauf|buy|sell)\s+(\d[\d.,]*)\s+(?:zu je\s+|.*?@)(\d[\d.,]*)\s+([A-Z]{3})")
+
+
+def _degiro_releve(t: str, lot: _Lot):
+    if not re.search(r"(?m)^(?:Date|Datum) (?:Time|Heure|Uhrze\w*) .*ISIN.* (?:Balance|Solde|Saldo)\s*$", t):
+        return False
+    lignes = []
+    for m in _DG_LIGNE.finditer(t):
+        reste = m.group(3)
+        i = re.search(r"\b(" + _ISIN + r")\b", reste)
+        lignes.append({"date": _date_fr(m.group(1)), "quand": _date_fr(m.group(1)) + "T" + m.group(2) + ":00",
+                       "isin": i.group(1) if i else "", "produit": reste[:i.start()].strip() if i else "",
+                       "desc": (reste[i.end():] if i else reste).strip(), "dev": m.group(4), "mt": _n(m.group(5))})
+    if not lignes:
+        return False
+    change = lambda l: re.search(r"(?i)change|w.hrungswechsel|\bfx\b", l["desc"])
+    # Impôt, ou frais de transmission d'un ADR (« ADR/GDR Weitergabegebühr ») :
+    # retirés du dividende
+    est_impot = lambda l: re.search(r"impot|steuer|tax|retenue|\badr\b", _norm(l["desc"]))
+    est_div = lambda l: l["isin"] and re.fullmatch(r"dividende?|dividend", _norm(l["desc"]))
+    # Chaque impôt va au dividende de sa ligne voisine : deux dividendes du même
+    # titre le même jour n'ont pas toujours chacun le leur (Kontoauszug03 :
+    # 2,07 − 0,55, puis 22,64 sans impôt)
+    impots = {}
+    for k, l in enumerate(lignes):
+        if not (l["isin"] and est_impot(l)):
+            continue
+        meme = [j for j, x in enumerate(lignes) if est_div(x) and x["isin"] == l["isin"] and x["date"] == l["date"]
+                and x["dev"] == l["dev"]]
+        if meme:
+            j = min(meme, key=lambda j: (j in impots, abs(j - k)))
+            impots[j] = impots.get(j, 0.0) + l["mt"]
+    # Ligne de change en euros à la même heure (et sur le même titre s'il est
+    # nommé), la plus proche : deux conversions à la même minute (dollars puis
+    # livres, Kontoauszug08) ont chacune la leur juste à côté
+    def en_euros(l):
+        k = lignes.index(l)
+        voisines = [j for j, x in enumerate(lignes) if x is not l and change(x) and x["quand"] == l["quand"]
+                    and x["dev"] == "EUR" and (not x["isin"] or not l["isin"] or x["isin"] == l["isin"])]
+        return abs(lignes[min(voisines, key=lambda j: abs(j - k))]["mt"]) if voisines else None
+    for k, l in enumerate(lignes):
+        d = _norm(l["desc"])
+        o = _DG_ORDRE.match(l["desc"])
+        if o and l["isin"]:
+            vente = o.group(1).lower() in ("vente", "verkauf", "sell")
+            qty, cours, dev = _n(o.group(2).replace(".", "").replace(",", "")), _n(o.group(3)), o.group(4)
+            # Option ou future : le montant vaut parts × cours × multiplicateur
+            # (« Kauf 1 zu je 45 EUR » pour 225,00) : hors du champ de Pilote
+            if qty and cours and abs(qty * cours - abs(l["mt"])) > max(0.05, 0.01 * abs(l["mt"])):
+                lot.inconnues.append({"date": l["date"], "type": "Dérivé", "nom": l["produit"]})
+                continue
+            brut = abs(l["mt"]) if l["dev"] == "EUR" else (en_euros(l) or _vers_eur(abs(l["mt"]), l["dev"], l["date"]))
+            frais = sum(abs(x["mt"]) if x["dev"] == "EUR" else (_vers_eur(abs(x["mt"]), x["dev"], x["date"]) or 0)
+                        for x in lignes if x["quand"] == l["quand"] and x["isin"] == l["isin"]
+                        and re.search(r"frais|geb.hr|fee|kosten", _norm(x["desc"])) and not _DG_ORDRE.match(x["desc"]))
+            if qty and brut:
+                lot.ajoute("Vente" if vente else "Achat", l["date"], l["isin"], l["produit"], qty,
+                           cours if dev == "EUR" else None, brut, frais, quand=l["quand"])
+        elif est_div(l):
+            net = l["mt"] + impots.get(k, 0.0)
+            if l["dev"] == "EUR":
+                eur = net
+            else:
+                # Change du net (« Opération de change - Débit … SEK -246,40 ») dans
+                # la semaine ; sinon le taux d'une conversion de cette devise dans la
+                # semaine (Degiro convertit parfois plusieurs dividendes d'un coup :
+                # 9,45 USD × 40,64 / 44,14 = 8,70 EUR), sinon le cours du jour
+                fin = (datetime.date.fromisoformat(l["date"]) + datetime.timedelta(days=7)).isoformat()
+                conv = [x for x in lignes if change(x) and x["dev"] == l["dev"] and x["mt"] < 0
+                        and l["date"] <= x["date"] <= fin]
+                exact = [x for x in conv if abs(abs(x["mt"]) - abs(net)) < 0.015]
+                eur = en_euros(exact[0]) if exact else None
+                if eur is None:
+                    for x in sorted(conv, key=lambda x: x["date"]):
+                        # Taux écrit sur la ligne (« Währungswechsel (Ausbuchung) 1,1757 »),
+                        # sinon celui que donnent les deux montants
+                        taux = re.search(r"(\d+[.,]\d{3,})$", x["desc"])
+                        e = en_euros(x)
+                        if taux or e:
+                            eur = round(net / _n(taux.group(1)) if taux else net * e / abs(x["mt"]), 2)
+                            break
+                eur = eur or _vers_eur(net, l["dev"], l["date"])
+            if eur and eur > 0:
+                lot.ajoute("Dividende", l["date"], l["isin"], l["produit"], montant=eur, quand=l["quand"])
+        # « Dépôt flatex », « flatex Deposit », « SOFORT Einzahlung », « iDEAL Deposit »
+        elif not l["isin"] and re.search(r"\b(depot|einzahlung|deposit|versement de fonds|storting)\b", d) \
+                and not re.search(r"sweep|virement|transfer|fonds monetaire|geldmarkt", d) and l["mt"] > 0:
+            eur = l["mt"] if l["dev"] == "EUR" else _vers_eur(l["mt"], l["dev"], l["date"])
+            if eur:
+                lot.ajoute("Versement", l["date"], montant=eur, origine="especes", quand=l["quand"])
+    return True
+
+
+# Keytrade Bank (Belgique, Luxembourg ; filiale d'Arkéa), bordereaux en
+# français (4.4.37, exemples de Portfolio Performance : Achat01-04,
+# Vente01-02, Dividende02/04/05) : « Achat 20 KBC (BE0003565737) à 74,5
+# EUR », Montant brut, Courtage ou Frais de transaction, Taxe boursière (taxe
+# belge sur les opérations de bourse) ; coupons : net crédité. Le filigrane
+# glisse des lettres dans le texte (« 26/P11/2021L10:05 ») : les dates se
+# lisent aussi dans « Date de comptabilisation ». La référence est commune à
+# plusieurs avis : pas d'identifiant tiré d'elle.
+_KT_MT = r"\d{1,3}(?:\.\d{3})*,\d{2}"
+
+
+def _keytrade(t: str, lot: _Lot):
+    def date_de(*rubriques):
+        for r in rubriques:
+            m = re.search(r + r"\s*:?\s*[A-Z]?(\d{2})/[A-Z]?(\d{2})/(\d{4})", t)
+            if m:
+                return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+        return ""
+    o = re.search(r"(Achat|Vente) (\d[\d.,]*) (.+?) \((" + _ISIN + r")\) à (\d[\d.,]*) ([A-Z]{3})", t)
+    if o:
+        date = date_de(r"Date et heure d'ex[ée]cution", r"Date de comptabilisation")
+        brut = re.search(r"Montant brut\s*[A-Z]?\s*[-+]?\s*(" + _KT_MT + r") ([A-Z]{3})", t)
+        frais = sum(_n(m) for m in re.findall(r"(?:Courtage|Frais de transaction)\s*-?\s*(" + _KT_MT + r")", t))
+        taxe = re.search(r"Taxe boursi[èe]re\s*-?\s*[\d,]+\s*%\s*-?\s*(" + _KT_MT + r")", t)
+        if not date or not brut:
+            return False
+        qty, cours, dev = _n(o.group(2)), _n(o.group(5)), o.group(6)
+        montant = _n(brut.group(1)) if brut.group(2) == "EUR" else _vers_eur(_n(brut.group(1)), brut.group(2), date)
+        if not montant:
+            return False
+        if dev != "EUR":
+            frais, cours = _vers_eur(frais, dev, date) or 0, None
+        lot.ajoute("Vente" if o.group(1) == "Vente" else "Achat", date, o.group(4), o.group(3), qty, cours, montant,
+                   frais, _n(taxe.group(1)) if taxe else 0)
+        return True
+    c = re.search(r"CREDIT COUPONS?\b", t)
+    net = re.search(r"Net CREDIT\s*(" + _KT_MT + r") ([A-Z]{3})", t)
+    if c and not net:
+        # Texte mélangé par le PDF (Dividende05) : brut moins les retenues
+        # (« 30,00% - 14,40 EUR »), gardé seulement si ce net figure dans l'avis
+        brut = re.search(r"Montant brut\s*\+?\s*(" + _KT_MT + r") ([A-Z]{3})", t)
+        ret = [_n(x) for x in re.findall(r"\d+,\d+\s*%\s*-\s*(" + _KT_MT + r")", t)]
+        if brut and ret:
+            v = round(_n(brut.group(1)) - sum(ret), 2)
+            txt = f"{v:,.2f}".replace(",", " ").replace(".", ",").replace(" ", ".")
+            if re.search(r"(?<![\d.,])" + re.escape(txt) + r" " + brut.group(2), t):
+                net = re.match(r"(.*) (.*)", txt + " " + brut.group(2))
+    if c and net:
+        isin = re.search(r"\((" + _ISIN + r")\)", t) or re.search(r"/(" + _ISIN + r")\b", t)
+        nom = re.search(r":\s*\d[\d.,]*\s+(.+?)\s*\(" + _ISIN + r"\)", t) \
+            or re.search(r"(?m)^\d[\d.,]* (.+?)\s+ON NR", t)
+        date = date_de(r"Net CREDIT\s*" + _KT_MT + r" [A-Z]{3}\s*Date", r"Date valeur")
+        if isin and date:
+            eur = _n(net.group(1)) if net.group(2) == "EUR" else _vers_eur(_n(net.group(1)), net.group(2), date)
+            if eur:
+                lot.ajoute("Dividende", date, isin.group(1), nom.group(1) if nom else "", montant=eur)
+                return True
+    return False
+
+
+def _degiro(t: str, lot: _Lot):
+    """Rapport des transactions, sinon relevé de compte."""
+    return _degiro_pdf(t, lot) or _degiro_releve(t, lot)
+
+
+# Trade Republic (avis en français) ───────────────────────────────────────────
+
+# Nombre d'un avis : « 1 234,56 », « 0,3773 », « 53.703679652 », « -1,00 »
+_NB = r"-?\d[\d .]*(?:,\d+)?|-?\d+(?:\.\d+)?"
+
+
+def _traderepublic(t: str, lot: _Lot):
+    """Avis de Trade Republic en français (exemples réels anonymisés de
+    Portfolio Performance) : relevé de transaction d'un ordre, confirmation
+    d'un investissement programmé (plan), confirmation d'exécution d'une
+    vente, dividende ou distribution. Le relevé de compte mensuel n'est pas
+    lu (ni cours ni frais par ordre) : l'export CSV le remplace."""
+    if not re.search(r"RÉCAPITULATIF|RELEVÉ DE TRANSACTION|CONFIRMATION D", t):
+        return False
+    if "RÈGLEMENT DU VERSEMENT" in t:
+        # Versement sur le compte (utile pour un PEA ; ignoré sur un CTO)
+        total = re.findall(r"^TOTAL\s+(" + _NB + r")\s+EUR\s*$", t, re.M)
+        date = re.search(r"COMPTE-ESPÈCES[^\n]*\n\S+\s+(\d{2}[./]\d{2}[./]\d{4})", t)
+        if total and date:
+            lot.ajoute("Versement", _date_fr(date.group(1)), montant=abs(_n(total[-1])), origine="especes")
+        return True
+    isin = re.search(r"(?:ISIN\s*:?\s*)?\b(" + _ISIN + r")\b", t)
+    if not isin:
+        return False
+    # Ligne du titre : « Apple Inc. 0,92086 titre(s) 156,18 EUR 143,82 EUR »,
+    # « Nemetschek 0,487012 123,20 EUR 60,00 EUR », ou, pour un dividende sur
+    # plusieurs lignes, « US5949181045 0.561914 unit. 0.75 USD »
+    ligne = re.search(r"^(.*?)\s*(" + _NB + r")\s*(?:titre\(s\)|unit\.|Stk\.|pc\.)?\s+(" + _NB + r")\s+([A-Z]{3})\s+("
+                      + _NB + r")\s+([A-Z]{3})\s*$", t, re.M)
+    qte = re.search(r"(" + _NB + r")\s*(?:titre\(s\)|unit\.)", t)
+    nom = ""
+    if ligne and not re.fullmatch(_ISIN, ligne.group(1).strip()):
+        nom = ligne.group(1).strip()
+    if not nom:
+        avant = re.search(r"(?:POSITION|TITRE) QUANTITÉ[^\n]*\n([^\n]+)", t)
+        nom = re.sub(r"\s+" + _NB + r".*$", "", avant.group(1)).strip() if avant else ""
+    devise = (ligne.group(6) if ligne else "EUR").upper()
+    if re.search(r"\bDIVIDENDE\b|\bDISTRIBUTION\b", t[:1500]) and not re.search(r"-Order (?:Achat|Vente)", t):
+        nets = re.findall(r"^TOTAL\s+(" + _NB + r")\s+EUR\s*$", t, re.M)
+        date = re.search(r"(?:COMPTE-ESPÈCES|COMPTE DE RÈGLEMENT)[^\n]*\n\S+\s+(\d{2}[./]\d{2}[./]\d{4})", t)
+        if nets and date:
+            lot.ajoute("Dividende", _date_fr(date.group(1)), isin.group(1), nom,
+                       _n(qte.group(1)) if qte else 0, montant=abs(_n(nets[-1])))
+        return True
+    plan = "INVESTISSEMENT PROGRAMMÉ" in t.upper()
+    sens = re.search(r"-Order\s+(Achat|Vente)", t)
+    if not (ligne and (plan or sens)):
+        return True
+    vente = bool(sens and sens.group(1) == "Vente")
+    d = re.search(r"(?:le|exécuté le)\s+(\d{2}[./]\d{2}[./]\d{4})(?:\s+à\s+(\d{2}:\d{2}))?", t)
+    if not d:
+        return True
+    date = _date_fr(d.group(1))
+    qty, cours, brut = abs(_n(ligne.group(2))), _n(ligne.group(3)), abs(_n(ligne.group(5)))
+    frais = sum(abs(_n(x) or 0) for x in re.findall(r"^Frais[^\n]*?\s(" + _NB + r")\s+EUR\s*$", t, re.M))
+    taxe = sum(abs(_n(x) or 0) for x in re.findall(r"^Taxe sur les transactions[^\n]*?\s(" + _NB + r")\s+EUR\s*$", t, re.M | re.I))
+    if devise != "EUR":
+        brut, cours = _vers_eur(brut, devise, date), None
+        if brut is None:
+            lot.inconnues.append({"type": "devise " + devise, "categorie": "Trade Republic", "nom": nom, "date": date})
+            return True
+    ref = re.search(r"EXÉCUTION\s+([0-9a-f]{4}-[0-9a-f]{4})", t)
+    lot.ajoute("Vente" if vente else "Achat", date, isin.group(1), nom, qty, cours, brut, frais, taxe,
+               quand=date + ("T" + d.group(2) + ":00" if d.group(2) else ""),
+               ref="tr:" + ref.group(1) if ref else "", origine="plan" if plan else "ordre")
+    return True
+
+
+# Avis d'opéré d'une autre banque : lecteur universel ──────────────────────────
+
+# Rubriques d'un avis d'opéré, sous leurs noms habituels (ordre = priorité)
+_RUBRIQUES = [
+    ("qty", r"quantit[ée] ex[ée]cut[ée]e|quantit[ée]|qt[ée]|nombre de titres|nombre de parts|nb de titres|nombre"),
+    ("cours", r"cours d'ex[ée]cution|cours ex[ée]cut[ée]|prix d'ex[ée]cution|cours moyen|prix moyen|prix unitaire|"
+              r"valeur liquidative|cours unitaire|au cours de|cours|prix"),
+    ("brut", r"montant brut|montant de la transaction|montant transaction brut|montant n[ée]goci[ée]|"
+             r"montant de l'op[ée]ration|brut"),
+    ("taxe", r"taxe sur les transactions financi[eè]res|t\.t\.f\.?|ttf"),
+    ("frais", r"frais de courtage|frais de bourse|frais de transaction|frais externes|courtage|commissions?|frais"),
+    ("net", r"montant net (?:au (?:d[ée]bit|cr[ée]dit) de votre compte|[àa] (?:d[ée]biter|cr[ée]diter)|d[ée]bit[ée]|"
+            r"cr[ée]dit[ée])|net [àa] (?:d[ée]biter|cr[ée]diter)|montant net|total net|net|d[ée]bit|cr[ée]dit"),
+]
+# Dans un en-tete de tableau seulement : « Montant » seul est le brut
+_RUBRIQUES_TABLEAU = _RUBRIQUES + [("brut", r"montant")]
+_NUM = r"-?\d{1,3}(?:[ .]\d{3})+(?:,\d+)?|-?\d+(?:[.,]\d+)?"
+_DEV = r"(?:\s*(?:EUR|€|USD|\$|GBP|£|CHF))?"
+
+
+def _motif(m: str) -> str:
+    """Un nom de rubrique peut etre coupe en fin de ligne (« Taxe sur les
+    transactions » / « financières 31,23 EUR ») : une espace vaut toute suite
+    d'espaces ou de retours a la ligne."""
+    return m.replace(" ", r"\s+")
+
+
+def _accord(v: dict) -> bool:
+    """Les rubriques lues tiennent-elles ensemble ? parts x cours = brut, et
+    brut ± frais ± taxe = net (achat ou vente)."""
+    q, c, b, n = v.get("qty"), v.get("cours"), v.get("brut"), v.get("net")
+    f, tx = abs(v.get("frais") or 0), abs(v.get("taxe") or 0)
+    if q and c and b and abs(abs(q) * abs(c) - abs(b)) > max(0.02, 0.005 * abs(b)):
+        return False
+    if b and n and min(abs(abs(n) - (abs(b) + f + tx)), abs(abs(n) - (abs(b) - f - tx))) > 0.02:
+        return False
+    return True
+
+
+def _decoupages(ligne: str, n: int) -> list:
+    """Les façons de lire `n` nombres dans une ligne ou l'espace separe a la
+    fois les milliers (« 3 986,17 ») et les colonnes : « 12 332,181 3 986,17 »
+    est « 12 | 332,181 | 3 986,17 » ou « 12 332,181 | 3 986,17 ». Seul
+    l'accord des chiffres (_accord) tranche ensuite."""
+    toks = [re.sub(r"(?i)(eur|€|usd|\$)$", "", x) for x in ligne.split()]
+    toks = [x for x in toks if x]
+    if not toks or not all(re.fullmatch(r"-?\d+(?:[.,]\d+)?", x) for x in toks) or len(toks) > 14:
+        return []
+    res = []
+
+    def suite(i, groupes):
+        if len(groupes) > n:
+            return
+        if i == len(toks):
+            if len(groupes) == n:
+                res.append([_n(g) for g in groupes])
+            return
+        x = toks[i]
+        # Collé au nombre precedent comme groupe de milliers ?
+        if groupes and re.fullmatch(r"\d{3}(?:[.,]\d+)?", x) and re.fullmatch(r"-?\d{1,3}(?: \d{3})*", groupes[-1]):
+            suite(i + 1, groupes[:-1] + [groupes[-1] + " " + x])
+        suite(i + 1, groupes + [x])
+    suite(0, [])
+    return res
+
+
+def _rubriques_avis(t: str) -> dict:
+    """{rubrique: nombre} d'un avis : « Quantité : 10 », « Cours 52,30 EUR »,
+    et aussi un tableau dont les noms de colonnes sont sur une ligne et les
+    nombres sur une suivante (« Quantité  Cours  Montant brut » / « 10  52,30
+    523,00 »), courant chez les banques de réseau."""
+    res = {}
+    tout = "|".join("(?P<%s%d>%s)" % (k, i, _motif(m)) for i, (k, m) in enumerate(_RUBRIQUES_TABLEAU))
+    lignes = t.splitlines()
+    for i, l in enumerate(lignes):
+        # Tableau : au moins deux rubriques sur la ligne et aucun nombre
+        trouves = [m.lastgroup.rstrip("0123456789")
+                   for m in re.finditer(r"(?i)(?<![a-zà-ÿ])(?:" + tout + r")(?![a-zà-ÿ])", l)]
+        if len(trouves) < 2 or re.search(r"\d", l) or len(set(trouves)) != len(trouves):
+            continue
+        suite = next((x for x in lignes[i + 1:i + 5] if x.strip()), "")
+        bons = [dict(zip(trouves, d)) for d in _decoupages(suite, len(trouves))]
+        bons = [v for v in bons if all(x is not None for x in v.values()) and _accord(v)]
+        if bons:
+            for k, v in bons[0].items():
+                res.setdefault(k, v)
+    # Ligne du titre : « Acheter iShares Physical Gold ETC 1.002416 pc. 78.61
+    # EUR 78.80 EUR » (parts, cours, montant : retenue si parts x cours = montant)
+    if not ("qty" in res and ("cours" in res or "brut" in res)):
+        for m in re.finditer(r"(?m)^[^\n]*?\s(" + _NUM + r")\s*(?:pc\.|titre\(s\)|titres|parts?|unit\.|actions?)?\s+("
+                             + _NUM + r")\s*(?:EUR|€)\s+(" + _NUM + r")\s*(?:EUR|€)\s*$", t):
+            q, c, mt = (_n(x) for x in m.groups())
+            if q and c and mt and abs(abs(q) * c - abs(mt)) <= max(0.02, 0.005 * abs(mt)):
+                res.setdefault("qty", abs(q))
+                res.setdefault("cours", c)
+                res.setdefault("brut", abs(mt))
+                break
+    # Rubrique suivie de son nombre (meme ligne, ou ligne suivante)
+    for k, motif in _RUBRIQUES:
+        if k in res:
+            continue
+        m = re.search(r"(?im)(?:^|[\s|(])(?:" + _motif(motif) + r")(?![a-zà-ÿ])[^\S\n]*(?:\([^)]{0,40}\))?[^\S\n]*(?::|\.{2,})?\s*("
+                      + _NUM + ")" + _DEV + r"(?![\d/])", t)
+        if m:
+            res[k] = _n(m.group(1))
+    # « ACHAT de 25 BNP PARIBAS … au cours de 61,08 EUR »
+    if "qty" not in res:
+        m = re.search(r"(?:ACHAT|VENTE|SOUSCRIPTION|RACHAT|Achat|Vente|Souscription|Rachat)\s+(?:de\s+)?(" + _NUM
+                      + r")\s+(?:titres?\s+|parts?\s+|actions?\s+)?[A-Za-z]", t)
+        if m:
+            res["qty"] = _n(m.group(1))
+    return res
+
+
+def _avis_generique(t: str, lot: _Lot):
+    """Avis d'opéré d'une banque sans règle propre (Crédit Agricole, BNP,
+    Société Générale, LCL, Caisse d'Épargne, Banque Populaire, La Banque
+    Postale, CIC, Crédit Mutuel… : aucun exemple public). Un seul titre par
+    avis ; les rubriques sont cherchées par leur nom habituel
+    (_rubriques_avis).
+
+    Rien n'est repris si les chiffres ne tiennent pas ensemble : parts x
+    cours = montant brut, et brut ± frais = net quand le net est donné. Un
+    avis mal compris est ainsi « non lu » plutôt qu'importé faux."""
+    isins = set(re.findall(r"\b(" + _ISIN + r")\b", t))
+    if len(isins) != 1:
+        return False
+    isin = isins.pop()
+    # Un avis en français seulement (deux mots du métier au moins) : un avis
+    # en néerlandais ou en allemand n'a ni les mêmes rubriques ni les mêmes dates
+    francais = {m.lower() for m in re.findall(r"(?i)(?<![a-zà-ÿ])(montant|quantit[ée]|courtage|commission|frais|achat|"
+                                              r"vente|dividende|souscription|cours)(?![a-zà-ÿ])", t)}
+    if len(francais) < 2:
+        return False
+
+    def date_de(motifs):
+        for motif in motifs:
+            m = re.search(r"(?i)" + motif + r"\s*:?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{1,2} [a-zéû]+\.? \d{4})", t)
+            if m and _date_fr(m.group(1)):
+                return _date_fr(m.group(1))
+        return None
+    nom = ""
+    m = re.search(r"(?im)^\s*(?:valeur|titre|libell[ée]|d[ée]signation|instrument|nom de la valeur)\s*:?\s*([^\n]+)", t)
+    if m:
+        nom = re.sub(r"(?i)\(?\s*(?:code\s*)?(?:isin\s*:?\s*)?" + isin + r"\s*\)?", "", m.group(1)).strip(" -:")
+    if not nom:
+        m = re.search(r"(?m)^\s*([^\n:]{3,60}?)\s*[(\[]?\s*(?:ISIN\s*:?\s*)?" + isin, t)
+        nom = (m.group(1) if m else "").strip(" -:(")
+    nom = re.sub(r"(?i)^(?:code\s*)?isin\s*:?", "", nom).strip()
+    r = _rubriques_avis(t)
+    haut = t[:3000]
+    achat = re.search(r"(?<![A-Za-zà-ÿ])(?:ACHAT|Achat|achat|Acheter|ACHETER|SOUSCRIPTION|Souscription)(?![A-Za-zà-ÿ])", haut)
+    vente = re.search(r"(?<![A-Za-zà-ÿ])(?:VENTE|Vente|vente|Vendre|VENDRE|RACHAT|Rachat|CESSION|Cession)(?![A-Za-zà-ÿ])", haut)
+    est_div = re.search(r"(?i)(?<![a-zà-ÿ])(dividende|coupon|distribution|acompte sur dividende)(?![a-zà-ÿ])", haut)
+    if est_div and not achat and not vente:
+        # Date du paiement (pas celle du détachement), net en euros nommé comme tel
+        date = date_de((r"date de paiement", r"pay[ée] le", r"cr[ée]dit[ée] le", r"date de r[èe]glement",
+                        r"date de valeur", r"date d'op[ée]ration"))
+        m = re.search(r"(?i)(?:montant net|net [àa] cr[ée]diter|net cr[ée]dit[ée]|montant cr[ée]dit[ée])[^\S\n]*"
+                      r"(?:\([^)]{0,40}\))?[^\S\n]*:?\s*(" + _NUM + r")\s*(EUR|€|[A-Z]{3})?", t)
+        net = _n(m.group(1)) if m and (m.group(2) or "EUR") in ("EUR", "€") else None
+        brut = r.get("brut")
+        if not date or not net or net <= 0 or (brut and net > brut + 0.01):
+            return False
+        lot.ajoute("Dividende", date, isin, nom, abs(r.get("qty") or 0), montant=net,
+                   alerte="lu par le lecteur universel : vérifie les chiffres")
+        return True
+    # Date de l'exécution de l'ordre (pas celle du règlement, deux jours après)
+    date = date_de((r"date d'ex[ée]cution", r"ex[ée]cut[ée]e? le", r"ex[ée]cution", r"date de n[ée]gociation",
+                    r"date de l'op[ée]ration", r"date d'op[ée]ration", r"date de l'ordre", r"\ble",
+                    r"date(?! de (?:r[èe]glement|valeur|livraison|paiement))"))
+    if not date:
+        return False
+    if bool(achat) == bool(vente):
+        m = re.search(r"(?i)(?:sens|nature|type d'op[ée]ration|op[ée]ration)\s*:?\s*(achat|vente|souscription|rachat)", t)
+        if not m:
+            return False
+        est_vente = m.group(1).lower() in ("vente", "rachat")
+    else:
+        est_vente = bool(vente)
+    qty, cours, brut, net = r.get("qty"), r.get("cours"), r.get("brut"), r.get("net")
+    frais, taxe = abs(r.get("frais") or 0), abs(r.get("taxe") or 0)
+    if not qty:
+        return False
+    qty = abs(qty)
+    cours = abs(cours) if cours else None
+    if brut is None and cours:
+        brut = round(qty * cours, 2)
+    if not brut:
+        return False
+    brut = abs(brut)
+    if cours and abs(qty * cours - brut) > max(0.02, 0.005 * brut):
+        return False
+    if net:
+        attendu = brut + frais + taxe if not est_vente else brut - frais - taxe
+        if abs(abs(net) - attendu) > 0.02:
+            # Frais lus de travers ou absents : le net les donne
+            ecart = abs(net) - brut - taxe if not est_vente else brut - abs(net) - taxe
+            # (pas si l'avis parle d'une taxe qui n'a pas ete lue : elle serait
+            # comptee dans les frais)
+            if 0 <= ecart <= max(50.0, 0.05 * brut) and (taxe or not re.search(
+                    r"(?i)taxe\s+sur\s+les\s+transactions|\bT\.?T\.?F\b", t)):
+                frais = round(ecart, 2)
+            else:
+                return False
+    heure = re.search(r"(?i)(?:heure d'ex[ée]cution|heure)\s*:?\s*(\d{1,2}[:h]\d{2}(?::\d{2})?)", t)
+    lot.ajoute("Vente" if est_vente else "Achat", date, isin, nom, qty, cours, brut, frais, taxe,
+               quand=date + ("T" + heure.group(1).replace("h", ":") if heure else ""),
+               alerte="lu par le lecteur universel : vérifie les chiffres")
+    return True
+
+
+_LECTEURS_PDF = [("Fortuneo", _fortuneo, r"Fortuneo|Arkéa Direct Bank|ARKEA"),
+                 # Le nom de la banque est au pied de page ; la forme de l'avis suffit aussi
+                 ("BoursoBank", _boursobank, r"Boursorama|BoursoBank|boursobank|OPERATION (?:DE BOURSE|SUR OPC)[\s\S]*Code ISIN :|COUPONS REMBOURSEMENTS"),
+                 ("Bourse Direct", _boursedirect, r"Bourse Direct"),
+                 ("Saxo", _saxo, r"Saxo Bank"),
+                 ("Degiro", _degiro, r"DEGIRO|flatex"),
+                 ("Trade Republic", _traderepublic, r"TRADE REPUBLIC|Trade Republic"),
+                 ("Keytrade", _keytrade, r"(?i)keytrade")]
+
+
+def lire_pdf(data: bytes, nom: str = "") -> dict:
+    """Lu deux fois si besoin : texte dans l'ordre du document, puis texte
+    replace d'apres la position des mots (`layout`) quand le premier ne donne
+    rien. Certaines banques ecrivent tous les libelles d'un tableau, puis
+    toutes les valeurs : « Quantité » et « 10 » ne sont alors plus cote a cote
+    dans le premier texte, mais le sont dans le second."""
+    t = texte_pdf(data)
+    if not t.strip():
+        return {"ok": False, "erreur": "aucun texte dans ce PDF (document scanné ou photo) : "
+                                       "Pilote ne lit que les PDF téléchargés depuis l'espace client"}
+    r = lire_texte_pdf(t)
+    if r.get("ok") and r.get("operations"):
+        return r
+    try:
+        r2 = lire_texte_pdf(texte_pdf(data, "layout"))
+    except Exception:
+        return r
+    if r2.get("ok") and (r2.get("operations") or not r.get("ok")):
+        return r2
+    return r
+
+
+def lire_texte_pdf(t: str) -> dict:
+    """Le texte d'un PDF (séparé pour les essais sur les exemples)."""
+    t = _norm_texte(t)
+    for banque, lecteur, signe in _LECTEURS_PDF:
+        if re.search(signe, t):
+            lot = _Lot(banque)
+            lot.inconnues = []
+            if lecteur(t, lot):
+                return {"ok": True, "banque": banque, "operations": lot.ops, "inconnues": lot.inconnues}
+    # Aucune banque connue : un avis d'opéré ordinaire, lu s'il tient debout
+    lot = _Lot("Autre banque")
+    lot.inconnues = []
+    if _avis_generique(t, lot) and lot.ops:
+        return {"ok": True, "banque": "Autre banque", "operations": lot.ops, "inconnues": lot.inconnues}
+    # Documents qui ne sont pas des opérations : dire lesquels plutôt que « non reconnu »
+    if re.search(r"SYNTHÈSE DU RELEVÉ DE COMPTE", t) and re.search(r"(?i)trade republic", t):
+        return {"ok": False, "erreur": "relevé de compte Trade Republic : il ne donne ni le cours ni les frais "
+                                       "de chaque ordre. Importe plutôt l'export CSV (Profil → Relevés → "
+                                       "Export des transactions)"}
+    if re.search(r"(?i)imprim[ée] fiscal unique|\bIFU\b", t):
+        return {"ok": False, "erreur": "imprimé fiscal unique (IFU) : il résume l'année pour les impôts, "
+                                       "sans les opérations. Importe les avis d'opéré ou l'historique des opérations"}
+    if len(set(re.findall(r"\b(" + _ISIN + r")\b", t))) > 1 and \
+            re.search(r"(?i)relev[ée] de portefeuille|[ée]valuation (?:de|du) portefeuille|relev[ée] de titres|"
+                      r"inventaire|valorisation", t) and not re.search(r"(?i)\bachat\b|\bvente\b", t):
+        return {"ok": False, "erreur": "relevé de portefeuille (positions à une date) : Pilote importe les "
+                                       "opérations, pas les positions. Importe les avis d'opéré ou l'historique"}
+    return {"ok": False, "erreur": "document non reconnu (banque ou type d'avis que Pilote ne sait pas lire)"}
 
 
 # ─── Tableaux : CSV, Excel, XML ──────────────────────────────────────────────
@@ -831,6 +1679,127 @@ def _degiro_compte(entetes, lignes, lot):
             lot.ajoute("Dividende", date, isin, nom, montant=eur)
 
 
+# Revolut, eToro, XTB (4.4.37) : exports sans ISIN, seulement un ticker
+# (« MSFT », « NKE/USD », « SPYL.DE », « FB.US »). Le titre est retrouvé par
+# server.cotations_euro (ticker -> nom chez Yahoo -> catalogue). Formats lus
+# sur les exemples réels d'Export-To-Ghostfolio (samples/, Apache-2.0).
+
+def _sans_symbole(v: str):
+    """« -$30.93 », « €88.94 » -> nombre (_n ne lit pas un signe avant le symbole)."""
+    return _n(re.sub(r"[^\d,.\-]", "", v or ""))
+
+
+def _revolut(entetes, lignes, lot):
+    """Revolut (actions) : Date, Ticker, Type, Quantity, Price per share,
+    Total Amount, Currency, FX Rate (dollars par euro). Montant en euros : le
+    montant divisé par ce taux, celui du jour de l'opération."""
+    c = {k: _col(entetes, k) for k in ("date", "ticker", "type", "quantity", "price per share",
+                                       "total amount", "currency", "fx rate")}
+    for r in lignes:
+        v = lambda k: r[c[k]].strip() if 0 <= c[k] < len(r) else ""
+        date = _date_fr(v("date")[:10])
+        typ, tk = v("type").upper(), v("ticker").upper()
+        total, dev, taux = _sans_symbole(v("total amount")), (v("currency") or "EUR").upper(), _n(v("fx rate"))
+        if not date or total is None:
+            continue
+        eur = lambda x: x if dev == "EUR" else (x / taux if taux and taux > 0.3 else _vers_eur(x, dev, date))
+        if typ.startswith(("BUY", "SELL")) and tk:
+            qty, prix = abs(_n(v("quantity")) or 0), _sans_symbole(v("price per share"))
+            if not qty:
+                continue
+            brut = qty * prix if prix else abs(total)
+            frais = abs(abs(total) - brut) if prix else 0
+            lot.ajoute("Vente" if typ.startswith("SELL") else "Achat", date, "", tk, qty,
+                       prix if dev == "EUR" else None, eur(brut), eur(frais) if frais >= 0.01 else 0,
+                       quand=v("date")[:19])
+        elif typ == "DIVIDEND" and tk and total > 0:
+            lot.ajoute("Dividende", date, "", tk, montant=eur(total))
+        elif typ in ("CASH TOP-UP", "CASH WITHDRAWAL") and total:
+            lot.ajoute("Versement" if total > 0 else "Retrait", date, montant=eur(abs(total)), origine="especes")
+        elif typ == "STOCK SPLIT":
+            lot.inconnues.append({"date": date, "type": "Division", "nom": tk})
+        else:   # frais de garde, transferts entre entités de Revolut
+            lot.ignores["especes"] = lot.ignores.get("especes", 0) + 1
+
+
+def _etoro(entetes, lignes, lot):
+    """eToro, activité du compte : Date (jj/mm/aaaa), Type, Details
+    (« NKE/USD »), Amount (en dollars, la devise du compte eToro), Units, Asset
+    type. Les CFD et cryptos ne sont pas repris (hors du champ de Pilote)."""
+    c = {k: _col(entetes, k) for k in ("date", "type", "details", "amount", "units", "asset type")}
+    for r in lignes:
+        v = lambda k: r[c[k]].strip() if 0 <= c[k] < len(r) else ""
+        date = _date_fr(v("date")[:10])
+        typ, det, classe = _norm(v("type")), v("details"), _norm(v("asset type"))
+        mt = _n(v("amount"))
+        if not date or mt is None:
+            continue
+        tk = det.split("/")[0].strip().upper() if "/" in det else ""
+        usd = lambda x: _vers_eur(abs(x), "USD", date)
+        if typ in ("open position", "position closed") and tk:
+            if classe and classe not in ("stocks", "etf", "etfs"):
+                lot.ignores["classe"] = lot.ignores.get("classe", 0) + 1
+                continue
+            qty, eur = abs(_n(v("units")) or 0), usd(mt)
+            if qty and eur:
+                lot.ajoute("Achat" if typ == "open position" else "Vente", date, "", tk, qty, None, eur,
+                           quand=_date_fr(v("date")[:10]) + "T" + v("date")[11:19])
+            elif not eur:
+                lot.ignores["conversion"] = lot.ignores.get("conversion", 0) + 1
+        elif typ == "dividend" and tk and mt > 0:
+            eur = usd(mt)
+            if eur:
+                lot.ajoute("Dividende", date, "", tk, montant=eur)
+        elif typ in ("deposit", "withdraw request") and mt:
+            eur = usd(mt)
+            if eur:
+                lot.ajoute("Versement" if typ == "deposit" else "Retrait", date, montant=eur, origine="especes")
+        else:   # intérêts, frais de nuit, frais de retrait, SDRT
+            lot.ignores["especes"] = lot.ignores.get("especes", 0) + 1
+
+
+def _xtb(entetes, lignes, lot):
+    """XTB, historique des opérations de trésorerie : ID, Type, Time
+    (jj.mm.aaaa hh:mm:ss), Symbol (« SPYL.DE », « GOOGL.US »), Comment
+    (« OPEN BUY 34/42.5658 @ 11.7480 »), Amount (devise du compte : l'euro pour
+    un compte français). Retenue à la source : ligne à part, retirée du
+    dividende du même titre à la même seconde."""
+    c = {k: _col(entetes, k) for k in ("id", "type", "time", "symbol", "comment", "amount")}
+    vals = []
+    for r in lignes:
+        v = lambda k: r[c[k]].strip() if 0 <= c[k] < len(r) else ""
+        vals.append({k: v(k) for k in c})
+    for x in vals:
+        typ, date = _norm(x["type"]), _date_fr(x["time"][:10])
+        mt = _n(x["amount"])
+        if not date or mt is None:
+            continue
+        tk = x["symbol"].upper()
+        if tk.endswith(".US"):
+            tk = tk[:-3]
+        elif tk.endswith(".UK"):
+            tk = tk[:-3] + ".L"
+        ref = ("xtb:" + x["id"]) if x["id"] else ""
+        quand = date + "T" + x["time"][11:19]
+        if re.search(r"etf (purchase|sale|compra|vende)", typ):
+            m = re.search(r"(?:OPEN|CLOSE) BUY ([\d.]+)(?:/[\d.]+)? @ ([\d.]+)", x["comment"])
+            if not m:
+                lot.inconnues.append({"date": date, "type": x["type"], "nom": tk})
+                continue
+            qty, prix = float(m.group(1)), float(m.group(2))
+            euro = "." + tk.rsplit(".", 1)[-1] in (".DE", ".PA", ".AS", ".MI", ".BR", ".MC", ".LS", ".IR", ".VI", ".HE")
+            lot.ajoute("Vente" if re.search(r"sale|vende", typ) else "Achat", date, "", tk, qty,
+                       prix if euro else None, abs(mt), quand=quand, ref=ref)
+        elif typ == "dividend" and mt > 0:
+            ret = sum(_n(y["amount"]) or 0 for y in vals if _norm(y["type"]) == "withholding tax"
+                      and y["symbol"] == x["symbol"] and y["time"] == x["time"])
+            lot.ajoute("Dividende", date, "", tk, montant=mt + ret, quand=quand, ref=ref)
+        elif typ in ("deposit", "withdrawal") and mt:
+            lot.ajoute("Versement" if mt > 0 else "Retrait", date, montant=abs(mt), origine="especes", quand=quand, ref=ref)
+        elif typ != "withholding tax":   # intérêts, swaps, frais, gains de CFD
+            lot.ignores["especes"] = lot.ignores.get("especes", 0) + 1
+
+
 # Lecteur universel : colonnes reconnues par leur nom ──────────────────────────
 
 CHAMPS = ["date", "heure", "sens", "isin", "nom", "qty", "cours", "devise", "montant", "frais", "ref"]
@@ -989,8 +1958,8 @@ def _deballer(lignes: list) -> list:
 
 
 def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
-    """Un tableau (lignes de cellules, en-têtes en premier). Renvoie {ok, banque,
-    operations, inconnues}, ou {ok: False, besoinColonnes, entetes, apercu, proposition}
+    """Un tableau (lignes de cellules, en-têtes en premier). Renvoie le format
+    de lire_texte_pdf, ou {ok: False, besoinColonnes, entetes, apercu, proposition}
     quand les colonnes ne sont pas reconnues."""
     if not lignes:
         return {"ok": False, "erreur": "fichier vide"}
@@ -1025,6 +1994,16 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
             _fortuneo_csv(entetes, corps, lot)
             return {"ok": True, "banque": lot.banque, "operations": lot.ops, "inconnues": lot.inconnues,
                     "ignores": lot.ignores}
+        # Revolut : ses huit colonnes exactement (Freetrade en a aussi trois)
+        for signe, banque, lecteur in ((("ticker", "price per share", "fx rate", "currency", "date"), "Revolut", _revolut),
+                                       (("details", "units", "position id"), "eToro", _etoro),
+                                       (("symbol", "comment", "amount", "time"), "XTB", _xtb)):
+            if all(s in entetes for s in signe):
+                lot = _Lot(banque)
+                lot.inconnues = []
+                lecteur(entetes, corps, lot)
+                return {"ok": True, "banque": banque, "operations": lot.ops, "inconnues": lot.inconnues,
+                        "ignores": lot.ignores}
         if "instrument isin" in entetes and "event" in entetes:
             lot = _Lot("Saxo")
             lot.inconnues = []
@@ -1060,7 +2039,7 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
     lot.inconnues = []
     _universel(entetes, corps, lot, {k: int(v) for k, v in colonnes.items() if v is not None and int(v) >= 0})
     return {"ok": True, "banque": "Tableau", "operations": lot.ops, "inconnues": lot.inconnues,
-            "colonnes": colonnes, "entetes": lignes[0]}
+            "ignores": lot.ignores, "colonnes": colonnes, "entetes": lignes[0]}
 
 
 # ─── Entrée ───────────────────────────────────────────────────────────────────
@@ -1094,11 +2073,10 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
     if not data:
         return {"ok": False, "erreur": "fichier vide"}
     if b"%PDF-" in data[:1024]:
-        return {"ok": False, "erreur": "c'est un PDF : Pilote lit les relevés en CSV (ou Excel). Dans l'espace "
-                                       "client de ta banque, exporte l'historique des opérations en CSV"}
+        return lire_pdf(data[data.index(b"%PDF-"):], nom)
     if data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff" or data[4:12] in (b"ftypheic", b"ftypmif1") \
             or (data[:4] == b"RIFF" and data[8:12] == b"WEBP"):
-        return {"ok": False, "erreur": "c'est une image : Pilote lit les relevés en CSV ou Excel "
+        return {"ok": False, "erreur": "c'est une image : Pilote lit les relevés en PDF, CSV ou Excel "
                                        "téléchargés depuis l'espace client"}
     if data[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
         # Excel 97-2003 (.xls)
@@ -1125,14 +2103,14 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
         # Archive (Fortuneo livre son CSV dans un .zip) : chaque fichier lu
         # comme s'il avait été choisi seul, résultats réunis
         res = {"ok": False, "operations": [], "inconnues": [], "ignores": {},
-               "erreur": "aucun relevé dans cette archive (CSV, Excel ou XML attendu)"}
+               "erreur": "aucun relevé dans cette archive (PDF, CSV, Excel ou XML attendu)"}
         for info in z.infolist():
             membre = info.filename
             # 20 Mo au plus par fichier : un relevé n'en fait que quelques Ko
             base = membre.rsplit("/", 1)[-1]
             if membre.endswith("/") or info.file_size > 20_000_000 or membre.startswith("__MACOSX/") \
                     or base.startswith(".") \
-                    or not membre.lower().endswith((".csv", ".xlsx", ".xml", ".txt", ".tsv", ".xls", ".ods",
+                    or not membre.lower().endswith((".csv", ".pdf", ".xlsx", ".xml", ".txt", ".tsv", ".xls", ".ods",
                                                     ".htm", ".html", ".zip")) \
                     or (membre.lower().endswith(".zip") and _niveau >= 2):
                 continue
@@ -1173,7 +2151,7 @@ def lire_fichier(nom: str, data: bytes, colonnes: dict = None, _niveau: int = 0)
         return r2 if r2.get("ok") else r
     if nom_l.endswith((".csv", ".txt", ".tsv", ".xls")) or any(c in texte[:5000] for c in ",;\t|"):
         return lire_tableau(_lignes_csv(texte), nom, colonnes)
-    return {"ok": False, "erreur": "format non reconnu (CSV, Excel ou XML attendu)"}
+    return {"ok": False, "erreur": "format non reconnu (PDF, CSV, Excel ou XML attendu)"}
 
 
 def lire(fichiers: list) -> dict:

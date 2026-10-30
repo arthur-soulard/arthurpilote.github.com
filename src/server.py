@@ -1041,6 +1041,27 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
     # SAINT-GOBAIN » -> SGO.PA, que Yahoo ne trouvait pas)
     import titres_connus
     connus = [isin] if isin else (titres_connus.par_nom(nom) or titres_connus.par_nom(nom2))
+    # Export qui ne donne qu'un ticker (Revolut, eToro, XTB : « ZAL.DE »,
+    # « MSFT ») : le ticker du catalogue, sinon le nom de la société chez Yahoo,
+    # reconnu par le catalogue (« Microsoft Corporation » -> MSF.DE)
+    if not connus and re.fullmatch(r"[A-Z0-9][A-Z0-9\-]{0,9}(\.[A-Z]{1,3})?", nom or ""):
+        i = titres_connus.par_ticker(nom)
+        if i:
+            connus = [i]
+        else:
+            try:
+                trouves = [x for x in _yahoo_search_brut(nom) if x.get("quoteType") in ("EQUITY", "ETF")]
+            except Exception:
+                trouves = []
+            # Le ticker lui-même (MSFT), sinon sa cotation sur une place en
+            # euros (KER -> KER.PA)
+            q = next((x for x in trouves if x.get("symbol") == nom), None) \
+                or next((x for x in trouves if (x.get("symbol") or "").split(".")[0] == nom
+                         and "." + (x.get("symbol") or "").rsplit(".", 1)[-1] in _PLACES_EUR), None)
+            if q:
+                nom2 = nom2 or q.get("longname") or q.get("shortname") or ""
+                connus = titres_connus.par_nom(nom2) or ([titres_connus.par_ticker(q["symbol"])]
+                                                          if titres_connus.par_ticker(q["symbol"]) else [])
     if not isin and len(connus) == 1:
         isin = connus[0]
     catalogue = [s for i in connus for s in titres_connus.cotations(i)]

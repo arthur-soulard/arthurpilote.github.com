@@ -53,6 +53,8 @@ a = Analysis(
         "PIL.Image",
         "PIL.ImageDraw",
         "PIL.ImageFont",
+        # Import des releves PDF (releves.py, import paresseux), comme pilote.spec
+        "pypdf",
         # Lecture des captures Sante (plateforme.ocr_mac, import paresseux)
         "Vision",
         # Catalogue des titres de l'import (server.cotations_euro, import paresseux)

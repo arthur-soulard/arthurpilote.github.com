@@ -199,5 +199,5 @@ L'architecture, les données sur disque et les règles du projet sont décrites 
 ## 📜 Licence
 
 Pilote est sous licence MIT : voir [LICENSE](LICENSE). Les licences des composants
-embarqués (Python, pywebview, Pillow, Chart.js, Phosphor, polices…) sont dans
+embarqués (Python, pywebview, Pillow, pypdf, Chart.js, Phosphor, polices…) sont dans
 [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt), aussi installé avec l'app.

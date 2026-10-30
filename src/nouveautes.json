@@ -11,12 +11,18 @@
       "ameliore": [
         "L'import des relevés reconnaît bien mieux tes titres : Pilote connaît maintenant plus de 6 000 actions, ETF et ETC cotés en euros (Paris, Amsterdam, Bruxelles, Milan, Lisbonne, Francfort), dont les actions américaines pour ton CTO. Les noms écrits à la façon des banques (« CIE DE SAINT-GOBAIN », « BNP PARIBAS ACT.A ») sont reconnus, et la recherche est plus rapide.",
         "Sur ton PEA, l'import choisit la cotation de Paris quand elle existe.",
-        "L'import se concentre sur les exports CSV de ta banque (ou le même fichier en Excel) : dans ton espace client, exporte l'historique des opérations en CSV. Les PDF (avis d'opéré) ne sont plus lus."
+        "La fenêtre d'import conseille l'export CSV de ta banque, le plus sûr (dans ton espace client, l'historique des opérations). Ta banque n'en propose pas ? Ses avis d'opéré en PDF restent lus.",
+        "L'import lit de nouveaux formats : les exports d'eToro, de XTB et de Revolut (le titre est retrouvé à partir de son seul ticker), le relevé de compte de Degiro en PDF (dividendes nets en euros, dépôts, ordres et leurs frais) et les avis de Keytrade."
+      ],
+      "corrige": [
+        "L'import d'un tableau dont un montant en devise ne pouvait pas être converti (export Revolut, par exemple) s'arrêtait sur une erreur.",
+        "Quand la recherche de mise à jour échoue, Pilote dit pourquoi (pas d'Internet, pare-feu ou antivirus qui bloque Pilote, date du PC fausse, réseau lent) au lieu d'afficher toujours « pas de connexion à GitHub ».",
+        "Dans l'historique des mises à jour, la version 4.4.36 portait la date du 29 octobre au lieu du 30."
       ]
     },
     {
       "version": "4.4.36",
-      "date": "2026-10-29",
+      "date": "2026-10-30",
       "titre": "Ta sauvegarde sur Google Drive",
       "nouveau": [
         "La sauvegarde peut aller dans un dossier de Google Drive (ou OneDrive) au lieu d'une clé USB. Installe Google Drive pour ordinateur, puis dans Paramètres, Sauvegarde, « Choisir un dossier » dans Mon Drive : chaque archive y part toute seule. Si ton ordinateur tombe en panne, installe Pilote et Google Drive sur le nouveau, choisis le même dossier et clique sur « Restaurer »."

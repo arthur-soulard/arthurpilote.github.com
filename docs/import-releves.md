@@ -4,19 +4,59 @@ Fiche tirée de `CLAUDE.md`. Code : `src/releves.py` (lecture), `ctoImport*` dan
 `index.html` (aperçu, enregistrement), `server.cotations_euro` (cotation en
 euros, voir `docs/modules/cto.md`), `src/titres_connus.py` (catalogue des titres).
 
-## CSV seulement, et catalogue des titres (30/10/2026, prévu en 4.4.37)
+## CSV conseillé, nouveaux formats, catalogue des titres (30/10/2026, prévu en 4.4.37)
 
-Demande d'Arthur, après le retour d'un utilisateur : « on se concentre
-uniquement sur les CSV, plus de PDF », et améliorer grandement la
-reconnaissance des titres (Engie, Saint-Gobain… restaient « à choisir »).
+Demande d'Arthur, après le retour d'un utilisateur : se concentrer sur les
+CSV, améliorer grandement la reconnaissance des titres (Engie, Saint-Gobain…
+restaient « à choisir »), puis « améliore la lecture des PDF et des CSV ».
 
-* **PDF retirés** : les lecteurs d'avis d'opéré (Fortuneo, BoursoBank, Bourse
-  Direct, Saxo, Degiro, Trade Republic, lecteur universel `_avis_generique`) et
-  pypdf (requirements, les deux specs, THIRD-PARTY-NOTICES) sont supprimés. Un PDF
-  reçoit un message : exporter l'historique des opérations en CSV. Restent le CSV
-  et ses variantes de tableur (.xlsx, .xls, .ods, HTML, XML d'IBKR, .zip) : un
-  CSV repassé par Excel reste le cas courant. Les sections PDF plus bas sont
-  l'historique (code dans git, commit 62fbdea et avant).
+* **PDF : retirés puis remis le même jour.** Arthur a d'abord demandé « plus de
+  PDF » ; retirés (commit 0a976f5, jamais publié), puis remis à sa demande quand
+  il a vu que beaucoup de banques n'ont pas de CSV pour la bourse (BoursoBank,
+  Bourse Direct, banques de réseau : avis d'opéré en PDF seulement). Son choix :
+  **« CSV conseillé, PDF en secours »** : la fenêtre d'import présente le CSV
+  comme le plus sûr, et les PDF pour les banques sans CSV. `releves.py`, pypdf,
+  les specs et les licences sont revenus à l'identique de 62fbdea.
+* **Nouveaux lecteurs, vérifiés sur des documents réels publiés :**
+  * **Degiro, relevé de compte en PDF** (`_degiro_releve`, français, anglais,
+    allemand ; avant : non lu) : dividendes nets de l'impôt et des frais d'ADR,
+    en euros par la ligne de change voisine (ou le taux écrit sur une
+    conversion groupée), dépôts (« Dépôt flatex », « flatex Deposit »,
+    « SOFORT Einzahlung »), ordres et leurs frais (même heure, même ISIN ; un
+    ordre en devise prend la contrepartie « Währungswechsel (Ausbuchung) »).
+    Options et futures (montant = parts × cours × multiplicateur) écartés.
+    Comparé au corrigé de Portfolio Performance sur ses 24 relevés :
+    **207 dividendes et dépôts sur 209** au centime près (les 2 autres : le
+    fonds monétaire interne de Degiro, hors champ). Pièges vus : deux dividendes
+    du même titre le même jour n'ont pas chacun leur impôt (l'impôt va à la
+    ligne voisine) ; deux conversions à la même minute (chacune sa ligne
+    voisine).
+  * **Keytrade** (`_keytrade`, bordereaux en français) : 8 avis sur 8, chacun
+    vérifié par son propre total (brut + courtage + taxe boursière = débit) ;
+    dividende au texte mélangé par le PDF : net recalculé (brut − retenues),
+    gardé seulement s'il figure dans l'avis (33,60 €, comme le corrigé).
+  * **eToro, XTB, Revolut** (CSV, `_etoro`, `_xtb`, `_revolut`, exemples
+    d'Export-To-Ghostfolio) : avant, colonnes à choisir à la main (eToro, XTB)
+    ou **plantage** (Revolut). eToro compte en dollars (converti au cours du
+    jour), CFD et cryptos écartés ; XTB : quantité et cours dans « OPEN BUY
+    34/42.5 @ 11.748 », montant dans la devise du compte, retenue à la source
+    retirée du dividende de la même seconde ; Revolut : montant divisé par sa
+    colonne « FX Rate ». Freetrade a trois colonnes en commun avec Revolut :
+    reconnaissance de Revolut sur ses cinq colonnes.
+  * **Plantage corrigé** : `_Lot.ignores` n'existait que pour Fortuneo ; tout
+    tableau avec un montant en devise non convertible ou des dates ambiguës
+    plantait (« '_Lot' object has no attribute 'ignores' »).
+* **Ticker seul** (Revolut, eToro, XTB) : `cotations_euro` cherche le ticker
+  dans le catalogue (« ZAL.DE »), sinon le nom de la société chez Yahoo
+  (« MSFT » -> « Microsoft Corporation » -> MSF.DE), sinon sa cotation sur une
+  place en euros (KER -> KER.PA). 12 tickers sur 16 essayés retrouvés ; non :
+  « O » (une lettre), FB (devenu META), deux cotations hors euro.
+* **Non-régression mesurée** : sur les 29 exports d'Export-To-Ghostfolio, la
+  version d'avant et celle-ci ne diffèrent que par les trois gains (eToro 0 ->
+  18 opérations, XTB 0 -> 25, Revolut 0 -> 7) ; sur les 438 textes de PDF de
+  Portfolio Performance, 28 documents mieux lus et **aucun autre changement**.
+  Le vrai export mélangé PEA/CTO d'un utilisateur : 133 opérations, 18 titres,
+  tous avec une cotation (BlackRock n'en avait aucune avant).
 * **Cause des titres non reconnus**, mesurée chez Yahoo le 30/10/2026 : avec
   l'ISIN, Engie et Saint-Gobain étaient trouvés ; **sans ISIN** (CSV de
   Fortuneo), « CIE DE SAINT-GOBAIN » et « BNP PARIBAS ACTIONS A » ne donnaient
@@ -40,7 +80,9 @@ reconnaissance des titres (Engie, Saint-Gobain… restaient « à choisir »).
     générateur de temps en temps (introductions, radiations).
 * **Reconnaissance par le nom** (`par_nom`) : mots du nom sans le bruit des banques
   et de Xetra (« CIE DE », « ACT.A », « SE », « INH. O.N. », « DL-,01 »…), un
-  titre convient si tous les mots d'un de ses noms sont dans le nom lu ; le plus
+  titre convient si tous les mots d'un de ses noms sont dans le nom lu (ou en
+  sont le début : Xetra abrège « ADVANCED MIC.DEV. »), et si son premier mot est
+  l'un des deux premiers du nom lu (Skyworks Solutions n'est pas Solutions 30) ; le plus
   long l'emporte (Dassault Systèmes, pas Dassault Aviation) ; à égalité, tous
   (Alphabet A et C), la vérification par les prix tranche. Un nom de fonds (ETF,
   UCITS, MSCI…) n'est jamais rapproché d'une action (« AXA IM Nasdaq 100 UCITS
@@ -55,8 +97,8 @@ reconnaissance des titres (Engie, Saint-Gobain… restaient « à choisir »).
 * **Vérifié** le 30/10/2026 : 28 cas réels (noms de banque, ISIN, actions US,
   ETF, PEA et CTO) tous sur la bonne cotation ; sur le banc, un CSV Fortuneo
   fabriqué (6 titres sans ISIN, vraies clôtures) → 6 titres sur Paris,
-  « vérifiés », en 1,8 s, importés ; un PDF → le message. `tests/test_titres.py`
-  (hors ligne).
+  « vérifiés », en 1,8 s, importés. Tests hors ligne : `tests/test_titres.py`,
+  `tests/test_releves_courtiers.py`.
 
 ## Ce qui a été décidé avec Arthur (12/10/2026, version 4.4.3)
 
