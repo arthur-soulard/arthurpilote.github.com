@@ -26,3 +26,10 @@ js:goTab("fin-month"),_finImp={nouvelles:[{date:"2026-10-01",amount:42.5,label:"
 # 4. CTO, case Rendement basculée sur « Lignes actuelles », puis le (i).
 #    Attendu : étiquette « Lignes actuelles » sous le %, fenêtre « Deux façons de compter ».
 js:goTab("cto-dash"),ctoBasculerRendement(),ctoInfoRendement()
+# 5. PEA, Plan d'épargne › Programmés avec un plan d'essai échu hier (pastille).
+#    Attendu : carte « À valider », pastille sur PEA et sur l'onglet, tableau du plan.
+js:goTab("strat"),S.plansProg=[{id:1,ticker:S.positions[0].ticker,montant:100,rythme:"mois",debut:todayISO(),faites:[]}],peRender()
+# 6. Fenêtre de validation de l'échéance. Attendu : cours pré-rempli, parts calculées.
+js:peOuvrirValider(1,todayISO(),peJourEffectif(todayISO()))
+# 7. Page Équilibrage. Attendu : l'ancienne Stratégie, intacte.
+js:closeOv("ov-pe-valider"),pePage("equil")

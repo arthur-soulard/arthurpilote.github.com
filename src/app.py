@@ -210,7 +210,7 @@ class Api:
             data["_cache"]["history"] = cache["history"] or data["_cache"].get("history", {})
             storage.save_data(data)
             self._notif_prefs = data.get("notifs", {})
-            agenda.planifier_si("versement", "dividende", "pea-depot", "pea-investir", "pea-anniv", "resume")
+            agenda.planifier_si("versement", "dividende", "pea-depot", "pea-investir", "pea-anniv", "pea-plan", "resume")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -296,7 +296,7 @@ class Api:
     def save_cto(self, data: dict, vide_voulu: bool = False) -> dict:
         try:
             cto.save_data(data or {}, bool(vide_voulu))
-            agenda.planifier_si("cto-investir", "cto-dividende", "resume")
+            agenda.planifier_si("cto-investir", "cto-dividende", "cto-plan", "resume")
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}

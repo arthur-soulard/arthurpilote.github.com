@@ -473,9 +473,12 @@ class TestAgenda(unittest.TestCase):
             "positions": [{"ticker": "EPA:CW8", "name": "Amundi MSCI World"}],
             "transactions": [{"id": 1, "type": "Achat", "date": auj.isoformat()}],
             "depots": [{"id": 1, "date": (auj.replace(day=1) - datetime.timedelta(days=1)).isoformat()}],
+            "plansProg": [{"id": 1, "ticker": "EPA:CW8", "montant": 100, "prochaine": j(3)},
+                          {"id": 2, "ticker": "EPA:CW8", "montant": 50, "prochaine": j(-1)}],
         }), "utf-8")
         cto.save_data({"comptes": [{"id": "c2", "nom": "TR", "transactions": [],
                                     "positions": [{"ticker": "AAPL", "name": "Apple"}],
+                                    "plansProg": [{"id": 7, "ticker": "AAPL", "montant": 25, "prochaine": j(4)}],
                                     "divFuture": [{"id": "x", "date": j(10), "ticker": "AAPL", "montant": 1.2}]}]})
         finances.save_data({"transactions": [{"id": 1, "createdAt": j(-40) + "T10:00:00"}],
                             "recurrences": [{"id": 5, "label": "Loyer", "type": "expense", "amount": 450,
@@ -500,6 +503,11 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual(r["pea-depot"]["jour"], auj.replace(day=1))          # pas de versement ce mois-ci
         self.assertEqual(r["cto-dividende-c2-x"]["titre"], "💶 Dividende · Apple · 1,20 € · CTO TR")
         self.assertEqual(r["cto-investir-c2"]["titre"], "📈 Investir ce mois · CTO TR")
+        # Achats programmés : le prochain de chaque plan, pas une date passée
+        self.assertEqual((r["pea-plan-1"]["jour"].isoformat(), r["pea-plan-1"]["titre"]),
+                         (j(3), "🔁 Achat programmé · Amundi MSCI World · 100,00 €"))
+        self.assertNotIn("pea-plan-2", r)
+        self.assertEqual(r["cto-plan-c2-7"]["titre"], "🔁 Achat programmé · Apple · 25,00 € · CTO TR")
         self.assertEqual(r["fin-saisie"]["jour"], auj.replace(day=1))
         self.assertEqual(r["fin-recurrent-5"]["titre"], "🔁 Loyer · −450,00 €")
         self.assertNotIn("fin-recurrent-6", r)                               # en pause

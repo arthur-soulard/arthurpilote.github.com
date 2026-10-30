@@ -521,3 +521,35 @@ entre dans du HTML : un nom piégé (relevé importé, recherche Yahoo) s'affich
 texte. Un cours que Yahoo ne rend plus pour une ligne détenue fait passer la barre
 d'état en « partiel » (`_coursPerimes`) : « Dernière actualisation HH:MM · cours
 ancien : TTE ».
+
+## Plan d'épargne : Programmés | Équilibrage (4.4.40)
+
+L'onglet « Stratégie » s'appelle « Plan d'épargne » (ids `strat` et `cto-strat`
+inchangés), au PEA et dans chaque CTO. Un sélecteur en haut (`pePage`, page
+retenue par compte dans `_cptPrefs().ppPage`) montre :
+* **Programmés** (`peRender`) : achats programmés du compte (`plansProg` :
+  `{id, ticker, montant, rythme hebdo|2sem|mois|trim, debut, faites, prochaine}`),
+  parts prévues au cours actuel, prochain achat, total mensuel.
+* **Équilibrage** : tout l'ancien contenu de Stratégie (`#pe-equil`), inchangé.
+
+Échéances (`peEnAttente`) : théoriques (`_peEcheance`, même jour du mois,
+ramené à la fin d'un mois court), décalées au jour de bourse suivant
+(`peJourEffectif` : week-ends, 1er janvier, Vendredi saint, lundi de Pâques,
+1er mai, 25 et 26 décembre, calendrier Euronext appliqué aussi aux CTO).
+Une échéance n'est plus à valider si son `theo` est dans `faites` (validée ou
+« Pas passé ») ou si un achat du titre existe entre la veille et 5 jours après
+(`_peDejaAchete`) : c'est ce qui fait qu'un import du CSV Trade Republic la
+valide seul, sans doublon. Un nouveau plan dont le premier achat est passé
+ne laisse pas tout l'historique en attente (échéances passées mises dans `faites`).
+
+Valider (`peValider`) : cours payé pré-rempli avec le cours actuel, parts =
+montant ÷ cours tronquées au millionième, frais = `tarif.plan` du courtier,
+sinon sa grille (`courtageOrdre`), modifiables. Transaction `origine: "plan"`,
+`planId`, `planEch` (échéance théorique). Pastille (`peRenderBadges`, classe `ac-sb-n` d'Actus) sur l'en-tête
+de la section et sur l'onglet, rafraîchie à chaque `persist`/`ctoPersist`.
+Un plan n'achète qu'un titre déjà dans Positions. Supprimer la ligne arrête
+le plan (les achats faits restent).
+
+`prochaine` est recalculée à chaque pastille et partie au prochain
+enregistrement : agenda.py la lit (rappels `pea-plan`, `cto-plan`) sans
+refaire le calcul des jours de bourse.

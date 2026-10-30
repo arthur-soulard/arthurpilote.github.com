@@ -2603,6 +2603,14 @@ body.cpt-cto .cto-bar {
 .cto-bar-sp { flex: 1; }
 body.cpt-cto .pea-seul, body.cpt-cto .pea-info { display: none !important; }
 /* Case Rendement d'un CTO : un clic change de calcul (ctoBasculerRendement) */
+/* Plan d'épargne : pages Programmés | Équilibrage, échéances à valider */
+.pe-pages { display: inline-flex; margin-bottom: 14px; }
+.pe-pages .ac-sb-n { margin-left: 6px; }
+.pe-ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--brd); }
+.pe-ligne:last-child { border-bottom: 0; }
+.pe-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.sb-item .pe-sb-n { margin-left: auto; }
 .cto-seul { display: none; }
 body.cpt-cto .cto-seul { display: inline-flex; }
 body.cpt-cto #mc-pv { cursor: pointer; }
@@ -2914,7 +2922,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <button class="tab" onclick="goTab('tx')">Transactions</button>
   <button class="tab" onclick="goTab('wish')">Wishlist</button>
   <button class="tab" onclick="goTab('dep')">Versements</button>
-  <button class="tab" onclick="goTab('strat')">Stratégie</button>
+  <button class="tab" onclick="goTab('strat')">Plan d'épargne</button>
   <button class="tab" onclick="goTab('reco')">Recommandations</button>
 </div>
 
@@ -3167,6 +3175,26 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
 <!-- ═══════════════════ STRATÉGIE ═══════════════════ -->
 <div class="pane" id="pane-strat">
+  <!-- Plan d'épargne (4.4.40) : Programmés (plans d'achat) | Équilibrage
+       (l'ancienne Stratégie). peRender(). -->
+  <div class="fin-toggle pe-pages">
+    <button type="button" class="fin-toggle-btn" id="pe-btn-prog" onclick="pePage('prog')">Programmés <span class="ac-sb-n" id="pe-btn-n" hidden></span></button>
+    <button type="button" class="fin-toggle-btn" id="pe-btn-equil" onclick="pePage('equil')">Équilibrage</button>
+  </div>
+  <div id="pe-prog" style="display:none">
+    <div class="card" id="pe-attente-card" style="display:none;border-left:3px solid var(--accent)">
+      <div class="card-h"><span class="card-t">À valider</span></div>
+      <div class="card-b" id="pe-attente"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <span class="card-t">Achats programmés</span>
+        <button class="btn btn-sm btn-primary" onclick="peOuvrirPlan(null)"><i class="ph ph-plus"></i> Ajouter un achat</button>
+      </div>
+      <div class="card-b" id="pe-liste"></div>
+    </div>
+  </div>
+  <div id="pe-equil">
   <!-- Réglage des plans (CTO d'un courtier à plans gratuits et parts
        fractionnées, Trade Republic) : remplace Prochain achat. ctoPlansRender(). -->
   <div class="card" id="card-plans" style="display:none">
@@ -3246,6 +3274,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="card-b" id="strat-list">
       <div style="text-align:center;color:var(--txt2);padding:1.5rem;font-size:12px">Aucune règle : clique sur « + Ajouter une règle » pour commencer.</div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -4230,6 +4259,47 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-fin-icon')">Annuler</button>
       <button class="btn btn-primary" onclick="finIconConfirm()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plan d'épargne : un achat programmé (peOuvrirPlan) -->
+<div class="ov" id="ov-pe-plan" onclick="if(event.target===this)closeOv('ov-pe-plan')">
+  <div class="modal" style="max-width:460px">
+    <h2 id="pe-plan-titre">Achat programmé</h2>
+    <div class="fg"><label>Actif</label><select id="pe-actif" onchange="peApercuParts()"></select></div>
+    <div class="fg-row">
+      <div class="fg"><label>Montant (€)</label><input id="pe-montant" type="number" step="0.01" min="1" oninput="peApercuParts()"></div>
+      <div class="fg"><label>Rythme</label><select id="pe-rythme">
+        <option value="hebdo">Chaque semaine</option><option value="2sem">Toutes les 2 semaines</option>
+        <option value="mois" selected>Chaque mois</option><option value="trim">Chaque trimestre</option></select></div>
+    </div>
+    <div class="fg"><label>Premier achat</label><input id="pe-debut" type="date"></div>
+    <p class="m-note" id="pe-parts"></p>
+    <p class="m-note">Un jour sans bourse (week-end, jour férié) : l'achat passe le jour de bourse suivant, comme chez Trade Republic.</p>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-pe-plan')">Annuler</button>
+      <button class="btn btn-primary" onclick="peEnregistrerPlan()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plan d'épargne : valider une échéance au cours payé (peOuvrirValider) -->
+<div class="ov" id="ov-pe-valider" onclick="if(event.target===this)closeOv('ov-pe-valider')">
+  <div class="modal" style="max-width:420px">
+    <h2 id="pe-val-titre">Achat programmé</h2>
+    <div class="fg-row">
+      <div class="fg"><label>Date</label><input id="pe-val-date" type="date"></div>
+      <div class="fg"><label>Cours payé (€)</label><input id="pe-val-cours" type="number" step="0.0001" min="0" oninput="peApercuValider()"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Montant (€)</label><input id="pe-val-montant" type="number" step="0.01" min="0" oninput="peApercuValider()"></div>
+      <div class="fg"><label>Frais (€)</label><input id="pe-val-frais" type="number" step="0.01" min="0"></div>
+    </div>
+    <p class="m-note" id="pe-val-parts"></p>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-pe-valider')">Annuler</button>
+      <button class="btn btn-primary" onclick="peValider()">Enregistrer l'achat</button>
     </div>
   </div>
 </div>
@@ -5534,6 +5604,7 @@ const DEF = {
   wishlist:        [],
   closedPositions: [],
   strategies:      [],
+  plansProg:       [],
   cashSolde:   0,
   lastUpdate:  null,
   banque:      "Ma banque",
@@ -5561,7 +5632,7 @@ let _ch = {};
      arrivée après la bascule est jetée au lieu d'être rangée dans l'autre compte.
    * Réglages propres au compte (Prochain achat, simulateur d'ordres) : _cptPrefs(). */
 const CPT_CLES = ["positions", "transactions", "depots", "depotsPrevus", "divHist", "divReceived",
-                  "divFuture", "wishlist", "closedPositions", "strategies"];
+                  "divFuture", "wishlist", "closedPositions", "strategies", "plansProg"];
 let _compteActif = "pea";    // "pea", ou l'id du CTO affiché
 let _cptGen = 0;
 let _peaHorsEcran = null;    // données du PEA mises de côté pendant qu'un CTO est affiché
@@ -5707,6 +5778,7 @@ async function _hydrateFromPython() {
       wishlist:        d.wishlist        || [],
       closedPositions: d.closedPositions || [],
       strategies:      d.strategies      || [],
+      plansProg:       d.plansProg       || [],
       cashSolde:       d.cashSolde       || 0,
       lastUpdate:      null,
       banque:          (d.config && d.config.banque)    || "Ma banque",
@@ -5745,7 +5817,7 @@ function loadState() {
       if (!Array.isArray(p.positions)) throw new Error("format invalide");
       S = p;
       NID = S._nid || NID;
-      ["depots","depotsPrevus","divHist","wishlist","divReceived","divFuture","closedPositions","strategies"].forEach(k => { if (!S[k]) S[k] = []; });
+      ["depots","depotsPrevus","divHist","wishlist","divReceived","divFuture","closedPositions","strategies","plansProg"].forEach(k => { if (!S[k]) S[k] = []; });
       if (S.cashSolde == null) S.cashSolde = 0;
       if (!S.banque) S.banque = "Ma banque";
       if (S.prenom == null) S.prenom = "";
@@ -5764,6 +5836,7 @@ function persist(badge) {
   // Sync vers le backend Python (debounce 400 ms). Le badge « Sauvegardé »
   // ne s'affiche qu'une fois le fichier réellement écrit (_syncToPythonNow).
   _syncToPython(badge !== false);
+  if (typeof peRenderBadges === "function") peRenderBadges();
   // Les ordres payés avec le prêt vivent ici : l'onglet Prêt ouvert suit
   // (saisie depuis ses boutons, bouton Retour)
   if (typeof prRefreshIfVisible === "function") prRefreshIfVisible();
@@ -5824,6 +5897,7 @@ async function _syncToPythonNow() {
     d.divFuture       = P.divFuture       || [];
     d.wishlist        = P.wishlist        || [];
     d.strategies      = P.strategies      || [];
+    d.plansProg       = P.plansProg       || [];
     d.closedPositions = P.closedPositions || [];
     d.cashSolde       = S.cashSolde || 0;
     d._nid            = _nidPea();
@@ -9987,6 +10061,7 @@ function goTab(n) {
   if (n==="reco") { renderReco(); fetchAnalysts(); fetchKeystats(); }
   if (n==="sim" && typeof _initSimulateurs === "function") _initSimulateurs();
   if (n==="strat" && typeof pacRender === "function") pacRender();
+  if (n==="strat" && typeof peRender === "function") peRender();
   if (n==="dash" && typeof dashRenderOverview === "function") dashRenderOverview();
   // Memorise pour le prochain lancement
   try { document.body.dataset.activeTab = onglet; } catch(e) {}
@@ -11462,6 +11537,7 @@ function _reconstruireSidebar() {
   if (old) old.remove();
   _injectSidebar();
   if (typeof acRenderBadge === "function") acRenderBadge();
+  if (typeof peRenderBadges === "function") peRenderBadges();   // achats programmés à valider
   // La pastille de l'utilisateur vit dans la barre : elle partait avec elle
   if (typeof _renderUserPill === "function") _renderUserPill();
   const actif = document.querySelector(".pane.active");
@@ -15226,7 +15302,7 @@ const NAV_SECTIONS = [
     { id: "tx",     label: "Transactions"   },
     { id: "wish",   label: "Wishlist"       },
     { id: "dep",    label: "Versements"     },
-    { id: "strat",  label: "Stratégie"      },
+    { id: "strat",  label: "Plan d'épargne" },
   ]},
   // Comptes-titres (4.4.0) : les écrans du PEA, sur un CTO (bloc CTO,
   // « Compte actif »). Pas de Dépôts : le CTO ne suit pas les espèces.
@@ -15239,7 +15315,7 @@ const NAV_SECTIONS = [
     { id: "cto-div",    label: "Dividendes"     },
     { id: "cto-tx",     label: "Transactions"   },
     { id: "cto-wish",   label: "Wishlist"       },
-    { id: "cto-strat",  label: "Stratégie"      },
+    { id: "cto-strat",  label: "Plan d'épargne" },
   ]},
   { id: "sec-comptes", label: "Mes comptes", children: [
     { id: "fin-month", label: "Mois"   },
@@ -16045,6 +16121,7 @@ async function _hydrateFromHttp() {
       wishlist:        d.wishlist        || [],
       closedPositions: d.closedPositions || [],
       strategies:      d.strategies      || [],
+      plansProg:       d.plansProg       || [],
       cashSolde:       d.cashSolde       || 0,
       lastUpdate:      null,
       banque:          (d.config && d.config.banque)    || "Ma banque",
@@ -22723,6 +22800,7 @@ async function ctoBootstrap() {
     ctoSyncWidgets();
     // Une section par CTO : la barre, dessinée avant cette lecture, n'en avait qu'une
     if (ctoComptes().length && document.getElementById("app-sidebar")) _reconstruireSidebar();
+    else if (typeof peRenderBadges === "function") peRenderBadges();
   } catch (e) {
     console.warn("[cto] lecture KO:", e);
   }
@@ -22857,6 +22935,7 @@ function ctoPersist(badge) {
   if (badge) _ctoSyncBadge = true;
   clearTimeout(_ctoSyncTimer);
   _ctoSyncTimer = setTimeout(ctoEcrire, 400);
+  if (typeof peRenderBadges === "function") peRenderBadges();   // un import peut valider un achat programmé
 }
 async function ctoEcrire() {
   clearTimeout(_ctoSyncTimer);
@@ -22945,6 +23024,276 @@ function ctoResume(id) {
            pvLignes, pvLignesPct: (pvLignes != null && investi > 0) ? pvLignes / investi * 100 : null };
 }
 
+/* ══ PLAN D'ÉPARGNE (4.4.40) : achats programmés du PEA et de chaque CTO ═══
+   Un plan : { id, ticker, montant, rythme (hebdo|2sem|mois|trim), debut,
+   faites: [échéances théoriques traitées], prochaine }. Une échéance passe le
+   jour de bourse suivant si la bourse est fermée (Euronext : week-ends,
+   1er janvier, Vendredi saint, lundi de Pâques, 1er mai, 25 et 26 décembre).
+   Elle attend d'être validée au cours payé, ou « Pas passé ». Un achat du même
+   titre entre la veille et 5 jours après la vaut validation (import du CSV).
+   `prochaine` est écrite pour agenda.py, qui ne refait pas ce calcul. */
+const PE_RYTHMES = { hebdo: "Chaque semaine", "2sem": "Toutes les 2 semaines", mois: "Chaque mois", trim: "Chaque trimestre" };
+
+function _peIso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function _peDate(iso) { const [y, m, j] = iso.split("-").map(Number); return new Date(y, m - 1, j); }
+function _pePaques(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mois = Math.floor((h + l - 7 * m + 114) / 31), jour = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mois - 1, jour);
+}
+function peJourDeBourse(d) {
+  const y = d.getFullYear(), md = (d.getMonth() + 1) * 100 + d.getDate();
+  if (d.getDay() === 0 || d.getDay() === 6) return false;
+  if ([101, 501, 1225, 1226].includes(md)) return false;
+  const p = _pePaques(y), t = d.getTime();
+  return t !== new Date(y, p.getMonth(), p.getDate() - 2).getTime() && t !== new Date(y, p.getMonth(), p.getDate() + 1).getTime();
+}
+/* Le jour où l'achat passe : le jour prévu, ou le jour de bourse suivant */
+function peJourEffectif(iso) {
+  const d = _peDate(iso);
+  while (!peJourDeBourse(d)) d.setDate(d.getDate() + 1);
+  return _peIso(d);
+}
+/* Échéance n° k (théorique) : même jour du mois (ramené à la fin d'un mois court) */
+function _peEcheance(plan, k) {
+  const d = _peDate(plan.debut);
+  if (plan.rythme === "hebdo" || plan.rythme === "2sem") {
+    d.setDate(d.getDate() + k * (plan.rythme === "hebdo" ? 7 : 14));
+    return _peIso(d);
+  }
+  const pas = plan.rythme === "trim" ? 3 : 1, jour = d.getDate();
+  const x = new Date(d.getFullYear(), d.getMonth() + k * pas, 1);
+  x.setDate(Math.min(jour, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate()));
+  return _peIso(x);
+}
+/* Un achat du titre déjà saisi autour de ce jour (validé, ou importé) */
+function _peDejaAchete(etat, plan, theo, jour) {
+  const d = _peDate(jour);
+  const de = _peIso(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+  const a = _peIso(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 5));
+  return (etat.transactions || []).some(t => t.type === "Achat" && t.asset === plan.ticker
+    && ((t.planId === plan.id && t.planEch === theo) || (normDate(t.date) >= de && normDate(t.date) <= a)));
+}
+/* Échéances à valider d'un compte : [{ plan, theo, jour }], plus anciennes d'abord */
+function peEnAttente(etat) {
+  const auj = todayISO(), out = [];
+  ((etat && etat.plansProg) || []).forEach(plan => {
+    for (let k = 0; k < 400; k++) {
+      const theo = _peEcheance(plan, k), jour = peJourEffectif(theo);
+      if (jour > auj) break;
+      if ((plan.faites || []).includes(theo) || _peDejaAchete(etat, plan, theo, jour)) continue;
+      out.push({ plan, theo, jour });
+    }
+  });
+  return out.sort((a, b) => a.jour.localeCompare(b.jour));
+}
+function peProchaine(plan) {
+  const auj = todayISO();
+  for (let k = 0; k < 400; k++) { const j = peJourEffectif(_peEcheance(plan, k)); if (j > auj) return j; }
+  return null;
+}
+/* Tous les comptes : [{ id ("pea" ou id du CTO), nom, etat }] */
+function peComptes() {
+  const out = [];
+  const pea = _etatPea();
+  if (pea) out.push({ id: "pea", nom: "PEA", etat: pea });
+  if (typeof ctoComptes === "function")
+    ctoComptes().forEach(c => out.push({ id: c.id, nom: ctoNomSection(c), etat: ctoEtat(c.id) }));
+  return out;
+}
+
+/* Pastilles : en-tête de la section et onglet Plan d'épargne de chaque compte */
+function peRenderBadges() {
+  peComptes().forEach(({ id, etat }) => {
+    ((etat && etat.plansProg) || []).forEach(p => { p.prochaine = peProchaine(p); });   // pour agenda.py, à la prochaine écriture
+    const n = peEnAttente(etat).length;
+    const sec = id === "pea" ? "sec-pea" : "sec-cto@" + id;
+    const tab = id === "pea" ? "strat" : "cto-strat@" + id;
+    [`.sb-sec-btn[data-sec-btn="${sec}"]`, `.sb-item[data-tab="${tab}"]`].forEach(sel => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      let b = el.querySelector(".pe-sb-n");
+      if (!b) { b = document.createElement("span"); b.className = "ac-sb-n pe-sb-n"; el.appendChild(b); }
+      b.hidden = !n;
+      b.textContent = n;
+      b.title = n + (n > 1 ? " achats programmés à valider" : " achat programmé à valider");
+    });
+  });
+}
+
+function pePage(page) {
+  const p = _cptPrefs();
+  if (page) p.pePage = page;
+  const prog = (p.pePage || "prog") === "prog";
+  document.getElementById("pe-prog").style.display = prog ? "" : "none";
+  document.getElementById("pe-equil").style.display = prog ? "none" : "";
+  document.getElementById("pe-btn-prog").classList.toggle("active", prog);
+  document.getElementById("pe-btn-equil").classList.toggle("active", !prog);
+}
+
+function _peNomDans(etat, ticker) {
+  const p = ((etat && etat.positions) || []).find(x => x.ticker === ticker);
+  return p ? (p.name || p.ticker) : ticker;
+}
+function _peNom(ticker) { return _peNomDans(S, ticker); }
+function _peCours(ticker) {
+  const p = (S.positions || []).find(x => x.ticker === ticker);
+  return p && p.cours > 0 ? p.cours : null;
+}
+function _peFrais(montant) {
+  const cfg = typeof pacCfg === "function" ? pacCfg() : null;
+  const tarif = cfg && cfg.tarif;
+  if (!tarif) return 0;
+  return tarif.plan != null ? tarif.plan : courtageOrdre(montant, tarif, !_estCto());
+}
+const _peFd = iso => iso.split("-").reverse().join("/");
+
+function peRender() {
+  if (!document.getElementById("pe-prog")) return;
+  pePage();
+  const plans = S.plansProg || (S.plansProg = []);
+  // Prochaine date, pour agenda.py
+  plans.forEach(p => { p.prochaine = peProchaine(p); });
+  const att = peEnAttente(S);
+  const nb = document.getElementById("pe-btn-n");
+  nb.hidden = !att.length; nb.textContent = att.length;
+  document.getElementById("pe-attente-card").style.display = att.length ? "" : "none";
+  document.getElementById("pe-attente").innerHTML = att.map(e => `
+    <div class="pe-ligne">
+      <div><b>${escHtml(_peNom(e.plan.ticker))}</b> · ${eur(e.plan.montant)}<br>
+        <span class="pac-dim">${_peFd(e.jour)}${e.jour !== e.theo ? " (prévu le " + _peFd(e.theo) + ", bourse fermée)" : ""}</span></div>
+      <div class="pe-acts">
+        <button class="btn btn-sm btn-ghost" onclick="pePasPasse(${e.plan.id}, '${e.theo}')">Pas passé</button>
+        <button class="btn btn-sm btn-primary" onclick="peOuvrirValider(${e.plan.id}, '${e.theo}', '${e.jour}')">Saisir le cours payé</button>
+      </div>
+    </div>`).join("");
+  const liste = document.getElementById("pe-liste");
+  if (!plans.length) {
+    liste.innerHTML = `<div class="m-empty">Aucun achat programmé. Ajoute ton premier plan : Pilote te préviendra le jour de l'achat pour que tu saisisses le cours payé.</div>`;
+  } else {
+    const total = plans.reduce((s, p) => s + p.montant * ({ hebdo: 52, "2sem": 26, mois: 12, trim: 4 }[p.rythme] || 12) / 12, 0);
+    liste.innerHTML = `<div class="tw"><table><thead><tr><th>Actif</th><th>Montant</th><th>Rythme</th><th>Parts prévues</th><th>Prochain achat</th><th></th></tr></thead><tbody>
+      ${plans.map(p => {
+        const c = _peCours(p.ticker);
+        return `<tr><td>${escHtml(_peNom(p.ticker))}</td><td>${eur(p.montant)}</td><td>${PE_RYTHMES[p.rythme] || ""}</td>
+          <td>${c ? "≈ " + fmtQte(p.montant / c) : "—"}</td><td>${p.prochaine ? _peFd(p.prochaine) : "—"}</td>
+          <td class="m-acts"><button class="m-iconbtn" title="Modifier" onclick="peOuvrirPlan(${p.id})"><i class="ph ph-pencil-simple"></i></button>
+          <button class="m-iconbtn" title="Supprimer" onclick="peSupprimer(${p.id})"><i class="ph ph-trash"></i></button></td></tr>`;
+      }).join("")}</tbody></table></div>
+      <p class="m-note">Environ ${eur(total)} par mois. Rappel dans ton calendrier : <a href="#" onclick="goTab('ag-notifs');return false">Agenda › Notifications</a>.</p>`;
+  }
+  peRenderBadges();
+}
+
+let _peEdit = null;
+function peOuvrirPlan(id) {
+  const lignes = (S.positions || []).filter(p => p.ticker);
+  if (!lignes.length) { showToastModern("Ajoute d'abord la ligne dans Positions : le plan achète un titre du compte.", "warn"); return; }
+  _peEdit = id;
+  const p = id ? S.plansProg.find(x => x.id === id) : null;
+  document.getElementById("pe-plan-titre").textContent = p ? "Modifier l'achat programmé" : "Nouvel achat programmé";
+  document.getElementById("pe-actif").innerHTML = lignes.map(x =>
+    `<option value="${escHtml(x.ticker)}">${escHtml(x.name || x.ticker)}</option>`).join("");
+  if (p) document.getElementById("pe-actif").value = p.ticker;
+  document.getElementById("pe-montant").value = p ? p.montant : "";
+  document.getElementById("pe-rythme").value = p ? p.rythme : "mois";
+  document.getElementById("pe-debut").value = p ? p.debut : todayISO();
+  peApercuParts();
+  openOvTop("ov-pe-plan");
+}
+function peApercuParts() {
+  const m = parseFloat(document.getElementById("pe-montant").value);
+  const c = _peCours(document.getElementById("pe-actif").value);
+  document.getElementById("pe-parts").textContent = m > 0 && c
+    ? "Au cours actuel (" + eur3(c) + ") : ≈ " + fmtQte(m / c) + " part" + (m / c >= 2 ? "s" : "") + " à chaque achat." : "";
+}
+function peEnregistrerPlan() {
+  const ticker = document.getElementById("pe-actif").value;
+  const montant = Math.round(parseFloat(document.getElementById("pe-montant").value) * 100) / 100;
+  const rythme = document.getElementById("pe-rythme").value;
+  const debut = document.getElementById("pe-debut").value;
+  if (!ticker || !(montant > 0) || !debut) { showToastModern("Indique l'actif, un montant et la date du premier achat.", "warn"); return; }
+  pushUndo();
+  S.plansProg = S.plansProg || [];
+  const p = _peEdit ? S.plansProg.find(x => x.id === _peEdit) : null;
+  if (p) {
+    // Changer la date ou le rythme repart de zéro : les anciennes échéances ne comptent plus
+    if (p.debut !== debut || p.rythme !== rythme) p.faites = [];
+    Object.assign(p, { ticker, montant, rythme, debut });
+  } else {
+    const id = S.plansProg.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+    // Un premier achat passé ne laisse pas en attente tout l'historique : seul
+    // ce qui tombe à partir d'aujourd'hui est à valider
+    const faites = [];
+    const auj = todayISO(), x = { ticker, rythme, debut };
+    for (let k = 0; k < 400; k++) { const th = _peEcheance(x, k); if (peJourEffectif(th) >= auj) break; faites.push(th); }
+    S.plansProg.push({ id, ticker, montant, rythme, debut, faites });
+  }
+  closeOv("ov-pe-plan");
+  persist();
+  peRender();
+  if (typeof dashRender === "function") dashRender();
+}
+function peSupprimer(id) {
+  if (!confirm("Supprimer cet achat programmé ? Les achats déjà enregistrés restent dans les transactions.")) return;
+  pushUndo();
+  S.plansProg = (S.plansProg || []).filter(p => p.id !== id);
+  persist();
+  peRender();
+  if (typeof dashRender === "function") dashRender();
+}
+function pePasPasse(id, theo) {
+  const p = (S.plansProg || []).find(x => x.id === id);
+  if (!p) return;
+  pushUndo();
+  p.faites = (p.faites || []).concat(theo);
+  persist();
+  peRender();
+  if (typeof dashRender === "function") dashRender();
+}
+
+let _peVal = null;
+function peOuvrirValider(id, theo, jour) {
+  const p = (S.plansProg || []).find(x => x.id === id);
+  if (!p) return;
+  _peVal = { id, theo };
+  document.getElementById("pe-val-titre").textContent = _peNom(p.ticker);
+  document.getElementById("pe-val-date").value = jour;
+  document.getElementById("pe-val-cours").value = _peCours(p.ticker) || "";
+  document.getElementById("pe-val-montant").value = p.montant;
+  document.getElementById("pe-val-frais").value = _peFrais(p.montant);
+  peApercuValider();
+  openOvTop("ov-pe-valider");
+}
+function peApercuValider() {
+  const c = parseFloat(document.getElementById("pe-val-cours").value);
+  const m = parseFloat(document.getElementById("pe-val-montant").value);
+  document.getElementById("pe-val-parts").textContent = c > 0 && m > 0
+    ? "Soit " + fmtQte(Math.floor(m / c * 1e6) / 1e6) + " parts." : "Le cours exact se trouve sur l'avis d'opéré ou dans l'appli de ta banque.";
+}
+function peValider() {
+  const p = _peVal && (S.plansProg || []).find(x => x.id === _peVal.id);
+  if (!p) return;
+  const date = document.getElementById("pe-val-date").value;
+  const cours = parseFloat(document.getElementById("pe-val-cours").value);
+  const montant = parseFloat(document.getElementById("pe-val-montant").value);
+  const frais = parseFloat(document.getElementById("pe-val-frais").value) || 0;
+  if (!date || !(cours > 0) || !(montant > 0)) { showToastModern("Indique la date, le cours payé et le montant.", "warn"); return; }
+  pushUndo();
+  S.transactions.push({ id: NID.tx++, date, asset: p.ticker, type: "Achat", cours,
+    qty: Math.floor(montant / cours * 1e6) / 1e6, frais, origine: "plan", planId: p.id, planEch: _peVal.theo });
+  p.faites = (p.faites || []).concat(_peVal.theo);
+  _peVal = null;
+  closeOv("ov-pe-valider");
+  persist();
+  renderPositions(); renderTx();
+  peRender();
+  if (typeof dashRender === "function") dashRender();
+  showToastModern("Achat enregistré", "ok");
+}
+
 /* Case Rendement : « Tout le compte » (défaut) ou « Lignes actuelles »,
    gardé dans les réglages du CTO affiché */
 function ctoBasculerRendement() {
@@ -22960,9 +23309,9 @@ function ctoInfoRendement() {
   const html = `<div class="ov open" id="ov-cto-rdt" onclick="if(event.target===this)this.remove()">
     <div class="modal" style="max-width:480px"><h2>Deux façons de compter</h2>
     ${l("Tout le compte", "Ce que le compte t'a rapporté depuis le premier achat : valeur des lignes − (achats − ventes − dividendes), en % de tout ce que tu as acheté. Les gains des lignes vendues et les dividendes comptent."
-       + (r.pvPct != null ? `<br><span class="m-note">Ici : ${eur(r.pv, true)} (${pct(r.pvPct)})</span>` : ""))}
+       + (r.pvPct != null ? `<br><span class="pac-dim">Ici : ${eur(r.pv, true)} (${pct(r.pvPct)})</span>` : ""))}
     ${l("Lignes actuelles", "Comme Trade Republic : valeur des lignes encore détenues − ce qu'elles t'ont coûté, en % de ce coût. Les lignes vendues et les dividendes ne comptent pas."
-       + (r.pvLignesPct != null ? `<br><span class="m-note">Ici : ${eur(r.pvLignes, true)} (${pct(r.pvLignesPct)})</span>` : ""))}
+       + (r.pvLignesPct != null ? `<br><span class="pac-dim">Ici : ${eur(r.pvLignes, true)} (${pct(r.pvLignesPct)})</span>` : ""))}
     ${l("Et les frais ?", "Dans les deux cas, les frais d'achat s'ajoutent à ce que tu as payé : ils baissent le rendement. Les frais d'une vente sont retirés de ce qu'elle t'a rapporté.")}
     <p class="m-note">Un clic sur la case passe d'un calcul à l'autre.</p>
     <div class="mact"><button class="btn btn-primary" onclick="document.getElementById('ov-cto-rdt').remove()">Compris</button></div>
@@ -23980,6 +24329,42 @@ const DASH_WIDGETS = [
     // Le PEA et tous les CTO, mêmes périodes que la tuile du PEA : dashBoursePerf
     id: "bourse-perf", label: "Performance de toute ma bourse", module: "Bourse", tab: "dash",
     render() { return dashBoursePerf(); },
+  },
+  {
+    // Achats programmés (Plan d'épargne, 4.4.40) à valider, PEA et CTO
+    // réunis ; mène au compte du plus ancien. Disparaît quand tout est validé.
+    id: "plans-attente", label: "Achats programmés à valider", module: "Bourse", tab: "strat",
+    render() {
+      if (typeof peComptes !== "function") return null;
+      const att = [];
+      peComptes().forEach(c => peEnAttente(c.etat).forEach(e => att.push(Object.assign({ cpt: c }, e))));
+      if (!att.length) return null;
+      att.sort((a, b) => a.jour.localeCompare(b.jour));
+      const e = att[0];
+      this.tab = e.cpt.id === "pea" ? "strat" : "cto-strat@" + e.cpt.id;
+      return { lbl: "Achats programmés à valider", val: String(att.length),
+               sub: _peNomDans(e.cpt.etat, e.plan.ticker) + " · " + eur(e.plan.montant) + " · " + _peFd(e.jour) + " · " + e.cpt.nom,
+               go: "Saisir le cours payé" };
+    },
+  },
+  {
+    id: "plans-prochains", label: "Prochains achats programmés", module: "Bourse", tab: "strat",
+    render() {
+      if (typeof peComptes !== "function") return null;
+      const l = [];
+      peComptes().forEach(c => ((c.etat && c.etat.plansProg) || []).forEach(p => {
+        const j = peProchaine(p);
+        if (j) l.push({ j, p, c });
+      }));
+      if (!l.length) return null;
+      l.sort((a, b) => a.j.localeCompare(b.j));
+      const x = l[0];
+      this.tab = x.c.id === "pea" ? "strat" : "cto-strat@" + x.c.id;
+      return { lbl: "Prochain achat programmé", val: _peFd(x.j),
+               sub: _peNomDans(x.c.etat, x.p.ticker) + " · " + eur(x.p.montant) + " · " + x.c.nom
+                    + (l.length > 1 ? " · " + l.length + " plans" : ""),
+               go: "Voir les plans" };
+    },
   },
   {
     id: "marches", label: "Marchés du jour", module: "Bourse", tab: null,
@@ -26130,8 +26515,10 @@ const AG_NOTIFS = [
   ["dividende", "pea", "coins", "Dividendes attendus", "ceux de l'onglet Dividendes", AG_ALERTES_DATE],
   ["pea-depot", "pea", "bank", "Verser sur le PEA", "chaque mois ; passe au mois suivant dès qu'un versement du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
   ["pea-investir", "pea", "chart-line-up", "Investir ce mois", "chaque mois ; passe au mois suivant dès qu'un achat du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
+  ["pea-plan", "pea", "repeat", "Achats programmés", "le jour de chaque achat de l'onglet Plan d'épargne, pour saisir le cours payé", AG_ALERTES_DATE],
   ["pea-anniv", "pea", "cake", "Anniversaire du PEA", "date d'ouverture des Paramètres ; le cap des 5 ans est signalé", AG_ALERTES_DATE],
   ["cto-dividende", "cto", "coins", "Dividendes attendus", "ceux de chaque compte-titres", AG_ALERTES_DATE],
+  ["cto-plan", "cto", "repeat", "Achats programmés", "le jour de chaque achat programmé de chaque compte-titres", AG_ALERTES_DATE],
   ["cto-investir", "cto", "chart-line-up", "Investir ce mois", "un rappel par compte-titres ; passe au mois suivant dès qu'un achat du mois est saisi", AG_ALERTES_RAPPEL, "mois"],
   ["fin-saisie", "comptes", "receipt", "Saisir les dépenses du mois", "passe au mois suivant dès qu'une opération est ajoutée ce jour-là ou après", AG_ALERTES_RAPPEL, "mois"],
   ["fin-recurrent", "comptes", "repeat", "Opérations récurrentes", "la prochaine échéance de chacune : abonnement, loyer, salaire…", AG_ALERTES_DATE],

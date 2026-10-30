@@ -169,6 +169,8 @@ Calendrier doit être autorisé.
   | PEA | `pea-depot` | « Verser sur le PEA », du mois (rien sans aucun versement) |
   | PEA | `pea-investir` | « Investir ce mois », du mois, fait = un achat ce mois-ci |
   | PEA | `pea-anniv` | prochain anniversaire de `config.ouverture`, « cap des 5 ans » à 5 ans |
+  | PEA | `pea-plan` | prochain achat de chaque plan (Plan d'épargne), date `prochaine` écrite par l'UI |
+  | CTO | `cto-plan` | idem pour chaque CTO, nom du CTO en fin de titre |
   | CTO | `cto-dividende` | dividendes attendus de chaque CTO, nom du CTO en fin de titre |
   | CTO | `cto-investir` | un rappel du mois par CTO (clé `cto-investir-<id>`) |
   | Mes comptes | `fin-saisie` | du mois, fait = une opération ajoutée (`createdAt`) le jour du rappel ou après |

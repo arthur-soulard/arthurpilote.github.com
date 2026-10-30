@@ -85,7 +85,7 @@ CHOIX     = ("sport", "objectifs", "pret")
 # Rappels de l'onglet Notifications : envoyes seulement si leur alerte est reglee
 # (catalogue du 26/10/2026, range par section dans l'onglet)
 RAPPELS   = ("pesee", "releve", "versement", "dividende",
-             "pea-depot", "pea-investir", "pea-anniv", "cto-investir", "cto-dividende",
+             "pea-depot", "pea-investir", "pea-anniv", "pea-plan", "cto-investir", "cto-dividende", "cto-plan",
              "fin-saisie", "fin-recurrent", "pret-etapes", "sport-pause",
              "sante-pause", "sante-objectif", "resume", "sauvegarde", "ouvrir", "pense-bete")
 ALERTES   = ("note", "sport", "objectif", "pret") + RAPPELS
@@ -478,6 +478,24 @@ def _dividendes(compte: dict, prefixe: str, type_: str, suffixe: str = "") -> li
     return out
 
 
+def _plans(compte: dict, prefixe: str, suffixe: str) -> list:
+    """Achats programmes (Plan d'epargne, 4.4.40) : le prochain de chacun.
+    Sa date (« prochaine », jour de bourse compris) est calculee par l'UI."""
+    out = []
+    auj = datetime.date.today()
+    noms = {p.get("ticker"): p.get("name") for p in compte.get("positions") or []}
+    type_ = "cto-plan" if prefixe.startswith("cto-") else "pea-plan"
+    for i, p in enumerate(compte.get("plansProg") or []):
+        jour = _jour(p.get("prochaine"))
+        if not jour or jour < auj:
+            continue
+        nom = str(noms.get(p.get("ticker")) or p.get("ticker") or "Plan").strip()[:80]
+        out.append(_element(f"{prefixe}-{_cle(p, jour, i)}", type_,
+                            f"🔁 Achat programmé · {nom} · {_euros(p.get('montant'))}{suffixe}", jour,
+                            texte="Saisis le cours payé dans Pilote › Plan d'épargne."))
+    return out
+
+
 def _nom_cto(c: dict) -> str:
     """Comme la barre laterale (ctoNomSection) : « CTO » suivi du nom du compte."""
     nom = str(c.get("nom") or "").strip()
@@ -537,8 +555,10 @@ def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
         if any(not c.get("archived") and not c.get("auto") for c in pa.get("comptes") or []):
             out.append(_element("releve", "releve", "📋 Relevé du patrimoine",
                                 _jour_du_mois(jours.get("releve"), patrimoine.mois_saisi(pa)), mois=-1))
-    if any(alertes.get(t) for t in ("versement", "dividende", "pea-depot", "pea-investir", "pea-anniv")):
+    if any(alertes.get(t) for t in ("versement", "dividende", "pea-depot", "pea-investir", "pea-anniv", "pea-plan")):
         pea = _pea()
+        if alertes.get("pea-plan"):
+            out += _plans(pea, "pea-plan", "")
         if alertes.get("versement"):
             for i, v in enumerate(pea.get("depotsPrevus") or []):
                 jour = _jour(v.get("date"))
@@ -569,13 +589,15 @@ def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
             if jour and jour >= auj and not n.get("faite") and str(n.get("texte") or "").strip():
                 out.append(_element(f"pense-bete-{_cle(n, jour, i)}", "pense-bete",
                                     "📌 " + str(n["texte"]).strip()[:200], jour))
-    if alertes.get("cto-investir") or alertes.get("cto-dividende"):
+    if alertes.get("cto-investir") or alertes.get("cto-dividende") or alertes.get("cto-plan"):
         for c in cto.load_data().get("comptes") or []:
             cid = re.sub(r"[^A-Za-z0-9_-]", "", str(c.get("id") or ""))
             if not cid:
                 continue
             if alertes.get("cto-dividende"):
                 out += _dividendes(c, f"cto-dividende-{cid}", "cto-dividende", " · " + _nom_cto(c))
+            if alertes.get("cto-plan"):
+                out += _plans(c, f"cto-plan-{cid}", " · " + _nom_cto(c))
             if alertes.get("cto-investir") and (c.get("positions") or c.get("transactions")):
                 out.append(_element(f"cto-investir-{cid}", "cto-investir",
                                     "📈 Investir ce mois · " + _nom_cto(c),

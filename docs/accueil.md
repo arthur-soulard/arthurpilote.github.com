@@ -382,3 +382,7 @@ n'est recalculé à part :
   du CTO, et le % tombe entre ceux des deux comptes, comme « Toute ma bourse ».
 * Titre court sur la tuile (« Performance de ma bourse ») : le nom complet
   passait sur deux lignes à 1024 px.
+
+* **Achats programmés** (4.4.40, module Bourse) : `plans-attente` (nombre
+  d'échéances à valider, PEA et CTO, mène au compte de la plus ancienne) et
+  `plans-prochains` (prochain achat programmé). Les deux disparaissent sans plan.

@@ -4,10 +4,12 @@
     {
       "version": "4.4.40",
       "date": "2026-10-30",
-      "titre": "Tes notifications à l'heure que tu veux",
+      "titre": "Achats programmés, import du budget, notifications à l'heure voulue",
       "nouveau": [
         "Agenda › Notifications, et la notification de chaque note : en plus des choix habituels, « Autre jour et heure… » ouvre une petite fenêtre, comme pour programmer un mail. Des suggestions en un clic (la veille à 19 h, le jour même à 8 h…), ou le jour et l'heure exacts : le jour même, la veille, quelques jours ou une semaine avant, à la minute près.",
         "Mes comptes : bouton « Importer » pour reprendre les transactions d'une autre appli de budget (fichier JSON ou CSV). Pilote reconnaît les colonnes, retrouve ou crée les catégories, ignore ce qui est déjà là, et te montre tout avant d'enregistrer.",
+        "PEA et CTO : l'onglet Stratégie devient « Plan d'épargne », en deux pages. « Programmés » : tes achats programmés (montant, chaque semaine, toutes les 2 semaines, chaque mois ou chaque trimestre). Le jour de l'achat (ou le jour de bourse suivant), une pastille te le signale : tu saisis le cours payé, l'achat rejoint tes transactions. « Pas passé » le retire. Un relevé importé qui contient l'achat le valide tout seul. « Équilibrage » garde tout ce qu'il y avait dans Stratégie.",
+        "Accueil : tuiles « Achats programmés à valider » et « Prochain achat programmé ». Agenda › Notifications : un rappel le jour de chaque achat programmé, si tu le veux.",
         "CTO : un clic sur la case Rendement passe de « Tout le compte » (ventes et dividendes compris) à « Lignes actuelles » (comme Trade Republic). Le (i) explique la différence et où vont les frais."
       ]
     },

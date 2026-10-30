@@ -358,3 +358,6 @@ Un clic sur la case (CTO seulement) bascule `_cptPrefs().rendement` entre
 (façon Trade Republic : `pvLignes` = valeur des lignes détenues − leur prix de
 revient frais compris, en % de ce prix). Le (i) (`ctoInfoRendement`) explique
 la différence et les frais. Tuile d'accueil et Patrimoine gardent « Tout le compte ».
+
+Plan d'épargne (achats programmés) : voir `docs/modules/pea.md`, même code
+sur un CTO (`plansProg` du compte dans cto.json).
