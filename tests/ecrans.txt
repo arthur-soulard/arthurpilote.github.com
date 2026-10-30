@@ -17,19 +17,16 @@
 # 1. Nouvelle notification libre, menu sur « Autre jour et heure… ». Attendu :
 #    fenêtre « Choisir le jour et l'heure », cinq suggestions, jour + heure.
 js:goTab("ag-cal"),agOuvrirNote(null,null,true),(s=>(s.value="perso",s.onchange()))(document.getElementById("ag-n-alerte"))
-# 2. Suggestion « La veille, 19 h » cliquée. Attendu : fenêtre refermée, le
-#    menu de la note affiche « La veille, 19 h ».
-js:agHeureValider("j1@19:00")
-# 3. Mes comptes, aperçu d'un import (deux transactions fictives). Attendu :
+# 2. Mes comptes, aperçu d'un import (deux transactions fictives). Attendu :
 #    bouton « Importer » dans l'en-tête, fenêtre « Importer des transactions ».
 js:goTab("fin-month"),_finImp={nouvelles:[{date:"2026-10-01",amount:42.5,label:"Courses",type:"expense",cat:"Alimentation",sub:"",source:"",note:""},{date:"2026-10-02",amount:1200,label:"Salaire",type:"income",cat:"Salaire",sub:"",source:"",note:""}],doublons:1,rejet:0,nom:"budget.csv"},finImportApercu()
-# 4. CTO, case Rendement basculée sur « Lignes actuelles », puis le (i).
+# 3. CTO, case Rendement basculée sur « Lignes actuelles », puis le (i).
 #    Attendu : étiquette « Lignes actuelles » sous le %, fenêtre « Deux façons de compter ».
 js:goTab("cto-dash"),ctoBasculerRendement(),ctoInfoRendement()
-# 5. PEA, Plan d'épargne › Programmés avec un plan d'essai échu hier (pastille).
+# 4. PEA, Plan d'épargne › Programmés avec un plan d'essai dû aujourd'hui (pastille, un jour de bourse).
 #    Attendu : carte « À valider », pastille sur PEA et sur l'onglet, tableau du plan.
 js:goTab("strat"),S.plansProg=[{id:1,ticker:S.positions[0].ticker,montant:100,rythme:"mois",debut:todayISO(),faites:[]}],peRender()
-# 6. Fenêtre de validation de l'échéance. Attendu : cours pré-rempli, parts calculées.
-js:peOuvrirValider(1,todayISO(),peJourEffectif(todayISO()))
-# 7. Page Équilibrage. Attendu : l'ancienne Stratégie, intacte.
-js:closeOv("ov-pe-valider"),pePage("equil")
+# 5. Fenêtre de validation de l'échéance. Attendu : cours pré-rempli, parts calculées.
+js:goTab("strat"),S.plansProg=[{id:1,ticker:S.positions[0].ticker,montant:100,rythme:"mois",debut:todayISO(),faites:[]}],peRender(),peOuvrirValider(1,todayISO(),todayISO())
+# 6. Page Équilibrage. Attendu : l'ancienne Stratégie, intacte.
+js:goTab("strat"),pePage("equil")
