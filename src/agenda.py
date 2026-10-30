@@ -94,6 +94,14 @@ ALERTES   = ("note", "sport", "objectif", "pret") + RAPPELS
 # « semaine » : 9 h une semaine avant.
 # Un evenement sans heure prend 9 h le jour meme pour les minutes.
 ALERTES_VALEURS = ("", "0", "15", "30", "60", "matin", "veille", "semaine")
+# Jour et heure au choix (30/10/2026) : « j<N>@HH:MM », N jours avant (0 a 30)
+# a cette heure, ex. « j1@19:00 » : la veille a 19 h
+_ALERTE_PRECISE = re.compile(r"j([0-9]|[12][0-9]|30)@([01][0-9]|2[0-3]):([0-5][0-9])")
+
+
+def alerte_valide(valeur) -> bool:
+    return valeur in ALERTES_VALEURS or bool(
+        isinstance(valeur, str) and _ALERTE_PRECISE.fullmatch(valeur))
 # Resume de la semaine : le dimanche a 18 h ou le lundi a 8 h
 RESUME_VALEURS = ("", "dimanche", "lundi")
 # Rappels du mois : le jour choisi (1 a 28), passe au mois suivant une fois fait
@@ -703,8 +711,13 @@ def _resume(retenus: list, valeur: str) -> list:
 def _decalage(e: dict, valeur: str) -> datetime.timedelta:
     """Moment de l'alerte par rapport au debut (minuit pour un evenement sans
     heure), None sans alerte."""
-    if not valeur or valeur not in ALERTES_VALEURS:
+    if not valeur or not alerte_valide(valeur):
         return None
+    m = _ALERTE_PRECISE.fullmatch(valeur)
+    if m:
+        minute = e["debut"].hour * 60 + e["debut"].minute if e["debut"] else 0
+        return datetime.timedelta(days=-int(m.group(1)), hours=int(m.group(2)),
+                                  minutes=int(m.group(3)) - minute)
     if e["debut"]:
         minute = e["debut"].hour * 60 + e["debut"].minute
         matin = max(minute - 9 * 60, 0)
@@ -721,7 +734,11 @@ def _alarme(e: dict, valeur: str) -> list:
     d = _decalage(e, valeur)
     if d is None:
         return []
-    if e["debut"]:
+    if _ALERTE_PRECISE.fullmatch(valeur):
+        # Peut tomber apres le debut (le jour meme, 20 h pour un rendez-vous a 10 h)
+        minutes = int(d.total_seconds()) // 60
+        declencheur = (f"-PT{-minutes}M" if minutes < 0 else f"PT{minutes}M") if minutes else "PT0S"
+    elif e["debut"]:
         avant = int(-d.total_seconds()) // 60
         declencheur = f"-PT{avant}M" if avant else "PT0S"
     else:
@@ -1056,7 +1073,7 @@ def config() -> dict:
 
 def _alertes_propres(alertes) -> dict:
     alertes = alertes if isinstance(alertes, dict) else {}
-    return {t: alertes.get(t) if alertes.get(t) in (RESUME_VALEURS if t == "resume" else ALERTES_VALEURS)
+    return {t: alertes.get(t) if (alertes.get(t) in RESUME_VALEURS if t == "resume" else alerte_valide(alertes.get(t)))
             else "" for t in ALERTES}
 
 
@@ -1121,7 +1138,7 @@ def enregistrer_notes(notes: list) -> dict:
             "texte": str(n.get("texte") or "")[:2000],
             # Notification propre a la note (26/10/2026) : sa repetition, son alerte
             "repete": n.get("repete") if n.get("repete") in REPETITIONS else "",
-            "alerte": n.get("alerte") if n.get("alerte") in ALERTES_NOTE else "",
+            "alerte": n.get("alerte") if n.get("alerte") in ALERTES_NOTE or alerte_valide(n.get("alerte")) else "",
         })
     _modifier(lambda d: d.update(notes=propres))   # sans attendre un envoi en cours
     planifier(0.5)

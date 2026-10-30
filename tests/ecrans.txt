@@ -11,10 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 30/10/2026 (4.4.39) : performance du jour après la vente complète d'une ligne.
+# 30/10/2026 (4.4.40) : notification à un jour et une heure au choix.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 # Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. Accueil : SAP vendu en totalité aujourd'hui dans le CTO de Camille (en
-#    mémoire, pas enregistré), tuile « Performance du CTO » sur « Jour », cours
-#    actualisés. Attendu : un montant, pas « En attente des cours du jour ».
-js:goTab("home"),(c=>(c.transactions.push({type:"Vente",asset:"ETR:SAP",qty:3,cours:250,frais:1,date:todayISO()}),c.positions=c.positions.filter(p=>p.ticker!=="ETR:SAP"),S.uiPrefs.dashCtoRange={c1:"J"},applyCoursData().then(()=>dashRender())))(ctoCompte("c1"))
+# 1. Nouvelle notification libre, menu sur « Autre jour et heure… ». Attendu :
+#    fenêtre « Choisir le jour et l'heure », cinq suggestions, jour + heure.
+js:goTab("ag-cal"),agOuvrirNote(null,null,true),(s=>(s.value="perso",s.onchange()))(document.getElementById("ag-n-alerte"))
+# 2. Suggestion « La veille, 19 h » cliquée. Attendu : fenêtre refermée, le
+#    menu de la note affiche « La veille, 19 h ».
+js:agHeureValider("j1@19:00")

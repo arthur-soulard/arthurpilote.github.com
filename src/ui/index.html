@@ -4073,6 +4073,26 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- Jour et heure au choix d'une notification (agChoisirHeure) -->
+<div class="ov" id="ov-ag-heure" onclick="if(event.target===this)agHeureFermer()">
+  <div class="modal" style="max-width:420px">
+    <h2>Choisir le jour et l'heure</h2>
+    <div class="ac-filtres" id="ag-h-sugg"></div>
+    <div class="fg-row">
+      <div class="fg"><label for="ag-h-jours">Jour</label>
+        <select id="ag-h-jours"><option value="0">Le jour même</option><option value="1">La veille</option>
+          <option value="2">2 jours avant</option><option value="3">3 jours avant</option>
+          <option value="7">Une semaine avant</option><option value="14">Deux semaines avant</option>
+          <option value="30">30 jours avant</option></select></div>
+      <div class="fg"><label for="ag-h-heure">Heure</label><input id="ag-h-heure" type="time" value="19:00"></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="agHeureFermer()">Annuler</button>
+      <button class="btn btn-primary" onclick="agHeureValider()">Valider</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═════════════════ MODALE PRÊT ÉTUDIANT ═════════════════ -->
 
 <div class="ov" id="ov-pr-form" onclick="if(event.target===this)closeOv('ov-pr-form')">
@@ -25719,12 +25739,16 @@ function agOuvrirNote(id, iso, libre) {
   document.getElementById("ag-n-repete").value = n && n.repete || "";
   const cfg = AG.config || {};
   // « Comme les autres notes » : le réglage de l'onglet Notifications, dit en clair
-  const general = AG_ALERTES_HEURE.find(o => o[0] === ((cfg.alertes || {}).note || ""));
-  document.getElementById("ag-n-alerte").innerHTML =
-    [["", "Comme les autres notes (" + (general ? general[1] : "Pas d'alerte").toLowerCase() + ")"], ["aucune", "Aucune pour cette note"]]
-      .concat(AG_ALERTES_HEURE.slice(1), [["semaine", "Une semaine avant, 9 h"]])
-      .map(([v, nom]) => `<option value="${v}">${escHtml(nom)}</option>`).join("");
-  document.getElementById("ag-n-alerte").value = n ? n.alerte || "" : libre ? "0" : "";
+  const noteGen = (cfg.alertes || {}).note || "";
+  const general = AG_ALERTES_HEURE.find(o => o[0] === noteGen);
+  const selAl = document.getElementById("ag-n-alerte");
+  const valAl = n ? n.alerte || "" : libre ? "0" : "";
+  selAl.innerHTML = agOptionsAlerte(
+    [["", "Comme les autres notes (" + (general ? general[1] : agAlerteNom(noteGen) || "Pas d'alerte").toLowerCase() + ")"], ["aucune", "Aucune pour cette note"]]
+      .concat(AG_ALERTES_HEURE.slice(1), [["semaine", "Une semaine avant, 9 h"]]), valAl);
+  selAl.value = valAl;
+  selAl.dataset.ancien = valAl;
+  selAl.onchange = () => agAlerteChange(selAl);
   document.getElementById("ag-n-suppr").style.display = n ? "" : "none";
   document.getElementById("ag-n-icloud").textContent = cfg.connecte && cfg.calendrier
     ? "La note part aussi dans ton agenda iCloud, quelques secondes après."
@@ -25824,9 +25848,71 @@ const AG_NOTIFS = [
 const AG_CASES = { sport: "sport", objectifs: "objectifs", pret: "pret" };
 
 function agSelectHtml(type, options, valeur, inactif) {
-  return `<select data-type="${type}" onchange="agReglerNotifs()"${inactif ? " disabled" : ""}>`
-    + options.map(([v, nom]) => `<option value="${v}"${v === (valeur || "") ? " selected" : ""}>${nom}</option>`).join("")
-    + `</select>`;
+  return `<select data-type="${type}" data-ancien="${valeur || ""}" onchange="agAlerteChange(this, agReglerNotifs)"${inactif ? " disabled" : ""}>`
+    + agOptionsAlerte(options, valeur) + `</select>`;
+}
+
+/* ── Jour et heure au choix (30/10/2026) ─────────────────────────────────
+   Valeur « j<N>@HH:MM » : N jours avant, à cette heure (agenda.alerte_valide).
+   Comme la programmation d'un mail dans Gmail : quelques suggestions, puis
+   un jour et une heure exacts. */
+const AG_PRECISE = /^j(\d+)@(\d\d):(\d\d)$/;
+const AG_H_JOURS = { 0: "Le jour même", 1: "La veille", 7: "Une semaine avant", 14: "Deux semaines avant" };
+const AG_H_SUGG = ["j1@19:00", "j1@21:00", "j0@08:00", "j0@12:00", "j2@09:00"];
+
+function agAlerteNom(v) {
+  const m = AG_PRECISE.exec(v || "");
+  if (!m) return null;
+  const j = Number(m[1]), h = Number(m[2]);
+  return (AG_H_JOURS[j] || j + " jours avant") + ", " + h + " h" + (m[3] !== "00" ? " " + m[3] : "");
+}
+
+/** Options du menu : celles de la liste, l'heure précise déjà choisie, et
+    « Autre jour et heure… » (pas pour le résumé de la semaine). */
+function agOptionsAlerte(options, valeur) {
+  const perso = agAlerteNom(valeur);
+  const liste = options.concat(perso ? [[valeur, perso]] : [],
+    options === AG_ALERTES_RESUME ? [] : [["perso", "Autre jour et heure…"]]);
+  return liste.map(([v, nom]) => `<option value="${v}"${v === (valeur || "") ? " selected" : ""}>${escHtml(nom)}</option>`).join("");
+}
+
+let _agHeure = null;   // {sel, apres} : le menu qui a ouvert la fenêtre
+
+function agAlerteChange(sel, apres) {
+  if (sel.value !== "perso") { sel.dataset.ancien = sel.value; if (apres) apres(); return; }
+  _agHeure = { sel, apres };
+  const m = AG_PRECISE.exec(sel.dataset.ancien || "");
+  document.getElementById("ag-h-jours").value = m ? String(Number(m[1])) : "1";
+  if (!document.getElementById("ag-h-jours").value) document.getElementById("ag-h-jours").value = "1";
+  document.getElementById("ag-h-heure").value = m ? m[2] + ":" + m[3] : "19:00";
+  document.getElementById("ag-h-sugg").innerHTML = AG_H_SUGG.map(v =>
+    `<button type="button" class="ac-chip" onclick="agHeureValider('${v}')">${escHtml(agAlerteNom(v))}</button>`).join("");
+  openOvTop("ov-ag-heure");
+}
+
+function agHeureFermer() {
+  if (_agHeure) _agHeure.sel.value = _agHeure.sel.dataset.ancien || "";
+  _agHeure = null;
+  closeOv("ov-ag-heure");
+}
+
+function agHeureValider(v) {
+  if (!_agHeure) return;
+  if (!v) {
+    const heure = document.getElementById("ag-h-heure").value;
+    if (!heure) { showToastModern("Choisis une heure", "warn"); return; }
+    v = "j" + document.getElementById("ag-h-jours").value + "@" + heure;
+  }
+  const { sel, apres } = _agHeure;
+  if (![...sel.options].some(o => o.value === v)) {
+    const o = new Option(agAlerteNom(v), v);
+    sel.insertBefore(o, sel.querySelector('option[value="perso"]'));
+  }
+  sel.value = v;
+  sel.dataset.ancien = v;
+  _agHeure = null;
+  closeOv("ov-ag-heure");
+  if (apres) apres();
 }
 
 async function agOuvrirNotifs() {

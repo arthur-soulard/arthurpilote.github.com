@@ -149,7 +149,12 @@ Calendrier doit être autorisé.
   avant (`ALERTES_VALEURS`). Un événement « toute la journée » prend `PT9H`
   (9 h) pour les minutes et pour « matin », `-PT6H` pour « veille »,
   `-P6DT15H` pour « semaine ». Avec heure : « matin » = 9 h, ou l'heure même
-  si elle est avant 9 h. Déclencheur **relatif au début** : il vaut pour chaque
+  si elle est avant 9 h. **Jour et heure au choix** (30/10/2026, demande
+  d'Arthur, « comme Gmail quand on programme un mail ») : `"j<N>@HH:MM"`,
+  N jours avant (0 à 30) à cette heure (`agenda.alerte_valide`). Dernière
+  option de chaque menu (sauf le résumé), « Autre jour et heure… », qui ouvre
+  `ov-ag-heure` : suggestions (`AG_H_SUGG`) puis jour + heure exacts. Le
+  déclencheur peut être positif (le jour même, 20 h, pour un rendez-vous à 10 h). Déclencheur **relatif au début** : il vaut pour chaque
   mois d'un événement répété. Le résumé de la semaine n'accepte que
   `RESUME_VALEURS` (dimanche 18 h, lundi 8 h).
 * **Ce qui part déjà** : notes, séances, objectifs, mensualités. Une case

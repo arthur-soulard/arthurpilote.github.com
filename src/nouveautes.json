@@ -2,6 +2,14 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.40",
+      "date": "2026-10-30",
+      "titre": "Tes notifications à l'heure que tu veux",
+      "nouveau": [
+        "Agenda › Notifications, et la notification de chaque note : en plus des choix habituels, « Autre jour et heure… » ouvre une petite fenêtre, comme pour programmer un mail. Des suggestions en un clic (la veille à 19 h, le jour même à 8 h…), ou le jour et l'heure exacts : le jour même, la veille, quelques jours ou une semaine avant, à la minute près."
+      ]
+    },
+    {
       "version": "4.4.39",
       "date": "2026-10-30",
       "titre": "La performance du jour suit tes ventes",
