@@ -4387,7 +4387,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
                 onclick="setGoSection('sport')"><span class="set-nav-ico"><i class="ph ph-person-simple-run"></i></span>Sports</button>
         <div class="set-nav-grp" id="set-nav-app"></div>
         <button type="button" class="set-nav-btn" data-set="sauvegarde"
-                onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-usb"></i></span>Sauvegarde USB</button>
+                onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-floppy-disk"></i></span>Sauvegarde</button>
         <button type="button" class="set-nav-btn" data-set="donnees"
                 onclick="setGoSection('donnees')"><span class="set-nav-ico"><i class="ph ph-database"></i></span>Données &amp; app</button>
         <button type="button" class="set-nav-btn" data-set="maj"
@@ -4607,10 +4607,15 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         </div>
 
         <div class="set-sec" data-sec="sauvegarde">
-          <h3>Sauvegarde sur clé USB</h3>
-          <p class="set-lead">Une archive <code>.zip</code> de tout le dossier Données —
+          <h3>Sauvegarde</h3>
+          <p class="set-lead">Une archive <code>.zip</code> de tout le dossier Données :
             tous les utilisateurs, tous les modules. De quoi remonter l'installation
-            entière depuis la clé. Rien n'est chiffré.</p>
+            entière si l'ordinateur tombe en panne. Rien n'est chiffré.</p>
+          <p class="set-lead">Destination&nbsp;: une clé USB, ou un dossier synchronisé en ligne.
+            Avec Google Drive pour ordinateur, choisis un dossier dans <code>Mon&nbsp;Drive</code>&nbsp;:
+            chaque archive y part toute seule. Pour récupérer tes données sur un autre
+            ordinateur, installe Pilote et Google Drive, choisis le même dossier, puis
+            «&nbsp;Restaurer&nbsp;». L'archive est alors lisible sur ton compte Google.</p>
 
           <div class="fg">
             <label>Destination</label>
@@ -4701,7 +4706,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           </div>
 
           <div class="fg">
-            <label>Archives sur la clé</label>
+            <label>Archives</label>
             <div id="sv-list" class="sv-list"><div class="m-empty">—</div></div>
           </div>
         </div>
@@ -12125,8 +12130,8 @@ async function svRefresh() {
   const box = document.getElementById("sv-dest");
   if (box) {
     if (dest.reason === "unset") {
-      box.innerHTML = `<span class="sv-none">Aucune destination choisie. Branche une clé USB, `
-        + `puis sélectionne-la ci-dessous.</span>`;
+      box.innerHTML = `<span class="sv-none">Aucune destination choisie. Branche une clé USB `
+        + `et sélectionne-la ci-dessous, ou choisis un dossier (celui de Google Drive par exemple).</span>`;
     } else if (dest.ready) {
       box.innerHTML = `<span class="sv-ok">✓ Prête</span> — ${escHtml(dest.path)}`
         + (cfg.volumeLabel ? `<br><span class="sv-none">Clé « ${escHtml(cfg.volumeLabel)} »`
@@ -12210,7 +12215,8 @@ async function svRefresh() {
   const last = document.getElementById("sv-last");
   if (last) {
     if (cfg.lastStatus === "ok")      last.textContent = "Dernière : " + svWhen(cfg.lastBackupAt);
-    else if (cfg.lastStatus === "absent") last.textContent = "Clé absente au dernier essai";
+    else if (cfg.lastStatus === "absent") last.textContent = (cfg.volumeSerial || cfg.volumeLabel)
+      ? "Clé absente au dernier essai" : "Dossier introuvable au dernier essai";
     else if (cfg.lastStatus === "error")  last.textContent = "Échec : " + (cfg.lastError || "");
     else last.textContent = "Jamais sauvegardé";
   }
@@ -12225,7 +12231,7 @@ async function svLoadList() {
   try { res = await pywebview.api.sauvegarde_list(); }
   catch (e) { return; }
   if (!res || !res.ok || !(res.backups || []).length) {
-    el.innerHTML = `<div class="m-empty">Aucune archive sur la clé.</div>`;
+    el.innerHTML = `<div class="m-empty">Aucune archive dans la destination.</div>`;
     return;
   }
   el.innerHTML = res.backups.map(b => `
@@ -20992,7 +20998,7 @@ async function svRenderUsbState() {
   try { s = await pywebview.api.sauvegarde_usb_state(); }
   catch (e) { return; }
   if (!s || !s.ok) return;
-  // La tuile "Sauvegarde USB" de l'accueil lit cet etat : sans cette ligne elle
+  // La tuile "Sauvegarde" de l'accueil lit cet etat : sans cette ligne elle
   // n'avait aucune donnee et restait invisible quoi qu'on coche.
   window._dashUsb = s;
   if (typeof dashRender === "function") dashRender();
@@ -21009,10 +21015,14 @@ async function svRenderUsbState() {
   // premier lancement.
   const der = svDerniereCopie(s);
   const j = der ? -dashJours(todayISO(der)) : null;   // « Hier » = la veille au calendrier
-  if (j === null) parts.push("aucune sauvegarde sur clé pour l'instant");
+  // Archives dans un dossier (Google Drive…) : elles comptent autant qu'une clé,
+  // et le remède n'est plus de brancher une clé
+  const ou = s.dossier ? "" : " sur clé";
+  if (j === null) parts.push(`aucune sauvegarde${ou} pour l'instant`);
   else if (j >= svAlerteJours(s)) {
-    const quand = `Dernière sauvegarde sur clé il y a ${j} jours`;
-    const quoi = s.count ? "clique sur Téléverser" : "branche ta clé USB";
+    const quand = `Dernière sauvegarde${ou} il y a ${j} jours`;
+    const quoi = s.dossier ? "vérifie le dossier dans Paramètres › Sauvegarde"
+               : (s.count ? "clique sur Téléverser" : "branche ta clé USB");
     st.classList.add("vieux");
     st.innerHTML = `<i class="ph ph-warning"></i> ${escHtml(quand)} · ${escHtml(quoi)}`;
     return;
@@ -23812,13 +23822,14 @@ const DASH_WIDGETS = [
     },
   },
   {
-    id: "usb", label: "Sauvegarde USB", module: "Sauvegarde", tab: null,
+    id: "usb", label: "Sauvegarde", module: "Sauvegarde", tab: null,
     render() {
       const s = window._dashUsb;
       if (!s) return null;
       const d = svDerniereCopie(s);   // la même date que la ligne sous les boutons
       if (!d && !s.count) return null;
-      let sub = s.count ? `${s.count} clé${s.count > 1 ? "s" : ""} branchée${s.count > 1 ? "s" : ""}`
+      let sub = s.dossier ? "dans un dossier"
+              : s.count ? `${s.count} clé${s.count > 1 ? "s" : ""} branchée${s.count > 1 ? "s" : ""}`
                         : "aucune clé branchée";
       // Jamais faite : sans orange, comme la ligne sous les boutons
       let val = "Jamais", cls = "";
@@ -23827,7 +23838,7 @@ const DASH_WIDGETS = [
         val = j === 0 ? "Aujourd'hui" : (j === 1 ? "Hier" : "Il y a " + j + " j");
         if (j >= svAlerteJours(s)) cls = "c-a";
       }
-      return { lbl: "Dernière sauvegarde USB", val, cls, sub, go: null };
+      return { lbl: "Dernière sauvegarde", val, cls, sub, go: null };
     },
   },
   {
@@ -25585,7 +25596,7 @@ const AG_NOTIFS = [
   ["sante-objectif", "sante", "target", "Objectifs à date", "ceux de l'onglet Objectifs qui ont une date", AG_ALERTES_DATE],
   ["note", "agenda", "note-pencil", "Notes de l'agenda", "le texte que tu veux ; chaque note peut avoir sa propre notification et se répéter", AG_ALERTES_HEURE],
   ["resume", "agenda", "calendar-check", "Résumé de la semaine", "compte ce qui t'attend : séances, mensualités, dividendes…", AG_ALERTES_RESUME],
-  ["sauvegarde", "general", "usb", "Sauvegarde USB en retard", "comptée depuis la dernière sauvegarde sur clé", AG_ALERTES_RAPPEL, "delai"],
+  ["sauvegarde", "general", "usb", "Sauvegarde en retard", "comptée depuis la dernière sauvegarde", AG_ALERTES_RAPPEL, "delai"],
   ["ouvrir", "general", "compass", "Pilote pas ouvert depuis…", "recule à chaque lancement de Pilote", AG_ALERTES_RAPPEL, "delai"],
   ["pense-bete", "general", "push-pin", "Pense-bêtes datés", "ceux de la tuile Pense-bête de l'accueil qui ont une date et ne sont pas cochés", AG_ALERTES_DATE],
 ];

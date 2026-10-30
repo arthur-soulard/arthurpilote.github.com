@@ -608,9 +608,9 @@ def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
             out.append(_element("sport-pause", "sport-pause", f"🏃 Pas de séance depuis {n} jours", jour))
     if alertes.get("sauvegarde"):
         derniere = _jour(sauvegarde.load_config().get("lastBackupAt"))
-        if derniere:   # jamais de sauvegarde USB : rien a rappeler
+        if derniere:   # jamais de sauvegarde : rien a rappeler
             jour, n = _depuis(derniere, _delai(delais, "sauvegarde"))
-            out.append(_element("sauvegarde", "sauvegarde", f"💾 Pas de sauvegarde USB depuis {n} jours", jour))
+            out.append(_element("sauvegarde", "sauvegarde", f"💾 Pas de sauvegarde depuis {n} jours", jour))
     if alertes.get("ouvrir"):
         # Recule a chaque envoi, donc a chaque lancement de Pilote
         n = _delai(delais, "ouvrir")

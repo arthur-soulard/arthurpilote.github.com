@@ -587,7 +587,7 @@ def push_to_usb(root: str = None) -> dict:
         if toutes:
             return {"ok": False, "reason": "no_drive",
                     "error": "Aucune de tes clés autorisées n'est branchée "
-                             "(Paramètres → Sauvegarde USB)."}
+                             "(Paramètres → Sauvegarde)."}
         return {"ok": False, "reason": "no_drive",
                 "error": "Aucune clé USB détectée. Branche-la puis réessaie."}
 
@@ -659,7 +659,11 @@ def usb_state() -> dict:
     cfg = load_config()
     toutes = list_removable_drives()
     drives = [d for d in toutes if _est_autorisee(d, cfg)]
-    return {"ok": True, "drives": drives, "count": len(drives),
+    # Destination dans un dossier (Google Drive, OneDrive...) et non sur une
+    # cle : l'accueil parle alors de sauvegarde, pas de cle a brancher
+    dossier = bool((cfg.get("destination") or "").strip()) and not (
+        (cfg.get("volumeSerial") or "").strip() or (cfg.get("volumeLabel") or "").strip())
+    return {"ok": True, "drives": drives, "count": len(drives), "dossier": dossier,
             "autres": len(toutes) - len(drives),
             "alerteJours": int(cfg.get("alerteJours", 7) or 0),
             "lastPushAt": cfg.get("lastPushAt", ""),
@@ -741,7 +745,7 @@ def auto_backup_if_due() -> dict:
 
 
 def appliquer_reglages(patch: dict) -> dict:
-    """Reglages modifiables depuis Parametres → Sauvegarde USB, valides un par un."""
+    """Reglages modifiables depuis Parametres → Sauvegarde, valides un par un."""
     cfg = load_config()
     patch = patch or {}
     for k in ("auto", "avecBackups", "ejecter"):

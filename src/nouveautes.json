@@ -2,6 +2,17 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.36",
+      "date": "2026-10-29",
+      "titre": "Ta sauvegarde sur Google Drive",
+      "nouveau": [
+        "La sauvegarde peut aller dans un dossier de Google Drive (ou OneDrive) au lieu d'une clé USB. Installe Google Drive pour ordinateur, puis dans Paramètres, Sauvegarde, « Choisir un dossier » dans Mon Drive : chaque archive y part toute seule. Si ton ordinateur tombe en panne, installe Pilote et Google Drive sur le nouveau, choisis le même dossier et clique sur « Restaurer »."
+      ],
+      "ameliore": [
+        "La section « Sauvegarde USB » des Paramètres s'appelle maintenant « Sauvegarde », comme sa tuile d'accueil et son rappel sur le téléphone. Avec une sauvegarde dans un dossier, l'accueil ne te demande plus de brancher une clé."
+      ]
+    },
+    {
       "version": "4.4.35",
       "date": "2026-10-29",
       "titre": "Sports et Mes comptes se règlent dans les Paramètres",

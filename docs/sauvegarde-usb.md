@@ -39,7 +39,8 @@ Sa config vit donc dans `Donnees/sauvegarde.json`, à côté de `users.json`.
   `sauvegarde_use_drive`, `sauvegarde_run`, `sauvegarde_list`,
   `sauvegarde_restore`, `sauvegarde_open_folder`, `sauvegarde_push_usb`,
   `sauvegarde_usb_state`.
-* UI : Paramètres → **Sauvegarde USB** (`data-sec="sauvegarde"`), fonctions `sv*`.
+* UI : Paramètres → **Sauvegarde** (`data-sec="sauvegarde"`, « Sauvegarde USB »
+  jusqu'à la 4.4.35), fonctions `sv*`.
   `setGoSection()` déclenche `svRefresh()` seulement à l'ouverture de cette
   section — elle interroge le disque.
 * Rien n'est chiffré : le zip est aussi lisible que les JSON d'origine.
@@ -48,7 +49,7 @@ Sa config vit donc dans `Donnees/sauvegarde.json`, à côté de `users.json`.
 
 Demandés par Arthur le 11/10 avec le chantier Mac (`docs/mac.md`). Tous dans
 `sauvegarde.json`, validés par `appliquer_reglages()` (seule porte d'écriture
-depuis l'UI : `Api.sauvegarde_set_config`). Paramètres → Sauvegarde USB.
+depuis l'UI : `Api.sauvegarde_set_config`). Paramètres → Sauvegarde.
 
 | Réglage | Clés de `sauvegarde.json` | Effet |
 |---|---|---|
@@ -108,7 +109,7 @@ seule une ligne grise « dernier envoi 24 sept. » le disait. Désormais :
   pour l'instant »), et la tuile écrit « Jamais » sans orange (11/10/2026). Jusque-là
   c'était l'alerte orange : tout nouvel utilisateur la voyait dès le premier
   lancement, et pour toujours s'il n'avait pas de clé.
-* La tuile « Sauvegarde USB » lit la **même** date (`svDerniereCopie`) et passe en
+* La tuile « Sauvegarde » (« Sauvegarde USB » jusqu'à la 4.4.35) lit la **même** date (`svDerniereCopie`) et passe en
   orange au même seuil : les deux ne peuvent pas se contredire.
 
 ## Audit du 20/10/2026 (4.4.21)
@@ -124,3 +125,36 @@ seule une ligne grise « dernier envoi 24 sept. » le disait. Désormais :
   utilisateurs créés après l'archive restent) ; après un échec en route, la page se
   recharge et donne le chemin de l'archive de sécurité.
 * `run_backup` relit la configuration avant d'y noter son résultat.
+
+## Dossier synchronisé : Google Drive, OneDrive (4.4.36, 29/10/2026)
+
+Demande du 29/10/2026 : pouvoir récupérer ses données si l'ordinateur tombe en
+panne, sans clé. Choix d'Arthur : **pas de compte Google dans Pilote** (OAuth,
+projet Google Cloud, connexion coupée tous les 7 jours en mode test, comme pour
+Actus et l'Agenda), mais le logiciel Google Drive pour ordinateur : son dossier
+`Mon Drive` est un dossier comme un autre, Pilote y écrit ses archives et Google
+les envoie.
+
+* Rien de neuf côté archives : « Choisir un dossier… » (`set_destination`) accepte
+  déjà tout dossier hors de `Donnees/`. Hors volume amovible, ni numéro de série
+  ni nom : la destination est le chemin brut, prête s'il existe
+  (`resolve_destination`, étape 2). Drive pas lancé : dossier absent, rien n'est
+  écrit, `lastStatus` passe à `absent` (« Dossier introuvable au dernier essai »).
+* `usb_state()` rend `dossier` (destination posée, sans numéro ni nom de clé).
+  L'accueil dit alors « Dernière sauvegarde il y a N jours · vérifie le dossier
+  dans Paramètres › Sauvegarde » au lieu de « branche ta clé USB », et la tuile
+  « dans un dossier ». La ligne des clés branchées reste (bouton Téléverser).
+* Le rappel de l'Agenda s'appelle « Pas de sauvegarde depuis N jours ».
+* Les archives restent **non chiffrées** : sur Drive, elles sont lisibles sur le
+  compte Google. Écrit dans le texte de la section. Chiffrer demanderait une
+  bibliothèque de plus (zip AES) : pas décidé.
+* `tests/test_sauvegarde.py` : dossier ordinaire jouant Drive. Destination sans
+  numéro, archive automatique une fois par jour, dossier absent (rien d'écrit),
+  rotation, restauration sur une installation neuve (aucun réglage, même
+  dossier choisi, données revenues, destination gardée).
+
+**Pas essayé avec le vrai Google Drive** (absent de ce PC le 29/10/2026). Point
+à regarder alors : le lecteur `G:` de Drive est-il vu comme amovible
+(`GetDriveTypeW`) ? S'il l'était, il apparaîtrait dans « Clés détectées » et
+serait retenu par son numéro de série, ce qui marcherait aussi, mais avec des
+textes de clé.

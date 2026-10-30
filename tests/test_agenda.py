@@ -506,7 +506,7 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual(r["pret-premiere"]["jour"].isoformat(), j(10))
         self.assertEqual(r["pret-derniere"]["jour"], agenda._plus_mois(r["pret-premiere"]["jour"], 11))
         self.assertEqual((r["sport-pause"]["jour"], r["sport-pause"]["titre"]), (dem, "🏃 Pas de séance depuis 3 jours"))
-        self.assertEqual(r["sauvegarde"]["titre"], "💾 Pas de sauvegarde USB depuis 41 jours")   # 999 → 30
+        self.assertEqual(r["sauvegarde"]["titre"], "💾 Pas de sauvegarde depuis 41 jours")   # 999 → 30
         self.assertEqual(r["ouvrir"]["jour"].isoformat(), j(10))
         # Chaque rappel part dans l'agenda avec son alerte ; « semaine » sur une date
         ev = agenda.evenements({}, {}, {}, [], dict(tout, dividende="semaine", **{"cto-dividende": "semaine"}),

@@ -11,12 +11,10 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 29/10/2026 (4.4.35) : Sports et Mes comptes réglés dans les Paramètres.
+# 29/10/2026 (4.4.36) : la sauvegarde dans un dossier (Google Drive).
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 # Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. Paramètres, Mes comptes : les catégories modifiables sur place.
-# 2. Paramètres, Sports : Mes sports, Nouveau sport, Types de séance.
-# 3. Même section, défilée jusqu'aux Routines (champ « Nouvelle routine »).
-js:openSettings("comptes")
-js:openSettings("sport")
-js:openSettings("sport").then(()=>document.getElementById("sp-r-name").scrollIntoView())
+# 1. Paramètres, Sauvegarde : le titre et le texte sur Google Drive.
+# 2. L'accueil, avec la ligne sous le bouton de la clé.
+js:openSettings("sauvegarde")
+home
