@@ -17,7 +17,7 @@ Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS ; 4.4.1 sous Win
 6.2.1 sur Mac), PyInstaller pour compiler en .exe et en Pilote.app, Inno Setup pour le
 Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.4.37**
+**Version actuelle : 4.4.39**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
