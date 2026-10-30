@@ -20,3 +20,9 @@ js:goTab("ag-cal"),agOuvrirNote(null,null,true),(s=>(s.value="perso",s.onchange(
 # 2. Suggestion « La veille, 19 h » cliquée. Attendu : fenêtre refermée, le
 #    menu de la note affiche « La veille, 19 h ».
 js:agHeureValider("j1@19:00")
+# 3. Mes comptes, aperçu d'un import (deux transactions fictives). Attendu :
+#    bouton « Importer » dans l'en-tête, fenêtre « Importer des transactions ».
+js:goTab("fin-month"),_finImp={nouvelles:[{date:"2026-10-01",amount:42.5,label:"Courses",type:"expense",cat:"Alimentation",sub:"",source:"",note:""},{date:"2026-10-02",amount:1200,label:"Salaire",type:"income",cat:"Salaire",sub:"",source:"",note:""}],doublons:1,rejet:0,nom:"budget.csv"},finImportApercu()
+# 4. CTO, case Rendement basculée sur « Lignes actuelles », puis le (i).
+#    Attendu : étiquette « Lignes actuelles » sous le %, fenêtre « Deux façons de compter ».
+js:goTab("cto-dash"),ctoBasculerRendement(),ctoInfoRendement()

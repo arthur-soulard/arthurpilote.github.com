@@ -2602,6 +2602,16 @@ body.cpt-cto .cto-bar {
 .pac-alert .alerte-ok i { font-size: 13px; margin: 0; color: inherit; }
 .cto-bar-sp { flex: 1; }
 body.cpt-cto .pea-seul, body.cpt-cto .pea-info { display: none !important; }
+/* Case Rendement d'un CTO : un clic change de calcul (ctoBasculerRendement) */
+.cto-seul { display: none; }
+body.cpt-cto .cto-seul { display: inline-flex; }
+body.cpt-cto #mc-pv { cursor: pointer; }
+body.cpt-cto #mc-pv:hover { background: var(--hover); }
+#mc-pv .mc-lbl { display: flex; align-items: center; gap: 6px; }
+.cto-rdt-i { margin-left: auto; color: var(--txt2); font-size: 15px; padding: 2px; border-radius: 50%;
+  background: none; border: 0; cursor: help; text-transform: none; letter-spacing: 0; }
+.cto-rdt-i:hover { color: var(--accent-text); }
+.cto-rdt-mode { align-items: center; gap: 4px; margin-top: 4px; font-size: 11.5px; color: var(--accent-text); }
 .cto-vide { max-width: 640px; margin: 2rem auto; text-align: center; }
 .cto-vide .card-b { padding: 2.2rem 2rem 2rem; }
 .cto-vide-ico { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 14px; display: grid; place-items: center;
@@ -2811,7 +2821,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 <div class="mets">
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Total versé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
-  <div class="mc" id="mc-pv"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total</div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div></div>
+  <div class="mc" id="mc-pv" onclick="if(_estCto())ctoBasculerRendement()"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total<button class="cto-rdt-i cto-seul" onclick="event.stopPropagation();ctoInfoRendement()" title="Les deux calculs"><i class="ph ph-info"></i></button></div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div><div class="cto-rdt-mode cto-seul" id="m-pv-mode"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
 </div>
@@ -3347,6 +3357,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <button class="btn btn-ghost"    onclick="finOpenRecurrences()"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
       <button class="btn btn-ghost"    onclick="finOpenCategories()"><i class="ph ph-squares-four"></i> Catégories</button>
       <button class="btn btn-ghost"    onclick="finOpenSources()"><i class="ph ph-credit-card"></i> Sources</button>
+      <label class="btn btn-ghost" title="Importer les transactions d'une autre appli (JSON ou CSV)"><i class="ph ph-download-simple"></i> Importer
+        <input type="file" accept=".json,.csv,.tsv,.txt,application/json,text/csv" onchange="finImportLire(this)" hidden></label>
       <button class="btn btn-ghost" onclick="openSettings('comptes')" title="Paramètres de Mes comptes"><i class="ph ph-gear-six"></i></button>
     </div>
   </div>
@@ -4218,6 +4230,18 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-fin-icon')">Annuler</button>
       <button class="btn btn-primary" onclick="finIconConfirm()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale : aperçu d'un import (JSON ou CSV d'une autre appli) -->
+<div class="ov" id="ov-fin-import" onclick="if(event.target===this)closeOv('ov-fin-import')">
+  <div class="modal" style="max-width:620px">
+    <h2>Importer des transactions</h2>
+    <div id="fin-import-corps"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" onclick="closeOv('ov-fin-import')">Annuler</button>
+      <button class="btn btn-primary" id="fin-import-ok" onclick="finImportValider()">Importer</button>
     </div>
   </div>
 </div>
@@ -17355,6 +17379,253 @@ function finDeleteTx(id) {
 }
 
 // ════════════════════════════════════════════════════════
+// IMPORT (JSON ou CSV d'une autre appli de budget)
+// Rien n'est enregistré avant « Importer » ; une transaction déjà présente
+// (même date, type, montant et libellé) n'est pas ajoutée une seconde fois.
+// ════════════════════════════════════════════════════════
+let _finImp = null;
+
+// Nom de colonne (sans accents ni casse) -> champ
+const FIN_IMP_COLS = {
+  date:   /^(date|jour|day|date (de l')?operation|date operation|transaction date|booking date)$/,
+  amount: /^(montant|amount|somme|valeur|value|prix|price|total)$/,
+  debit:  /^(debit|depense|depenses|sortie|expense|outflow)$/,
+  credit: /^(credit|revenu|revenus|entree|income|inflow)$/,
+  label:  /^(libelle|label|description|nom|name|titre|title|intitule|marchand|merchant|payee|beneficiaire|objet)$/,
+  cat:    /^(categorie|category|cat)$/,
+  sub:    /^(sous[- ]?categorie|subcategory|sub[- ]?category|sous cat)$/,
+  type:   /^(type|sens|nature|kind)$/,
+  source: /^(source|compte|account|moyen( de paiement)?|payment( method)?|wallet)$/,
+  note:   /^(note|notes|commentaire|comment|memo|remarque)$/,
+};
+
+function _finImpChamp(nom) {
+  const n = finNorm(nom).replace(/[_]/g, " ");
+  return Object.keys(FIN_IMP_COLS).find(k => FIN_IMP_COLS[k].test(n)) || null;
+}
+
+function _finImpMontant(v) {
+  if (typeof v === "number") return v;
+  let s = String(v == null ? "" : v).replace(/[\s  €$£]|EUR/gi, "");
+  if (!s) return NaN;
+  if (/,\d{1,2}$/.test(s)) s = s.replace(/\./g, "").replace(",", ".");   // 1.234,56
+  else s = s.replace(/,/g, "");                                           // 1,234.56
+  if (/^\(.*\)$/.test(s)) s = "-" + s.slice(1, -1);
+  return Number(s);
+}
+
+function _finImpDate(v) {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") {                       // horodatage (s ou ms)
+    const d = new Date(v < 1e11 ? v * 1000 : v);
+    return isNaN(d) ? null : d.toISOString().slice(0, 10);
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return m[1] + "-" + m[2].padStart(2, "0") + "-" + m[3].padStart(2, "0");
+  m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+  if (m) {
+    const y = m[3].length === 2 ? "20" + m[3] : m[3];
+    return y + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  }
+  return null;
+}
+
+function _finImpType(v) {
+  const n = finNorm(v);
+  if (/^(revenu|income|credit|entree|recette|in)/.test(n)) return "income";
+  if (/^(depense|expense|debit|sortie|out)/.test(n)) return "expense";
+  return null;
+}
+
+/* Découpe un CSV (séparateur deviné : ; , ou tabulation, guillemets gérés) */
+function _finImpCsv(txt) {
+  const l1 = txt.split(/\r?\n/)[0] || "";
+  const sep = [";", "\t", ","].sort((a, b) => l1.split(b).length - l1.split(a).length)[0];
+  const lignes = [];
+  let cell = "", ligne = [], q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const c = txt[i];
+    if (q) {
+      if (c === '"' && txt[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === sep) { ligne.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && txt[i + 1] === "\n") i++;
+      ligne.push(cell); cell = "";
+      if (ligne.some(x => x.trim())) lignes.push(ligne);
+      ligne = [];
+    } else cell += c;
+  }
+  ligne.push(cell);
+  if (ligne.some(x => x.trim())) lignes.push(ligne);
+  if (lignes.length < 2) return [];
+  const tete = lignes[0].map(h => h.trim());
+  return lignes.slice(1).map(l => Object.fromEntries(tete.map((h, i) => [h, (l[i] || "").trim()])));
+}
+
+/* Le premier tableau d'objets trouvé dans le JSON (racine, ou une clé comme
+   « transactions »). Un fichier de Pilote garde ses catégories : ses
+   categoryId sont traduits en noms. */
+function _finImpJson(obj) {
+  if (Array.isArray(obj)) return obj.filter(o => o && typeof o === "object");
+  if (!obj || typeof obj !== "object") return [];
+  const cles = ["transactions", "operations", "opérations", "expenses", "entries", "items", "data", "records"];
+  let tab = null;
+  for (const k of cles) if (Array.isArray(obj[k])) { tab = obj[k]; break; }
+  if (!tab) tab = Object.values(obj).find(v => Array.isArray(v) && v.length && typeof v[0] === "object") || [];
+  const cats = Array.isArray(obj.categories) ? obj.categories : null;
+  const srcs = Array.isArray(obj.sources) ? obj.sources : null;
+  return tab.filter(o => o && typeof o === "object").map(o => {
+    if (cats && o.categoryId != null && o.category == null) {
+      const c = cats.find(c => c.id === o.categoryId);
+      const s = c && (c.subs || []).find(s => s.id === o.subcategoryId);
+      o = Object.assign({}, o, { category: c && c.name, subcategory: s && s.name, type: o.type || (c && c.type) });
+    }
+    if (srcs && o.sourceId != null && o.source == null) {
+      const s = srcs.find(s => s.id === o.sourceId);
+      o = Object.assign({}, o, { source: s && s.name });
+    }
+    return o;
+  });
+}
+
+/* Lignes brutes -> transactions { date, amount, label, type, cat, sub, source, note } */
+function _finImpNormaliser(brutes) {
+  const ok = [], rejet = [];
+  brutes.forEach(o => {
+    const v = {};
+    Object.keys(o).forEach(k => {
+      let x = o[k];
+      if (x && typeof x === "object" && !Array.isArray(x)) x = x.name || x.nom || x.label || "";
+      const ch = _finImpChamp(k);
+      if (ch && v[ch] == null) v[ch] = x;
+    });
+    const date = _finImpDate(v.date);
+    let montant = _finImpMontant(v.amount);
+    let type = _finImpType(v.type);
+    if (isNaN(montant) || v.amount == null || v.amount === "") {
+      const d = _finImpMontant(v.debit), c = _finImpMontant(v.credit);
+      if (!isNaN(d) && d) { montant = Math.abs(d); type = type || "expense"; }
+      else if (!isNaN(c) && c) { montant = Math.abs(c); type = type || "income"; }
+    }
+    // Sans type : un négatif est une dépense ; un positif est un revenu si le
+    // fichier signe ses montants (colonne Crédit ou montants négatifs), sinon une dépense
+    if (!type) type = montant < 0 ? "expense" : (brutes._signe ? "income" : "expense");
+    montant = Math.abs(montant);
+    const label = String(v.label || v.cat || "").trim();
+    if (!date || !(montant > 0) || !label) { rejet.push(o); return; }
+    ok.push({ date, amount: Math.round(montant * 100) / 100, label, type,
+              cat: String(v.cat || "").trim(), sub: String(v.sub || "").trim(),
+              source: String(v.source || "").trim(), note: String(v.note || "").trim() });
+  });
+  return { ok, rejet };
+}
+
+async function finImportLire(input) {
+  const f = input.files && input.files[0];
+  input.value = "";
+  if (!f) return;
+  let txt;
+  try { txt = (await f.text()).replace(/^﻿/, ""); }
+  catch (e) { showToastModern("Fichier illisible : " + e, "err"); return; }
+  let brutes;
+  const json = /\.json$/i.test(f.name) || /^\s*[\[{]/.test(txt);
+  try { brutes = json ? _finImpJson(JSON.parse(txt)) : _finImpCsv(txt); }
+  catch (e) { showToastModern("Ce fichier n'est pas un JSON valide.", "err"); return; }
+  // Montants signés (des négatifs dans le fichier) : un positif sans type est un revenu
+  brutes._signe = brutes.some(o => Object.keys(o).some(k => _finImpChamp(k) === "amount" && _finImpMontant(o[k]) < 0));
+  const { ok, rejet } = _finImpNormaliser(brutes);
+  if (!ok.length) {
+    showToastModern("Aucune transaction reconnue : il faut au moins une date, un montant et un libellé par ligne.", "err");
+    return;
+  }
+  const cle = t => [t.date, t.type, t.amount.toFixed(2), finNorm(t.label)].join("|");
+  const deja = new Set(F.transactions.map(cle));
+  const nouvelles = ok.filter(t => !deja.has(cle(t)));
+  _finImp = { nouvelles, doublons: ok.length - nouvelles.length, rejet: rejet.length, nom: f.name };
+  finImportApercu();
+}
+
+function finImportApercu() {
+  const { nouvelles, doublons, rejet, nom } = _finImp;
+  const dep = nouvelles.filter(t => t.type === "expense"), rev = nouvelles.filter(t => t.type === "income");
+  const somme = a => finFmtAbs(a.reduce((s, t) => s + t.amount, 0));
+  const catsNouv = new Set();
+  nouvelles.forEach(t => {
+    if (t.cat && !F.categories.some(c => c.type === t.type && finNorm(c.name) === finNorm(t.cat))) catsNouv.add(t.cat);
+  });
+  const dates = nouvelles.map(t => t.date).sort();
+  const fd = d => d.split("-").reverse().join("/");
+  const lignes = nouvelles.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map(t =>
+    `<tr><td>${fd(t.date)}</td><td>${_finEsc(t.label)}</td><td>${_finEsc(t.cat || "—")}</td>
+     <td style="text-align:right;color:var(${t.type === "income" ? "--g" : "--r"})">${t.type === "income" ? "+" : "−"}${finFmtAbs(t.amount)}</td></tr>`).join("");
+  document.getElementById("fin-import-corps").innerHTML = nouvelles.length ? `
+    <p class="m-note">${_finEsc(nom)} : <b>${nouvelles.length}</b> transaction${nouvelles.length > 1 ? "s" : ""} à ajouter,
+      du ${fd(dates[0])} au ${fd(dates[dates.length - 1])}.</p>
+    <div class="mkpis">
+      <div class="mkpi"><span>Dépenses</span><b>${dep.length} · ${somme(dep)}</b></div>
+      <div class="mkpi"><span>Revenus</span><b>${rev.length} · ${somme(rev)}</b></div>
+    </div>
+    ${catsNouv.size ? `<p class="m-note">Catégories créées : ${[...catsNouv].map(_finEsc).join(", ")}.</p>` : ""}
+    ${doublons ? `<p class="m-note">${doublons} déjà dans Pilote, ignorée${doublons > 1 ? "s" : ""}.</p>` : ""}
+    ${rejet ? `<p class="m-note">${rejet} ligne${rejet > 1 ? "s" : ""} sans date, montant ou libellé, ignorée${rejet > 1 ? "s" : ""}.</p>` : ""}
+    <div class="tw"><table><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th style="text-align:right">Montant</th></tr></thead>
+      <tbody>${lignes}</tbody></table></div>
+    ${nouvelles.length > 8 ? `<p class="m-note">… et ${nouvelles.length - 8} autres.</p>` : ""}`
+    : `<p class="m-note">Toutes les transactions de ${_finEsc(nom)} sont déjà dans Pilote (${doublons}).</p>`;
+  document.getElementById("fin-import-ok").style.display = nouvelles.length ? "" : "none";
+  openOvTop("ov-fin-import");
+}
+
+/* Catégorie, sous-catégorie et source retrouvées par leur nom, créées sinon */
+function _finImpCat(type, nom) {
+  if (!nom) nom = type === "income" ? "Autres revenus" : "Autres dépenses";
+  let c = F.categories.find(c => c.type === type && finNorm(c.name) === finNorm(nom));
+  if (!c) {
+    c = { id: finUid("cat"), name: nom, icon: finGuessIcon(nom) || (type === "income" ? "💰" : "🏷️"),
+          type, color: "#64748b", subs: [] };
+    F.categories.push(c);
+  }
+  return c;
+}
+function _finImpSub(c, nom) {
+  if (!nom) return null;
+  c.subs = c.subs || [];
+  let s = c.subs.find(s => finNorm(s.name) === finNorm(nom));
+  if (!s) { s = { id: finUid("sub"), name: nom, icon: finGuessIcon(nom) || c.icon || "•" }; c.subs.push(s); }
+  return s.id;
+}
+function _finImpSrc(nom) {
+  if (!nom) return (F.sources[0] && F.sources[0].id) || _finImpSrc("Autre");
+  let s = F.sources.find(s => finNorm(s.name) === finNorm(nom));
+  if (!s) { s = { id: finUid("src"), name: nom }; F.sources.push(s); }
+  return s.id;
+}
+
+function finImportValider() {
+  if (!_finImp || !_finImp.nouvelles.length) return;
+  const maintenant = new Date().toISOString();
+  _finImp.nouvelles.forEach(t => {
+    const c = _finImpCat(t.type, t.cat);
+    F.transactions.push({
+      id: finUid("tx"), date: t.date, amount: t.amount, label: t.label, type: t.type,
+      categoryId: c.id, subcategoryId: _finImpSub(c, t.sub), sourceId: _finImpSrc(t.source),
+      note: t.note, createdAt: maintenant,
+    });
+  });
+  const n = _finImp.nouvelles.length;
+  _finImp = null;
+  closeOv("ov-fin-import");
+  finPersist();
+  finRenderAll();
+  if (typeof dashRender === "function") dashRender();
+  showToastModern(n + " transaction" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : ""), "ok");
+}
+
+// ════════════════════════════════════════════════════════
 // CATÉGORIES
 // ════════════════════════════════════════════════════════
 function finOpenCategories() {
@@ -22665,8 +22936,38 @@ function ctoResume(id) {
   // du PEA sur tous les versements : sur l'« investi net », d'où chaque vente
   // est retirée, il gonflait après une vente (+28,57 % au lieu de +20 %)
   const achats = Math.round(ctoDepotsDeduits(e).filter(d => d.amount > 0).reduce((s, d) => s + d.amount, 0) * 100) / 100;
+  // « Lignes actuelles » (façon Trade Republic) : valeur des lignes encore
+  // détenues − leur prix de revient (frais d'achat compris) ; ventes et
+  // dividendes n'y comptent pas
+  const pvLignes = valeur != null ? Math.round((titres - investi) * 100) / 100 : null;
   return { valeur, titres, investi, investiNet, achats, pv, n, frais, dividendes, offert,
-           pvPct: (pv != null && achats > 0) ? pv / achats * 100 : null };
+           pvPct: (pv != null && achats > 0) ? pv / achats * 100 : null,
+           pvLignes, pvLignesPct: (pvLignes != null && investi > 0) ? pvLignes / investi * 100 : null };
+}
+
+/* Case Rendement : « Tout le compte » (défaut) ou « Lignes actuelles »,
+   gardé dans les réglages du CTO affiché */
+function ctoBasculerRendement() {
+  const p = _cptPrefs();
+  p.rendement = p.rendement === "lignes" ? "compte" : "lignes";
+  ctoPersist();
+  ctoRenderMetrics();
+}
+
+function ctoInfoRendement() {
+  const r = ctoResume(_compteActif) || {};
+  const l = (t, v) => `<p style="margin:.6rem 0"><b>${t}</b><br>${v}</p>`;
+  const html = `<div class="ov open" id="ov-cto-rdt" onclick="if(event.target===this)this.remove()">
+    <div class="modal" style="max-width:480px"><h2>Deux façons de compter</h2>
+    ${l("Tout le compte", "Ce que le compte t'a rapporté depuis le premier achat : valeur des lignes − (achats − ventes − dividendes), en % de tout ce que tu as acheté. Les gains des lignes vendues et les dividendes comptent."
+       + (r.pvPct != null ? `<br><span class="m-note">Ici : ${eur(r.pv, true)} (${pct(r.pvPct)})</span>` : ""))}
+    ${l("Lignes actuelles", "Comme Trade Republic : valeur des lignes encore détenues − ce qu'elles t'ont coûté, en % de ce coût. Les lignes vendues et les dividendes ne comptent pas."
+       + (r.pvLignesPct != null ? `<br><span class="m-note">Ici : ${eur(r.pvLignes, true)} (${pct(r.pvLignesPct)})</span>` : ""))}
+    ${l("Et les frais ?", "Dans les deux cas, les frais d'achat s'ajoutent à ce que tu as payé : ils baissent le rendement. Les frais d'une vente sont retirés de ce qu'elle t'a rapporté.")}
+    <p class="m-note">Un clic sur la case passe d'un calcul à l'autre.</p>
+    <div class="mact"><button class="btn btn-primary" onclick="document.getElementById('ov-cto-rdt').remove()">Compris</button></div>
+    </div></div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
 }
 
 /* Les cartes de la vue d'ensemble (renderMetrics, CTO affiché) */
@@ -22680,14 +22981,18 @@ function ctoRenderMetrics() {
   const sub = document.getElementById("m-val-sub");
   if (sub) sub.innerHTML = r.n ? ligneRevient(r.investi, r.valeur != null ? r.titres - r.investi : null)
     + (r.offert > 0 ? "<br>dont offert (Saveback, actions offertes) : " + eur(r.offert) : "") : "";
+  const lignes = _cptPrefs().rendement === "lignes";
+  const gain = lignes ? r.pvLignes : r.pv, gainPct = lignes ? r.pvLignesPct : r.pvPct;
   const pvEl = document.getElementById("m-pv");
   if (pvEl) {
-    pvEl.textContent = r.pv != null ? eur(r.pv, true) : "—";
-    pvEl.className = "mc-val " + (r.pv == null ? "" : r.pv >= 0 ? "c-g" : "c-r");
+    pvEl.textContent = gain != null ? eur(gain, true) : "—";
+    pvEl.className = "mc-val " + (gain == null ? "" : gain >= 0 ? "c-g" : "c-r");
   }
-  set("m-pv-sub", r.pvPct != null ? pct(r.pvPct) : "");
+  set("m-pv-sub", gainPct != null ? pct(gainPct) : "");
+  const mode = document.getElementById("m-pv-mode");
+  if (mode) mode.innerHTML = (lignes ? "Lignes actuelles" : "Tout le compte") + ' <i class="ph ph-arrows-left-right"></i>';
   const acc = document.getElementById("mc-pv-acc");
-  if (acc) acc.style.background = r.pv == null ? "transparent" : r.pv >= 0 ? "var(--g)" : "var(--r)";
+  if (acc) acc.style.background = gain == null ? "transparent" : gain >= 0 ? "var(--g)" : "var(--r)";
   set("m-fees", r.frais > 0 ? eur(r.frais) : "—");
   set("m-div", r.dividendes > 0 ? eur(r.dividendes) : "—");
   window._ctoPv[_compteActif] = r;

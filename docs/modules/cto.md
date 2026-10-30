@@ -350,3 +350,11 @@ la défense « PEA vierge ».
 (`achats`), comme le PEA sur tous ses versements ; « Toute ma bourse » prend la
 même base. Sur l'« investi net » (achats − ventes − dividendes), il gonflait après
 une vente : 10 000 € achetés, ligne à +20 %, 3 000 € vendus donnaient +28,57 %.
+
+## Case Rendement : deux calculs (4.4.40)
+
+Un clic sur la case (CTO seulement) bascule `_cptPrefs().rendement` entre
+« Tout le compte » (défaut, `pv`/`pvPct` de `ctoResume`) et « Lignes actuelles »
+(façon Trade Republic : `pvLignes` = valeur des lignes détenues − leur prix de
+revient frais compris, en % de ce prix). Le (i) (`ctoInfoRendement`) explique
+la différence et les frais. Tuile d'accueil et Patrimoine gardent « Tout le compte ».

@@ -33,3 +33,17 @@ liste des transactions, sélecteurs, camembert, top de l'année, récurrents.
     puis ceux dont un mot commence par elle. ↑ ↓ Entrée, Échap ferme la liste sans
     fermer la fenêtre.
   - Après un choix, le montant est sélectionné : il se remplace d'une frappe (courses).
+
+## Importer (JSON ou CSV d'une autre appli, 4.4.40)
+
+Bouton « Importer » de l'en-tête du mois (`finImportLire`). Tout se fait en JS,
+rien ne passe par Python avant l'enregistrement habituel (`finPersist`).
+* JSON : le premier tableau d'objets (racine, `transactions`, `expenses`…) ; un
+  `finances.json` de Pilote garde ses catégories (`categoryId` traduit en nom).
+* CSV : séparateur deviné (`;`, `,`, tabulation), colonnes reconnues par leur
+  nom (`FIN_IMP_COLS` : date, montant ou débit/crédit, libellé, catégorie,
+  sous-catégorie, type, source, note). Dates JJ/MM/AAAA, ISO ou horodatage.
+* Sens : la colonne type, sinon le signe ; sans aucun négatif ni colonne
+  crédit, tout est une dépense.
+* Catégorie, sous-catégorie et source retrouvées par leur nom, sinon créées.
+  Doublon (même date, type, montant, libellé) ignoré. Aperçu avant « Importer ».

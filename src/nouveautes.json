@@ -6,7 +6,9 @@
       "date": "2026-10-30",
       "titre": "Tes notifications à l'heure que tu veux",
       "nouveau": [
-        "Agenda › Notifications, et la notification de chaque note : en plus des choix habituels, « Autre jour et heure… » ouvre une petite fenêtre, comme pour programmer un mail. Des suggestions en un clic (la veille à 19 h, le jour même à 8 h…), ou le jour et l'heure exacts : le jour même, la veille, quelques jours ou une semaine avant, à la minute près."
+        "Agenda › Notifications, et la notification de chaque note : en plus des choix habituels, « Autre jour et heure… » ouvre une petite fenêtre, comme pour programmer un mail. Des suggestions en un clic (la veille à 19 h, le jour même à 8 h…), ou le jour et l'heure exacts : le jour même, la veille, quelques jours ou une semaine avant, à la minute près.",
+        "Mes comptes : bouton « Importer » pour reprendre les transactions d'une autre appli de budget (fichier JSON ou CSV). Pilote reconnaît les colonnes, retrouve ou crée les catégories, ignore ce qui est déjà là, et te montre tout avant d'enregistrer.",
+        "CTO : un clic sur la case Rendement passe de « Tout le compte » (ventes et dividendes compris) à « Lignes actuelles » (comme Trade Republic). Le (i) explique la différence et où vont les frais."
       ]
     },
     {
