@@ -9084,10 +9084,20 @@ const _PEA_PORT = location.port || "7438";
 const LOCAL_COURS_URL = `http://127.0.0.1:${_PEA_PORT}/cours`;
 const LOCAL_HIST_URL  = `http://127.0.0.1:${_PEA_PORT}/history`;
 
+/* Titres vendus aujourd'hui dans un compte (PEA ou CTO) */
+function tickersVendusAujourdhui(e) {
+  const today = todayISO();
+  return (e.transactions || []).filter(x => x.type === "Vente" && x.asset && normDate(x.date) === today)
+                               .map(x => x.asset);
+}
+
 async function fetchLocalCours() {
   const tickers = [];
   S.positions.forEach(p => { if (p.ticker) tickers.push(p.ticker); });
   if (S.wishlist) S.wishlist.forEach(w => { if (w.ticker) tickers.push(w.ticker); });
+  // Lignes vendues en totalité aujourd'hui : le gain du jour (dashPeaDay) a
+  // besoin de leur cours du jour, et elles ne sont plus dans les positions
+  tickersVendusAujourdhui(S).forEach(t => tickers.push(t));
   // Lignes cibles du « Prochain achat » : leur cours sert même sans position ni wishlist
   if (typeof pacCfg === "function") pacCfg().cibles.forEach(c => { if (c.ticker) tickers.push(c.ticker); });
   // Les comptes non affichés (le PEA pendant un CTO, les autres CTO) : leurs
@@ -22585,6 +22595,7 @@ function ctoAutresTickers() {
   const ajoute = e => {
     (e.positions || []).forEach(p => p.ticker && out.push(p.ticker));
     (e.wishlist || []).forEach(w => w.ticker && out.push(w.ticker));
+    tickersVendusAujourdhui(e).forEach(t => out.push(t));
   };
   if (_peaHorsEcran) ajoute(_peaHorsEcran);
   ctoComptes().forEach(c => { if (!(_estCto() && c.id === _compteActif)) ajoute(c); });

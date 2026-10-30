@@ -11,15 +11,10 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 30/10/2026 (4.4.38) : alertes qui se cliquent et se retirent.
+# 30/10/2026 (4.4.39) : performance du jour après la vente complète d'une ligne.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 # Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. CTO de Camille, Transactions : deux ordres aux frais faussés en mémoire
-#    (pas enregistrés), l'alerte de la barre et les badges.
-# 2. La fenêtre de détail des frais (ouvrirEcartsFrais).
-# 3. Prêt, vue d'ensemble : un versement doublé en mémoire, l'alerte et son bouton.
-# 4. PEA, Positions : fiche de TotalEnergies (« Montant investi »).
-js:goTab("cto-tx@c1"),setTimeout(()=>{S.transactions.filter(t=>txFraisAttendus(t)!=null).slice(0,2).forEach(t=>{t.frais=(t.frais||0)+2}),ctoRenderBarre(),renderTx()},2000)
-js:ouvrirEcartsFrais()
-js:goTab("pr-overview"),PR.versements.push({id:"x",date:"2026-01-05",montant:prN(PR.pret.montant)}),prRenderAll()
-js:goTab("pos"),openPosFiche(S.positions.find(p=>p.ticker==="EPA:TTE").id)
+# 1. Accueil : SAP vendu en totalité aujourd'hui dans le CTO de Camille (en
+#    mémoire, pas enregistré), tuile « Performance du CTO » sur « Jour », cours
+#    actualisés. Attendu : un montant, pas « En attente des cours du jour ».
+js:goTab("home"),(c=>(c.transactions.push({type:"Vente",asset:"ETR:SAP",qty:3,cours:250,frais:1,date:todayISO()}),c.positions=c.positions.filter(p=>p.ticker!=="ETR:SAP"),S.uiPrefs.dashCtoRange={c1:"J"},applyCoursData().then(()=>dashRender())))(ctoCompte("c1"))
