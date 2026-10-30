@@ -159,6 +159,15 @@ Relevés le 11/10/2026 :
   offerte est un ordre ordinaire (1 € chez Trade Republic) ; une division
   n'attend rien. La comparaison porte sur le courtage seul (`txCourtage` :
   frais moins `taxe`).
+* **Alerte cliquable, et « Pas une erreur »** (30/10/2026, prévu en 4.4.38,
+  demande d'Arthur) : l'alerte de la barre du CTO et le badge « frais ≠
+  grille » ouvrent `ov-frais-ecarts` (`ouvrirEcartsFrais`) : chaque ordre avec
+  ses frais payés, ceux de la grille et l'écart, un crayon (`editTx`) et
+  « Pas une erreur » (ou « Tous sont normaux »). Un ordre accepté garde
+  `fraisOk` = le courtage accepté (enregistré avec l'ordre) : `txFraisEcart`
+  ne le compte plus, et l'alerte revient si ses frais changent. Retour annule.
+  Vaut aussi pour le PEA (badges seulement : pas de barre). Vérifié sur le
+  banc : clair, sombre, enregistrement sur le disque, Retour.
 * Les tarifs se revérifient à chaque version qui touche aux courtiers.
 
 ## Stratégie

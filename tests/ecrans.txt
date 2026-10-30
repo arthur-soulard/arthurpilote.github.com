@@ -11,12 +11,15 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 30/10/2026 (4.4.37) : fiche d'une ligne des Positions, import en CSV seulement.
+# 30/10/2026 (4.4.38) : alertes qui se cliquent et se retirent.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 # Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. PEA, Positions : fiche de TotalEnergies (un achat, quatre dividendes).
-# 2. PEA, Transactions : la fenêtre d'import (texte « CSV seulement »).
-# 3. CTO de Camille, Positions : fiche de sa première ligne, ouverte par un clic.
+# 1. CTO de Camille, Transactions : deux ordres aux frais faussés en mémoire
+#    (pas enregistrés), l'alerte de la barre et les badges.
+# 2. La fenêtre de détail des frais (ouvrirEcartsFrais).
+# 3. Prêt, vue d'ensemble : un versement doublé en mémoire, l'alerte et son bouton.
+# 4. PEA, Positions : fiche de TotalEnergies (« Montant investi »).
+js:goTab("cto-tx@c1"),setTimeout(()=>{S.transactions.filter(t=>txFraisAttendus(t)!=null).slice(0,2).forEach(t=>{t.frais=(t.frais||0)+2}),ctoRenderBarre(),renderTx()},2000)
+js:ouvrirEcartsFrais()
+js:goTab("pr-overview"),PR.versements.push({id:"x",date:"2026-01-05",montant:prN(PR.pret.montant)}),prRenderAll()
 js:goTab("pos"),openPosFiche(S.positions.find(p=>p.ticker==="EPA:TTE").id)
-js:closeOv("ov-pos-fiche"),goTab("tx"),ctoOuvrirImport()
-js:closeOv("ov-cto-import"),goTab("cto-pos@c1"),setTimeout(()=>document.querySelector("#pos-body>tr[data-id]>td").click(),2000)

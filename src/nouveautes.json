@@ -2,6 +2,16 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.38",
+      "date": "2026-10-30",
+      "titre": "Des alertes que tu peux vérifier, et retirer",
+      "ameliore": [
+        "« N ordres aux frais différents de la grille », dans la barre de ton CTO, se clique : chaque ordre s'affiche avec les frais payés, ceux de la grille de ton courtier et l'écart. Corrige ses frais, ou marque-le « Pas une erreur » (ou « Tous sont normaux ») : l'alerte disparaît, et revient seulement si tu changes ensuite ses frais. Le badge « frais ≠ grille » des Transactions ouvre la même fenêtre.",
+        "Les alertes de la vue d'ensemble du Prêt (versement en double, versement qui manque) ont un bouton « Ce n'est pas une erreur » : le message reste retiré tant que les montants ne changent pas.",
+        "Dans la fiche d'une position, « Prix de revient » s'appelle maintenant « Montant investi »."
+      ]
+    },
+    {
       "version": "4.4.37",
       "date": "2026-10-30",
       "titre": "La fiche de chaque ligne, et un import qui reconnaît tes titres",

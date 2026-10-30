@@ -225,8 +225,9 @@ le focus ; Alt + flèches la déplacent toujours) ouvre `ov-pos-fiche`
 (`openPosFiche`, branché une fois par `_posBrancherFiche`). Un clic sur les
 boutons de la ligne (modifier, supprimer) n'ouvre rien ; un glisser non plus.
 
-* **Huit cases** : parts, PRU, cours, valeur (et poids dans le compte), prix de
-  revient (avec les frais payés), +/− latente, +/− réalisée, dividendes reçus.
+* **Huit cases** : parts, PRU, cours, valeur (et poids dans le compte), montant
+  investi (« Prix de revient » jusqu'en 4.4.37, renommé à la demande d'Arthur ;
+  avec les frais payés), +/− latente, +/− réalisée, dividendes reçus.
   Tout vient de `computePos` et `pvAtSale`, comme le tableau : latente +
   réalisée = la colonne « +/− EUR ». Une phrase : achats, ventes, premier achat,
   +/− totale dividendes compris.

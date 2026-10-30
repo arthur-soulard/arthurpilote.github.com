@@ -9,6 +9,11 @@ API Python : `load_pret()` / `save_pret()`. Capitalisation annuelle de l'AV et m
 
 * pret        : `{nom, montant, date_deblocage, date_premier_remboursement,
                 duree_remboursement, mensualite}`
+* alertesOk   : clés des alertes de la vue d'ensemble retirées par « Ce n'est
+                pas une erreur » (`prAlertesHtml`, `prAlerteOk`, 30/10/2026,
+                prévu en 4.4.38). La clé contient les montants
+                (« doublon:40000.00:20000.00 ») : l'alerte revient s'ils changent ;
+                une seule clé gardée par sorte d'alerte.
 
 **Un seul prêt, sans échéancier calculé : décision d'Arthur du 14/10/2026.** La
 4.4.17 (13/10/2026) avait rendu le module générique : plusieurs prêts, une section

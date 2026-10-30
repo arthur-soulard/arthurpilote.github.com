@@ -2585,7 +2585,21 @@ body.cpt-cto .cto-bar {
 }
 .cto-bar-courtier { font-size: 12px; color: var(--txt2); }
 .cto-bar-courtier b { color: var(--txt); font-weight: 600; }
-.cto-bar-alerte { font-size: 12px; color: var(--a); display: inline-flex; align-items: center; gap: 4px; }
+.cto-bar-alerte { font-size: 12px; color: var(--a); display: inline-flex; align-items: center; gap: 4px;
+                  background: none; border: 0; padding: 2px 4px; font-family: inherit; cursor: pointer;
+                  text-decoration: underline dotted; text-underline-offset: 3px; }
+.cto-bar-alerte:hover { text-decoration-style: solid; }
+.tx-frais-badge { background: var(--a2); color: var(--a); border: 0; cursor: pointer; font-family: inherit; }
+.tx-frais-badge:hover { filter: brightness(.95); }
+/* Fenêtre des écarts de frais (ouvrirEcartsFrais) et alertes qu'on retire */
+.modal.frais-ecarts { max-width: 820px; width: min(820px, 94vw); }
+.fe-acts { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.fe-acts .btn { white-space: nowrap; }
+.pac-alert .alerte-ok { margin-left: auto; flex-shrink: 0; background: none; border: 0; color: var(--txt2);
+                        font: inherit; font-size: 11px; cursor: pointer; display: inline-flex; gap: 4px;
+                        align-items: center; padding: 0 2px; white-space: nowrap; }
+.pac-alert .alerte-ok:hover { color: var(--txt); text-decoration: underline; }
+.pac-alert .alerte-ok i { font-size: 13px; margin: 0; color: inherit; }
 .cto-bar-sp { flex: 1; }
 body.cpt-cto .pea-seul, body.cpt-cto .pea-info { display: none !important; }
 .cto-vide { max-width: 640px; margin: 2rem auto; text-align: center; }
@@ -5196,6 +5210,21 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- Modal : ordres aux frais différents de la grille du courtier (4.4.38) :
+     détail, et « Pas une erreur » qui retire l'alerte. ouvrirEcartsFrais. -->
+<div class="ov" id="ov-frais-ecarts" onclick="if(event.target===this)closeOv('ov-frais-ecarts')">
+  <div class="modal frais-ecarts">
+    <h2>Frais différents de la grille</h2>
+    <p class="cto-imp-aide-p" id="fe-intro"></p>
+    <div class="tw pf-ops"><table><thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Ordre</th><th>Montant</th><th>Frais payés</th><th>Selon la grille</th><th>Écart</th><th></th></tr></thead>
+      <tbody id="fe-ops"></tbody></table></div>
+    <div class="mact">
+      <button class="btn btn-ghost" id="fe-tout"><i class="ph ph-checks"></i> Tous sont normaux</button>
+      <button class="btn btn-primary" onclick="closeOv('ov-frais-ecarts')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal : Ajouter transaction -->
 <div class="ov" id="ov-tx" onclick="if(event.target===this)closeOv('ov-tx')">
   <div class="modal">
@@ -6302,7 +6331,7 @@ function openPosFiche(id) {
     kpi("PRU", e.pru > 0 ? eur3(e.pru) : "—"),
     kpi("Cours", p.cours != null ? eur3(p.cours) : "—"),
     kpi("Valeur", e.val != null ? eur(e.val) : "—", "", tv > 0 && e.val != null ? pctFr(e.val / tv * 100, 1) + " du compte" : ""),
-    kpi("Prix de revient", eur(e.inv), "", frais ? "frais payés : " + eur(frais) : ""),
+    kpi("Montant investi", eur(e.inv), "", frais ? "frais payés : " + eur(frais) : ""),
     kpi("+/− latente", latente != null ? eur(latente, true) : "—", pcls(latente), e.inv > 0 && latente != null ? pct(latente / e.inv * 100) : ""),
     kpi("+/− réalisée", eur(e.realised || 0, true), Math.abs(e.realised || 0) >= 0.005 ? pcls(e.realised) : ""),
     kpi("Dividendes reçus", eur(totalDiv), "", divs.length ? divs.length + " versement" + (divs.length > 1 ? "s" : "") : ""),
@@ -13603,10 +13632,59 @@ function txFraisAttendus(t) {
   if (!(txCourtage(t) > 0) && tarif.gratuit > 0 && m <= tarif.gratuit + PAC_EPS) return 0;
   return courtageOrdre(m, tarif, !_estCto());
 }
-function txFraisBadge(t) {
+/* Les frais que donnerait la grille quand ils diffèrent de ceux payés, sinon
+   null. Un écart marqué « pas une erreur » (4.4.38) ne compte plus : t.fraisOk
+   garde le courtage accepté, l'alerte revient si les frais de l'ordre changent. */
+function txFraisEcart(t) {
   const att = txFraisAttendus(t);
-  if (att == null || Math.abs(txCourtage(t) - att) < 0.011) return "";
-  return `<span class="badge" style="background:var(--a2);color:var(--a)" title="La grille du courtier donne ${eur(att)} pour cet ordre : ses tarifs ont peut-être changé (Stratégie → Réglages)"><i class="ph ph-warning"></i> frais ≠ grille</span>`;
+  if (att == null || Math.abs(txCourtage(t) - att) < 0.011) return null;
+  return t.fraisOk != null && Math.abs(t.fraisOk - txCourtage(t)) < 0.005 ? null : att;
+}
+function txFraisBadge(t) {
+  const att = txFraisEcart(t);
+  if (att == null) return "";
+  return `<button type="button" class="badge tx-frais-badge" onclick="ouvrirEcartsFrais()" title="La grille du courtier donne ${eur(att)} pour cet ordre : clique pour voir le détail, ou le marquer comme normal"><i class="ph ph-warning"></i> frais ≠ grille</button>`;
+}
+
+/* Fenêtre des ordres aux frais différents de la grille (4.4.38, demande
+   d'Arthur : l'alerte se clique, montre le détail, et se retire si ce n'est
+   pas une erreur). Compte affiché (PEA ou CTO, dans S). */
+function ouvrirEcartsFrais() {
+  const lignes = (S.transactions || []).map(t => ({ t, att: txFraisEcart(t) })).filter(x => x.att != null)
+    .sort((a, b) => normDate(b.t.date).localeCompare(normDate(a.t.date)));
+  const nomDe = tk => ((S.positions || []).find(p => p.ticker === tk) || (S.closedPositions || []).find(c => c.ticker === tk) || {}).name || tk;
+  document.getElementById("fe-intro").textContent = lignes.length
+    ? `Pour ${lignes.length > 1 ? "ces ordres" : "cet ordre"}, les frais payés ne sont pas ceux que donne la grille de ton courtier. `
+      + "Causes fréquentes : tarifs changés, ordre à cours limité ou sur une autre place, frais de change, ou faute de frappe. "
+      + "Si les frais payés sont les bons, marque l'ordre comme normal : l'alerte disparaît."
+    : "Plus aucun ordre à vérifier.";
+  document.getElementById("fe-ops").innerHTML = lignes.map(({ t, att }) => {
+    const ecart = txCourtage(t) - att;
+    return `<tr>
+      <td style="text-align:left;white-space:nowrap">${dateCourte(t.date)}</td>
+      <td style="text-align:left">${escHtml(t.type)} · ${escHtml(nomDe(t.asset))}</td>
+      <td>${eur(brutOrdre(t))}</td>
+      <td>${eur(txCourtage(t))}</td>
+      <td>${eur(att)}</td>
+      <td class="${ecart > 0 ? "neg" : "pos"}">${eur(ecart, true)}</td>
+      <td><span class="fe-acts">
+        <button class="btn btn-sm btn-ghost" data-id="${t.id}" onclick="closeOv('ov-frais-ecarts');editTx(+this.dataset.id)" title="Corriger les frais de cet ordre" aria-label="Corriger les frais de cet ordre"><i class="ph ph-pencil-simple"></i></button>
+        <button class="btn btn-sm btn-ghost" data-id="${t.id}" onclick="fraisEcartOk([+this.dataset.id])"><i class="ph ph-check"></i> Pas une erreur</button>
+      </span></td></tr>`;
+  }).join("");
+  document.getElementById("fe-tout").style.display = lignes.length > 1 ? "" : "none";
+  document.getElementById("fe-tout").onclick = () => fraisEcartOk(lignes.map(x => x.t.id));
+  openOvTop("ov-frais-ecarts");
+}
+function fraisEcartOk(ids) {
+  pushUndo();
+  (S.transactions || []).filter(t => ids.includes(t.id)).forEach(t => { t.fraisOk = txCourtage(t); });
+  persist();
+  if (typeof renderTx === "function") renderTx();
+  if (typeof ctoRenderBarre === "function") ctoRenderBarre();
+  ouvrirEcartsFrais();
+  if (!(S.transactions || []).some(t => txFraisEcart(t) != null)) closeOv("ov-frais-ecarts");
+  showToastModern(ids.length > 1 ? ids.length + " ordres marqués comme normaux" : "Ordre marqué comme normal", "ok");
 }
 
 /* Frais d'un jeu de parts (étape 5) : la moins chère de deux variantes.
@@ -19375,18 +19453,30 @@ function prTranchesTxt(o, court) {
   return t;
 }
 
-/** Incohérences de saisie qui fausseraient les chiffres du prêt. */
+/** Incohérences de saisie qui fausseraient les chiffres du prêt. Chacune se
+    retire (« Ce n'est pas une erreur », 4.4.38) : sa clé, montants compris,
+    va dans PR.alertesOk ; elle revient si ces montants changent. */
 function prAlertesHtml(o) {
   const a = [], montant = prN(PR.pret.montant);
   const versTous = prSumBy(PR.versements, "montant");
   if (montant > 0 && versTous > montant + 0.005)
-    a.push(`Les versements saisis (${prEur(versTous)}) dépassent le montant emprunté (${prEur(montant)}) : un versement en double ?`);
+    a.push(["doublon:" + versTous.toFixed(2) + ":" + montant.toFixed(2),
+            `Les versements saisis (${prEur(versTous)}) dépassent le montant emprunté (${prEur(montant)}) : un versement en double ?`]);
   // Les frais bancaires n'entrent pas ici : ils peuvent tomber avant le premier
   // versement (la carte est prélevée dès septembre, le prêt arrive en octobre).
   const place = o.pea_debite - o.pea_credite + o.av_depose + o.liv_net + o.remb_total;
   if (place > o.versements + 0.005)
-    a.push(`Tu as placé ou remboursé ${prEur(place)} alors que la banque n'a versé que ${prEur(o.versements)} à ce jour : un versement manque, ou un placement est daté trop tôt.`);
-  return a.length ? `<div class="pr-alerts">${a.map(t => `<div class="pac-alert warn"><i class="ph ph-warning"></i><span>${escHtml(t)}</span></div>`).join("")}</div>` : "";
+    a.push(["manque:" + place.toFixed(2) + ":" + o.versements.toFixed(2),
+            `Tu as placé ou remboursé ${prEur(place)} alors que la banque n'a versé que ${prEur(o.versements)} à ce jour : un versement manque, ou un placement est daté trop tôt.`]);
+  const vues = a.filter(([cle]) => !(PR.alertesOk || []).includes(cle));
+  return vues.length ? `<div class="pr-alerts">${vues.map(([cle, t]) => `<div class="pac-alert warn"><i class="ph ph-warning"></i><span>${escHtml(t)}</span>
+    <button type="button" class="alerte-ok" data-cle="${escHtml(cle)}" onclick="prAlerteOk(this.dataset.cle)" title="Retirer ce message : il reviendra si ces montants changent"><i class="ph ph-x"></i> Ce n'est pas une erreur</button></div>`).join("")}</div>` : "";
+}
+function prAlerteOk(cle) {
+  prPushUndo();
+  // Seules les clés des alertes encore affichées restent : la liste ne grossit pas
+  PR.alertesOk = [...(PR.alertesOk || []).filter(k => k.split(":")[0] !== cle.split(":")[0]), cle];
+  prSave("Message retiré");
 }
 
 function prRenderOverview(o) {
@@ -22597,15 +22687,13 @@ function ctoRenderBarre() {
   const c = ctoCompte(_compteActif);
   if (!c) return;
   const k = courtierDe(c.courtier);
-  // Ordres dont les frais ne collent pas à la grille du courtier
-  const ecarts = (S.transactions || []).filter(t => {
-    const a = txFraisAttendus(t);
-    return a != null && Math.abs(txCourtage(t) - a) >= 0.011;
-  }).length;
+  // Ordres dont les frais ne collent pas à la grille du courtier (sauf ceux
+  // marqués « pas une erreur ») : un clic montre le détail (ouvrirEcartsFrais)
+  const ecarts = (S.transactions || []).filter(t => txFraisEcart(t) != null).length;
   // Plus de liste des CTO ici (4.4.2) : chacun a sa section dans la barre latérale
   bar.innerHTML = `<span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
-    ${ecarts ? `<span class="cto-bar-alerte" title="Voir les ordres marqués dans Transactions"><i class="ph ph-warning"></i>
-      ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</span>` : ""}
+    ${ecarts ? `<button type="button" class="cto-bar-alerte" onclick="ouvrirEcartsFrais()" title="Voir le détail"><i class="ph ph-warning"></i>
+      ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</button>` : ""}
     <span class="cto-bar-sp"></span>
     <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirImport()"><i class="ph ph-file-arrow-down"></i> Importer des relevés</button>
     <button class="btn btn-sm btn-ghost" onclick="ctoOuvrirCompte('${escHtml(c.id)}')"><i class="ph ph-gear-six"></i> Réglages du compte</button>`;
