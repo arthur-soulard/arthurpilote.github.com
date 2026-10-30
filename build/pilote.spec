@@ -77,8 +77,9 @@ a = Analysis(
         "PIL.Image",
         "PIL.ImageDraw",
         "PIL.ImageFont",
-        # Import des releves PDF (releves.py, import paresseux)
-        "pypdf",
+        # Catalogue des titres de l'import (server.cotations_euro, import paresseux)
+        "titres_connus",
+        "titres_listes",
     ],
     hookspath=[],
     hooksconfig={},

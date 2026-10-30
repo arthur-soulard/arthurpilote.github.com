@@ -2,6 +2,19 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.37",
+      "date": "2026-10-30",
+      "titre": "La fiche de chaque ligne, et un import qui reconnaît tes titres",
+      "nouveau": [
+        "Clique sur une ligne de tes Positions (PEA ou CTO) : sa fiche s'ouvre avec ses parts, son PRU, sa valeur, sa plus-value latente et réalisée, ses dividendes reçus, et la liste de toutes ses transactions et de tous ses dividendes. Un crayon permet de corriger une transaction, et « Voir dans Transactions » ouvre l'onglet déjà filtré sur ce titre."
+      ],
+      "ameliore": [
+        "L'import des relevés reconnaît bien mieux tes titres : Pilote connaît maintenant plus de 6 000 actions, ETF et ETC cotés en euros (Paris, Amsterdam, Bruxelles, Milan, Lisbonne, Francfort), dont les actions américaines pour ton CTO. Les noms écrits à la façon des banques (« CIE DE SAINT-GOBAIN », « BNP PARIBAS ACT.A ») sont reconnus, et la recherche est plus rapide.",
+        "Sur ton PEA, l'import choisit la cotation de Paris quand elle existe.",
+        "L'import se concentre sur les exports CSV de ta banque (ou le même fichier en Excel) : dans ton espace client, exporte l'historique des opérations en CSV. Les PDF (avis d'opéré) ne sont plus lus."
+      ]
+    },
+    {
       "version": "4.4.36",
       "date": "2026-10-29",
       "titre": "Ta sauvegarde sur Google Drive",

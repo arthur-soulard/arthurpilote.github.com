@@ -36,7 +36,9 @@ Pilote/
 │   ├── sports.py       # Module « Sports »        (sports.json) + catalogue + champs
 │   ├── pret.py         # Module « Prêt », nom libre (pret.json)
 │   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
-│   ├── releves.py      # Import des relevés de banque (PDF, CSV, Excel, XML) pour le PEA et les CTO
+│   ├── releves.py      # Import des relevés de banque (CSV, Excel, XML) pour le PEA et les CTO
+│   ├── titres_connus.py # Catalogue des titres (ISIN, nom -> ticker) pour l'import (docs/import-releves.md)
+│   ├── titres_listes.py # ~6 400 titres Euronext + Xetra (généré par `python tests/generer_titres.py`)
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
@@ -65,7 +67,7 @@ Pilote/
 ├── .github/workflows/  # release.yml (publication), build-windows.yml et build-mac.yml (tests de la branche mac)
 ├── tests/              # donnees_exemple.py (Camille), lire_tests.py, ecrans.txt, verifier_release.py, test_*.py
 ├── THIRD-PARTY-NOTICES.txt # licences des composants embarques (dans l'exe, l'app Mac et le Setup)
-└── requirements.txt    # pywebview, pyinstaller, win10toast + setuptools<81, pillow, pypdf, pyobjc-framework-Vision (Mac)
+└── requirements.txt    # pywebview, pyinstaller, win10toast + setuptools<81, pillow, pyobjc-framework-Vision (Mac)
 ```
 
 En dev, `Donnees` à la racine du dépôt est un lien symbolique vers le dossier de
@@ -205,7 +207,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/patrimoine.md` | Patrimoine, biens immobiliers (ligne du bien + ligne de son crédit, 4.4.18) | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
-| `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : formats, pièges par banque, exemples réels, pypdf | `releves.py`, `ctoImport*`, `/isin` |
+| `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : CSV seulement (PDF retirés en 4.4.37), formats, pièges par banque, reconnaissance des titres | `releves.py`, `ctoImport*`, `/isin` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/modules/agenda.md` | Agenda : calendrier, notes, iCloud en CalDAV (écriture et lecture), synchronisation | `agenda.py`, `ag*`, `save_agenda*` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |

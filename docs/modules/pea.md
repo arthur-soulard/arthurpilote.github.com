@@ -217,6 +217,29 @@ listes de titres des fenêtres (transaction, dividende…) suivent le même ordr
 Un rafraîchissement des cours pendant le glisser redessine le tableau : le
 glisser est alors abandonné, sans rien changer.
 
+## Positions : fiche d'une ligne au clic (30/10/2026, prévue en 4.4.37)
+
+Proposition d'un utilisateur : cliquer sur une position montre toutes ses
+transactions et les infos utiles. Un clic sur la ligne (ou Entrée quand elle a
+le focus ; Alt + flèches la déplacent toujours) ouvre `ov-pos-fiche`
+(`openPosFiche`, branché une fois par `_posBrancherFiche`). Un clic sur les
+boutons de la ligne (modifier, supprimer) n'ouvre rien ; un glisser non plus.
+
+* **Huit cases** : parts, PRU, cours, valeur (et poids dans le compte), prix de
+  revient (avec les frais payés), +/− latente, +/− réalisée, dividendes reçus.
+  Tout vient de `computePos` et `pvAtSale`, comme le tableau : latente +
+  réalisée = la colonne « +/− EUR ». Une phrase : achats, ventes, premier achat,
+  +/− totale dividendes compris.
+* **Tableau** : transactions (`t.asset === p.ticker`, comme `computePos`) et
+  dividendes reçus (ticker normalisé), du plus récent au plus ancien ; +/−
+  réalisée de chaque vente ; ordre programmé grisé (FUTUR). Le crayon ferme la
+  fiche et ouvre `editTx`.
+* **Boutons** : « Voir dans Transactions » (onglet Transactions du compte, filtre
+  sur le ticker), « Modifier la ligne » (`editPos`).
+* Vaut pour un CTO (le compte affiché est dans `S`). Vérifié le 30/10/2026 sur
+  le banc (données de Camille) : PEA et CTO, clair et sombre, clic et Entrée,
+  chiffres identiques au tableau, aucune erreur en console.
+
 ## Positions et Wishlist : formats des nombres (4.3.17)
 
 PER, rendement du dividende (`_renderPER`, `_renderYield`, via `_frNum`) et

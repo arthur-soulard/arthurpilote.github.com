@@ -267,8 +267,17 @@ tbody tr { border-bottom: 1px solid var(--brd); transition: background .1s; }
 tbody tr:last-child  { border-bottom: none; }
 tbody tr:hover       { background: var(--bg3); }
 /* Lignes des Positions : se déplacent en glissant (_posBrancherGlisser) */
-#pos-body tr[draggable] { cursor: grab; }
+#pos-body tr[draggable] { cursor: pointer; }
 #pos-body tr.pos-glisse { opacity: .4; }
+/* Fiche d'une ligne (clic sur une position, openPosFiche) */
+.modal.pos-fiche { max-width: 880px; width: min(880px, 94vw); }
+.pf-sous { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: -4px 0 14px;
+           font-family: var(--mono); font-size: 11px; color: var(--txt2); }
+.pf-kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.pf-kpis .mkpi { padding: .7rem .9rem; }
+.pf-kpis .mkpi-val { font-size: 16px; }
+.pf-ops { max-height: 320px; overflow-y: auto; }
+.pf-ops tr.pf-futur td { color: var(--txt3); }
 td {
   padding: 11px 10px; text-align: right;
   font-family: var(--mono); vertical-align: middle; font-size: 12px;
@@ -5169,6 +5178,24 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- Modal : fiche d'une ligne des Positions (4.4.37) : ses chiffres, et
+     toutes ses transactions et dividendes. openPosFiche. -->
+<div class="ov" id="ov-pos-fiche" onclick="if(event.target===this)closeOv('ov-pos-fiche')">
+  <div class="modal pos-fiche">
+    <h2 id="pf-titre"></h2>
+    <div class="pf-sous" id="pf-sous"></div>
+    <div class="mkpis pf-kpis" id="pf-kpis"></div>
+    <p class="pac-dim" id="pf-resume"></p>
+    <div class="tw pf-ops"><table><thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Opération</th><th>Parts</th><th>Prix</th><th>Frais</th><th>Montant</th><th>+/− réalisée</th><th></th></tr></thead>
+      <tbody id="pf-ops"></tbody></table></div>
+    <div class="mact">
+      <button class="btn btn-ghost" id="pf-voir-tx"><i class="ph ph-list-bullets"></i> Voir dans Transactions</button>
+      <button class="btn btn-ghost" id="pf-modifier"><i class="ph ph-pencil-simple"></i> Modifier la ligne</button>
+      <button class="btn btn-primary" onclick="closeOv('ov-pos-fiche')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal : Ajouter transaction -->
 <div class="ov" id="ov-tx" onclick="if(event.target===this)closeOv('ov-tx')">
   <div class="modal">
@@ -6204,7 +6231,7 @@ function renderPositions() {
     const rV = (tv>0 && e.val!=null) ? e.val/tv*100 : null;
     const r  = rV!=null ? rV : rI;
     const aVenir = e.qty <= 0.0001 ? _achatAVenir(p) : "";
-    return `<tr data-id="${p.id}" draggable="true" tabindex="0" title="Glisser, ou Alt + flèche haut / bas, pour déplacer la ligne">
+    return `<tr data-id="${p.id}" draggable="true" tabindex="0" title="Cliquer pour voir ses transactions ; glisser, ou Alt + flèche haut / bas, pour déplacer la ligne">
       <td>
         <div class="tk">${escHtml(p.name)}</div>
         <div class="tk2">${escHtml(p.ticker)}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="' + (_estHorsEuro(p.ticker) ? "Cours hors euro sur cette place : choisis une cotation en euros (Positions, modifier la ligne)" : "Cours non chargé : vérifie le ticker") + '" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
@@ -6226,7 +6253,100 @@ function renderPositions() {
     </tr>`;
   }).join("");
   _posBrancherGlisser(body);
+  _posBrancherFiche(body);
   renderMetrics();
+}
+
+/* Fiche d'une ligne (demande d'un utilisateur, 30/10/2026) : un clic sur une
+   position (ou Entrée sur la ligne) montre ses chiffres, puis toutes ses
+   transactions et dividendes. Les chiffres viennent de computePos et
+   pvAtSale, ceux du tableau : rien n'est recalculé à part. Vaut pour le PEA
+   comme pour un CTO (le compte affiché, dans S). */
+function _posBrancherFiche(body) {
+  if (body._fiche) return;
+  body._fiche = true;
+  const ouvrir = e => {
+    const tr = e.target.closest && e.target.closest("tr[data-id]");
+    if (!tr || e.target.closest("button, a, input, select")) return false;
+    openPosFiche(+tr.dataset.id);
+    return true;
+  };
+  body.addEventListener("click", ouvrir);
+  body.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.altKey && e.target.matches("tr[data-id]") && ouvrir(e)) e.preventDefault();
+  });
+}
+
+function openPosFiche(id) {
+  const p = (S.positions || []).find(x => x.id === id);
+  if (!p) return;
+  const e = computePos(p);
+  const cut = todayISO();
+  const txs = (S.transactions || []).filter(t => t.asset === p.ticker);
+  const tk = normalizeTicker(p.ticker);
+  const divs = (S.divReceived || []).filter(d => normalizeTicker(d.ticker || "") === tk);
+  const ordres = txs.filter(t => (t.type === "Achat" || t.type === "Vente") && normDate(t.date) <= cut);
+  const frais = ordres.reduce((s, t) => s + (t.frais || 0), 0);
+  const totalDiv = divs.reduce((s, d) => s + (d.montant || 0), 0);
+  const latente = e.val != null ? e.val - e.inv : null;
+  const tv = S.positions.map(x => computePos(x)).reduce((s, x) => x.val != null ? s + x.val : s, 0);
+
+  document.getElementById("pf-titre").textContent = p.name || p.ticker;
+  document.getElementById("pf-sous").innerHTML = [
+    `<span class="badge ${p.type === "etf" ? "be" : "ba"}">${p.type === "etf" ? "ETF" : "Action"}</span>`,
+    `<span>${escHtml(p.ticker)}</span>`, p.isin ? `<span>${escHtml(p.isin)}</span>` : "",
+    p.sector ? sectorBadgeHtml(p.sector) : ""].filter(Boolean).join("");
+  const kpi = (l, v, cls, sub) => `<div class="mkpi${cls ? " " + cls : ""}"><div class="mkpi-lbl">${l}</div><div class="mkpi-val">${v}</div>${sub ? `<div class="mkpi-sub">${sub}</div>` : ""}</div>`;
+  document.getElementById("pf-kpis").innerHTML = [
+    kpi("Parts", fmtQte(e.qty)),
+    kpi("PRU", e.pru > 0 ? eur3(e.pru) : "—"),
+    kpi("Cours", p.cours != null ? eur3(p.cours) : "—"),
+    kpi("Valeur", e.val != null ? eur(e.val) : "—", "", tv > 0 && e.val != null ? pctFr(e.val / tv * 100, 1) + " du compte" : ""),
+    kpi("Prix de revient", eur(e.inv), "", frais ? "frais payés : " + eur(frais) : ""),
+    kpi("+/− latente", latente != null ? eur(latente, true) : "—", pcls(latente), e.inv > 0 && latente != null ? pct(latente / e.inv * 100) : ""),
+    kpi("+/− réalisée", eur(e.realised || 0, true), Math.abs(e.realised || 0) >= 0.005 ? pcls(e.realised) : ""),
+    kpi("Dividendes reçus", eur(totalDiv), "", divs.length ? divs.length + " versement" + (divs.length > 1 ? "s" : "") : ""),
+  ].join("");
+  const achats = ordres.filter(t => t.type === "Achat"), ventes = ordres.filter(t => t.type === "Vente");
+  const premier = ordres.map(t => normDate(t.date)).sort()[0];
+  document.getElementById("pf-resume").textContent = ordres.length
+    ? `${achats.length} achat${achats.length > 1 ? "s" : ""}, ${ventes.length} vente${ventes.length > 1 ? "s" : ""}`
+      + (premier ? `, premier achat le ${dateCourte(premier)}` : "")
+      + (e.pv != null ? ` · +/− totale : ${eur(e.pv + totalDiv, true)} dividendes compris` : "")
+    : "Aucun achat enregistré pour l'instant.";
+
+  const lignes = [
+    ...txs.map(t => ({ date: normDate(t.date), t })),
+    ...divs.map(d => ({ date: normDate(d.date), d })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+  document.getElementById("pf-ops").innerHTML = lignes.length ? lignes.map(({ date, t, d }) => {
+    if (d) return `<tr>
+        <td style="text-align:left">${dateCourte(date)}</td>
+        <td style="text-align:left"><span class="badge" style="background:var(--g2);color:var(--g)">Dividende</span></td>
+        <td>${d.qty ? fmtQte(d.qty) : "—"}</td><td>${d.ppa ? eur3(d.ppa) : "—"}</td><td>—</td>
+        <td class="pos">${eur(d.montant || 0)}</td><td></td><td></td></tr>`;
+    const vente = t.type === "Vente", futur = date > cut;
+    const montant = vente ? brutOrdre(t) - (t.frais || 0) : brutOrdre(t) + (t.frais || 0);
+    const pv = vente && !futur ? pvAtSale(t) : null;
+    return `<tr class="${futur ? "pf-futur" : ""}">
+        <td style="text-align:left">${dateCourte(date)}${futur ? ' <span class="badge bw">FUTUR</span>' : ""}</td>
+        <td style="text-align:left">${vente ? `<span class="badge" style="background:var(--r2);color:var(--r)">Vente</span>`
+          : `<span class="badge be">${escHtml(t.type)}</span>`}${txOrigineBadge(t)}</td>
+        <td>${t.qty ? fmtQte(t.qty) : "—"}</td><td>${t.cours ? eur3(t.cours) : "—"}</td>
+        <td>${t.frais ? eur(t.frais) : "—"}</td><td>${montant ? eur(montant) : "—"}</td>
+        <td class="${pcls(pv)}">${pv != null ? eur(pv, true) : ""}</td>
+        <td><button class="m-iconbtn" title="Modifier" aria-label="Modifier cette transaction" data-id="${t.id}"
+          onclick="closeOv('ov-pos-fiche');editTx(+this.dataset.id)"><i class="ph ph-pencil-simple"></i></button></td></tr>`;
+  }).join("") : `<tr><td colspan="8"><div class="m-empty">Aucune transaction sur cette ligne.</div></td></tr>`;
+
+  document.getElementById("pf-modifier").onclick = () => { closeOv("ov-pos-fiche"); editPos(id); };
+  document.getElementById("pf-voir-tx").onclick = () => {
+    closeOv("ov-pos-fiche");
+    goTab(_estCto() ? _ongletComplet("cto-tx") : "tx");
+    const f = document.getElementById("tx-filter-ticker");
+    if (f) { renderTx(); f.value = p.ticker; renderTx(); }
+  };
+  document.getElementById("ov-pos-fiche").classList.add("open");
 }
 
 /* Glisser une ligne pour changer l'ordre des positions (12/10/2026), comme les
@@ -23011,7 +23131,8 @@ async function ctoImportAnalyser(r) {
       // Prix payés (40 derniers) et premier ordre : le serveur vérifie chaque
       // cotation sur son historique (server.cotations_euro)
       const url = `http://127.0.0.1:${_PEA_PORT}/isin?isin=${encodeURIComponent(isin.startsWith("NOM:") ? "" : isin)}&nom=${encodeURIComponent(t.nom || "")}`
-        + `&nom2=${encodeURIComponent(t.nomLong)}&points=${encodeURIComponent(t.points.slice(-40).join(","))}&depuis=${t.depuis}`;
+        + `&nom2=${encodeURIComponent(t.nomLong)}&points=${encodeURIComponent(t.points.slice(-40).join(","))}&depuis=${t.depuis}`
+        + (_estCto() ? "" : "&compte=PEA");   // PEA : la cotation de Paris d'abord
       d = await (await fetch(url, { cache: "no-store" })).json();
       t.candidats = (d && d.ok && d.candidats) || [];
       if (d && d.principal) t.secteur = ctoSecteurYahoo(d.principal.secteur, d.principal.industrie);

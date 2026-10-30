@@ -944,6 +944,9 @@ _PLACE_DU_PAYS = {"FR": ".PA", "DE": ".DE", "NL": ".AS", "IT": ".MI", "BE": ".BR
 # moins suivis) : Micron passait sur MU.VI, de meme racine que MU (Nasdaq),
 # plutot que MTE.DE, quand Yahoo rendait MU.VI dans sa recherche (12/10/2026)
 _PLACES_PRINCIPALES = {".DE", ".PA", ".AS", ".MI", ".BR", ".MC", ".LS", ".IR"}
+# Nom affiché d'une cotation du catalogue (titres_connus), comme exchDisp de Yahoo
+_NOMS_PLACES = {".DE": "XETRA", ".PA": "Paris", ".AS": "Amsterdam", ".MI": "Milan", ".BR": "Brussels",
+                ".MC": "Madrid", ".LS": "Lisbon", ".IR": "Irish", ".VI": "Vienna", ".HE": "Helsinki"}
 
 
 def _rang_place(suf: str, pays: str) -> tuple:
@@ -1018,21 +1021,32 @@ def _ecart_historique(symbol: str, points: list, depuis: str):
     return statistics.median(ecarts) if ecarts else None
 
 
-def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis: str = "") -> dict:
+def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis: str = "",
+                   compte: str = "") -> dict:
     """{ok, principal: {symbol, nom}, candidats: [{symbol, nom, place, prix, devise, ecart}]}
     candidats : cotations en euros verifiees, la plus probable en premier.
     nom2 : nom long (description du releve) ; points : prix payes
     [(AAAA-MM-JJ, prix)] et depuis : premier ordre, pour la verification par
     l'historique (`ecart` : ecart median, None si non verifiee).
-    Sans ISIN (CSV de Fortuneo) : recherche par le nom seul, mêmes vérifications."""
+    Sans ISIN (CSV de Fortuneo) : recherche par le nom seul, mêmes vérifications.
+    compte : « PEA » fait passer Paris devant pour un titre sans place du pays
+    (ETF irlandais ou luxembourgeois, nom sans ISIN)."""
     isin = (isin or "").strip().upper()
     if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", isin):
         if isin or not (nom or "").strip():
             return {"ok": False, "error": "ISIN invalide"}
         isin = ""
+    # Catalogue des titres (titres_connus : 4.4.37) : les cotations connues de
+    # l'ISIN, ou, sans ISIN, celles du titre reconnu à son nom (« CIE DE
+    # SAINT-GOBAIN » -> SGO.PA, que Yahoo ne trouvait pas)
+    import titres_connus
+    connus = [isin] if isin else (titres_connus.par_nom(nom) or titres_connus.par_nom(nom2))
+    if not isin and len(connus) == 1:
+        isin = connus[0]
+    catalogue = [s for i in connus for s in titres_connus.cotations(i)]
     points = [(d, p) for d, p in (points or []) if p and p > 0]
     depuis = depuis or min((d for d, _ in points), default="")
-    cle = (isin or "NOM:" + nom) + "|" + depuis + "|" + ",".join(f"{d}:{p:g}" for d, p in points)
+    cle = (isin or "NOM:" + nom) + "|" + compte + "|" + depuis + "|" + ",".join(f"{d}:{p:g}" for d, p in points)
     now = time.time()
     with _lock:
         c = _isin_cache.get(cle)
@@ -1048,6 +1062,10 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
     pnom = prin.get("shortname") or prin.get("longname") or ""
     ref = _mots(pnom) | _mots(nom) | _mots(nom2)
     pays = _PLACE_DU_PAYS.get(isin[:2])
+    # PEA : Paris, sauf si le titre est coté dans son pays (STMicroelectronics,
+    # néerlandaise, n'est cotée qu'à Paris et Milan : Xetra passait devant)
+    if compte == "PEA" and not (pays and any(s.endswith(pays) for s in catalogue)):
+        pays = pays if pays and not catalogue else ".PA"
     cands, faites = {}, set()
 
     def chercher(q):
@@ -1075,10 +1093,22 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
                         "place": x.get("exchDisp") or x.get("exchange") or "",
                         "_cle": (niveau, -int(racine), place, -mots)}
 
-    for q in (isin, base, nom, pnom, nom2, _nom_court(nom2), *([] if isin else _variantes_nom(nom))):
+    # Le catalogue connaît la cotation sur la place voulue : la recherche de
+    # l'ISIN suffit pour les autres (plus besoin des recherches par le nom)
+    suffit = catalogue and (pays is None or any(s.endswith(pays) for s in catalogue))
+    for q in ((isin,) if suffit else
+              (isin, base, nom, pnom, nom2, _nom_court(nom2), *([] if isin else _variantes_nom(nom)))):
         chercher(q)
-    for r in sorted({c["symbol"].split(".")[0] for c in cands.values()})[:3]:
-        chercher(r)   # second saut : PPFB.SG -> PPFB.DE
+    if not suffit:
+        for r in sorted({c["symbol"].split(".")[0] for c in cands.values()})[:3]:
+            chercher(r)   # second saut : PPFB.SG -> PPFB.DE
+    # Cotations du catalogue devant toutes les autres, rangées par place
+    for s in catalogue:
+        suf = "." + s.rsplit(".", 1)[-1]
+        if suf in _PLACES_EUR:
+            niveau, place = _rang_place(suf, pays)
+            cands[s] = {"symbol": s, "nom": (cands.get(s) or {}).get("nom") or pnom or nom,
+                        "place": _NOMS_PLACES.get(suf, suf[1:]), "_cle": (niveau - 3, 0, place, 0)}
     # Essai direct de la meme racine sur Xetra : la recherche de Yahoo ne la
     # rend pas toujours (AMZ.SG trouve, AMZ.DE absent, le 12/10/2026)
     essais = {}
@@ -1086,7 +1116,7 @@ def cotations_euro(isin: str, nom: str = "", nom2: str = "", points=None, depuis
         r = c["symbol"].split(".")[0]
         if r + ".DE" not in cands and not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", r):
             essais.setdefault(r + ".DE", c)
-    essais = dict(list(essais.items())[:4])
+    essais = {} if suffit else dict(list(essais.items())[:4])
     if essais:
         trouves = get_prices(list(essais))
         for s, c in essais.items():
@@ -1507,7 +1537,8 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             depuis = params.get("depuis", [""])[0].strip()
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", depuis):
                 depuis = ""
-            return self._json(200, cotations_euro(isin, nom, nom2, points, depuis))
+            compte = "PEA" if params.get("compte", [""])[0] == "PEA" else ""
+            return self._json(200, cotations_euro(isin, nom, nom2, points, depuis, compte))
 
         if parsed.path == "/users":
             try:

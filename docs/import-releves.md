@@ -2,7 +2,61 @@
 
 Fiche tirée de `CLAUDE.md`. Code : `src/releves.py` (lecture), `ctoImport*` dans
 `index.html` (aperçu, enregistrement), `server.cotations_euro` (cotation en
-euros, voir `docs/modules/cto.md`).
+euros, voir `docs/modules/cto.md`), `src/titres_connus.py` (catalogue des titres).
+
+## CSV seulement, et catalogue des titres (30/10/2026, prévu en 4.4.37)
+
+Demande d'Arthur, après le retour d'un utilisateur : « on se concentre
+uniquement sur les CSV, plus de PDF », et améliorer grandement la
+reconnaissance des titres (Engie, Saint-Gobain… restaient « à choisir »).
+
+* **PDF retirés** : les lecteurs d'avis d'opéré (Fortuneo, BoursoBank, Bourse
+  Direct, Saxo, Degiro, Trade Republic, lecteur universel `_avis_generique`) et
+  pypdf (requirements, les deux specs, THIRD-PARTY-NOTICES) sont supprimés. Un PDF
+  reçoit un message : exporter l'historique des opérations en CSV. Restent le CSV
+  et ses variantes de tableur (.xlsx, .xls, .ods, HTML, XML d'IBKR, .zip) : un
+  CSV repassé par Excel reste le cas courant. Les sections PDF plus bas sont
+  l'historique (code dans git, commit 62fbdea et avant).
+* **Cause des titres non reconnus**, mesurée chez Yahoo le 30/10/2026 : avec
+  l'ISIN, Engie et Saint-Gobain étaient trouvés ; **sans ISIN** (CSV de
+  Fortuneo), « CIE DE SAINT-GOBAIN » et « BNP PARIBAS ACTIONS A » ne donnaient
+  aucun candidat, TotalEnergies et LVMH seulement à Francfort (TOTB.DE, MOH.DE),
+  et STMicroelectronics passait sur Xetra pour un PEA.
+* **Catalogue** (`titres_connus.py`), deux sources :
+  * `TITRES`, à la main (~270) : CAC 40, SBF 120, grandes valeurs d'Europe et des
+    États-Unis, ETF PEA courants, avec les noms qu'écrivent les banques.
+    Vérifié par `python tests/verifier_catalogue.py` (cours en euros, l'ISIN
+    rend ce titre ; Rheinmetall et l'ETF ACWI d'iShares acceptés, voir le script).
+  * `titres_listes.py`, **fabriqué** par `python tests/generer_titres.py
+    <actions Euronext.csv> <Xetra.csv>` à partir des listes officielles
+    (Euronext : Produits, Actions, Télécharger ; Xetra :
+    t7-xetr-allTradableInstruments.csv sur cashmarket.deutsche-boerse.com) :
+    6 405 titres en euros au 30/10/2026 (3 087 actions dont 832 américaines, 2 967
+    ETF, 351 ETC/ETN), chaque ticker vérifié chez Yahoo (cours en euros échangé
+    depuis moins de 60 jours ; 373 écartés). Actions d'Euronext sur leur place
+    (.PA, .AS, .BR, .LS, .MI, .IR), tout Xetra en .DE (cotation des CTO). La
+    liste des ETF d'Euronext ne se télécharge pas (page d'erreur) : les ETF de
+    Paris viennent du catalogue à la main et de la recherche Yahoo. Relancer le
+    générateur de temps en temps (introductions, radiations).
+* **Reconnaissance par le nom** (`par_nom`) : mots du nom sans le bruit des banques
+  et de Xetra (« CIE DE », « ACT.A », « SE », « INH. O.N. », « DL-,01 »…), un
+  titre convient si tous les mots d'un de ses noms sont dans le nom lu ; le plus
+  long l'emporte (Dassault Systèmes, pas Dassault Aviation) ; à égalité, tous
+  (Alphabet A et C), la vérification par les prix tranche. Un nom de fonds (ETF,
+  UCITS, MSCI…) n'est jamais rapproché d'une action (« AXA IM Nasdaq 100 UCITS
+  ETF » n'est pas AXA). Les noms d'ETF de Xetra sont trop abrégés pour servir.
+* **Dans `cotations_euro`** : les cotations du catalogue passent devant celles de
+  la recherche Yahoo, rangées par place ; un nom reconnu donne son ISIN (place du
+  pays, secteur). Quand le catalogue a la cotation de la place voulue, seule la
+  recherche de l'ISIN est faite (0,2 à 0,4 s par titre au lieu de 1 à 2 s).
+  L'interface envoie `compte=PEA` depuis le PEA : Paris passe devant pour un
+  titre sans cotation dans son pays (ETF irlandais, STMicroelectronics). La
+  vérification par les prix payés reste la même pour tous les candidats.
+* **Vérifié** le 30/10/2026 : 28 cas réels (noms de banque, ISIN, actions US,
+  ETF, PEA et CTO) tous sur la bonne cotation ; sur le banc, un CSV Fortuneo
+  fabriqué (6 titres sans ISIN, vraies clôtures) → 6 titres sur Paris,
+  « vérifiés », en 1,8 s, importés ; un PDF → le message. `tests/test_titres.py`
+  (hors ligne).
 
 ## Ce qui a été décidé avec Arthur (12/10/2026, version 4.4.3)
 
@@ -357,9 +411,7 @@ Yahoo (`_vers_eur`, cache par devise et date le temps d'une lecture).
   taxe compris (Crédit Agricole 5 083,45 €), 7 versements (22 000 €), 1 dividende,
   Saint-Gobain « déjà dans Pilote » ; Retour : PEA identique ; second import : 0.
 
-## Dépendance pypdf
+## Dépendance pypdf (retirée)
 
-`pypdf==5.9.0` dans `requirements.txt` (la 5.9.0 est la dernière qui accepte
-Python 3.8, celui du poste de dev ; la CI est en 3.11) et `"pypdf"` dans les
-`hiddenimports` de `build/pilote.spec` (import paresseux dans `texte_pdf`).
-**Branche mac** : ajouter aussi `"pypdf"` à `pilote-mac.spec` à la fusion.
+pypdf servait à lire les PDF jusqu'à la 4.4.36. Retirée avec eux (30/10/2026) :
+plus dans `requirements.txt`, ni dans les `hiddenimports` des deux specs.
