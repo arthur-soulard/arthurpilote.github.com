@@ -38,7 +38,7 @@ restaient « à choisir »), puis « améliore la lecture des PDF et des CSV ».
   * **eToro, XTB, Revolut** (CSV, `_etoro`, `_xtb`, `_revolut`, exemples
     d'Export-To-Ghostfolio) : avant, colonnes à choisir à la main (eToro, XTB)
     ou **plantage** (Revolut). eToro compte en dollars (converti au cours du
-    jour), CFD et cryptos écartés ; XTB : quantité et cours dans « OPEN BUY
+    jour), CFD écartés, cryptos vers la section Crypto (31/10/2026) ; XTB : quantité et cours dans « OPEN BUY
     34/42.5 @ 11.748 », montant dans la devise du compte, retenue à la source
     retirée du dividende de la même seconde ; Revolut : montant divisé par sa
     colonne « FX Rate ». Freetrade a trois colonnes en commun avec Revolut :
@@ -99,6 +99,13 @@ restaient « à choisir »), puis « améliore la lecture des PDF et des CSV ».
   fabriqué (6 titres sans ISIN, vraies clôtures) → 6 titres sur Paris,
   « vérifiés », en 1,8 s, importés. Tests hors ligne : `tests/test_titres.py`,
   `tests/test_releves_courtiers.py`.
+
+## Plateformes crypto (31/10/2026)
+
+Binance, Coinbase, Kraken, Bitpanda, Crypto.com, Revolut (relevé crypto),
+Bitvavo, Delta, et les cryptos d'eToro et de Trade Republic : lus par
+`src/releves_crypto.py`, envoyés dans la section Crypto. Détail et règles :
+`docs/modules/crypto.md`.
 
 ## Ce qui a été décidé avec Arthur (12/10/2026, version 4.4.3)
 

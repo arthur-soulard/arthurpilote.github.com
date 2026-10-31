@@ -37,6 +37,7 @@ Pilote/
 │   ├── pret.py         # Module « Prêt », nom libre (pret.json)
 │   ├── cto.py          # Module « CTO »           (cto.json) : comptes-titres + lecture du CSV Trade Republic
 │   ├── releves.py      # Import des relevés de banque (PDF, CSV, Excel, XML) pour le PEA et les CTO
+│   ├── releves_crypto.py # Exports des plateformes crypto (Binance, Coinbase, Kraken…) pour la section Crypto
 │   ├── titres_connus.py # Catalogue des titres (ISIN, nom -> ticker) pour l'import (docs/import-releves.md)
 │   ├── titres_listes.py # ~6 400 titres Euronext + Xetra (généré par `python tests/generer_titres.py`)
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays

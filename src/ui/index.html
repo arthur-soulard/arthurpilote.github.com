@@ -5274,7 +5274,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <h2 id="cto-cpt-titre">Nouveau CTO</h2>
     <div class="fg"><label>Nom du compte</label>
       <input id="cto-cpt-nom" maxlength="40" placeholder="ex : CTO Trade Republic"></div>
-    <div class="fg"><label>Courtier</label>
+    <div class="fg"><label id="cto-cpt-courtier-lbl">Courtier</label>
       <select id="cto-cpt-courtier" onchange="ctoCompteResume()"></select></div>
     <p class="pac-dim" id="cto-cpt-resume" style="margin:-4px 0 14px"></p>
     <div class="mact">
@@ -13750,10 +13750,59 @@ const COURTIERS = [
     resume: "0,08 %, au moins 2 €",
     source: "moneyvox.fr", verifie: "2026-10-11",
     tarif: { paliers: [{ max: null, fixe: 0, pct: 0.08 }], min: 2, max: 0, gratuit: 0, plan: null } },
-  { id: "trade-republic", nom: "Trade Republic", comptes: ["cto", "pea"], fractions: true,
+  { id: "trade-republic", nom: "Trade Republic", comptes: ["cto", "pea", "crypto"], fractions: true,
     resume: "1 € par ordre ponctuel, plans d'investissement sans frais",
     source: "support.traderepublic.com", verifie: "2026-10-11",
     tarif: { paliers: [{ max: null, fixe: 1, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: 0 } },
+  /* Plateformes crypto (portefeuille crypto seulement, 31/10/2026). Le vrai
+     coût est souvent un écart de cours caché dans le prix, que les exports ne
+     montrent pas : pas d'alerte « frais ≠ grille » sur la crypto
+     (txFraisAttendus). Chiffres concordants de plusieurs comparatifs, relus
+     le 31/10/2026 ; la grille sert d'indication. */
+  { id: "binance", nom: "Binance", comptes: ["crypto"],
+    resume: "0,1 % par ordre au comptant (0,075 % payé en BNB) ; services arrêtés en France depuis juillet 2026 selon plusieurs sources : son historique reste importable",
+    source: "cryptoticker.io, cryptoast.fr", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.1 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "bitpanda", nom: "Bitpanda", comptes: ["crypto"],
+    resume: "environ 1,49 % compris dans le prix affiché, sans frais à part",
+    source: "cryptoast.fr, meilleurtaux.com", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "bitstack", nom: "Bitstack", comptes: ["crypto"],
+    resume: "1,49 % par virement, 2,19 % par carte, moins au-delà de 250 € par mois ; vente sans frais",
+    source: "coinacademy.fr, cryptoactu.com", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 1.49 }], min: 0, max: 0, gratuit: 0, plan: 1.49 } },
+  { id: "bitvavo", nom: "Bitvavo", comptes: ["crypto"],
+    resume: "0,25 % (ordre au marché), 0,15 % (ordre à cours limité) jusqu'à 100 000 € par mois",
+    source: "cryptoactu.com, capitalo.de", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.25 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "coinbase", nom: "Coinbase", comptes: ["crypto"],
+    resume: "achat simple : environ 1,5 à 2 % plus l'écart de cours ; Advanced : 0,40 % à 0,60 %",
+    source: "cryptoticker.io, sinvestir.fr", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 1.49 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "coinhouse", nom: "Coinhouse", comptes: ["crypto"],
+    resume: "0,69 à 0,99 % par virement, 1,49 à 1,99 % par carte, 1,09 à 1,29 % à la vente",
+    source: "connectbanque.com, broker-forex.fr", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.99 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "cryptocom", nom: "Crypto.com", comptes: ["crypto"],
+    resume: "environ 0,80 % par achat dans l'application, écart de cours compris dans le prix",
+    source: "cryptoticker.io", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0.8 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "delta", nom: "Delta (appli de suivi)", comptes: ["crypto"],
+    resume: "appli de suivi, sans frais propres : les frais de tes plateformes sont dans son export CSV",
+    source: "support.delta.app", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 0 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "etoro", nom: "eToro", comptes: ["crypto"],
+    resume: "1 % à l'achat et 1 % à la vente, plus l'écart de cours",
+    source: "cryptoast.fr, ideal-investisseur.fr", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 1 }], min: 0, max: 0, gratuit: 0, plan: null } },
+  { id: "kraken", nom: "Kraken", comptes: ["crypto"],
+    resume: "application : 1 % (achat immédiat ou programmé) plus l'écart de cours ; Kraken Pro : 0,40 % à 0,80 % depuis juillet 2026",
+    source: "kraken.com/features/fee-schedule", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 1 }], min: 0, max: 0, gratuit: 0, plan: 1 } },
+  { id: "revolut", nom: "Revolut", comptes: ["crypto"],
+    resume: "forfait Standard : 1,49 % jusqu'à 10 000 €, plus l'écart de cours ; moins avec les forfaits payants",
+    source: "revolut.com, frais d'échange de cryptos", verifie: "2026-10-31",
+    tarif: { paliers: [{ max: null, fixe: 0, pct: 1.49 }], min: 0, max: 0, gratuit: 0, plan: null } },
 ];
 const COURTIER_PERSO = "perso";   // grille saisie à la main
 
@@ -13803,6 +13852,8 @@ function txFraisAttendus(t) {
   const cfg = typeof pacCfg === "function" ? pacCfg() : null;
   const tarif = cfg && cfg.tarif;
   if (!tarif || (t.type !== "Achat" && t.type !== "Vente") || normDate(t.date) > todayISO()) return null;
+  // Crypto : l'écart de cours, vrai coût, n'est pas dans les exports
+  if (typeof _estCrypto === "function" && _estCrypto()) return null;
   if (t.origine === "division") return null;
   if (t.origine && t.origine !== "offert" && TX_ORIGINES[t.origine]) return tarif.plan == null ? null : tarif.plan;
   const m = brutOrdre(t);
@@ -14330,7 +14381,7 @@ function pacRenderCfg() {
 function pacCourtierHtml(cfg) {
   const cto = _estCto();
   const k = courtierDe(cfg.courtier);
-  const opts = COURTIERS.filter(x => x.comptes.includes(cto ? "cto" : "pea"))
+  const opts = COURTIERS.filter(x => x.comptes.includes(_estCrypto() ? "crypto" : cto ? "cto" : "pea"))
     .map(x => `<option value="${x.id}"${x.id === cfg.courtier ? " selected" : ""}>${escHtml(x.nom)}</option>`).join("");
   const sel = `<div class="fg"><label>Courtier</label><select onchange="pacSetCourtier(this.value)">
       ${cto ? "" : `<option value=""${cfg.courtier ? "" : " selected"}>Réglage libre : ordre gratuit et taux</option>`}
@@ -22875,12 +22926,20 @@ const CRYPTO_CATALOGUE = [
   ["ICP", "Internet Computer"], ["FIL", "Filecoin"], ["ALGO", "Algorand"], ["XTZ", "Tezos"],
 ].map(([sym, nom, y]) => ({ sym, nom, ticker: (y || sym) + "-EUR" }));
 /* Cotation d'une crypto d'un relevé : faux ISIN de Trade Republic (« XF000 »
-   + symbole : XF000BTC0017), sinon son nom ; "" si inconnue */
-function cryptoTickerDe(isin, nom) {
+   + symbole : XF000BTC0017), sinon son nom ou son symbole (« BTC », comme
+   l'écrivent Binance, Coinbase, Kraken… : releves_crypto.py) ; "" si inconnue */
+function cryptoCatalogueDe(isin, nom) {
   const m = /^XF000([A-Z]{2,5}?)0/.exec(String(isin || "").toUpperCase());
   const n = String(nom || "").trim().toLowerCase();
-  const c = CRYPTO_CATALOGUE.find(x => (m && x.sym === m[1]) || (n && x.nom.toLowerCase() === n));
-  return c ? c.ticker : (m ? m[1] + "-EUR" : "");
+  return CRYPTO_CATALOGUE.find(x => (m && x.sym === m[1]) || (n && (x.nom.toLowerCase() === n || x.sym.toLowerCase() === n))) || null;
+}
+function cryptoTickerDe(isin, nom) {
+  const c = cryptoCatalogueDe(isin, nom);
+  if (c) return c.ticker;
+  const m = /^XF000([A-Z]{2,5}?)0/.exec(String(isin || "").toUpperCase());
+  if (m) return m[1] + "-EUR";
+  const sym = String(nom || "").trim().toUpperCase();
+  return /^[A-Z0-9]{2,10}$/.test(sym) ? sym + "-EUR" : "";
 }
 
 /* Les données d'un CTO : celles de S s'il est affiché, sinon celles rangées */
@@ -23509,7 +23568,7 @@ function ctoRenderBarre() {
   // marqués « pas une erreur ») : un clic montre le détail (ouvrirEcartsFrais)
   const ecarts = (S.transactions || []).filter(t => txFraisEcart(t) != null).length;
   // Plus de liste des CTO ici (4.4.2) : chacun a sa section dans la barre latérale
-  bar.innerHTML = `<span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
+  bar.innerHTML = `<span class="cto-bar-courtier"><b>${escHtml(k ? k.nom : ctoEstCrypto(c) ? "Autre plateforme" : "Grille personnalisée")}</b>${k ? " · " + escHtml(k.resume) : ""}</span>
     ${ecarts ? `<button type="button" class="cto-bar-alerte" onclick="ouvrirEcartsFrais()" title="Voir le détail"><i class="ph ph-warning"></i>
       ${ecarts} ordre${ecarts > 1 ? "s" : ""} aux frais différents de la grille</button>` : ""}
     <span class="cto-bar-sp"></span>
@@ -23537,11 +23596,17 @@ function ctoOuvrirCompte(id, crypto) {
   const sel = document.getElementById("cto-cpt-courtier");
   // Création : aucun courtier présélectionné (c'était Trade Republic, celui
   // d'Arthur, jusqu'à la 4.4.15) ; l'enregistrement demande d'en choisir un
-  sel.innerHTML = (c ? "" : `<option value="">Choisis ton courtier…</option>`)
-    + COURTIERS.filter(x => x.comptes.includes("cto"))
+  // Crypto : ses propres plateformes (Binance, Coinbase…), pas les courtiers
+  document.getElementById("cto-cpt-courtier-lbl").textContent = _ctoCreeCrypto ? "Plateforme" : "Courtier";
+  // Portefeuille crypto créé en 4.4.43 avec un courtier de CTO : à rechoisir
+  const dispo = !c || !c.courtier || c.courtier === COURTIER_PERSO
+    || COURTIERS.some(x => x.id === c.courtier && x.comptes.includes(_ctoCreeCrypto ? "crypto" : "cto"));
+  sel.innerHTML = (dispo && c ? "" : `<option value="">${_ctoCreeCrypto ? "Choisis ta plateforme…" : "Choisis ton courtier…"}</option>`)
+    + COURTIERS.filter(x => x.comptes.includes(_ctoCreeCrypto ? "crypto" : "cto"))
+    .sort((a, b) => a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" }))
     .map(x => `<option value="${x.id}">${escHtml(x.nom)}</option>`).join("")
-    + `<option value="${COURTIER_PERSO}">Autre : grille à saisir (Stratégie → Réglages)</option>`;
-  sel.value = c ? (c.courtier || COURTIER_PERSO) : "";
+    + `<option value="${COURTIER_PERSO}">${_ctoCreeCrypto ? "Autre plateforme" : "Autre : grille à saisir (Stratégie → Réglages)"}</option>`;
+  sel.value = c && dispo ? (c.courtier || COURTIER_PERSO) : "";
   document.getElementById("cto-cpt-suppr").style.display = c ? "" : "none";
   ctoCompteResume();
   openOvTop("ov-cto-compte");
@@ -23552,15 +23617,17 @@ function ctoCompteResume() {
   const k = courtierDe(v);
   const d = k ? new Date(k.verifie + "T00:00:00").toLocaleDateString("fr-FR") : "";
   document.getElementById("cto-cpt-resume").textContent = !v ? "" : k
-    ? k.resume + (k.fractions ? ". Parts fractionnées et plans programmés : la Stratégie proposera le réglage des plans." : ".")
+    ? k.resume + (k.fractions && !_ctoCreeCrypto ? ". Parts fractionnées et plans programmés : la Stratégie proposera le réglage des plans." : ".")
       + " Tarif relevé le " + d + " (" + k.source + ")."
+    : _ctoCreeCrypto ? "Plateforme hors liste : ses opérations s'importent quand même (CSV), ou se saisissent à la main."
     : "Tu saisiras la grille de frais dans Stratégie → Cibles et courtier.";
 }
 async function ctoEnregistrerCompte() {
   const nom = document.getElementById("cto-cpt-nom").value.trim();
   if (!nom) { showToastModern("Donne un nom au compte", "warn"); return; }
   const courtier = document.getElementById("cto-cpt-courtier").value;
-  if (!courtier) { showToastModern("Choisis ton courtier, ou « Autre » s'il n'est pas dans la liste", "warn"); return; }
+  if (!courtier) { showToastModern(_ctoCreeCrypto ? "Choisis ta plateforme, ou « Autre plateforme » si elle n'est pas dans la liste"
+    : "Choisis ton courtier, ou « Autre » s'il n'est pas dans la liste", "warn"); return; }
   const k = courtierDe(courtier);
   let cible = _ctoEdition;
   if (_ctoEdition) {
@@ -23954,6 +24021,15 @@ async function ctoImportLancer() {
 function _ctoImpCompteIci() { return _estCrypto() ? "CRYPTO" : _estCto() ? "CTO" : "PEA"; }
 function _ctoImpSeparer(r) {
   const ici = _ctoImpCompteIci();
+  // Section Crypto : les titres d'un relevé sans compte (actions, ETF d'une
+  // banque) n'y entrent pas ; ils s'importent depuis le PEA ou un CTO
+  if (ici === "CRYPTO") {
+    const titres = r.operations.filter(o => !o.compte && ["Achat", "Vente", "Dividende", "Division"].includes(o.type) && o.classe !== "crypto");
+    if (titres.length) {
+      r.operations = r.operations.filter(o => !titres.includes(o));
+      r.ignores = Object.assign({}, r.ignores, { titres_hors_crypto: titres.length });
+    }
+  }
   const autres = r.operations.filter(o => o.compte && o.compte !== ici);
   r.operations = r.operations.filter(o => !o.compte || o.compte === ici);
   r.inconnues = (r.inconnues || []).filter(x => !x.compte || x.compte === ici);
@@ -24090,6 +24166,8 @@ async function ctoImportAnalyser(r) {
     // Republic ou nom), pas de /isin qui ne cherche que des titres
     if (t.classe === "crypto") {
       t.ticker = cryptoTickerDe(isin, t.nom);
+      const cat = cryptoCatalogueDe(isin, t.nom);
+      if (cat) t.nom = cat.nom;   // « Bitcoin » plutôt que « BTC »
       t.candidats = t.ticker ? [{ symbol: t.ticker, place: "Crypto", prix: null, nom: t.nom }] : [];
       if (t.ticker && (S.positions || []).some(p => normalizeTicker(p.ticker) === t.ticker)) t.connu = true;
       return;
@@ -24190,7 +24268,9 @@ function ctoImportRender() {
     <span>${compte(o => o.deja && o.type !== "Taxe", "déjà dans Pilote")}</span>
     <span>${compte(o => o.type === "Achat", "achat(s)")}, ${compte(o => o.type === "Vente", "vente(s)")}, ${compte(o => o.type === "Dividende", "dividende(s)")}${I.ops.some(o => o.type === "Division") ? ", " + compte(o => o.type === "Division", "division(s)") : ""}${versements ? ", " + versements + " versement(s) ou retrait(s)" + (_estCto() ? " ignoré(s) : le CTO les déduit des ordres" : "") : ""}</span>
     ${I.ignores.especes ? `<span>${I.ignores.especes} ligne(s) d'espèces ignorée(s) (carte, virements, intérêts)</span>` : ""}
-    ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) hors actions et ETF ignorée(s)</span>` : ""}
+    ${I.ignores.classe ? `<span>${I.ignores.classe} ligne(s) ${_estCrypto() ? "hors cryptos (marge, contrats à terme, actions ou métaux de la plateforme)" : "hors actions et ETF"} ignorée(s)</span>` : ""}
+    ${I.ignores.transferts_crypto ? `<span>${I.ignores.transferts_crypto} envoi(s) ou réception(s) de crypto ignoré(s) : la crypto a été achetée ailleurs, importe aussi l'export de cette plateforme</span>` : ""}
+    ${I.ignores.titres_hors_crypto ? `<span>${I.ignores.titres_hors_crypto} opération(s) sur des actions ou des ETF laissée(s) de côté : importe ce fichier depuis ton PEA ou ton CTO</span>` : ""}
     ${I.ignores.transferts ? `<span>${I.ignores.transferts} transfert(s) de titres depuis une autre banque ignoré(s) : leur achat d'origine vient de l'ancienne banque</span>` : ""}
     ${I.ignores.detachements ? `<span>${I.ignores.detachements} détachement(s) de coupon ignoré(s) : le dividende est sur la ligne d'encaissement</span>` : ""}
     ${I.ignores.conversion ? `<span>${I.ignores.conversion} ligne(s) en devise non reprise(s) : pas de cours de change ce jour-là, saisis-les à la main</span>` : ""}

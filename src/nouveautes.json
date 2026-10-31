@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.44",
+      "date": "2026-10-31",
+      "titre": "Tes plateformes crypto, et leurs exports",
+      "nouveau": [
+        "Import des exports de Binance, Coinbase, Kraken, Bitpanda, Crypto.com, Revolut, Bitvavo et de l'appli Delta, dans la section Crypto : achats, ventes, échanges entre cryptos (BTC contre ETH, achats en USDT) et frais, convertis en euros.",
+        "Les récompenses (staking, intérêts, cashback, parrainage) s'importent comme des achats offerts : tes quantités collent à celles de ta plateforme.",
+        "Les cryptos d'un export eToro, ou d'un tableau quelconque où Pilote reconnaît leur nom, vont aussi dans la section Crypto."
+      ],
+      "ameliore": [
+        "Le portefeuille crypto propose ses propres plateformes (Binance, Bitpanda, Bitstack, Bitvavo, Coinbase, Coinhouse, Crypto.com, Delta, eToro, Kraken, Revolut, Trade Republic) au lieu des courtiers de bourse. Choisis la tienne dans « Réglages du compte ».",
+        "Plus d'alerte « frais ≠ grille » sur les cryptos : leur vrai coût est un écart de cours que les exports ne montrent pas.",
+        "Import : les envois de crypto entre portefeuilles sont comptés à part, avec le conseil d'importer aussi l'export de l'autre plateforme."
+      ]
+    },
+    {
       "version": "4.4.43",
       "date": "2026-10-31",
       "titre": "Une section Crypto",

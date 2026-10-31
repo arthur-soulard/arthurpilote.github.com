@@ -1725,7 +1725,8 @@ def _revolut(entetes, lignes, lot):
 def _etoro(entetes, lignes, lot):
     """eToro, activité du compte : Date (jj/mm/aaaa), Type, Details
     (« NKE/USD »), Amount (en dollars, la devise du compte eToro), Units, Asset
-    type. Les CFD et cryptos ne sont pas repris (hors du champ de Pilote)."""
+    type. Les CFD ne sont pas repris ; les cryptos vont dans la section
+    Crypto (compte « CRYPTO », 31/10/2026)."""
     c = {k: _col(entetes, k) for k in ("date", "type", "details", "amount", "units", "asset type")}
     for r in lignes:
         v = lambda k: r[c[k]].strip() if 0 <= c[k] < len(r) else ""
@@ -1737,13 +1738,17 @@ def _etoro(entetes, lignes, lot):
         tk = det.split("/")[0].strip().upper() if "/" in det else ""
         usd = lambda x: _vers_eur(abs(x), "USD", date)
         if typ in ("open position", "position closed") and tk:
-            if classe and classe not in ("stocks", "etf", "etfs"):
+            crypto = classe in ("crypto", "cryptocurrency", "cryptocurrencies")
+            if classe and classe not in ("stocks", "etf", "etfs") and not crypto:
                 lot.ignores["classe"] = lot.ignores.get("classe", 0) + 1
                 continue
             qty, eur = abs(_n(v("units")) or 0), usd(mt)
             if qty and eur:
-                lot.ajoute("Achat" if typ == "open position" else "Vente", date, "", tk, qty, None, eur,
-                           quand=_date_fr(v("date")[:10]) + "T" + v("date")[11:19])
+                op = lot.ajoute("Achat" if typ == "open position" else "Vente", date, "", tk, qty, None, eur,
+                                quand=_date_fr(v("date")[:10]) + "T" + v("date")[11:19],
+                                classe="crypto" if crypto else None)
+                if crypto and op:
+                    op["compte"] = "CRYPTO"
             elif not eur:
                 lot.ignores["conversion"] = lot.ignores.get("conversion", 0) + 1
         elif typ == "dividend" and tk and mt > 0:
@@ -1864,6 +1869,9 @@ _ENTETES_CONNUS = {nm for noms in _SYNONYMES.values() for nm in noms} | {
     "buy/sell", "libelle", "courtage/prelevement", "instrument isin", "event", "no. of shares",
     "settledate", "fx", "mouvements", "mutatie", "change", "solde", "debit", "credit", "qte"}
 
+import releves_crypto  # noqa: E402  (plateformes crypto ; il importe ce module en retour)
+_ENTETES_CONNUS |= releves_crypto.ENTETES
+
 
 def _ligne_entetes(lignes: list) -> int:
     """Indice de la ligne d'en-tete : la premiere ne l'est pas toujours (titre,
@@ -1924,9 +1932,12 @@ def _universel(entetes, lignes, lot, colonnes):
                     lot.ignores["conversion"] = lot.ignores.get("conversion", 0) + 1
                 continue
             # Cours du fichier tel quel (au millieme) quand il est en euros
-            lot.ajoute(sens, date, g(r, "isin").upper(), g(r, "nom"), qty, cours if dev == "EUR" and cours else None,
-                       brut, frais, quand=quand,
-                       ref=("u:" + ref) if ref else "", classe=_classe(g(r, "nom")))
+            crypto = not g(r, "isin") and releves_crypto.est_crypto(g(r, "nom"))
+            op = lot.ajoute(sens, date, g(r, "isin").upper(), g(r, "nom"), qty, cours if dev == "EUR" and cours else None,
+                            brut, frais, quand=quand,
+                            ref=("u:" + ref) if ref else "", classe="crypto" if crypto else _classe(g(r, "nom")))
+            if crypto and op:
+                op["compte"] = "CRYPTO"
         elif sens in ("Dividende", "Versement", "Retrait") and mt:
             # Conversion impossible (pas de cours de change ce jour-la) : la ligne
             # n'est pas reprise et l'ecran le dit ; elle valait 0 EUR jusqu'en 4.4.20
@@ -1978,6 +1989,10 @@ def lire_tableau(lignes: list, nom: str = "", colonnes: dict = None) -> dict:
                 o["banque"] = "Trade Republic"
         return r
     if colonnes is None:
+        # Plateformes crypto (Binance, Coinbase, Kraken…) : releves_crypto
+        r = releves_crypto.lire(entetes, corps)
+        if r:
+            return r
         if "buy/sell" in entetes or ("type" in entetes and "settledate" in entetes and "amount" in entetes):
             lot = _Lot("Interactive Brokers")
             lot.inconnues = []

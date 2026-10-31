@@ -69,6 +69,58 @@ catalogue), sans appel à `/isin`. Tests : `tests/test_releves.py`,
 `TradeRepublicCrypto` (lignes inventées : aucune vraie ligne de crypto d'Arthur
 n'a encore été essayée).
 
+## Plateformes crypto et leurs exports (31/10/2026, demande d'Arthur)
+
+« Tu as mis les mêmes courtiers que les CTO, or c'est différent » : le
+portefeuille crypto propose ses **plateformes**, celles de `COURTIERS` dont
+`comptes` contient `"crypto"` : Binance, Bitpanda, Bitstack, Bitvavo,
+Coinbase, Coinhouse, Crypto.com, Delta (appli de suivi, ajoutée à sa demande),
+eToro, Kraken, Revolut, Trade Republic, et « Autre plateforme ». Le champ
+s'appelle « Plateforme » (`cto-cpt-courtier-lbl`). Un portefeuille créé en
+4.4.43 avec un courtier de CTO voit la liste vide jusqu'à ce qu'il en
+rechoisisse une (`dispo`).
+
+* **Tarifs** : relevés le 31/10/2026 dans plusieurs comparatifs (les pages des
+  plateformes se contredisent souvent : écart de cours caché dans le prix,
+  paliers). Ils servent d'indication dans la barre du compte.
+* **Pas d'alerte « frais ≠ grille »** sur la crypto (`txFraisAttendus` rend
+  null) : le vrai coût est un écart de cours que les exports ne montrent pas,
+  l'alerte sonnerait à tort.
+* Binance : arrêt de ses services en France au 1er juillet 2026 selon plusieurs
+  sources (non confirmé sur son site) ; gardé pour importer son historique.
+
+**Lecteur** : `src/releves_crypto.py`, appelé en tête de
+`releves.lire_tableau` (reconnaissance par les colonnes, `_SIGNES`). Formats :
+Binance (relevé de compte « Transaction History », lignes d'un même ordre
+regroupées par seconde ; historique des ordres, ancien et nouveau), Coinbase
+(lignes de titre au-dessus de l'en-tête, montants « €1,234.56 »), Kraken
+(ledgers regroupés par `refid`, trades), Bitpanda (actions et métaux ignorés),
+Crypto.com (application, `Native Amount` = valeur en euros), Revolut (relevé
+crypto), Bitvavo, Delta. eToro (`releves._etoro`) et le lecteur universel
+envoient aussi leurs cryptos dans la section (nom reconnu : `est_crypto`).
+Colonnes et types relevés dans les lecteurs de BittyTax (sur de vrais
+exports) ; Bitvavo et Delta d'après leur documentation.
+
+Règles (en tête de `releves_crypto.py`) :
+* échange entre cryptos (BTC → ETH, achat en USDT) = une vente et un achat, à
+  la valeur en euros de l'export, sinon au cours de clôture du jour (Yahoo,
+  `cours_eur`) ;
+* frais pris sur la crypto reçue : quantité nette, frais en euros ; payés dans
+  une troisième crypto (BNB) : celle-ci est vendue d'autant ;
+* **récompense** (staking, intérêts, cashback, parrainage) = achat « offert »
+  (`origine: "offert"`) à sa valeur du jour : les quantités suivent la
+  plateforme, comme les actions offertes de Trade Republic ;
+* envoi ou réception de crypto : ignoré, compté (`transferts_crypto`, dit à
+  l'écran : « importe aussi l'export de cette plateforme ») ;
+* toute opération porte `compte: "CRYPTO"`. Depuis le PEA ou un CTO, l'import
+  propose de l'envoyer dans la section Crypto ; depuis la Crypto, les actions
+  d'un relevé de banque restent dehors (`titres_hors_crypto`).
+
+Tests : `tests/test_releves_crypto.py` (exports fictifs, cours fixés). Vérifié
+au banc : un export Coinbase importé dans la section (achat, staking en
+« offert », envoi ignoré, Solana reconnu). **Aucun vrai export d'une
+plateforme n'a encore été essayé.**
+
 ## Tuiles et Patrimoine
 
 * `cryptoWidgets(id)` (appelée par `ctoSyncWidgets`) : `crypto:<id>` (valeur,
@@ -89,7 +141,7 @@ relu sur le disque), trois tuiles, ligne du Patrimoine, thèmes clair et sombre.
 ## Reste à voir
 
 * Un vrai export Trade Republic avec des cryptos (nom exact de `asset_class`,
-  frais d'un ordre de crypto).
+  frais d'un ordre de crypto), et un vrai export de chaque plateforme.
 * Les mini-courbes « 30j » des Positions ne sont demandées qu'au lancement,
   pour le PEA : vides sur un CTO comme sur la Crypto (`fetchSparklines`).
 * Pas d'onglet Plan d'épargne (achats programmés) ni Wishlist pour l'instant.
