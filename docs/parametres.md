@@ -27,6 +27,19 @@ titre « Mes modules » et une entrée par module, puis un trait et les réglage
 | donnees    | dossier (chemin en clair + Ouvrir), export/import, réinitialisation, version |
 | maj        | version installée, vérification, version proposée, historique       |
 
+**Annuler / Enregistrer (4.4.41, 31/10/2026).** Deux sortes de réglages : ceux
+enregistrés dès le clic (thème, taille du texte, modules, masqués, listes de Mes
+comptes et Sports, tuiles…) et ceux que seul `saveConfig()` enregistre : prénom,
+banque, date d'ouverture, couleur d'accent, PIN. L'accent s'applique à l'écran dès
+qu'on clique une pastille (aperçu) : jusqu'à la 4.4.40, « Fermer » le laissait
+affiché sans l'enregistrer (il revenait au lancement suivant), et Arthur trouvait que
+Fermer et Enregistrer faisaient la même chose. Le bouton s'appelle « Annuler », et
+`closeOv("ov-config")` réapplique `S.uiPrefs.accent` : toute fermeture (Annuler, Échap,
+clic à côté, renvois vers un onglet) retire l'aperçu ; `saveConfig` pose la nouvelle
+couleur dans `S.uiPrefs` avant de fermer. Les champs texte et le PIN sont relus de
+`S` / vidés à chaque ouverture (`openConfig`) : rien à défaire. Choix d'Arthur parmi
+trois pistes (les deux autres : tout enregistrer au clic, ou demander en fermant).
+
 `openConfig()` reste le point d'entrée historique (ouvre sur `general`). Les onglets
 Mes comptes et Sports ont un bouton ⚙ dans leur barre d'actions qui ouvre directement
 leur section.

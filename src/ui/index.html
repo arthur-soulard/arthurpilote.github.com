@@ -4899,7 +4899,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
 
     <div class="mact">
-      <button class="btn btn-ghost" onclick="closeOv('ov-config')">Fermer</button>
+      <button class="btn btn-ghost" onclick="closeOv('ov-config')">Annuler</button>
       <button class="btn btn-primary" onclick="saveConfig()">Enregistrer</button>
     </div>
   </div>
@@ -10239,6 +10239,9 @@ function openOvTop(id) {
 
 function closeOv(id) {
   document.getElementById(id).classList.remove("open");
+  // Paramètres fermés sans Enregistrer : la couleur essayée s'en va (saveConfig
+  // a déjà mis la nouvelle dans S.uiPrefs quand on enregistre)
+  if (id==="ov-config") applyAccent((S.uiPrefs && S.uiPrefs.accent) || ACCENT_DEFAULT);
   if (id==="ov-pos") {
     /* Restaurer l'état du modal position pour la prochaine ouverture */
     ["f-prix","f-qty","f-frais","f-date","f-pret"].forEach(fid=>{
