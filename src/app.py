@@ -1573,27 +1573,27 @@ def main() -> int:
             try:
                 from PIL import Image, ImageDraw, ImageFont
                 img = Path(tempfile.gettempdir()) / "pilote_essai_ocr.png"
-                # Ecran Details de FitDays comme celui d'Arthur le 14/10/2026 :
+                # Ecran Details de FitDays construit comme une vraie capture du 14/10/2026 :
                 # bloc « Contraste » EN HAUT (ecarts, libelle sous le chiffre,
                 # date d'une autre pesee), libelles sur deux lignes, valeurs
-                # colorees. Attendu (14/10/2026) : poids 75.9, imc 24.0, graisse
-                # 20.3, graisse_viscerale 7.0, age_corporel 24, pas de date.
+                # colorees. Attendu (valeurs inventees) : poids 72.6, imc 23.1, graisse
+                # 17.6, graisse_viscerale 6.0, age_corporel 27, pas de date.
                 im = Image.new("RGB", (1170, 1500), "white")
                 d = ImageDraw.Draw(im)
                 police = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 46)
                 turq, gris, vert, pale, orange = (102, 204, 204), (120, 120, 120), (55, 142, 40), (80, 212, 58), (255, 144, 0)
                 for xy, t, c in (((98, 40), "Contraste 08:48 13/09/2026", turq),
-                                 ((150, 150), "3.4 kg", turq), ((470, 150), "1.4%", turq), ((900, 150), "1.0", turq),
+                                 ((150, 150), "2.1 kg", turq), ((470, 150), "0.8%", turq), ((900, 150), "0.6", turq),
                                  ((180, 250), "Poids", gris), ((480, 230), "Graisse", gris),
                                  ((480, 280), "corporelle", gris), ((900, 250), "IMC", gris),
                                  ((225, 420), "Détails", turq),
-                                 ((242, 560), "Poids", gris), ((780, 560), "75.9 kg", vert),
-                                 ((242, 740), "IMC", gris), ((850, 740), "24.0", vert),
-                                 ((242, 895), "Graisse", gris), ((800, 925), "20.3 %", vert),
+                                 ((242, 560), "Poids", gris), ((780, 560), "72.6 kg", vert),
+                                 ((242, 740), "IMC", gris), ((850, 740), "23.1", vert),
+                                 ((242, 895), "Graisse", gris), ((800, 925), "17.6 %", vert),
                                  ((242, 955), "corporelle", gris),
-                                 ((242, 1075), "Graisse", gris), ((880, 1105), "7.0", pale),
+                                 ((242, 1075), "Graisse", gris), ((880, 1105), "6.0", pale),
                                  ((242, 1135), "Viscérale", gris),
-                                 ((242, 1290), "Âge corporel", gris), ((900, 1290), "24", orange)):
+                                 ((242, 1290), "Âge corporel", gris), ((900, 1290), "27", orange)):
                     d.text(xy, t, fill=c, font=police)
                 im.save(img)
                 print(f"[ocr] disponible : {sante.ocr_available()}", flush=True)

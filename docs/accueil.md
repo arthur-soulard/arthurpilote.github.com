@@ -17,7 +17,8 @@ d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arri
 Puis la date en italique. Juste après le prénom, la bulle **« Une idée ? »**
 (voir plus bas). **À droite de la salutation** (4.3.19), l'un sous l'autre :
 les utilisateurs (`#home-users`, cliquables pour basculer + « Nouvel utilisateur »),
-les boutons Modifier les tuiles / Paramètres / Téléverser vers clé USB, puis
+les boutons Modifier les tuiles / Paramètres / Téléverser vers clé USB (« Mettre
+en place une sauvegarde » tant que rien n'est en place : `docs/sauvegarde-usb.md`), puis
 l'état de la clé (`#home-usb-state`). Dessous, directement les tuiles,
 chacune avec l'icône de son module (`DASH_ICONS`). Sous 1150 px de large, tout s'empile.
 

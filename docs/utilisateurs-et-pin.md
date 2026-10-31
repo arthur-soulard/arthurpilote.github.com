@@ -27,6 +27,14 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 * **Isolation** : `storage.scan_orphan_data()` exclut tout ce qui vit sous
   `get_app_dir()`. Sans ça l'écran de bienvenue proposerait d'importer les données
   d'un autre utilisateur de la même installation. Ne pas retirer ce filtre.
+  Elle ne descend qu'à 5 niveaux sous Bureau, Documents et Téléchargements
+  (`_fichiers_proches`, 4.4.41) : `rglob` parcourait tout avant de filtrer.
+* **Pas de copie du PEA dans le `localStorage`** (4.4.41, audit du 31/10/2026).
+  Le PEA lu au démarrage passe à `loadState` par la variable `_peaLu`. Avant, il
+  transitait par la clé `pea4_v4`, commune à tous les utilisateurs : si les deux
+  lectures échouaient, l'écran montrait le PEA du dernier utilisateur ouvert.
+  L'ancienne clé est effacée au démarrage. `pea4_v4_var` et `pea4_v4_hist`
+  (cours et historiques Yahoo, régénérables) restent.
 
 ## Code PIN (un par utilisateur)
 

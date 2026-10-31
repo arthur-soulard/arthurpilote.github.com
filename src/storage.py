@@ -422,6 +422,21 @@ def get_user_dir(slug: str = None) -> Path:
 
 
 # ─── Recuperation : scan d'anciens dossiers Donnees ────────────────────────
+def _fichiers_proches(racine: Path, nom: str, profondeur: int = 5):
+    """Les fichiers `nom` a `profondeur` niveaux au plus sous `racine` (lui
+    compris). Jusqu'a la 4.4.41, rglob parcourait tout le Bureau, Documents et
+    Telechargements avant d'ecarter les fichiers trop profonds : long sur un
+    PC bien rempli, au premier lancement."""
+    for dossier, sous, fichiers in os.walk(racine):
+        niveau = len(Path(dossier).relative_to(racine).parts)
+        if niveau >= profondeur - 1:
+            sous[:] = []
+        else:
+            sous[:] = [d for d in sous if d not in ("node_modules", ".git", "__pycache__")]
+        if nom in fichiers:
+            yield Path(dossier) / nom
+
+
 def scan_orphan_data() -> list:
     """
     Cherche d'anciens fichiers pea_data.json sur le PC (cas : exe deplace
@@ -464,7 +479,7 @@ def scan_orphan_data() -> list:
         if not spot.exists():
             continue
         try:
-            for found in spot.rglob(DATA_FILE):
+            for found in _fichiers_proches(spot, DATA_FILE):
                 resolved = found.resolve()
                 if resolved == current_data_path:
                     continue  # ignorer le fichier courant
@@ -473,10 +488,6 @@ def scan_orphan_data() -> list:
                 if resolved in seen:
                     continue
                 seen.add(resolved)
-                # Limite la profondeur
-                rel_parts = found.relative_to(spot).parts
-                if len(rel_parts) > 5:
-                    continue
                 try:
                     sz = found.stat().st_size
                     if sz < 500:

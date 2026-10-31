@@ -35,7 +35,7 @@ Quatre pièges, tous traités — ne pas « simplifier » :
    dès qu'on agrandit. L'ordre de `VARIANTS` encode ce résultat.
    **Et le canal le plus sombre bat le gris (4.3.9).** FitDays colore chaque
    valeur selon son niveau (vert pâle, orange, bleu) ; converti en gris, un
-   « 7.0 » vert pâle devient presque blanc et aucune passe ne le voit. Les deux
+   « 6.0 » vert pâle devient presque blanc et aucune passe ne le voit. Les deux
    premières passes (mode `min` de `_preprocess`) gardent pour chaque pixel le
    plus sombre des trois canaux : sur fond blanc, le texte coloré devient aussi
    foncé que du noir. Mesuré le 30/09/2026 sur trois vraies captures : 12 valeurs
@@ -100,17 +100,17 @@ Contraste (13/09, la pesée de comparaison), sans rien signaler.
    relations l'emporte ; sinon les mesures en cause vont dans `doutes`.
    **Rien n'est corrigé ni calculé d'office.**
 6. **Nombres** (`_valeur`) : FitDays écrit toujours le même nombre de
-   décimales par mesure. « 20.396 » (le « % » lu comme des chiffres) est
+   décimales par mesure. « 17.696 » (le « % » lu comme des chiffres) est
    refusé ; un entier pour une mesure à une décimale n'est accepté que si,
-   tel quel, il sort des bornes et, divisé par 10, y rentre (« 759 » → 75,9,
-   « 70 » → 7,0) ; « 14 » (1,4 ou 14,0 ?) et « 71 » (71,1 sans sa décimale)
+   tel quel, il sort des bornes et, divisé par 10, y rentre (« 726 » → 72,6,
+   « 60 » → 6,0) ; « 14 » (1,4 ou 14,0 ?) et « 66 » (66,3 sans sa décimale)
    sont refusés. Une valeur au point recomposé n'est **pas sûre** : en perdant
-   le point, le moteur écorche souvent le chiffre voisin (« 17.5 » lu « 173 »,
+   le point, le moteur écorche souvent le chiffre voisin (« 18.5 » lu « 183 »,
    deux fois, sur une capture JPEG). Elle compte pour une demi-voix
    (`_choisir`) et ne confirme rien seule : il faut au moins une lecture avec
    son point, sinon la mesure est « à vérifier ». Le zoom commence à ×3 (lu
    juste à ×3 et ×4, faux à ×2). Une unité qui ne va pas avec la mesure
-   (« 1.4% » pour l'IMC, « lb ») est refusée (`_unite_ok`).
+   (« 0.8% » pour l'IMC, « lb ») est refusée (`_unite_ok`).
 7. **Libellés écorchés** (`_match_metric`) : un mot long à une ou deux lettres
    près compte (« Coroorelle ») ; une mesure n'est retenue que si aucun mot du
    bloc n'appartient à une autre mesure (« Poids sans graisse » privé de

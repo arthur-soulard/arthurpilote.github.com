@@ -190,6 +190,17 @@ _ouvreur = urllib.request.build_opener(
     _SansRedirection, urllib.request.HTTPSHandler(context=ssl.create_default_context()))
 
 
+def _redirection_permise(depuis: str, vers: str) -> bool:
+    """Le mot de passe suit la redirection : seulement vers iCloud en https
+    (caldav.icloud.com -> pXX-caldav.icloud.com), ou sur la meme adresse
+    (meme protocole, meme serveur : le faux iCloud des tests)."""
+    a, b = urllib.parse.urlsplit(depuis), urllib.parse.urlsplit(vers)
+    hote = (b.hostname or "").lower()
+    if b.scheme == "https" and (hote == "icloud.com" or hote.endswith(".icloud.com")):
+        return True
+    return (a.scheme, a.netloc.lower()) == (b.scheme, b.netloc.lower())
+
+
 def _requete(methode: str, url: str, auth: tuple, corps: bytes = None,
              type_corps: str = "application/xml; charset=utf-8", profondeur: str = None,
              accepte=(200, 201, 204, 207)) -> tuple:
@@ -209,7 +220,11 @@ def _requete(methode: str, url: str, auth: tuple, corps: bytes = None,
         except urllib.error.HTTPError as e:
             statut, contenu = e.code, e.read()
             if statut in (301, 302, 303, 307, 308) and e.headers.get("Location"):
-                url = urllib.parse.urljoin(url, e.headers["Location"])
+                vers = urllib.parse.urljoin(url, e.headers["Location"])
+                if not _redirection_permise(url, vers):
+                    raise ErreurAgenda("caldav", "iCloud renvoie vers une adresse inattendue : "
+                                                 "rien n'a été envoyé.")
+                url = vers
                 continue
         except (urllib.error.URLError, socket.timeout, ssl.SSLError, OSError) as e:
             raise ErreurAgenda("reseau", "iCloud ne répond pas. Vérifie ta connexion "

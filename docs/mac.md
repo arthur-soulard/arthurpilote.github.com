@@ -196,15 +196,15 @@ sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
   resserrement, les boîtes de Vision ont la hauteur de la ligne, et `sante.py`, qui
   groupe lignes et libellés selon la hauteur des mots, prenait 18,5 % pour l'IMC.
   Vérifié sur une image d'essai à la mise en page FitDays : boîtes identiques au
-  pixel près à celles de Windows, même lecture (poids 72,4, IMC 22,1, masse
+  pixel près à celles de Windows, même lecture (poids 72,4, IMC 23,1, masse
   musculaire 55,3). Pas encore essayé sur de vraies captures FitDays lues sur Mac.
   Dépendance : `pyobjc-framework-Vision` (Mac seulement), `Vision` dans les
   `hiddenimports`.
   **Depuis la lecture refaite du 14/10/2026** (`docs/modules/sante.md`), l'image
   d'essai d'`_diag_mac_divers` reprend le piège de ce jour-là : bloc
   « Contraste » en haut (écarts, date d'une autre pesée), libellés sur deux
-  lignes, valeurs colorées. Sous Windows, elle donne poids 75,9, IMC 24,0,
-  graisse 20,3, graisse viscérale 7,0, âge corporel 24, **aucune date** et aucun
+  lignes, valeurs colorées. Sous Windows, elle donne poids 72,6, IMC 23,1,
+  graisse 17,6, graisse viscérale 6,0, âge corporel 27, **aucune date** et aucun
   doute : l'annotation « Divers » du test Mac doit dire la même chose.
   `_zoom` passe aussi par `plateforme.ocr_mac` : rien de propre à Windows.
 * **Code Gmail d'Actus** : Trousseau de la session, par l'outil `security`

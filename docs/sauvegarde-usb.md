@@ -109,6 +109,11 @@ seule une ligne grise « dernier envoi 24 sept. » le disait. Désormais :
   pour l'instant »), et la tuile écrit « Jamais » sans orange (11/10/2026). Jusque-là
   c'était l'alerte orange : tout nouvel utilisateur la voyait dès le premier
   lancement, et pour toujours s'il n'avait pas de clé.
+* **Rien en place du tout** (aucune copie, aucune clé branchée, pas de dossier
+  choisi : `aMettre` dans `svRenderUsbState`, 4.4.41, audit du 31/10/2026) : le
+  bouton de l'accueil devient « Mettre en place une sauvegarde » et ouvre
+  Paramètres › Sauvegarde ; la ligne dit « Tes données ne sont que sur ce PC pour
+  l'instant ». Dès qu'une clé est branchée, il redevient « Téléverser vers clé USB ».
 * La tuile « Sauvegarde » (« Sauvegarde USB » jusqu'à la 4.4.35) lit la **même** date (`svDerniereCopie`) et passe en
   orange au même seuil : les deux ne peuvent pas se contredire.
 

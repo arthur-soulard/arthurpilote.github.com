@@ -166,7 +166,7 @@ def _clean_value_text(s: str) -> str:
 #
 # Les deux premieres (30/09/2026) gardent le canal le plus SOMBRE de chaque
 # pixel ("min") au lieu de la luminance. FitDays colore ses valeurs selon leur
-# niveau (vert pale, orange, bleu) : en gris, un "7.0" vert pale devient un
+# niveau (vert pale, orange, bleu) : en gris, un "6.0" vert pale devient un
 # gris presque blanc que le moteur ne voit a aucune echelle. Mesure sur trois
 # vraies captures : 12 valeurs sur 14 en gris, 14 sur 14 avec "min" (graisse
 # viscerale lue a toutes les echelles, age corporel orange des x1.5), aucune
@@ -565,11 +565,11 @@ def _valeur(mid: str, texte: str):
     Le nombre d'un mot de la colonne des valeurs, pour la mesure `mid` :
     (valeur, sure) ou None.
 
-    FitDays ecrit toujours le meme nombre de decimales par mesure (« 7.0 »,
-    « 24.0 », « 1763 ») : un nombre qui en a PLUS est un « % » ou un « kg »
-    pris pour des chiffres (« 20.396 » pour « 20.3 % ») et il est refuse ; un
+    FitDays ecrit toujours le meme nombre de decimales par mesure (« 6.0 »,
+    « 23.1 », « 1650 ») : un nombre qui en a PLUS est un « % » ou un « kg »
+    pris pour des chiffres (« 17.696 » pour « 17.6 % ») et il est refuse ; un
     nombre a une decimale attendue qui n'en a AUCUNE a perdu son point
-    (« 759 » pour 75.9, « 70 » pour 7.0). Une valeur ainsi recomposee n'est
+    (« 726 » pour 72.6, « 60 » pour 6.0). Une valeur ainsi recomposee n'est
     pas « sure » : en perdant le point, le moteur ecorche souvent le chiffre
     voisin (« 173 » pour 17.5, 14/10/2026) ; elle ne suffit pas a confirmer.
     """
@@ -583,7 +583,7 @@ def _valeur(mid: str, texte: str):
     if len(frac) > dec and frac.strip("0"):
         return None
     if dec and not frac:
-        # Point perdu (« 759 » pour 75.9, « 70 » pour 7.0) ou decimale perdue
+        # Point perdu (« 726 » pour 72.6, « 60 » pour 6.0) ou decimale perdue
         # (« 71 » pour 71.1) ? Seul le nombre hors bornes tel quel, et dans les
         # bornes divise par 10, est sur : « 14 » (1.4 ou 14.0 ?) est refuse.
         lo, hi = metric(mid).get("range") or (float("-inf"), float("inf"))
@@ -600,7 +600,7 @@ _UNITE_MOT = re.compile(r"(kg|k9|kcal|kca[l1|i]|lbs?|%)$", re.I)
 
 
 def _unite(w: dict, voisins: list):
-    """Unite collee au nombre (« 75.9kg ») ou ecrite juste apres sur la ligne
+    """Unite collee au nombre (« 72.6kg ») ou ecrite juste apres sur la ligne
     -> (unite ou None, bord droit du groupe nombre + unite)."""
     def norm(t):
         t = _clean_value_text(t).lower()
@@ -627,7 +627,7 @@ def _unite(w: dict, voisins: list):
 
 
 def _unite_ok(mid: str, unite: Optional[str]) -> bool:
-    """« 1.4% » ne peut pas etre l'IMC, ni « 60.5 kg » la graisse."""
+    """« 0.8% » ne peut pas etre l'IMC, ni « 60.5 kg » la graisse."""
     if unite is None:
         return True
     return unite == (metric(mid).get("unit") or None)
@@ -637,8 +637,8 @@ def _bandes_contraste(words: list, hauteur: int) -> list:
     """
     Bandes horizontales du bloc « Contraste » de FitDays, a ignorer.
 
-    Ce bloc affiche les ECARTS depuis une pesee precedente (3.4 kg, 1.4 %,
-    1.0), avec le libelle SOUS le chiffre, et la date de CETTE pesee-la. Il
+    Ce bloc affiche les ECARTS depuis une pesee precedente (2.1 kg, 0.8 %,
+    0.6), avec le libelle SOUS le chiffre, et la date de CETTE pesee-la. Il
     va du titre « Contraste » au titre « Details » qui le suit, ou jusqu'en bas
     de la capture. Jusqu'en 4.4.18, TOUT ce qui etait sous le titre etait
     ignore : sur une capture ou le bloc Contraste est en haut (14/10/2026),
@@ -785,7 +785,7 @@ def _zoom(src: str, blocs: list, tmpdir: str, n: int, bord=None, echelle: float 
     """
     Seconde lecture des valeurs : la case de la valeur de chaque ligne
     reconnue, decoupee, contrastee, agrandie et empilee dans une image a part.
-    Isole de la page, un petit nombre (« 24 » orange, « 7.0 » vert pale)
+    Isole de la page, un petit nombre (« 27 » orange, « 6.0 » vert pale)
     est mieux lu ; et chaque valeur l'est une deuxieme fois, independamment
     de la premiere : deux lectures d'accord valent confirmation.
 

@@ -89,3 +89,9 @@ package-lock.json
 .env
 .env.local
 secrets.json
+
+# Sorties de tests/lire_tests.py deposees a la racine quand on ne lui donne
+# pas de dossier (captures du Mac et des ecrans, resume des tests)
+/capture-mac.jpg
+/ecran-*.jpg
+/resultats-tests.txt

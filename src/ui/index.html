@@ -5613,7 +5613,14 @@ const DEF = {
   _nid: {pos:1, tx:1, wish:1, dep:1, div:1, divf:1}
 };
 /* ─── State ─── */
+/* Le PEA lu au démarrage (pea_data.json de l'utilisateur actif), passé à
+   loadState. Jusqu'à la 4.4.41, il transitait par le localStorage de la
+   fenêtre, sous une clé commune à tous les utilisateurs : une copie de plus
+   des données sur le disque, et, si la lecture échouait, l'écran montrait le
+   PEA du dernier utilisateur ouvert. L'ancienne clé est effacée au démarrage. */
 const LS      = "pea4_v4";
+let _peaLu    = null;
+try { localStorage.removeItem(LS); } catch(e) {}
 const LS_VAR  = "pea4_v4_var";
 let S   = {};
 let NID = {pos:1, tx:1, wish:1, dep:1, div:1, divf:1, rule:1};
@@ -5787,7 +5794,7 @@ async function _hydrateFromPython() {
       _nid:            d._nid || {pos:1, tx:1, wish:1, dep:1, div:1, divf:1, rule:1},
       uiPrefs:         d.uiPrefs || {},
     };
-    localStorage.setItem(LS, JSON.stringify(legacy));
+    _peaLu = legacy;
     if (d._cache && d._cache.prices) {
       try { localStorage.setItem(LS_VAR, JSON.stringify(d._cache.prices)); } catch(e) {}
     }
@@ -5811,9 +5818,8 @@ async function _hydrateFromPython() {
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(LS);
-    if (raw) {
-      const p = JSON.parse(raw);
+    if (_peaLu) {
+      const p = _peaLu;
       if (!Array.isArray(p.positions)) throw new Error("format invalide");
       S = p;
       NID = S._nid || NID;
@@ -5831,7 +5837,6 @@ function persist(badge) {
   // Un CTO est affiché : seul cto.json s'écrit (voir « Compte actif »)
   if (_estCto()) { ctoPersist(badge !== false); return; }
   S._nid = NID;
-  try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) {}
   try { localStorage.setItem(LS_VAR, JSON.stringify(_wsVar)); } catch(e) {}
   // Sync vers le backend Python (debounce 400 ms). Le badge « Sauvegardé »
   // ne s'affiche qu'une fois le fichier réellement écrit (_syncToPythonNow).
@@ -7652,7 +7657,7 @@ function renderDividends() {
       const nm  = pos ? pos.name : d.ticker;
       if (mode === "received") return `<tr>
         <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
-        <td style="text-align:left"><span style="font-weight:600">${nm}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${d.ticker}</span></td>
+        <td style="text-align:left"><span style="font-weight:600">${escHtml(nm)}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${escHtml(d.ticker)}</span></td>
         <td>${d.qty!=null?d.qty:"\u2014"}</td>
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
         <td style="font-weight:700">${eur(d.montant)}</td>
@@ -7660,7 +7665,7 @@ function renderDividends() {
       </tr>`;
       if (mode === "fut-past") return `<tr title="Estimatif dont la date est passée : clique sur ✓ pour le confirmer">
         <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
-        <td style="text-align:left"><span style="font-weight:600">${nm}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${d.ticker}</span><br><span class="badge" style="background:var(--a2);color:var(--a)">ESTIMATIF</span></td>
+        <td style="text-align:left"><span style="font-weight:600">${escHtml(nm)}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${escHtml(d.ticker)}</span><br><span class="badge" style="background:var(--a2);color:var(--a)">ESTIMATIF</span></td>
         <td>${d.qty!=null?d.qty:"\u2014"}</td>
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
         <td style="font-weight:700">${eur(d.montant)}</td>
@@ -7672,7 +7677,7 @@ function renderDividends() {
       // fut-upcoming
       return `<tr style="opacity:.42">
         <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
-        <td style="text-align:left"><span style="font-weight:600">${nm}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${d.ticker}</span><br><span class="badge" style="background:var(--b2);color:var(--b)">PRÉVU</span></td>
+        <td style="text-align:left"><span style="font-weight:600">${escHtml(nm)}</span><br><span style="font-family:var(--mono);font-size:10px;color:var(--txt2)">${escHtml(d.ticker)}</span><br><span class="badge" style="background:var(--b2);color:var(--b)">PRÉVU</span></td>
         <td>${d.qty!=null?d.qty:"\u2014"}</td>
         <td>${d.ppa!=null?eur(d.ppa):"\u2014"}</td>
         <td style="font-weight:600;color:var(--txt2)">${eur(d.montant)}</td>
@@ -8102,7 +8107,7 @@ function renderTx() {
     const tickers = [...new Set(all.map(t=>t.asset).filter(Boolean))].sort();
     const cur = fT.value;
     fT.innerHTML = '<option value="">Tous les tickers</option>'
-      + tickers.map(t=>`<option value="${t}"${t===cur?" selected":""}>${t}</option>`).join("");
+      + tickers.map(t=>`<option value="${escHtml(t)}"${t===cur?" selected":""}>${escHtml(t)}</option>`).join("");
   }
   if (fY) {
     const years = [...new Set(all.map(t=>(t.date||"").slice(0,4)).filter(Boolean))].sort().reverse();
@@ -8188,7 +8193,7 @@ function renderTx() {
     const txSectorHtml = txSectorId ? sectorBadgeHtml(txSectorId) : "";
     return `<div class="txr" style="${isFuture ? "opacity:.6;border-left:3px solid var(--a);padding-left:9px" : ""}">
       <span style="color:var(--txt2);font-size:10px;min-width:86px">${dateCourte(t.date)}</span>
-      ${futureBadge}<span style="font-weight:600;font-size:12px;min-width:80px">${label}</span>
+      ${futureBadge}<span style="font-weight:600;font-size:12px;min-width:80px">${escHtml(label)}</span>
       ${typeBadge}${pretBadge}${txOrigineBadge(t)}${txFraisBadge(t)}${txSectorHtml}
       <span style="font-family:var(--mono);color:var(--txt2);font-size:10px;flex:1;text-align:right">${t.qty?fmtQte(t.qty)+"\u00A0\u00D7\u00A0"+eur3(t.cours)+(t.frais?" \u00B7 frais "+eur(t.frais):""):""}</span>
       <span style="font-family:var(--mono);font-weight:700;font-size:12px;min-width:80px;text-align:right">${tot?eur(tot):""}${pvHtml}</span>
@@ -9044,7 +9049,7 @@ function renderWishlist() {
       const extraCells = (wtype === "action") ? `<td>${_renderPER(w.ticker)}</td><td>${_renderYield(w.ticker)}</td>` : `<td>${_renderTer(w)}</td>`;
       return `<tr>
         <td><div style="font-weight:600;font-size:13px">${escHtml(w.name)}</div></td>
-        <td style="text-align:left"><span style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${w.ticker}</span></td>
+        <td style="text-align:left"><span style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${escHtml(w.ticker)}</span></td>
         <td style="text-align:left">${sectorBadgeHtml(w.sector)}</td>
         <td style="text-align:center"><div class="star-row" id="sr-${w.id}">${[1,2,3,4,5].map(n=>`<span class="star${n<=w.stars?" on":""}" onclick="setStars(${w.id},${n})">★</span>`).join("")}</div></td>
         <td>${cours}</td>
@@ -9071,7 +9076,7 @@ function renderDepots() {
     `<tr>
       <td style="text-align:left;font-size:12px;white-space:nowrap">${dateCourte(d.date)}</td>
       <td style="font-family:var(--mono);font-size:12px">${eur(d.amount)}</td>
-      <td style="text-align:left;color:var(--txt2);font-size:11px">${d.note||""}</td>
+      <td style="text-align:left;color:var(--txt2);font-size:11px">${escHtml(d.note)}</td>
       <td style="white-space:nowrap">${ebtn("editDepot",d.id)}${dbtn("delDepot",d.id)}</td>
     </tr>`
   ).join("")||`<tr><td colspan="4" style="text-align:center;color:var(--txt2);padding:14px">Aucun dépôt saisi</td></tr>`;
@@ -9596,7 +9601,7 @@ function renderReco() {
       <div class="reco-top">
         <span class="reco-badge ${badgeCls(score)}">${badgeLbl(score)}</span>
         <span class="reco-name">${escHtml(w.name)} <span style="color:var(--a);font-size:11px">${stars(w.stars||3)}</span></span>
-        <span class="reco-meta">${w.ticker} · ${w.wtype==="etf"?"ETF":"Action"}</span>
+        <span class="reco-meta">${escHtml(w.ticker)} · ${w.wtype==="etf"?"ETF":"Action"}</span>
         <span class="reco-score">${score} / 100</span>
       </div>
       <div class="reco-body">
@@ -9944,7 +9949,7 @@ function _drawCmpChart() {
   summary.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px,1fr));gap:8px">
     ${stats.map(s => `
       <div style="background:var(--bg3);border-left:3px solid ${s.color};border-radius:var(--rad);padding:8px 12px">
-        <div style="font-weight:700;font-size:12px">${s.ticker}</div>
+        <div style="font-weight:700;font-size:12px">${escHtml(s.ticker)}</div>
         <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${s.perfPct>=0?'var(--g)':'var(--r)'}">${s.perfPct>=0?"+":""}${s.perfPct.toFixed(2)} %</div>
         <div style="font-size:10px;color:var(--txt2);font-family:var(--mono)">${s.finalVal.toLocaleString("fr-FR",{maximumFractionDigits:0})} €</div>
       </div>`).join("")}
@@ -10876,7 +10881,7 @@ function openCours() {
   document.getElementById("cours-rows").innerHTML=S.positions.map(p=>`
     <div class="crow">
       <div>
-        <div style="font-weight:600;font-size:13px">${p.ticker}</div>
+        <div style="font-weight:600;font-size:13px">${escHtml(p.ticker)}</div>
         <div style="font-size:10px;color:var(--txt2)">${escHtml(p.name)}</div>
       </div>
       <input class="cinp" id="ci-${p.id}" type="number" step="0.01" value="${p.cours!=null?p.cours:""}" placeholder="ex: 69.12">
@@ -11175,17 +11180,17 @@ function openAnnualReport() {
 
 <h2>Versements ${year}</h2>
 <table><thead><tr><th>Date</th><th>Montant</th><th>Note</th></tr></thead><tbody>
-${depots.length ? depots.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${dateCourte(d.date)}</td><td>${(d.amount||0).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})} €</td><td>${d.note||""}</td></tr>`).join("") : '<tr><td colspan="3" style="text-align:center;color:#9ca3af">Aucun versement</td></tr>'}
+${depots.length ? depots.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${dateCourte(d.date)}</td><td>${(d.amount||0).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})} €</td><td>${escHtml(d.note)}</td></tr>`).join("") : '<tr><td colspan="3" style="text-align:center;color:#9ca3af">Aucun versement</td></tr>'}
 </tbody></table>
 
 <h2>Transactions ${year}</h2>
 <table><thead><tr><th>Date</th><th>Type</th><th>Actif</th><th>Qté</th><th>Cours</th><th>Frais</th><th>Montant</th></tr></thead><tbody>
-${txs.length ? txs.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>`<tr><td>${dateCourte(t.date)}</td><td>${t.type}</td><td>${t.asset}</td><td>${t.qty}</td><td>${(t.cours||0).toFixed(3)} €</td><td>${(t.frais||0).toFixed(2)} €</td><td>${((t.cours||0)*(t.qty||0)).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="7" style="text-align:center;color:#9ca3af">Aucune transaction</td></tr>'}
+${txs.length ? txs.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>`<tr><td>${dateCourte(t.date)}</td><td>${escHtml(t.type)}</td><td>${escHtml(t.asset)}</td><td>${t.qty}</td><td>${(t.cours||0).toFixed(3)} €</td><td>${(t.frais||0).toFixed(2)} €</td><td>${((t.cours||0)*(t.qty||0)).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="7" style="text-align:center;color:#9ca3af">Aucune transaction</td></tr>'}
 </tbody></table>
 
 <h2>Dividendes reçus ${year}</h2>
 <table><thead><tr><th>Date</th><th>Actif</th><th>Qté</th><th>Div / part</th><th>Montant</th></tr></thead><tbody>
-${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${dateCourte(d.date)}</td><td>${d.ticker}</td><td>${d.qty}</td><td>${(d.ppa||0).toFixed(2)} €</td><td>${(d.montant||0).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Aucun dividende</td></tr>'}
+${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>${dateCourte(d.date)}</td><td>${escHtml(d.ticker)}</td><td>${d.qty}</td><td>${(d.ppa||0).toFixed(2)} €</td><td>${(d.montant||0).toFixed(2)} €</td></tr>`).join("") : '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Aucun dividende</td></tr>'}
 </tbody></table>
 
 <div class="ftr">Pilote — Rapport généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div>
@@ -13375,7 +13380,7 @@ function renderStrat() {
       ondrop="_onRuleDrop(event,${r.id})"
       ondragend="_onRuleDragEnd(event)"
       style="display:flex;gap:10px;align-items:flex-start;padding:.9rem 1.1rem;border:1px solid var(--brd);border-radius:var(--rad);margin-bottom:.5rem;background:${stateBg};cursor:grab">
-      <div style="font-size:16px;line-height:1.4;flex-shrink:0;margin-top:1px" title="${stateMsg || 'Pas de vérification automatique'}">${stateIco}</div>
+      <div style="font-size:16px;line-height:1.4;flex-shrink:0;margin-top:1px" title="${escHtml(stateMsg || 'Pas de vérification automatique')}">${stateIco}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
           <div style="font-weight:700;font-size:13px">${escHtml(r.title)}</div>
@@ -13623,8 +13628,7 @@ function delRule(id) {
 
 /* Valeurs d'un nouvel utilisateur : aucune cible, pas d'ordre gratuit, le
    plafond légal de courtage. Jusqu'au 11/10/2026, c'étaient l'allocation et
-   les frais Fortuneo d'Arthur (WPEA 70 / PEMS 20 / PNAS 10, 1er ordre ≤ 500 €
-   gratuit puis 0,35 %), que voyait quiconque installait l'app. Ses propres
+   les frais de l'auteur, que voyait quiconque installait l'app. Ses propres
    réglages, enregistrés, ne dépendent pas de ces valeurs. */
 const PAC_DEFAUT = {
   cibles: [],
@@ -16134,7 +16138,7 @@ async function _hydrateFromHttp() {
       _nid:            d._nid || {pos:1, tx:1, wish:1, dep:1, div:1, divf:1, rule:1},
       uiPrefs:         d.uiPrefs || {},
     };
-    localStorage.setItem(LS, JSON.stringify(legacy));
+    _peaLu = legacy;
     if (d._cache && d._cache.prices) {
       try { localStorage.setItem(LS_VAR, JSON.stringify(d._cache.prices)); } catch(e) {}
     }
@@ -17499,7 +17503,7 @@ function _finImpDate(v) {
   if (v == null || v === "") return null;
   if (typeof v === "number") {                       // horodatage (s ou ms)
     const d = new Date(v < 1e11 ? v * 1000 : v);
-    return isNaN(d) ? null : d.toISOString().slice(0, 10);
+    return isNaN(d) ? null : todayISO(d);   // date locale : toISOString (UTC) donnait la veille avant 2 h
   }
   const s = String(v).trim();
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -21611,6 +21615,23 @@ async function svRenderUsbState() {
   // Archives dans un dossier (Google Drive…) : elles comptent autant qu'une clé,
   // et le remède n'est plus de brancher une clé
   const ou = s.dossier ? "" : " sur clé";
+  // Rien encore mis à l'abri, ni clé branchée ni dossier choisi : l'accueil
+  // propose de choisir où sauvegarder. Jusqu'à la 4.4.41, un nouvel
+  // utilisateur voyait « Téléverser vers clé USB » et « Aucune clé USB branchée ».
+  const aMettre = j === null && !s.count && !s.dossier;
+  const btn = document.getElementById("home-usb-btn");
+  if (btn && !btn.disabled) {
+    btn.innerHTML = aMettre ? '<i class="ph ph-shield-check"></i> Mettre en place une sauvegarde'
+                            : '<i class="ph ph-usb"></i> Téléverser vers clé USB';
+    btn.title = aMettre ? "Choisir une clé USB ou un dossier (Google Drive…) où copier tes données"
+                        : "Copier toutes les données sur la clé USB";
+    btn.onclick = aMettre ? () => openSettings("sauvegarde") : () => svPushToUsb();
+  }
+  if (aMettre) {
+    st.classList.remove("vieux");
+    st.textContent = "Tes données ne sont que sur ce PC pour l'instant";
+    return;
+  }
   if (j === null) parts.push(`aucune sauvegarde${ou} pour l'instant`);
   else if (j >= svAlerteJours(s)) {
     const quand = `Dernière sauvegarde${ou} il y a ${j} jours`;

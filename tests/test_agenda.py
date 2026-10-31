@@ -374,6 +374,16 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual(e.exception.code, "reseau")
         self.assertIn("ne répond pas", agenda.config()["etat"]["erreur"])
 
+    def test_redirection_hors_icloud_refusee(self):
+        # Le mot de passe part avec chaque requête : il ne suit une redirection
+        # que vers iCloud en https, ou sur le même serveur
+        ok = agenda._redirection_permise
+        self.assertTrue(ok("https://caldav.icloud.com/", "https://p42-caldav.icloud.com/123/"))
+        self.assertTrue(ok("http://127.0.0.1:5000/", "http://127.0.0.1:5000/racine/"))
+        self.assertFalse(ok("https://caldav.icloud.com/", "http://p42-caldav.icloud.com/"))
+        self.assertFalse(ok("https://caldav.icloud.com/", "https://icloud.com.exemple.fr/"))
+        self.assertFalse(ok("https://caldav.icloud.com/", "https://exemple.fr/"))
+
     def test_alertes_sur_les_evenements(self):
         agenda.connecter(ID, MDP)
         agenda.regler("nouveau", {"sport": True, "objectifs": True, "pret": True})
