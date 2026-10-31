@@ -75,6 +75,11 @@ Depuis la 4.3.34, la ligne du prêt **porte le nom donné au prêt** (`paLabel`)
 enregistré ne sert plus que de repli, et son nom se change dans les paramètres du
 prêt (champ en lecture seule dans la fenêtre du compte).
 
+**Montant demandé à la création d'un compte** (demande d'Arthur, 31/10/2026) :
+champ « Montant aujourd'hui », facultatif, absent quand on modifie un compte.
+Comme pour un bien immobilier, il devient le relevé **du mois en cours** de la
+nouvelle ligne (`paSaveCompte`). Ensuite, le montant se change par le relevé du mois.
+
 Seul le type `dette` compte négativement. Un compte `auto` ne peut pas être
 supprimé : il serait recréé au chargement suivant.
 

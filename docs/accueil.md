@@ -227,7 +227,8 @@ jamais un second calcul :
 | Module | Tuiles (id) | Source du chiffre |
 |---|---|---|
 | PEA | `pea-div`, `pea-div-next`, `pea-plafond`, `pea-versement`, `pea-frais`, `pea-5ans`, `pea-wish` | `dashDivRecus` (mêmes règles que `renderDividends`), `S.divFuture`, `peaTotalVerse`, `depPrevus`, frais des ordres datés d'aujourd'hui ou avant, `peaDateFiscale`, `m1` de `/cours` |
-| Bourse | `bourse-totale`, `marches` | `_peaPv` + `ctoResume` de chaque CTO ; indices de `/cours` |
+| Bourse | `bourse-totale`, `marches` | `_peaPv` + `ctoResume` de chaque CTO (sans le portefeuille crypto) ; indices de `/cours` |
+| Crypto | `crypto:<id>`, `crypto-pv:<id>`, `crypto-courbe:<id>` | `ctoResume` du portefeuille crypto, `dashPeaDay` et `dashCtoSerie` par `dashAvecCto` (`docs/modules/crypto.md`) |
 | Actus | `actus` | `AC.mails` non lus ; `acRenderBadge` redessine l'accueil |
 | Patrimoine | `pa-repartition`, `pa-an`, `pa-objectif` | `_paNet.detail` par type (couleurs de `PA_TYPES`), `_paSerie`, `S.uiPrefs.dashObjectif` |
 | Sports | `sport-semaine`, `sport-annee`, `sport-derniere`, `sport-km`, `sport-ajout` | `spMoyenneHebdo` (sortie de `spRenderStatsKpis`), `spTotals`, `spTrackStart` |

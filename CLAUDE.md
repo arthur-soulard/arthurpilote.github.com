@@ -89,7 +89,7 @@ Donnees/
 │   ├── finances.json         # Mes comptes      (+ backups_finances/)
 │   ├── sports.json           # Sports           (+ backups_sports/)
 │   ├── pret.json             # Prêt             (+ backups_pret/)
-│   ├── cto.json              # CTO, tous les comptes-titres (+ backups_cto/)
+│   ├── cto.json              # CTO, tous les comptes-titres, et le portefeuille Crypto (+ backups_cto/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
@@ -207,6 +207,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/patrimoine.md` | Patrimoine, biens immobiliers (ligne du bien + ligne de son crédit, 4.4.18) | `patrimoine.py`, `pa*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
+| `docs/modules/crypto.md` | Crypto : compte de `cto.json` marqué `crypto`, section à part, catalogue des cotations en euros, import Trade Republic, tuiles | `CRYPTO_CATALOGUE`, `cryptoCompte`, `ctoComptesTitres`, `crypto-*`, `CRYPTO_ISIN` |
 | `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : CSV conseillé et PDF, formats, pièges par banque, reconnaissance des titres (catalogue, ticker seul) | `releves.py`, `ctoImport*`, `/isin` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/modules/agenda.md` | Agenda : calendrier, notes, iCloud en CalDAV (écriture et lecture), synchronisation | `agenda.py`, `ag*`, `save_agenda*` |
@@ -291,6 +292,7 @@ Paramètres.
 | Accueil         | home                                                               |
 | PEA             | dash, pos, sector, div, tx, wish, dep, strat (plus de `perf`)      |
 | CTO « nom » (un par CTO) | cto-dash, cto-pos, cto-sector, cto-div, cto-tx, cto-wish, cto-strat |
+| Crypto          | crypto-dash, crypto-pos, crypto-tx (écrans du PEA, comme un CTO : `docs/modules/crypto.md`) |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 | Agenda          | ag-cal (« Calendrier »), ag-notifs (« Notifications »), ag-connexion (« iCloud ») |
 | Mes comptes     | fin-month, fin-year                                                |

@@ -146,9 +146,15 @@ VERSEMENTS_PEA = {"CUSTOMER_INBOUND", "CUSTOMER_INPAYMENT", "TRANSFER_INSTANT_IN
                   "TRANSFER_INBOUND", "TRANSFER_IN"}
 RETRAITS_PEA = {"CUSTOMER_OUTBOUND_REQUEST", "TRANSFER_INSTANT_OUTBOUND", "TRANSFER_OUTBOUND",
                 "TRANSFER_OUT"}
-# Classes d'actifs suivies : actions et fonds (ETF). Obligations, crypto et
-# fonds prives ne sont pas des titres cotes que Yahoo sait valoriser.
-CLASSES = {"STOCK": "action", "FUND": "etf", "ETF": "etf", "": None}
+# Classes d'actifs suivies : actions et fonds (ETF), et crypto depuis la
+# section Crypto (31/10/2026). Obligations et fonds prives ne sont pas des
+# titres cotes que Yahoo sait valoriser.
+CLASSES = {"STOCK": "action", "FUND": "etf", "ETF": "etf", "CRYPTO": "crypto", "": None}
+# Une crypto chez Trade Republic a un faux ISIN « XF000 » + son symbole
+# (XF000BTC0017 pour le Bitcoin) : il la reconnait si asset_class manque. Ses
+# operations vont dans la section Crypto (compte « CRYPTO »), jamais dans le
+# compte-titres : Trade Republic ne la conserve pas sur le compte-titres.
+CRYPTO_ISIN = "XF000"
 
 _ISIN = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
 # Nom long du titre dans la description : la recherche de sa cotation en a
@@ -219,7 +225,7 @@ def lire_csv_tr(texte: str) -> dict:
     Renvoie {ok, operations, ignores, inconnues, erreur} :
       operations : [{trId, date, quand, type ("Achat"|"Vente"|"Dividende"|"Division"
                      |"Versement"|"Retrait"), origine, isin, nom, nomLong,
-                     classe ("action"|"etf"), qty, cours, montant, frais, taxe,
+                     classe ("action"|"etf"|"crypto"), qty, cours, montant, frais, taxe,
                      alerte, compte}], dans l'ordre ou elles ont eu lieu
                      (`quand` : date et heure de la ligne)
         -> montant : le flux d'especes de la ligne, en valeur absolue
@@ -229,7 +235,8 @@ def lire_csv_tr(texte: str) -> dict:
         -> une Division porte aussi isinAvant, nomAvant, qtyAvant, trIdAvant :
            qtyAvant parts de isinAvant deviennent qty parts de isin ;
         -> alerte : texte si les chiffres ne collent pas (montant ≠ qte × cours ± frais) ;
-        -> compte : « PEA », « CTO », ou « » (export sans colonne account_type).
+        -> compte : « PEA », « CTO », « CRYPTO » (toute crypto, quel que soit
+           account_type), ou « » (export sans colonne account_type).
       ignores    : {"especes": n, "classe": n} lignes laissees de cote, par raison
       inconnues  : [{type, categorie, nom, date, compte}] lignes que Pilote ne reprend pas
     """
@@ -295,11 +302,15 @@ def lire_csv_tr(texte: str) -> dict:
             inconnues.append({"type": typ, "categorie": cat, "nom": nom, "date": date, "compte": compte})
             continue
 
+        isin = row.get("symbol", "").upper()
         classe = CLASSES.get(row.get("asset_class", "").upper(), False)
+        if isin.startswith(CRYPTO_ISIN) and classe in (False, None):
+            classe = "crypto"
         if classe is False:
             ignores["classe"] += 1
             continue
-        isin = row.get("symbol", "").upper()
+        if classe == "crypto":
+            compte = "CRYPTO"
         qty = abs(_nombre(row.get("shares")) or 0)
         cours = _nombre(row.get("price"))
         montant = abs(_nombre(row.get("amount")) or 0)

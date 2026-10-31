@@ -151,5 +151,42 @@ class TradeRepublicPeaEtCto(unittest.TestCase):
         self.assertEqual(sorted((o["trId"], o["compte"]) for o in r["operations"]), attendu)
 
 
+# Cryptos du compte Trade Republic (section Crypto, 31/10/2026) : faux ISIN
+# « XF000 » + symbole, chiffres inventés
+TR_CRYPTO = "\n".join([
+    _TR_ENTETE,
+    _tr("2026-02-02T10:00:00Z", "DEFAULT", "TRADING", "BUY", "CRYPTO", "Bitcoin", "XF000BTC0017",
+        "0.0020000000", "50000.0000000000", "-100.00", "-1.00", "", "Buy trade XF000BTC0017 Bitcoin, quantity: 0.002", "k1"),
+    # Plan d'épargne sur l'Ethereum, sans asset_class : reconnu à son ISIN
+    _tr("2026-02-16T08:00:00Z", "DEFAULT", "TRADING", "BUY", "", "Ethereum", "XF000ETH0019",
+        "0.0100000000", "2500.0000000000", "-25.00", "", "",
+        "Savings plan execution XF000ETH0019 Ethereum, quantity: 0.01", "k2"),
+    _tr("2026-03-02T14:00:00Z", "DEFAULT", "TRADING", "SELL", "CRYPTO", "Bitcoin", "XF000BTC0017",
+        "-0.0010000000", "60000.0000000000", "60.00", "-1.00", "", "Sell trade XF000BTC0017 Bitcoin, quantity: 0.001", "k3"),
+    _tr("2026-03-05T09:30:00Z", "DEFAULT", "TRADING", "BUY", "STOCK", "Apple", "US0378331005",
+        "0.5000000000", "200.0000000000", "-100.00", "-1.00", "", "Buy trade US0378331005 APPLE INC., quantity: 0.5", "c1"),
+]) + "\n"
+
+
+class TradeRepublicCrypto(unittest.TestCase):
+    def setUp(self):
+        self.r = cto.lire_csv_tr(TR_CRYPTO)
+        self.ops = {o["trId"]: o for o in self.r["operations"]}
+
+    def test_cryptos_reprises_dans_leur_compte(self):
+        self.assertTrue(self.r["ok"])
+        self.assertEqual(self.r["ignores"]["classe"], 0)
+        self.assertEqual({t: (o["compte"], o["classe"]) for t, o in self.ops.items()},
+                         {"k1": ("CRYPTO", "crypto"), "k2": ("CRYPTO", "crypto"),
+                          "k3": ("CRYPTO", "crypto"), "c1": ("CTO", "action")})
+
+    def test_chiffres_et_origine(self):
+        o = self.ops["k1"]
+        self.assertEqual((o["type"], o["qty"], o["cours"], o["montant"], o["frais"], o["alerte"]),
+                         ("Achat", 0.002, 50000.0, 100.0, 1.0, ""))
+        self.assertEqual(self.ops["k2"]["origine"], "plan")
+        self.assertEqual((self.ops["k3"]["type"], self.ops["k3"]["qty"]), ("Vente", 0.001))
+
+
 if __name__ == "__main__":
     unittest.main()

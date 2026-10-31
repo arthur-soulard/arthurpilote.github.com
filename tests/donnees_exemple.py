@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -159,7 +159,29 @@ def cto():
         "closedPositions": [], "strategies": [], "prefs": {"plans": {}},
         "_nid": {"pos": 3, "tx": len(txs) + 1, "wish": 1, "dep": 1, "div": 1, "divf": 1, "rule": 1},
     }
-    return {"_meta": dict(META, schema="cto.v1"), "comptes": [compte], "actif": "", "_nid": {"compte": 2}}
+    # Portefeuille crypto (section Crypto, 4.4.43) : un compte marqué « crypto »
+    ktx = [{"date": mois(n, 5), "asset": "BTC-EUR", "type": "Achat", "cours": round(52000 + 2500 * (n + 6), 2),
+            "qty": round(50 / (52000 + 2500 * (n + 6)), 8), "frais": 0, "origine": "plan"}
+           for n in range(-6, 1) if passe(mois(n, 5))]
+    ktx.append({"date": mois(-4, 18), "asset": "ETH-EUR", "type": "Achat", "cours": 2300.0, "qty": 0.05, "frais": 1})
+    ktx.sort(key=lambda t: t["date"])
+    for i, t in enumerate(ktx, 1):
+        t["id"] = i
+    crypto = {
+        "id": "c2", "nom": "Crypto", "crypto": True, "courtier": "trade-republic",
+        "tarif": {"paliers": [{"max": None, "fixe": 1, "pct": 0}], "min": 0, "max": 0, "gratuit": 0, "plan": 0},
+        "cree": mois(-6, 1),
+        "positions": [
+            {"id": 1, "ticker": "BTC-EUR", "name": "Bitcoin", "type": "crypto", "sector": None,
+             "cours": 65000.0, "dividende": 0, "exdiv": None},
+            {"id": 2, "ticker": "ETH-EUR", "name": "Ethereum", "type": "crypto", "sector": None,
+             "cours": 2100.0, "dividende": 0, "exdiv": None},
+        ],
+        "transactions": ktx, "divReceived": [], "divFuture": [], "wishlist": [],
+        "closedPositions": [], "strategies": [], "prefs": {},
+        "_nid": {"pos": 3, "tx": len(ktx) + 1, "wish": 1, "dep": 1, "div": 1, "divf": 1, "rule": 1},
+    }
+    return {"_meta": dict(META, schema="cto.v1"), "comptes": [compte, crypto], "actif": "", "_nid": {"compte": 3}}
 
 
 # ── Mes comptes ────────────────────────────────────────────────────────────
@@ -252,6 +274,7 @@ def patrimoine():
         ("compte1", "Livret A", "livret", ""), ("compte2", "Assurance vie", "av", ""),
         ("compte3", "Compte courant", "courant", ""), ("compte4", "CTO Exemple", "cto", "cto:c1"),
         ("compte5", "Studio Lyon", "immo", ""), ("compte6", "Crédit · Studio Lyon", "dette", ""),
+        ("compte7", "Crypto", "crypto", "cto:c2"),
     ]
     releves = []
     for n in range(-12, 1):
@@ -270,9 +293,9 @@ def patrimoine():
                                 "date": mois(n), "montant": float(v)})
     comptes = [{"id": c, "label": l, "type": t, "auto": a, "icon": "", "color": "",
                 "archived": False, "note": ""} for c, l, t, a in comptes]
-    comptes[-1]["bien"] = "compte5"   # le crédit du studio
+    next(c for c in comptes if c["id"] == "compte6")["bien"] = "compte5"   # le crédit du studio
     return {"_meta": dict(META, schema="patrimoine.v1"), "comptes": comptes,
-            "releves": releves, "_seeded": True, "_nid": {"compte": 7, "releve": len(releves) + 1}}
+            "releves": releves, "_seeded": True, "_nid": {"compte": 8, "releve": len(releves) + 1}}
 
 
 def agenda():

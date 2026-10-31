@@ -2,6 +2,20 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.43",
+      "date": "2026-10-31",
+      "titre": "Une section Crypto",
+      "nouveau": [
+        "Section Crypto, dans « Bourse », sous le PEA et les CTO : tes cryptos suivies comme un compte-titres, avec positions, prix de revient, cours en euros mis à jour tout seuls, courbe et plus-value. Une vingtaine de cryptos se trouvent par leur nom (Bitcoin, Ethereum, Solana…), les autres se saisissent par leur symbole (« XXX-EUR »).",
+        "Import de Trade Republic : les achats et ventes de cryptos de l'export CSV, laissés de côté jusqu'ici, vont dans la section Crypto. Depuis n'importe quel compte, chaque opération est proposée au bon compte (PEA, CTO ou Crypto).",
+        "Trois tuiles d'accueil pour la Crypto : la valeur avec la variation du jour, la plus-value, la courbe. Elles s'ajoutent par « Modifier les tuiles ».",
+        "Patrimoine : ton portefeuille crypto y a sa ligne, remplie toute seule."
+      ],
+      "ameliore": [
+        "Patrimoine : créer un compte demande tout de suite son montant d'aujourd'hui, qui devient le relevé du mois."
+      ]
+    },
+    {
       "version": "4.4.42",
       "date": "2026-10-31",
       "titre": "Pilote plus sûr, et une sauvegarde à mettre en place",

@@ -11,17 +11,21 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 31/10/2026 (4.4.41) : bouton Annuler des Paramètres.
+# 31/10/2026 (4.4.43) : section Crypto, montant à la création d'un compte du Patrimoine.
 # Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
 # Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. Paramètres › Général après essai d'une couleur (bleu). Attendu : boutons
-#    « Annuler » et « Enregistrer », boutons de l'app en bleu.
-js:openSettings("general"),setTimeout(()=>document.querySelector('[data-accent-color="#2563eb"]').click(),500)
-# 2. Même essai puis Annuler. Attendu : accueil revenu à la couleur d'avant (prune).
-js:openSettings("general"),setTimeout(()=>{document.querySelector('[data-accent-color="#2563eb"]').click(),closeOv("ov-config")},500)
-# 31/10/2026 (4.4.42, audit) :
-# 3. Accueil sans sauvegarde en place. Attendu : bouton « Mettre en place une
-#    sauvegarde », ligne « Tes données ne sont que sur ce PC pour l'instant ».
+# 1. Accueil. Attendu : tuiles « Mes cryptos », « Plus-value crypto » et « Courbe
+#    crypto » en tête, icône bitcoin ; section Crypto sous le CTO dans la barre.
 home
-# 4. Dividendes (noms échappés). Attendu : noms et tickers affichés comme avant.
-div
+# 2. Crypto › Vue d'ensemble. Attendu : « Valeur des cryptos », pas de carte
+#    « Dividendes reçus », courbe du capital.
+crypto-dash
+# 3. Crypto › Positions. Attendu : Bitcoin et Ethereum, badge « Crypto », pas de
+#    colonne Secteur.
+crypto-pos
+# 4. Ajouter une position dans Crypto, « bit » tapé. Attendu : Bitcoin et Bitcoin
+#    Cash proposés (BTC-EUR, BCH-EUR), ni type, ni secteur, ni dividende.
+js:goTab("crypto-pos"),openAddPos(),setTimeout(()=>{document.getElementById("f-name").value="bit",document.getElementById("f-name").oninput()},500)
+# 5. Patrimoine › Nouveau compte. Attendu : champ « Montant aujourd'hui (€) » ;
+#    ligne « Crypto » (type Cryptomonnaies) dans la liste derrière.
+js:goTab("pa-comptes"),paOpenCompte(null)

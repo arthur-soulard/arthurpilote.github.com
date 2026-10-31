@@ -202,8 +202,9 @@ point ou à la virgule.
   (division). Ignorés : **toute ligne de la catégorie CASH** du compte
   principal (carte, virements, intérêts, Saveback versé, cadeau), classes hors
   actions et fonds (le Bitcoin : Arthur l'a voulu hors du CTO le 12/10/2026,
-  il n'est pas conservé sur le compte-titres). Types inconnus : listés,
-  jamais devinés.
+  il n'est pas conservé sur le compte-titres ; depuis le 31/10/2026, les
+  cryptos vont dans la section Crypto, `docs/modules/crypto.md`). Types
+  inconnus : listés, jamais devinés.
 * **PEA de Trade Republic dans le même export** (4.4.33) : colonne
   `account_type` (`PEA` ou `DEFAULT`), chaque opération porte son `compte` ;
   l'import ne garde que celles du compte ouvert et propose d'importer les

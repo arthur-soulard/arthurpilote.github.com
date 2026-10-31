@@ -2602,6 +2602,10 @@ body.cpt-cto .cto-bar {
 .pac-alert .alerte-ok i { font-size: 13px; margin: 0; color: inherit; }
 .cto-bar-sp { flex: 1; }
 body.cpt-cto .pea-seul, body.cpt-cto .pea-info { display: none !important; }
+/* Compte crypto (body.cpt-crypto, en plus de cpt-cto) : ni secteur, ni dividende */
+body.cpt-crypto .pas-crypto { display: none !important; }
+.crypto-seul { display: none; }
+body.cpt-crypto .crypto-seul { display: revert; }
 /* Case Rendement d'un CTO : un clic change de calcul (ctoBasculerRendement) */
 /* Plan d'épargne : pages Programmés | Équilibrage, échéances à valider */
 .pe-pages { display: inline-flex; margin-bottom: 14px; }
@@ -2828,10 +2832,10 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 <!-- METRICS -->
 <div class="mets">
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Total versé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
-  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
+  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO" data-crypto="Valeur des cryptos">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
   <div class="mc" id="mc-pv" onclick="if(_estCto())ctoBasculerRendement()"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total<button class="cto-rdt-i cto-seul" onclick="event.stopPropagation();ctoInfoRendement()" title="Les deux calculs"><i class="ph ph-info"></i></button></div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div><div class="cto-rdt-mode cto-seul" id="m-pv-mode"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
-  <div class="mc"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
+  <div class="mc pas-crypto"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
 </div>
 
 <!-- VUE D'ENSEMBLE, suite (4.2.6) : l'ex-onglet Performance y est fusionné.
@@ -2969,7 +2973,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="tw"><table>
       <thead><tr>
-        <th>Titre</th><th>Secteur</th><th>Qté</th><th>PRU auto</th><th>Cours</th>
+        <th>Titre</th><th class="pas-crypto">Secteur</th><th>Qté</th><th>PRU auto</th><th>Cours</th>
         <th title="Évolution 30 derniers jours">30j</th>
         <th id="pos-th-per" title="Price/Earnings Ratio (actions uniquement)">PER</th>
         <th id="pos-th-div" title="Rendement du dividende (actions uniquement)">Dividendes</th>
@@ -2993,6 +2997,21 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         s'importe depuis les relevés de ta banque ou de ton courtier (CSV, PDF…).</p>
       <button class="btn btn-primary" onclick="ctoOuvrirCompte(null)"><i class="ph ph-plus"></i> Créer mon CTO</button>
       <p class="cto-vide-note" id="cto-vide-note"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Ce qu'ouvre un onglet de la section Crypto tant que le portefeuille n'existe pas -->
+<div class="pane" id="pane-crypto-vide">
+  <div class="card cto-vide">
+    <div class="card-b">
+      <div class="cto-vide-ico"><i class="ph ph-currency-btc"></i></div>
+      <h2 class="cto-vide-t">Tes cryptos, comme un compte-titres</h2>
+      <p class="cto-vide-p">Positions, prix de revient, cours en euros mis à jour tout seuls, courbe et plus-value.
+        Choisis la plateforme où tu les achètes : les frais s'y adaptent. Ton historique s'importe depuis
+        l'export CSV de Trade Republic, ou se saisit à la main.</p>
+      <button class="btn btn-primary" onclick="ctoOuvrirCompte(null, true)"><i class="ph ph-plus"></i> Créer mon portefeuille crypto</button>
+      <p class="cto-vide-note" id="crypto-vide-note"></p>
     </div>
   </div>
 </div>
@@ -4934,6 +4953,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <div class="fg"><label>Nom</label>
       <input id="pa-cpt-label" placeholder="ex : Livret A, Bitcoin, Appartement"></div>
     <div class="fg"><label>Type</label><select id="pa-cpt-type"></select></div>
+    <div class="fg" id="pa-cpt-montant-fg"><label>Montant aujourd'hui (€)</label>
+      <input id="pa-cpt-montant" type="number" step="0.01" min="0" placeholder="optionnel : relevé de ce mois"></div>
     <div class="fg"><label>Note</label><input id="pa-cpt-note" placeholder="optionnel"></div>
     <p class="m-note" id="pa-cpt-auto" style="display:none">
       Ce compte est alimenté automatiquement par un autre module : son type et
@@ -5179,7 +5200,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
       <div class="fg"><label>Ticker</label><input id="f-ticker" placeholder="ex : EPA:AIR" autocomplete="off"></div>
     </div>
     <div class="fg-row">
-      <div class="fg"><label>Type</label>
+      <div class="fg pas-crypto"><label>Type</label>
         <select id="f-type"><option value="action">Action</option><option value="etf">ETF</option></select>
       </div>
       <div class="fg"><label>Date d'achat</label><input id="f-date" type="date"></div>
@@ -5193,7 +5214,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <button type="button" class="btn btn-sm btn-ghost" id="f-compo-je" onclick="posCompoJustetf()"><i class="ph ph-arrow-square-out"></i> Ouvrir justETF</button>
       </div>
     </div>
-    <div class="fg-row">
+    <div class="fg-row pas-crypto">
       <div class="fg"><label>Secteur d'activité</label>
         <select id="f-sector" style="background:var(--bg2)">
           <option value="">— Choisir un secteur —</option>
@@ -5225,9 +5246,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     </div>
     <div class="fg-row">
       <div class="fg"><label>Frais de courtage (€)</label><input id="f-frais" type="number" step="0.01" placeholder=""></div>
-      <div class="fg"><label>Dividende / part (EUR, optionnel)</label><input id="f-div" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="fg pas-crypto"><label>Dividende / part (EUR, optionnel)</label><input id="f-div" type="number" step="0.01" placeholder="0.00"></div>
     </div>
-    <div class="fg-row">
+    <div class="fg-row pas-crypto">
       <div class="fg"><label>Date ex-dividende (optionnel)</label><input id="f-exdiv" placeholder="optionnel"></div>
     </div>
     <div class="fg pea-seul">
@@ -5716,7 +5737,7 @@ function _undoModulesOuverts() {
   const sec = _navSectionOf(document.body.dataset.activeTab || "");
   if (sec && sec.id === "sec-pea")  return ["pea"];
   if (sec && sec.id === "sec-pret") return ["pea", "pret"];
-  if (sec && sec.id === "sec-cto" && _estCto()) return ["cto:" + _compteActif];
+  if (sec && (sec.id === "sec-cto" || sec.id === "sec-crypto") && _estCto()) return ["cto:" + _compteActif];
   return [];
 }
 /* Instantané du prêt : JSON de {PR} (prPushUndo) ; du PEA ou d'un CTO : JSON
@@ -6086,6 +6107,8 @@ function normalizeTicker(raw) {
   // Autre place au format Yahoo (APC.F, CSSPX.MI : CTO) : telle quelle, le
   // serveur la passe à Yahoo sans conversion. Elle devenait « EPA:APC.F ».
   if (/^[A-Z0-9-]+\.[A-Z]{1,3}$/.test(t)) return t;
+  // Crypto en euros (BTC-EUR, UNI7083-EUR : section Crypto) : telle quelle
+  if (/^[A-Z0-9]+-EUR$/.test(t)) return t;
   // Bare ticker like "SGO" — assume EPA (PEA context, mostly French equities)
   return "EPA:" + t;
 }
@@ -6387,9 +6410,9 @@ function renderPositions() {
       <td>
         <div class="tk">${escHtml(p.name)}</div>
         <div class="tk2">${escHtml(p.ticker)}${aVenir ? ` <span style="color:var(--a);font-size:10px">achat prévu le ${new Date(aVenir + "T00:00").toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}</span>` : ""}${p.cours==null ? ' <span title="' + (_estHorsEuro(p.ticker) ? "Cours hors euro sur cette place : choisis une cotation en euros (Positions, modifier la ligne)" : "Cours non chargé : vérifie le ticker") + '" style="color:var(--a);font-size:10px">⚠</span>' : ""}</div>
-        <span class="badge ${p.type==="etf"?"be":"ba"}">${p.type==="etf"?"ETF":"Action"}</span>
+        <span class="badge ${p.type==="etf"?"be":"ba"}">${p.type==="etf"?"ETF":p.type==="crypto"?"Crypto":"Action"}</span>
       </td>
-      <td>${sectorBadgeHtml(p.sector)}</td>
+      <td class="pas-crypto">${sectorBadgeHtml(p.sector)}</td>
       <td>${fmtQte(e.qty)}</td>
       <td>${e.pru>0 ? eur3(e.pru) : "—"}</td>
       <td>${p.cours!=null ? eur3(p.cours) : '<span style="color:var(--txt3)">—</span>'}</td>
@@ -6445,7 +6468,7 @@ function openPosFiche(id) {
 
   document.getElementById("pf-titre").textContent = p.name || p.ticker;
   document.getElementById("pf-sous").innerHTML = [
-    `<span class="badge ${p.type === "etf" ? "be" : "ba"}">${p.type === "etf" ? "ETF" : "Action"}</span>`,
+    `<span class="badge ${p.type === "etf" ? "be" : "ba"}">${p.type === "etf" ? "ETF" : p.type === "crypto" ? "Crypto" : "Action"}</span>`,
     `<span>${escHtml(p.ticker)}</span>`, p.isin ? `<span>${escHtml(p.isin)}</span>` : "",
     p.sector ? sectorBadgeHtml(p.sector) : ""].filter(Boolean).join("");
   const kpi = (l, v, cls, sub) => `<div class="mkpi${cls ? " " + cls : ""}"><div class="mkpi-lbl">${l}</div><div class="mkpi-val">${v}</div>${sub ? `<div class="mkpi-sub">${sub}</div>` : ""}</div>`;
@@ -10361,6 +10384,15 @@ function _wireTickerSearch(opts) {
 
   nameEl.oninput = () => {
     const q = nameEl.value.trim();
+    // Compte crypto : le catalogue (cotations en euros vérifiées), pas Yahoo,
+    // qui rend d'abord les paires en dollars
+    if (typeof _estCrypto === "function" && _estCrypto()) {
+      const m = q.toLowerCase();
+      const res = !m ? [] : CRYPTO_CATALOGUE.filter(c => c.nom.toLowerCase().includes(m) || c.sym.toLowerCase().startsWith(m))
+        .map(c => ({ symbol: c.ticker, shortname: c.nom, exchange: "Crypto", type: "" }));
+      renderResults(res, false);
+      return;
+    }
     if (q.length < 2) { closeSuggest(); return; }
     const seq = ++_seq;
 
@@ -10409,6 +10441,9 @@ function openAddPos() {
     if(el){ el.oninput=updatePosRecap; }
   });
   _wireTickerSearch({ apresChoix: posCompoMaj });
+  const crypto = _estCrypto();
+  document.getElementById("f-name").placeholder = crypto ? "ex : Bitcoin, Ethereum…" : "ex : Airbus, BNP Paribas…";
+  document.getElementById("f-ticker").placeholder = crypto ? "ex : BTC-EUR" : "ex : EPA:AIR";
   _posCompoAjout = true;
   document.getElementById("f-type").onchange = posCompoMaj;
   document.getElementById("f-ticker").oninput = posCompoMaj;
@@ -10516,8 +10551,8 @@ function savePos() {
       id: NID.pos++,
       ticker,
       name: name || ticker,
-      type:      document.getElementById("f-type").value,
-      sector:    document.getElementById("f-sector").value || null,
+      type:      _estCrypto() ? "crypto" : document.getElementById("f-type").value,
+      sector:    _estCrypto() ? null : document.getElementById("f-sector").value || null,
       cours:     null,
       dividende: parseFloat(document.getElementById("f-div").value)||0,
       exdiv:     document.getElementById("f-exdiv").value.trim()||null,
@@ -11481,6 +11516,11 @@ const NAV_MODULES = {
     pas:  "Crée ton CTO et choisis ton courtier, puis importe ton historique ou saisis tes positions.",
     // Ses tuiles d'accueil (une par CTO) n'existent qu'une fois un CTO créé
     tab: "cto-dash", tuiles: [] },
+  "sec-crypto": {
+    desc: "Tes cryptos suivies comme un compte-titres : positions, cours en euros, courbe, import de Trade Republic.",
+    pas:  "Crée ton portefeuille crypto, puis importe ton historique ou ajoute tes cryptos.",
+    // Ses tuiles (valeur, plus-value, courbe) n'existent qu'une fois le portefeuille créé
+    tab: "crypto-dash", tuiles: [] },
   "sec-comptes": {
     desc: "Budget mois par mois, catégories, prélèvements récurrents, récap de l'année.",
     pas:  "Ajoute les dépenses et les revenus du mois, chacun dans sa catégorie.",
@@ -12162,7 +12202,7 @@ function cfgRenderModule(id) {
   if (id === "cto") {
     const box = document.getElementById("cfg-cto");
     if (!box) return;
-    const comptes = (typeof ctoComptes === "function") ? ctoComptes() : [];
+    const comptes = (typeof ctoComptesTitres === "function") ? ctoComptesTitres() : [];
     box.innerHTML = comptes.length
       ? comptes.map(c => {
           const k = courtierDe(c.courtier);
@@ -15325,6 +15365,13 @@ const NAV_SECTIONS = [
     { id: "cto-wish",   label: "Wishlist"       },
     { id: "cto-strat",  label: "Plan d'épargne" },
   ]},
+  // Crypto (31/10/2026) : les écrans du PEA sur le compte crypto (un compte de
+  // cto.json marqué « crypto »), comme un CTO : « crypto-pos » montre pane-pos
+  { id: "sec-crypto", label: "Crypto", children: [
+    { id: "crypto-dash", label: "Vue d'ensemble" },
+    { id: "crypto-pos",  label: "Positions"      },
+    { id: "crypto-tx",   label: "Transactions"   },
+  ]},
   { id: "sec-comptes", label: "Mes comptes", children: [
     { id: "fin-month", label: "Mois"   },
     { id: "fin-year",  label: "Année"  },
@@ -15429,12 +15476,13 @@ function _updateCrumb(id) {
    Un CTO absent de cet ordre (tout juste créé) se range après le dernier CTO ;
    le premier CTO prend la place de la section CTO qui l'attendait, et celle-ci
    revient à la place du dernier CTO supprimé. */
-const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-actus", "@perso",
+const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-crypto", "sec-actus", "@perso",
                           "sec-agenda", "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante"];
 
 /* Les blocs de la barre : {cle, sec, label, enfants: [{id, base, label}]} */
 function _navBlocs() {
-  const comptes = (typeof ctoComptes === "function") ? ctoComptes() : [];
+  // Le compte crypto a sa propre section (sec-crypto), pas un bloc de CTO
+  const comptes = (typeof ctoComptesTitres === "function") ? ctoComptesTitres() : [];
   const blocs = [];
   NAV_SECTIONS.forEach(sec => {
     if (sec.id === "sec-cto" && comptes.length) {
@@ -15469,8 +15517,11 @@ function _navOrdre(blocs) {
       out.forEach((x, j) => { if (estCto(x)) i = j; });
       if (i < 0 && ancre >= 0) { out.splice(ancre, 0, k); return; }
     }
+    // « sec-cto » de l'ordre par défaut : le dernier CTO s'il y en a (Crypto
+    // se range sous les CTO dans une barre déjà réordonnée)
+    const place = cle => cle === "sec-cto" ? out.reduce((m, x, j) => estCto(x) ? j : m, -1) : out.indexOf(cle);
     for (let d = NAV_ORDRE_DEFAUT.indexOf(estCto(k) ? "sec-cto" : k) - 1; i < 0 && d >= 0; d--)
-      i = out.indexOf(NAV_ORDRE_DEFAUT[d]);
+      i = place(NAV_ORDRE_DEFAUT[d]);
     out.splice(i < 0 ? out.length : i + 1, 0, k);
   });
   return out;
@@ -15479,7 +15530,7 @@ function _navOrdre(blocs) {
 /* « cto-pos » → « cto-pos@c2 » : l'onglet dans la section du CTO affiché */
 function _ongletComplet(id) {
   id = String(id || "");
-  if (!id.startsWith("cto-") || typeof ctoComptes !== "function" || !ctoComptes().length) return id;
+  if (!id.startsWith("cto-") || typeof ctoComptesTitres !== "function" || !ctoComptesTitres().length) return id;
   const [base, cpt] = id.split("@");
   if (cpt && ctoCompte(cpt)) return id;
   const c = _estCto() ? _compteActif : ctoActifId();
@@ -15557,7 +15608,8 @@ function _injectTitlebar() {
 // Icones Phosphor (servies par /vendor/phosphor/) : une par section, reprises
 // par l'assistant des premiers pas et Paramètres → Modules
 const NAV_ICONS = {
-  "sec-pea": "chart-line-up", "sec-cto": "briefcase", "sec-comptes": "wallet", "sec-pret": "hand-coins",
+  "sec-pea": "chart-line-up", "sec-cto": "briefcase", "sec-crypto": "currency-btc",
+  "sec-comptes": "wallet", "sec-pret": "hand-coins",
   "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
   "sec-actus": "newspaper", "sec-agenda": "calendar-blank",
 };
@@ -22059,6 +22111,9 @@ function paOpenCompte(id) {
   lbl.readOnly = !!(c && c.auto === "pret") || cto;
   lbl.title = lbl.readOnly ? (cto ? "Se change dans les réglages du CTO" : "Se change dans les paramètres du prêt") : "";
   document.getElementById("pa-cpt-note").value  = c ? (c.note || "") : "";
+  // Montant demandé à la création seulement : ensuite, il se change par le relevé du mois
+  document.getElementById("pa-cpt-montant").value = "";
+  document.getElementById("pa-cpt-montant-fg").style.display = c ? "none" : "";
   document.getElementById("pa-cpt-auto").style.display = (c && c.auto) ? "" : "none";
   // Un compte auto ne se supprime pas : il serait recréé au prochain chargement
   document.getElementById("pa-cpt-del").style.display = (c && !c.auto) ? "" : "none";
@@ -22074,9 +22129,15 @@ async function paSaveCompte() {
     const i = PA.comptes.findIndex(x => x.id === _paEditCpt);
     if (i >= 0) PA.comptes[i] = Object.assign({}, PA.comptes[i], { label, type, note });
   } else {
-    PA.comptes.push({ id: paNextId("compte"), label, type, note,
-                      auto: "", icon: paType(type).icon || "📦",
-                      color: paType(type).color || "#888", archived: false });
+    const c = { id: paNextId("compte"), label, type, note,
+                auto: "", icon: paType(type).icon || "📦",
+                color: paType(type).color || "#888", archived: false };
+    PA.comptes.push(c);
+    // Le montant saisi devient le relevé de ce mois, comme pour un bien immobilier
+    const raw = (document.getElementById("pa-cpt-montant").value || "").trim();
+    const v = Math.abs(parseFloat(raw.replace(",", ".")));
+    if (raw !== "" && !isNaN(v))
+      PA.releves.push({ id: paNextId("releve"), compteId: c.id, date: paMoisIso(), montant: v });
   }
   if (await paSave()) {
     closeOv("ov-pa-compte");
@@ -22794,9 +22855,34 @@ function ctoNomSection(c) {
 /* Le CTO que montre la section : le dernier choisi, sinon le premier */
 function ctoActifId() {
   if (!CTO) return "";
-  if (CTO.actif && ctoCompte(CTO.actif)) return CTO.actif;
-  return ctoComptes().length ? ctoComptes()[0].id : "";
+  if (CTO.actif && ctoCompte(CTO.actif) && !ctoEstCrypto(ctoCompte(CTO.actif))) return CTO.actif;
+  return ctoComptesTitres().length ? ctoComptesTitres()[0].id : "";
 }
+/* ── Crypto (31/10/2026) : un compte de cto.json marqué « crypto », montré
+   dans sa propre section (onglets crypto-*), jamais parmi les CTO ── */
+function ctoEstCrypto(c) { return !!(c && c.crypto); }
+function cryptoCompte() { return ctoComptes().find(ctoEstCrypto) || null; }
+function ctoComptesTitres() { return ctoComptes().filter(c => !ctoEstCrypto(c)); }
+function _estCrypto() { return _estCto() && ctoEstCrypto(ctoCompte(_compteActif)); }
+/* Cotations en euros vérifiées chez Yahoo le 31/10/2026. `y` : symbole Yahoo
+   quand il diffère (Uniswap). Shiba Inu écarté : son cours (0,00001 €) est
+   arrondi à 0 par le serveur. Une autre crypto se tape « XXX-EUR ». */
+const CRYPTO_CATALOGUE = [
+  ["BTC", "Bitcoin"], ["ETH", "Ethereum"], ["SOL", "Solana"], ["XRP", "XRP"], ["BNB", "BNB"],
+  ["ADA", "Cardano"], ["DOGE", "Dogecoin"], ["TRX", "Tron"], ["LINK", "Chainlink"], ["AVAX", "Avalanche"],
+  ["XLM", "Stellar"], ["BCH", "Bitcoin Cash"], ["LTC", "Litecoin"], ["DOT", "Polkadot"], ["HBAR", "Hedera"],
+  ["UNI", "Uniswap", "UNI7083"], ["AAVE", "Aave"], ["ETC", "Ethereum Classic"], ["ATOM", "Cosmos"],
+  ["ICP", "Internet Computer"], ["FIL", "Filecoin"], ["ALGO", "Algorand"], ["XTZ", "Tezos"],
+].map(([sym, nom, y]) => ({ sym, nom, ticker: (y || sym) + "-EUR" }));
+/* Cotation d'une crypto d'un relevé : faux ISIN de Trade Republic (« XF000 »
+   + symbole : XF000BTC0017), sinon son nom ; "" si inconnue */
+function cryptoTickerDe(isin, nom) {
+  const m = /^XF000([A-Z]{2,5}?)0/.exec(String(isin || "").toUpperCase());
+  const n = String(nom || "").trim().toLowerCase();
+  const c = CRYPTO_CATALOGUE.find(x => (m && x.sym === m[1]) || (n && x.nom.toLowerCase() === n));
+  return c ? c.ticker : (m ? m[1] + "-EUR" : "");
+}
+
 /* Les données d'un CTO : celles de S s'il est affiché, sinon celles rangées */
 function ctoEtat(id) { return (_estCto() && id === _compteActif) ? S : ctoCompte(id); }
 
@@ -22811,7 +22897,14 @@ function ctoNormaliser(c) {
   return c;
 }
 
-async function ctoBootstrap() {
+/* Une seule lecture même si la section CTO et la section Crypto la demandent
+   ensemble au lancement */
+let _ctoLecture = null;
+function ctoBootstrap() {
+  if (!_ctoLecture) _ctoLecture = _ctoLire().finally(() => { _ctoLecture = null; });
+  return _ctoLecture;
+}
+async function _ctoLire() {
   if (_ctoBootstrapped) return;
   const api = ctoApi();
   if (!api) return;
@@ -22865,6 +22958,7 @@ function _cptBasculer(id) {
   _compteActif = id;
   _cptGen++;
   if (id !== "pea") ctoInstallerDepots();
+  document.body.classList.toggle("cpt-crypto", _estCrypto());
   // 3. Caches et brouillons propres au compte
   _perfHistory = (_ctoCaches[id] && _ctoCaches[id].h) || null;
   _perfFullSeries = null;
@@ -22909,12 +23003,13 @@ function ctoDepotsDeduits(e) {
   return out;
 }
 
-/* Libellés écrits pour le PEA ([data-cto] : le texte pour un CTO) */
+/* Libellés écrits pour le PEA ([data-cto] : le texte pour un CTO,
+   [data-crypto] : pour le portefeuille crypto, s'il diffère) */
 function ctoLibelles() {
   document.querySelectorAll("[data-cto]").forEach(el => {
     if (_estCto()) {
       if (el.dataset.pea == null) el.dataset.pea = el.textContent;
-      el.textContent = el.dataset.cto;
+      el.textContent = (_estCrypto() && el.dataset.crypto) || el.dataset.cto;
     } else if (el.dataset.pea != null) {
       el.textContent = el.dataset.pea;
     }
@@ -22926,6 +23021,18 @@ function ctoLibelles() {
    dans S et montre pane-pos ; tout autre onglet remet le PEA. */
 function ctoAvantOnglet(n) {
   const [base, id] = String(n).split("@");
+  // Section Crypto : « crypto-pos » montre pane-pos sur le compte crypto
+  if (base.startsWith("crypto-")) {
+    const c = cryptoCompte();
+    if (!c) {
+      _cptBasculer("pea");
+      const note = document.getElementById("crypto-vide-note");
+      if (note) note.textContent = _ctoBootstrapped ? "" : "Fichier des comptes pas encore lu : réessaie dans un instant.";
+      return ["crypto-vide", base];
+    }
+    _cptBasculer(c.id);
+    return [base.slice(7), base];
+  }
   if (!base.startsWith("cto-")) { _cptBasculer("pea"); return [n, n]; }
   if (id && CTO && ctoCompte(id)) CTO.actif = id;
   const actif = ctoActifId();
@@ -23124,8 +23231,9 @@ function peComptes() {
   const out = [];
   const pea = _etatPea();
   if (pea) out.push({ id: "pea", nom: "PEA", etat: pea });
-  if (typeof ctoComptes === "function")
-    ctoComptes().forEach(c => out.push({ id: c.id, nom: ctoNomSection(c), etat: ctoEtat(c.id) }));
+  // Pas le portefeuille crypto : sa section n'a pas d'onglet Plan d'épargne
+  if (typeof ctoComptesTitres === "function")
+    ctoComptesTitres().forEach(c => out.push({ id: c.id, nom: ctoNomSection(c), etat: ctoEtat(c.id) }));
   return out;
 }
 
@@ -23412,13 +23520,20 @@ function ctoRenderBarre() {
 /* ── Créer, régler, supprimer un CTO ───────────────────────────────────── */
 
 let _ctoEdition = null;   // id du CTO réglé, null = création
+let _ctoCreeCrypto = false;   // le compte créé ou réglé est le portefeuille crypto
 
-function ctoOuvrirCompte(id) {
+function ctoOuvrirCompte(id, crypto) {
   if (!_ctoBootstrapped) { showToastModern("Le fichier des CTO n'est pas encore lu.", "warn"); return; }
   _ctoEdition = id || null;
   const c = id ? ctoCompte(id) : null;
-  document.getElementById("cto-cpt-titre").textContent = c ? "Réglages du compte" : "Nouveau CTO";
-  document.getElementById("cto-cpt-nom").value = c ? c.nom : "";
+  // Un seul portefeuille crypto : le bouton de création règle celui qui existe
+  if (!c && crypto && cryptoCompte()) return ctoOuvrirCompte(cryptoCompte().id);
+  _ctoCreeCrypto = c ? ctoEstCrypto(c) : !!crypto;
+  document.getElementById("cto-cpt-titre").textContent = c ? "Réglages du compte"
+    : _ctoCreeCrypto ? "Nouveau portefeuille crypto" : "Nouveau CTO";
+  document.getElementById("cto-cpt-nom").placeholder = _ctoCreeCrypto ? "ex : Crypto" : "ex : CTO Trade Republic";
+  document.getElementById("cto-cpt-suppr").innerHTML = `<i class="ph ph-trash"></i> Supprimer ${_ctoCreeCrypto ? "ce portefeuille" : "ce CTO"}`;
+  document.getElementById("cto-cpt-nom").value = c ? c.nom : _ctoCreeCrypto ? "Crypto" : "";
   const sel = document.getElementById("cto-cpt-courtier");
   // Création : aucun courtier présélectionné (c'était Trade Republic, celui
   // d'Arthur, jusqu'à la 4.4.15) ; l'enregistrement demande d'en choisir un
@@ -23457,21 +23572,25 @@ async function ctoEnregistrerCompte() {
     const id = "c" + (CTO._nid.compte++);
     CTO.comptes.push(ctoNormaliser({
       id, nom, courtier, tarif: tarifCopie(k ? k.tarif : TARIF_VIDE), cree: todayISO(),
+      ...(_ctoCreeCrypto ? { crypto: true } : {}),
     }));
-    CTO.actif = id;
+    if (!_ctoCreeCrypto) CTO.actif = id;
     cible = id;
-    _navOuverte = "sec-cto@" + id;   // sa nouvelle section, dépliée
+    _navOuverte = _ctoCreeCrypto ? "sec-crypto" : "sec-cto@" + id;   // sa nouvelle section, dépliée
   }
   closeOv("ov-cto-compte");
   ctoSyncWidgets();
   await ctoLignesPatrimoine();
   // Nouveau compte (ou nouveau nom) : on l'affiche, et la barre latérale
   // lui donne sa section (ou son nouveau nom)
-  const onglet = (document.body.dataset.activeTab || "").startsWith("cto-") ? document.body.dataset.activeTab : "cto-pos";
+  const ouvert = (document.body.dataset.activeTab || "").split("@")[0];
   _ctoAEcrire();
-  goTab(onglet + "@" + cible);
+  if (_ctoCreeCrypto) goTab(ouvert.startsWith("crypto-") ? ouvert : "crypto-pos");
+  else goTab((ouvert.startsWith("cto-") ? ouvert : "cto-pos") + "@" + cible);
   _reconstruireSidebar();
-  showToastModern(_ctoEdition ? "Compte enregistré" : "CTO créé : importe ton historique ou ajoute tes positions", "ok");
+  showToastModern(_ctoEdition ? "Compte enregistré"
+    : _ctoCreeCrypto ? "Portefeuille crypto créé : importe ton historique ou ajoute tes cryptos"
+    : "CTO créé : importe ton historique ou ajoute tes positions", "ok");
 }
 /* Écrit cto.json même si aucun CTO n'est affiché (création depuis l'écran vide) */
 function _ctoAEcrire() {
@@ -23491,7 +23610,8 @@ async function ctoSupprimerCompte() {
   const c = ctoCompte(_ctoEdition);
   if (!c) return;
   const n = (ctoEtat(c.id).transactions || []).length;
-  if (!confirm(`Supprimer le CTO « ${c.nom} » ?` + (n ? `\n\nSes ${n} opération(s) seront effacées de Pilote (la sauvegarde du jour les garde).` : ""))) return;
+  const crypto = ctoEstCrypto(c);
+  if (!confirm(`Supprimer ${crypto ? "le portefeuille crypto" : "le CTO"} « ${c.nom} » ?` + (n ? `\n\nSes ${n} opération(s) seront effacées de Pilote (la sauvegarde du jour les garde).` : ""))) return;
   closeOv("ov-cto-compte");
   // Le PEA d'abord dans S : on ne supprime pas le compte affiché sous ses pieds
   _cptBasculer("pea");
@@ -23501,9 +23621,9 @@ async function ctoSupprimerCompte() {
   if (!CTO.comptes.length) _ctoVideVoulu = true;
   ctoSyncWidgets();
   _ctoAEcrire();
-  goTab("cto-dash");
+  goTab(crypto ? "crypto-dash" : "cto-dash");
   _reconstruireSidebar();   // sa section disparaît de la barre latérale
-  showToastModern("CTO supprimé", "ok");
+  showToastModern(crypto ? "Portefeuille crypto supprimé" : "CTO supprimé", "ok");
 }
 
 /* Une ligne automatique par CTO dans le Patrimoine (comme celle du PEA) */
@@ -23512,8 +23632,10 @@ async function ctoLignesPatrimoine() {
   let ajout = false;
   ctoComptes().forEach(c => {
     if ((PA.comptes || []).some(x => x.auto === "cto:" + c.id)) return;
-    PA.comptes.push({ id: paNextId("compte"), label: c.nom, type: "cto", note: "",
-                      auto: "cto:" + c.id, icon: "📊", color: "#0891b2", archived: false });
+    // Le portefeuille crypto : une ligne de type « Cryptomonnaies »
+    const type = ctoEstCrypto(c) ? "crypto" : "cto";
+    PA.comptes.push({ id: paNextId("compte"), label: c.nom, type, note: "",
+                      auto: "cto:" + c.id, icon: paType(type).icon || "📊", color: paType(type).color || "#0891b2", archived: false });
     ajout = true;
   });
   if (ajout) await paSave();
@@ -23522,8 +23644,10 @@ async function ctoLignesPatrimoine() {
 /* Une tuile d'accueil par CTO, éteinte tant qu'on ne l'ajoute pas */
 function ctoSyncWidgets() {
   for (let i = DASH_WIDGETS.length - 1; i >= 0; i--)
-    if (/^cto(-perf)?:/.test(String(DASH_WIDGETS[i].id))) DASH_WIDGETS.splice(i, 1);
-  ctoComptes().forEach(c => DASH_WIDGETS.push({
+    if (/^(cto(-perf)?|crypto(-pv|-courbe)?):/.test(String(DASH_WIDGETS[i].id))) DASH_WIDGETS.splice(i, 1);
+  const crypto = cryptoCompte();
+  if (crypto) cryptoWidgets(crypto.id);
+  ctoComptesTitres().forEach(c => DASH_WIDGETS.push({
     id: "cto:" + c.id, label: "Valeur du CTO « " + c.nom + " »", module: "CTO", tab: "cto-dash@" + c.id,
     render() {
       const k = ctoCompte(c.id), r = k && ctoResume(c.id);
@@ -23536,6 +23660,41 @@ function ctoSyncWidgets() {
     id: "cto-perf:" + c.id, label: "Performance du CTO « " + c.nom + " »", module: "CTO", tab: "cto-dash@" + c.id,
     render() { return dashCtoPerf(c.id); },
   }));
+}
+
+/* Les trois tuiles du portefeuille crypto (choisies par Arthur, 31/10/2026),
+   éteintes tant qu'on ne les ajoute pas. Chiffres de ctoResume, courbe de
+   dashCtoSerie : les mêmes calculs que la vue d'ensemble du compte. */
+function cryptoWidgets(id) {
+  const res = () => { const r = ctoCompte(id) && ctoResume(id); return r && r.n && r.valeur != null ? r : null; };
+  DASH_WIDGETS.push({
+    id: "crypto:" + id, label: "Valeur de mes cryptos", module: "Crypto", tab: "crypto-dash",
+    render() {
+      const r = res();
+      if (!r) return null;
+      const j = dashAvecCto(id, () => dashPeaDay(r.valeur));
+      return { lbl: "Mes cryptos", val: eur(r.valeur), go: "Voir mes cryptos",
+               sub: j ? eur(j.eur, true) + (j.pct != null ? " (" + pct(j.pct) + ")" : "") + " " + j.quand : "valeur du jour" };
+    },
+  }, {
+    id: "crypto-pv:" + id, label: "Plus-value de mes cryptos", module: "Crypto", tab: "crypto-dash",
+    render() {
+      const r = res();
+      if (!r || r.pv == null) return null;
+      return { lbl: "Plus-value crypto", val: eur(r.pv, true), cls: r.pv >= 0 ? "c-g" : "c-r", go: "Voir mes cryptos",
+               sub: (r.pvPct != null ? pct(r.pvPct) + " · " : "") + "depuis le premier achat" };
+    },
+  }, {
+    id: "crypto-courbe:" + id, label: "Courbe de mes cryptos", module: "Crypto", tab: "crypto-dash",
+    render() {
+      const r = res();
+      if (!r) return null;
+      const full = dashCtoSerie(id);
+      return { lbl: "Courbe crypto", val: eur(r.valeur), go: "Voir l'évolution",
+               sub: full === undefined ? "Chargement de l'historique…" : full ? "valeur sur 6 mois" : "pas encore d'historique",
+               viz: full ? dashAvecCto(id, () => dashPeaSpark("val", undefined, full)) : "" };
+    },
+  });
 }
 
 /* ── Stratégie : plans d'investissement ou ordres du mois ────────────────── */
@@ -23792,19 +23951,22 @@ async function ctoImportLancer() {
    autres sont rendues à part : ctoImportRender les montre, avec un bouton qui
    rouvre l'import sur leur compte. Sans « compte » (autres banques, ancien
    export) : tout reste, comme avant. */
+function _ctoImpCompteIci() { return _estCrypto() ? "CRYPTO" : _estCto() ? "CTO" : "PEA"; }
 function _ctoImpSeparer(r) {
-  const ici = _estCto() ? "CTO" : "PEA";
+  const ici = _ctoImpCompteIci();
   const autres = r.operations.filter(o => o.compte && o.compte !== ici);
   r.operations = r.operations.filter(o => !o.compte || o.compte === ici);
   r.inconnues = (r.inconnues || []).filter(x => !x.compte || x.compte === ici);
   return autres;
 }
 
-/* Les comptes où envoyer les opérations de l'autre compte : le PEA, ou depuis
-   le PEA, le CTO (celui de Trade Republic quand il y en a plusieurs) */
-function _ctoImpCibles() {
-  if (_estCto()) return [{ id: "pea", nom: "le PEA" }];
-  const tous = ctoComptes();
+/* Les comptes où envoyer les opérations d'un autre compte (« PEA », « CTO »,
+   « CRYPTO ») : le PEA, le CTO (celui de Trade Republic quand il y en a
+   plusieurs), le portefeuille crypto. [] : ce compte n'existe pas encore. */
+function _ctoImpCibles(compte) {
+  if (compte === "PEA") return [{ id: "pea", nom: "le PEA" }];
+  if (compte === "CRYPTO") { const c = cryptoCompte(); return c ? [{ id: c.id, nom: "la section Crypto" }] : []; }
+  const tous = ctoComptesTitres();
   const tr = tous.filter(c => c.courtier === "trade-republic");
   return (tous.length > 1 && tr.length ? tr : tous).map(c => ({ id: c.id, nom: ctoNomSection(c) }));
 }
@@ -23813,7 +23975,7 @@ function _ctoImpCibles() {
 async function ctoImportVersCompte(id) {
   const fichiers = _ctoImpFichiers;
   closeOv("ov-cto-import");
-  goTab(id === "pea" ? "tx" : "cto-tx@" + id);
+  goTab(id === "pea" ? "tx" : ctoEstCrypto(ctoCompte(id)) ? "crypto-tx" : "cto-tx@" + id);
   if (_compteActif !== id) { showToastModern("Ce compte n'a pas pu s'ouvrir", "err"); return; }
   ctoOuvrirImport();
   _ctoImpFichiers = fichiers;
@@ -23924,6 +24086,14 @@ async function ctoImportAnalyser(r) {
     if (p) { t.ticker = p.ticker; t.connu = true; }
   });
   await Promise.all(Object.entries(titres).filter(([, t]) => !t.connu).map(async ([isin, t]) => {
+    // Crypto : sa cotation en euros vient du catalogue (faux ISIN de Trade
+    // Republic ou nom), pas de /isin qui ne cherche que des titres
+    if (t.classe === "crypto") {
+      t.ticker = cryptoTickerDe(isin, t.nom);
+      t.candidats = t.ticker ? [{ symbol: t.ticker, place: "Crypto", prix: null, nom: t.nom }] : [];
+      if (t.ticker && (S.positions || []).some(p => normalizeTicker(p.ticker) === t.ticker)) t.connu = true;
+      return;
+    }
     let d = null;
     try {
       // Prix payés (40 derniers) et premier ordre : le serveur vérifie chaque
@@ -23979,32 +24149,41 @@ function ctoImportRender() {
   const boite = document.getElementById("cto-imp-autre");
   boite.style.display = autres.length ? "" : "none";
   if (autres.length) {
-    const det = [["Achat", "achat"], ["Vente", "vente"], ["Dividende", "dividende"], ["Division", "division"],
+    const det = ops => [["Achat", "achat"], ["Vente", "vente"], ["Dividende", "dividende"], ["Division", "division"],
                  ["Versement", "versement"], ["Retrait", "retrait"]].map(([t, l]) => {
-      const k = autres.filter(o => o.type === t).length;
+      const k = ops.filter(o => o.type === t).length;
       return k ? k + " " + l + (k > 1 ? "s" : "") : "";
     }).filter(Boolean).join(", ");
     // Identifiants de la banque déjà enregistrés dans un compte
     const trIds = e => new Set([...(e.transactions || []), ...(e.divReceived || []),
       ...(Array.isArray(e.depots) ? e.depots : [])].map(x => x.trId).filter(Boolean));
-    // Déjà dans ce compte : importées avant que Pilote sépare les deux comptes
+    // Déjà dans ce compte : importées avant que Pilote sépare les comptes
     const ici = trIds(S);
     const deja = autres.filter(o => ici.has(o.trId)).length;
-    // Déjà toutes dans l'autre compte : plus de bouton
-    const cibles = _ctoImpCibles().map(c => {
-      const la = trIds((c.id === "pea" ? _etatPea() : ctoEtat(c.id)) || {});
-      return { ...c, fait: autres.every(o => la.has(o.trId)) };
-    });
-    I.resteAilleurs = cibles.some(c => !c.fait);
-    const plus = autres.length > 1;
-    boite.innerHTML = `<i class="ph ph-arrows-split"></i>
-      <span class="cto-imp-autre-txt">Ce fichier contient aussi <b>${autres.length} opération${plus ? "s" : ""}
-        ${_estCto() ? "du PEA" : "du compte-titres"}</b> (${det}) : ${plus ? "elles ne vont" : "elle ne va"} pas dans
-        ${_estCto() ? "ce CTO" : "le PEA"}.${cibles.length ? "" : " Crée d'abord ton CTO (le + à côté de « Bourse », dans la barre de gauche), puis importe ce fichier depuis lui."}
-        ${deja ? `<span class="cto-ecart"><i class="ph ph-warning"></i> ${deja} de ces opérations ${deja > 1 ? "sont" : "est"} pourtant déjà dans ce compte (import fait avant que Pilote sépare le PEA et le CTO) : à supprimer à la main.</span>` : ""}</span>
-      ${cibles.map(c => c.fait ? `<span class="cto-imp-autre-fait"><i class="ph ph-check"></i> Déjà dans ${escHtml(c.nom)}</span>`
-        : `<button class="btn btn-sm ${nouvelles.length ? "btn-ghost" : "btn-primary"}" data-id="${escHtml(c.id)}"
-        onclick="ctoImportVersCompte(this.dataset.id)">${plus ? "Les importer" : "L'importer"} dans ${escHtml(c.nom)}</button>`).join("")}`;
+    // Un groupe par autre compte du fichier (PEA, compte-titres, crypto)
+    const NOMS = { PEA: ["du PEA", "Crée d'abord ton PEA"],
+      CTO: ["du compte-titres", "Crée d'abord ton CTO (le + à côté de « Bourse », dans la barre de gauche), puis importe ce fichier depuis lui."],
+      CRYPTO: ["de cryptos", "Crée d'abord ton portefeuille crypto (section Crypto, dans la barre de gauche), puis importe ce fichier depuis lui."] };
+    const groupes = ["PEA", "CTO", "CRYPTO"].map(k => ({ k, ops: autres.filter(o => o.compte === k) })).filter(g => g.ops.length);
+    let reste = false;
+    const ici_nom = _estCrypto() ? "la section Crypto" : _estCto() ? "ce CTO" : "le PEA";
+    boite.innerHTML = `<i class="ph ph-arrows-split"></i><span class="cto-imp-autre-txt">` + groupes.map(g => {
+      // Déjà toutes dans l'autre compte : plus de bouton
+      const cibles = _ctoImpCibles(g.k).map(c => {
+        const la = trIds((c.id === "pea" ? _etatPea() : ctoEtat(c.id)) || {});
+        return { ...c, fait: g.ops.every(o => la.has(o.trId)) };
+      });
+      if (cibles.some(c => !c.fait)) reste = true;
+      const plus = g.ops.length > 1;
+      return `<span>Ce fichier contient aussi <b>${g.ops.length} opération${plus ? "s" : ""} ${NOMS[g.k][0]}</b>
+        (${det(g.ops)}) : ${plus ? "elles ne vont" : "elle ne va"} pas dans ${ici_nom}.${cibles.length ? "" : " " + NOMS[g.k][1]}</span>
+        ${cibles.map(c => c.fait ? `<span class="cto-imp-autre-fait"><i class="ph ph-check"></i> Déjà dans ${escHtml(c.nom)}</span>`
+          : `<button class="btn btn-sm ${nouvelles.length ? "btn-ghost" : "btn-primary"}" data-id="${escHtml(c.id)}"
+          onclick="ctoImportVersCompte(this.dataset.id)">${plus ? "Les importer" : "L'importer"} dans ${escHtml(c.nom)}</button>`).join("")}`;
+    }).join("<br>")
+      + (deja ? ` <span class="cto-ecart"><i class="ph ph-warning"></i> ${deja} de ces opérations ${deja > 1 ? "sont" : "est"} pourtant déjà dans ce compte (import fait avant que Pilote sépare les comptes) : à supprimer à la main.</span>` : "")
+      + `</span>`;
+    I.resteAilleurs = reste;
   }
   document.getElementById("cto-imp-resume").innerHTML = `
     <span><b>${nouvelles.length}</b> nouvelle(s)</span>
@@ -24030,10 +24209,10 @@ function ctoImportRender() {
               return `<option value="${escHtml(tk)}"${tk === t.ticker ? " selected" : ""}>${escHtml(x.symbol)} · ${escHtml(x.place)}${x.prix ? " · " + eur(x.prix) : ""}${x.ecart != null ? " · vérifiée" : ""}</option>`; }).join("")}
             <option value=""${t.ticker && !t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? " selected" : ""}>Autre ticker…</option>
           </select>
-          <input placeholder="ex : VWCE.DE" value="${t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? "" : escHtml(t.ticker)}"
+          <input placeholder="${t.classe === "crypto" ? "ex : BTC-EUR" : "ex : VWCE.DE"}" value="${t.candidats.some(x => normalizeTicker(x.symbol) === t.ticker) ? "" : escHtml(t.ticker)}"
                  data-cle="${escHtml(isin)}" onchange="ctoImportTicker(this.dataset.cle, this.value)" style="width:110px">
         </span>`;
-    return `<tr><td style="text-align:left;font-weight:600">${escHtml(t.nom)} <span class="badge ${t.classe === "etf" ? "be" : "ba"}">${t.classe === "etf" ? "ETF" : "Action"}</span></td>
+    return `<tr><td style="text-align:left;font-weight:600">${escHtml(t.nom)} <span class="badge ${t.classe === "etf" ? "be" : "ba"}">${t.classe === "etf" ? "ETF" : t.classe === "crypto" ? "Crypto" : "Action"}</span></td>
       <td style="text-align:left;font-family:var(--mono);font-size:11px">${isin.startsWith("NOM:") ? "—" : escHtml(isin)}</td>
       <td style="text-align:left">${sel}${!t.ticker ? ` <span class="cto-ecart">à choisir</span>` : ""}</td>
       <td>${t.prixPaye ? eur(t.prixPaye) : "—"}</td>
@@ -24078,8 +24257,8 @@ function ctoImportValider() {
     let p = (!parNom && S.positions.find(x => x.isin === isin)) || S.positions.find(x => normalizeTicker(x.ticker) === t.ticker);
     if (!p) {
       const c = t.candidats.find(x => normalizeTicker(x.symbol) === t.ticker);
-      p = { id: NID.pos++, ticker: t.ticker, name: t.nom, type: t.classe === "etf" ? "etf" : "action",
-            sector: t.classe === "etf" ? "etf" : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, ...(parNom ? {} : { isin }) };
+      p = { id: NID.pos++, ticker: t.ticker, name: t.nom, type: t.classe === "etf" || t.classe === "crypto" ? t.classe : "action",
+            sector: t.classe === "etf" ? "etf" : t.classe === "crypto" ? null : (t.secteur || null), cours: (c && c.prix) || null, dividende: 0, exdiv: null, ...(parNom ? {} : { isin }) };
       S.positions.push(p);
     } else if (!p.isin && !parNom) p.isin = isin;
     return p;
@@ -24172,7 +24351,7 @@ function ctoImportValider() {
   if (typeof _prev !== "function") return;
   window.goTab = function(n) {
     _prev.call(this, n);
-    if (!String(n).startsWith("cto-") || !_estCto()) return;
+    if (!/^(cto|crypto)-/.test(String(n)) || !_estCto()) return;
     ctoRenderBarre();
     if (String(n).split("@")[0] === "cto-strat") ctoPlansRender();
   };
@@ -25261,7 +25440,8 @@ function dashBourseComptes() {
   const l = [{ calcul: fn => fn(), serie: dashPeaSeries, jour: () => dashPeaDay(),
                max: () => { const pv = window._peaPv || {};
                             return pv.total == null ? null : { eur: pv.eur, base: peaTotalVerse(), valeur: pv.total }; } }];
-  (typeof ctoComptes === "function" ? ctoComptes() : []).forEach(c => {
+  // Sans le portefeuille crypto : la tuile dit « PEA + n CTO »
+  (typeof ctoComptesTitres === "function" ? ctoComptesTitres() : []).forEach(c => {
     const res = ctoResume(c.id);
     if (!res || !res.n) return;
     l.push({ calcul: fn => dashAvecCto(c.id, fn), serie: () => dashCtoSerie(c.id),
@@ -25823,7 +26003,7 @@ function dashObjectifSupprimer() {
 const DASH_ICONS = {
   "PEA": "chart-line-up", "Patrimoine": "bank", "Sports": "person-simple-run",
   "Santé": "heartbeat", "Prêt": "hand-coins",
-  "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase",
+  "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase", "Crypto": "currency-btc",
   "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
   "Agenda": "calendar-blank",
 };
@@ -26761,6 +26941,7 @@ const MODULES_A_CHARGER = [
   ["patrimoine", "sec-patri",   () => paBootstrap(true)],
   ["actus",      "sec-actus",   () => acBootstrap()],
   ["cto",        "sec-cto",     () => ctoBootstrap()],
+  ["crypto",     "sec-crypto",  () => ctoBootstrap()],   // même fichier (cto.json), lu une fois
   ["agenda",     "sec-agenda",  () => agBootstrap()],
 ];
 
@@ -26776,9 +26957,9 @@ function _chargerModule(secId) {
     _jn(m[0] + " charge (module coche)");
     // Comme au lancement : une ligne par CTO dans le Patrimoine (il faut les
     // deux modules lus), et les cours des CTO pour leurs tuiles
-    if ((secId === "sec-cto" || secId === "sec-patri") && _ctoBootstrapped && ctoComptes().length) {
+    if ((secId === "sec-cto" || secId === "sec-crypto" || secId === "sec-patri") && _ctoBootstrapped && ctoComptes().length) {
       ctoLignesPatrimoine().catch(e => console.warn("[cto] patrimoine:", e));
-      if (secId === "sec-cto") applyCoursData();
+      if (secId !== "sec-patri") applyCoursData();
     }
     if (typeof homeRender === "function") homeRender();
   }, e => console.warn("[" + m[0] + "] chargement KO:", e));
