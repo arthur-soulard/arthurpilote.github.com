@@ -6,7 +6,8 @@
       "date": "2026-10-31",
       "titre": "Paramètres : Annuler annule vraiment",
       "corrige": [
-        "Paramètres : le bouton « Fermer » devient « Annuler ». Une couleur d'accent essayée puis annulée (ou la fenêtre fermée par Échap ou par un clic à côté) ne reste plus affichée : l'app reprend sa couleur d'avant. Le prénom, la banque, la date d'ouverture et le code PIN tapés sans « Enregistrer » sont oubliés, comme avant. Le thème, la taille du texte, les modules et les listes restent enregistrés dès le clic."
+        "Paramètres : le bouton « Fermer » devient « Annuler ». Une couleur d'accent essayée puis annulée (ou la fenêtre fermée par Échap ou par un clic à côté) ne reste plus affichée : l'app reprend sa couleur d'avant. Le prénom, la banque, la date d'ouverture et le code PIN tapés sans « Enregistrer » sont oubliés, comme avant. Le thème, la taille du texte, les modules et les listes restent enregistrés dès le clic.",
+        "Le rond à ton initiale (accueil, à côté de « Nouvel utilisateur », et Paramètres › Utilisateurs) change de couleur en même temps que le reste quand tu choisis une couleur d'accent, et plus seulement après."
       ]
     },
     {

@@ -10931,8 +10931,9 @@ function userInitial(u) {
   return ((u && u.label) ? u.label.trim().charAt(0) : "?").toUpperCase();
 }
 function userColor(u) {
-  return (u && u.color) || getComputedStyle(document.documentElement)
-    .getPropertyValue("--accent").trim() || "#9c4a7a";
+  // Sans couleur à lui : la variable, pas sa valeur du moment, pour changer
+  // en même temps que le reste quand on essaie une couleur d'accent
+  return (u && u.color) || "var(--accent)";
 }
 function userAvatarHtml(u, cls) {
   const inner = (u && u.emoji) ? u.emoji : userInitial(u);
