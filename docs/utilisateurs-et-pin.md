@@ -28,8 +28,8 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
   `get_app_dir()`. Sans ça l'écran de bienvenue proposerait d'importer les données
   d'un autre utilisateur de la même installation. Ne pas retirer ce filtre.
   Elle ne descend qu'à 5 niveaux sous Bureau, Documents et Téléchargements
-  (`_fichiers_proches`, 4.4.41) : `rglob` parcourait tout avant de filtrer.
-* **Pas de copie du PEA dans le `localStorage`** (4.4.41, audit du 31/10/2026).
+  (`_fichiers_proches`, 4.4.42) : `rglob` parcourait tout avant de filtrer.
+* **Pas de copie du PEA dans le `localStorage`** (4.4.42, audit du 31/10/2026).
   Le PEA lu au démarrage passe à `loadState` par la variable `_peaLu`. Avant, il
   transitait par la clé `pea4_v4`, commune à tous les utilisateurs : si les deux
   lectures échouaient, l'écran montrait le PEA du dernier utilisateur ouvert.

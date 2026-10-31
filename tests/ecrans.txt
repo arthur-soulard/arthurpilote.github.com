@@ -19,7 +19,7 @@
 js:openSettings("general"),setTimeout(()=>document.querySelector('[data-accent-color="#2563eb"]').click(),500)
 # 2. Même essai puis Annuler. Attendu : accueil revenu à la couleur d'avant (prune).
 js:openSettings("general"),setTimeout(()=>{document.querySelector('[data-accent-color="#2563eb"]').click(),closeOv("ov-config")},500)
-# 31/10/2026 (4.4.41, audit) :
+# 31/10/2026 (4.4.42, audit) :
 # 3. Accueil sans sauvegarde en place. Attendu : bouton « Mettre en place une
 #    sauvegarde », ligne « Tes données ne sont que sur ce PC pour l'instant ».
 home

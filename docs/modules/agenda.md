@@ -62,7 +62,7 @@ double authentification obligatoire). Bibliothèque standard uniquement
 `_requete` la suit elle-même (5 au plus). Le mot de passe part dans chaque
 requête : `_redirection_permise` ne suit qu'une adresse `https://…icloud.com`,
 ou une adresse du même serveur (le faux iCloud des tests) ; toute autre lève
-une erreur sans rien envoyer (4.4.41, audit du 31/10/2026 : avant, une
+une erreur sans rien envoyer (4.4.42, audit du 31/10/2026 : avant, une
 redirection vers `http://` ou un autre site emportait le mot de passe).
 
 ## Ce qu'il ne faut pas défaire
