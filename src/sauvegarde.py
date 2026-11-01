@@ -246,6 +246,72 @@ def list_removable_drives() -> list:
     return drives
 
 
+# Dossier principal de Google Drive pour ordinateur, selon la langue du logiciel
+_NOMS_MON_DRIVE = ("Mon Drive", "My Drive")
+
+
+def list_cloud_folders() -> list:
+    """Dossiers synchronises en ligne : « Mon Drive » de Google Drive pour
+    ordinateur, et iCloud Drive.
+
+    Sous Windows, Drive monte un lecteur fixe (G: en general) nomme « Google
+    Drive » : list_removable_drives ne le voit pas (GetDriveTypeW = 3, verifie
+    sur le vrai Drive le 01/11/2026). En mode « mise en miroir », le dossier
+    est dans le profil. Sur Mac : ~/Library/CloudStorage/GoogleDrive-<compte>.
+    iCloud Drive : ~/Library/Mobile Documents/com~apple~CloudDocs sur Mac,
+    %USERPROFILE%\\iCloudDrive avec iCloud pour Windows."""
+    bases = []
+    icloud = []
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            mask = ctypes.windll.kernel32.GetLogicalDrives()
+        except Exception:
+            mask = 0
+        for i in range(26):
+            if not (mask >> i) & 1:
+                continue
+            root = f"{chr(65 + i)}:\\"
+            try:
+                if ctypes.windll.kernel32.GetDriveTypeW(ctypes.c_wchar_p(root)) != DRIVE_FIXED:
+                    continue
+            except Exception:
+                continue
+            if _volume_info(root)["label"] == "Google Drive":
+                bases.append((Path(root), root[:2]))
+        bases.append((Path.home(), ""))
+        icloud = [Path.home() / "iCloudDrive"]
+    elif sys.platform == "darwin":
+        try:
+            bases = [(p, "") for p in sorted((Path.home() / "Library" / "CloudStorage").glob("GoogleDrive-*"))]
+        except Exception:
+            bases = []
+        icloud = [Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs"]
+    dossiers = []
+    for base, letter in bases:
+        for nom in _NOMS_MON_DRIVE:
+            p = base / nom
+            try:
+                if not p.is_dir():
+                    continue
+            except Exception:
+                continue
+            free, total = _disk_space(str(p))
+            dossiers.append({"root": str(p), "letter": letter, "label": nom,
+                             "service": "Google Drive", "free": free, "total": total})
+            break
+    for p in icloud:
+        try:
+            if not p.is_dir():
+                continue
+        except Exception:
+            continue
+        free, total = _disk_space(str(p))
+        dossiers.append({"root": str(p), "letter": "", "label": "iCloud Drive",
+                         "service": "iCloud", "free": free, "total": total})
+    return dossiers
+
+
 def _find_drive_by_serial(serial: str) -> Optional[str]:
     """Retrouve la racine ("E:\\") du volume portant ce numero de serie."""
     if not serial:
@@ -325,6 +391,18 @@ def set_destination(path: str) -> dict:
             return {"ok": False, "error": "Choisis un dossier en dehors du dossier des données de Pilote."}
     except Exception:
         pass
+    # Le lecteur de Google Drive (G:) refuse tout fichier hors de « Mon Drive » :
+    # G:\ choisi tel quel donnait « [Errno 2] ... G:\Pilote_....zip.part »
+    # (vu chez Arthur le 01/11/2026). La racine mene a Mon Drive, le reste est refuse.
+    for d in list_cloud_folders():
+        if not d["letter"] or os.path.splitdrive(str(p))[0].upper() != d["letter"].upper():
+            continue
+        mon = Path(d["root"])
+        if str(p).rstrip("\\/").upper() == d["letter"].upper():
+            p = mon / "Sauvegardes Pilote"
+        elif os.path.normcase(str(mon)) not in [os.path.normcase(str(x)) for x in [p, *p.parents]]:
+            return {"ok": False, "error": f"Google Drive n'accepte des fichiers que dans « {d['label']} » : "
+                                          f"choisis un dossier dans {mon}."}
     try:
         p.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -900,6 +978,7 @@ def status() -> dict:
         "config":      cfg,
         "destination": dest,
         "drives":      drives,
-        "due":         is_due(cfg),
+        "dossiers":    list_cloud_folders(),
+        "due":       is_due(cfg),
         "appDir":      str(storage.get_app_dir()),
     }

@@ -12481,12 +12481,21 @@ async function svRefresh() {
   const dl = document.getElementById("sv-drives");
   if (dl) {
     const drives = st.drives || [];
+    // Google Drive pour ordinateur (un lecteur fixe, G:) et iCloud Drive : jamais parmi les clés
+    const dossiers = (st.dossiers || []).map(d => `
+        <button type="button" class="sv-drive" data-root="${escHtml(d.root)}" data-service="${escHtml(d.service)}"
+                onclick="svUseDrive(this.dataset.root, this.dataset.service)">
+          <span class="sv-drive-ico"><i class="ph ${d.service === "iCloud" ? "ph-cloud" : "ph-google-drive-logo"}"></i></span>
+          <span>${d.letter ? `<b>${escHtml(d.letter)}</b> ` : ""}${d.service === "iCloud" ? "iCloud Drive"
+            : "Google Drive · " + escHtml(d.label)}</span>
+          <span class="sv-drive-sub">${d.total ? `${svBytes(d.free)} libres / ${svBytes(d.total)}` : "dossier synchronisé"}</span>
+        </button>`).join("");
     if (!drives.length) {
-      dl.innerHTML = `<div class="m-note" style="font-size:10.5px">Aucune clé USB détectée.</div>`;
+      dl.innerHTML = dossiers + `<div class="m-note" style="font-size:10.5px">Aucune clé USB détectée.</div>`;
     } else {
       // Chemin en data-root (et non dans le code de onclick) : un nom de clé
       // avec une apostrophe (« Clé d'Arthur », courant sur Mac) cassait le clic
-      dl.innerHTML = drives.map(d => `
+      dl.innerHTML = dossiers + drives.map(d => `
         <button type="button" class="sv-drive" data-root="${escHtml(d.root)}" onclick="svUseDrive(this.dataset.root)">
           <span class="sv-drive-ico"><i class="ph ph-usb"></i></span>
           <span><b>${escHtml(d.letter)}</b> ${escHtml(d.label)}</span>
@@ -12621,11 +12630,12 @@ async function svPickFolder() {
   } catch (e) { showToastModern("Erreur : " + e, "err"); }
 }
 
-async function svUseDrive(root) {
+async function svUseDrive(root, dossier) {
   if (!window.pywebview || !pywebview.api) return;
   try {
     const st = await pywebview.api.sauvegarde_use_drive(root);
-    if (st && st.ok) { showToastModern("Clé choisie comme destination", "ok"); svRefresh(); }
+    if (st && st.ok) { showToastModern(dossier ? (dossier === "iCloud" ? "iCloud Drive" : "Google Drive") + " choisi comme destination"
+                                                : "Clé choisie comme destination", "ok"); svRefresh(); }
     else showToastModern((st && st.error) || "Clé inutilisable", "err");
   } catch (e) { showToastModern("Erreur : " + e, "err"); }
 }

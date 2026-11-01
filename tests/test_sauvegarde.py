@@ -15,6 +15,7 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from unittest import mock
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -113,6 +114,66 @@ class DossierCommeDrive(unittest.TestCase):
         self.assertEqual([u["slug"] for u in users["users"]], ["camille"])
         # La destination de la nouvelle installation reste celle choisie
         self.assertEqual(sauvegarde.load_config()["destination"], str(self.drive))
+
+
+class DossiersEnLigne(unittest.TestCase):
+    """Google Drive et iCloud Drive trouves dans le dossier de l'utilisateur."""
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.home, ignore_errors=True)
+
+    def _liste(self, plateforme):
+        with mock.patch.object(sys, "platform", plateforme), \
+             mock.patch.object(Path, "home", return_value=self.home):
+            return sauvegarde.list_cloud_folders()
+
+    def test_mac_google_drive_et_icloud(self):
+        self.assertEqual(self._liste("darwin"), [])
+        drive = self.home / "Library" / "CloudStorage" / "GoogleDrive-prenom@gmail.com" / "My Drive"
+        icloud = self.home / "Library" / "Mobile Documents" / "com~apple~CloudDocs"
+        drive.mkdir(parents=True)
+        icloud.mkdir(parents=True)
+        res = self._liste("darwin")
+        self.assertEqual([(d["service"], d["root"]) for d in res],
+                         [("Google Drive", str(drive)), ("iCloud", str(icloud))])
+
+    @unittest.skipUnless(sys.platform == "win32", "ctypes.windll")
+    def test_windows_miroir_et_icloud(self):
+        (self.home / "Mon Drive").mkdir()
+        (self.home / "iCloudDrive").mkdir()
+        res = [d for d in self._liste("win32") if str(self.home) in d["root"]]
+        self.assertEqual([(d["service"], d["label"]) for d in res],
+                         [("Google Drive", "Mon Drive"), ("iCloud", "iCloud Drive")])
+
+
+class RacineDuLecteurDrive(DossierCommeDrive):
+    """G:\\ choisi tel quel : Google Drive y refuse tout fichier."""
+
+    def _avec_drive(self):
+        mon = self.drive / "Mon Drive"
+        mon.mkdir(parents=True, exist_ok=True)
+        lettre = str(self.drive)            # le dossier temporaire joue le lecteur G:
+        faux = [{"root": str(mon), "letter": lettre, "label": "Mon Drive", "service": "Google Drive",
+                 "free": 0, "total": 0}]
+        return mon, mock.patch.object(sauvegarde, "list_cloud_folders", return_value=faux), \
+            mock.patch.object(sauvegarde.os.path, "splitdrive", side_effect=lambda s: (
+                (lettre, s[len(lettre):]) if s.upper().startswith(lettre.upper()) else ("", s)))
+
+    def test_racine_mene_a_mon_drive(self):
+        mon, p1, p2 = self._avec_drive()
+        with p1, p2:
+            res = sauvegarde.set_destination(str(self.drive))
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(res["config"]["destination"], str(mon / "Sauvegardes Pilote"))
+
+    def test_hors_de_mon_drive_refuse(self):
+        mon, p1, p2 = self._avec_drive()
+        with p1, p2:
+            res = sauvegarde.set_destination(str(self.drive / "Autres ordinateurs"))
+            self.assertFalse(res["ok"])
+            self.assertIn("Mon Drive", res["error"])
+            self.assertTrue(sauvegarde.set_destination(str(mon / "Pilote"))["ok"])
 
 
 if __name__ == "__main__":

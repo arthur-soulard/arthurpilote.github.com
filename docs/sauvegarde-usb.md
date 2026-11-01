@@ -158,8 +158,23 @@ les envoie.
   rotation, restauration sur une installation neuve (aucun réglage, même
   dossier choisi, données revenues, destination gardée).
 
-**Pas essayé avec le vrai Google Drive** (absent de ce PC le 29/10/2026). Point
-à regarder alors : le lecteur `G:` de Drive est-il vu comme amovible
-(`GetDriveTypeW`) ? S'il l'était, il apparaîtrait dans « Clés détectées » et
-serait retenu par son numéro de série, ce qui marcherait aussi, mais avec des
-textes de clé.
+**Vrai Google Drive installé le 01/11/2026** : le lecteur `G:` est **fixe**
+(`GetDriveTypeW` = 3, nom de volume « Google Drive », FAT32), avec `G:\Mon Drive`.
+Il n'apparaissait donc nulle part, Arthur ne savait pas où le trouver.
+`list_cloud_folders()` le cherche (lecteur fixe nommé « Google Drive », sinon
+`Mon Drive`/`My Drive` dans le profil en mode miroir, sur Mac
+`~/Library/CloudStorage/GoogleDrive-*`) et `status()` le rend dans `dossiers` :
+une ligne « G: Google Drive · Mon Drive » en tête des clés détectées, qui pose
+`G:\Mon Drive\Sauvegardes Pilote` comme une clé (`sauvegarde_use_drive`).
+Destination hors volume amovible : chemin brut, comme « Choisir un dossier… ».
+iCloud Drive aussi (`service: "iCloud"`) : `~/Library/Mobile Documents/com~apple~CloudDocs`
+sur Mac, `%USERPROFILE%\iCloudDrive` avec iCloud pour Windows. Test simulé
+(`DossiersEnLigne`) ; vrai Mac, vrai iCloud et mode miroir pas essayés.
+
+**La racine `G:\` refuse tout fichier** (vrai Drive, 01/11/2026) : Arthur l'avait
+choisie par « Choisir un dossier… », et la sauvegarde échouait sur
+`[Errno 2] No such file or directory: 'G:\\Pilote_….zip.part'`. `set_destination`
+mène donc la racine à `Mon Drive\Sauvegardes Pilote` et refuse tout autre dossier
+du lecteur hors de `Mon Drive` (`.shortcut-targets-by-id`, Autres ordinateurs).
+Une destination `G:\` déjà enregistrée reste en échec jusqu'à un nouveau choix
+(la fiche de la 4.4.46 le dit).
