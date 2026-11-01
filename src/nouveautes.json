@@ -2,6 +2,22 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.47",
+      "date": "2026-11-01",
+      "titre": "Le bilan de ta semaine",
+      "nouveau": [
+        "Bilan de la semaine passée : ta bourse (PEA, chaque CTO et la Crypto, ce qui a le plus monté et le plus baissé), ton sport, tes dépenses, ton poids et ce qui t'attend la semaine suivante, sur une page à enregistrer en PDF. Ouvre-la avec la tuile « Bilan de la semaine » (Modifier les tuiles pour l'ajouter), ou coche « Chaque dimanche à » en haut de la page pour qu'elle s'ouvre seule à l'heure de ton choix.",
+        "Un nouveau module arrivé avec une mise à jour n'apparaît plus d'office : Pilote te demande s'il faut l'afficher."
+      ],
+      "ameliore": [
+        "La notification « Résumé de la semaine » de l'agenda iCloud devient le bilan de la semaine écoulée (bourse, sport, dépenses), avec la page en PDF dans l'événement pour la lire sur ton iPhone. Ses chiffres sont ceux du dernier lancement de Pilote, et elle dit de quand."
+      ],
+      "corrige": [
+        "Le portefeuille crypto ne reçoit plus le rappel « Investir ce mois » des comptes-titres, où il apparaissait sous le nom « CTO Crypto ».",
+        "Paramètres › Masqués : la Crypto a sa propre case, et la case CTO ne compte plus le portefeuille crypto parmi tes comptes-titres."
+      ]
+    },
+    {
       "version": "4.4.46",
       "date": "2026-11-01",
       "titre": "Google Drive et iCloud Drive proposés pour la sauvegarde",
