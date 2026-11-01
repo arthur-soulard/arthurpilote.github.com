@@ -880,7 +880,7 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 /* Liste transactions */
 .fin-tx-row {
   display: grid;
-  grid-template-columns: 76px 1fr 130px 110px 100px 60px;
+  grid-template-columns: 18px 76px 1fr 130px 110px 100px 60px;
   gap: 10px; align-items: center;
   padding: 9px 6px; border-bottom: 1px dashed var(--brd);
   font-size: 12px;
@@ -908,11 +908,25 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 }
 .fin-tx-act-btn:hover { background: var(--bg3); color: var(--txt); }
 .fin-tx-act-btn.del:hover { background: var(--r2); color: var(--r); border-color: var(--r); }
+.fin-tx-row.sel { background: var(--accent-soft); }
+.fin-tx-chk { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--accent); }
+
+/* Barre des transactions cochées (finRenderSelBar) */
+.fin-selbar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 8px 1rem 0; padding: 7px 10px;
+  background: var(--accent-soft); border: 1px solid var(--brd2); border-radius: var(--rad);
+  font-size: 12px;
+}
+.fin-selbar[hidden] { display: none; }
+.fin-selbar b { font-weight: 700; margin-right: auto; }
+/* Toast avec « Annuler » : la pile des toasts ne prend pas les clics */
+.toast-stack .toast.fin-undo { pointer-events: auto; display: flex; align-items: center; gap: 12px; }
 
 /* En-tête liste transactions */
 .fin-tx-head {
   display: grid;
-  grid-template-columns: 76px 1fr 130px 110px 100px 60px;
+  grid-template-columns: 18px 76px 1fr 130px 110px 100px 60px;
   gap: 10px; padding: 6px;
   font-size: 9px; font-weight: 700; color: var(--txt2);
   text-transform: uppercase; letter-spacing: .08em;
@@ -2046,7 +2060,7 @@ body { font-variant-numeric: tabular-nums; }
 .card-eye-btn:focus-visible { opacity: 1; }
 @media (max-width: 700px) {
   /* Agrandi a 200 %, la ligne passe sur deux lignes au lieu d'etre coupee (A11Y-09) */
-  .fin-tx-row { grid-template-columns: 76px 1fr auto; row-gap: 4px; }
+  .fin-tx-row { grid-template-columns: 18px 76px 1fr auto; row-gap: 4px; }
 }
 
 /* — Barre de titre — */
@@ -3476,9 +3490,13 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   <!-- Liste transactions -->
   <div class="card" id="card-fin-tx">
     <div class="card-h" style="flex-wrap:wrap;gap:8px">
-      <span class="card-t">Transactions du mois</span>
+      <span class="card-t" id="fin-tx-titre">Transactions du mois</span>
       <div class="fin-tx-filters">
         <input id="fin-search" type="text" placeholder="Rechercher…" class="fin-input-sm" oninput="finRenderTxList()">
+        <select id="fin-filter-periode" class="fin-input-sm" onchange="finRenderTxList()" title="Mois affiché, ou tout l'historique">
+          <option value="">Ce mois</option>
+          <option value="tout">Tous les mois</option>
+        </select>
         <select id="fin-filter-cat" class="fin-input-sm" onchange="finRenderTxList()">
           <option value="">Toutes catégories</option>
         </select>
@@ -3487,8 +3505,9 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         </select>
       </div>
     </div>
+    <div class="fin-selbar" id="fin-selbar" hidden></div>
     <div class="fin-tx-head">
-      <span>Date</span><span>Libellé</span><span>Catégorie</span><span>Source</span><span style="text-align:right">Montant</span><span></span>
+      <input type="checkbox" class="fin-tx-chk" id="fin-tx-chk-tout" onchange="finSelTout(this.checked)" title="Tout cocher" aria-label="Tout cocher"><span>Date</span><span>Libellé</span><span>Catégorie</span><span>Source</span><span style="text-align:right">Montant</span><span></span>
     </div>
     <div class="card-b" style="padding:0 1rem">
       <div id="fin-tx-list"><div class="fin-empty">Aucune transaction ce mois-ci.</div></div>
@@ -15972,7 +15991,7 @@ async function toggleTheme() {
 }
 
 /* — Toast moderne en bas a droite (en plus du sbadge existant) — */
-function showToastModern(msg, kind) {
+function showToastModern(msg, kind, duree) {
   let stack = document.getElementById("toast-stack");
   if (!stack) {
     stack = document.createElement("div");
@@ -15991,7 +16010,7 @@ function showToastModern(msg, kind) {
     el.style.transition = "opacity .25s, transform .25s";
     el.style.opacity = "0"; el.style.transform = "translateY(10px)";
     setTimeout(() => el.remove(), 280);
-  }, kind === "err" ? 8000 : 3500);   // une erreur reste le temps d'être lue (A11Y-04)
+  }, duree || (kind === "err" ? 8000 : 3500));   // une erreur reste le temps d'être lue (A11Y-04)
 }
 
 /* — Indicateur actualisation (#stext dans .refresh-grp) — */
@@ -16704,6 +16723,8 @@ let _finTxModalType  = "expense";
 let _finRecModalType = "expense";
 let _finBootstrapped = false;
 let _finSaveTimer    = null;
+let _finSel          = new Set();   // ids des transactions cochées (changements en lot)
+let _finTxVus        = [];          // ids affichés par finRenderTxList, dans l'ordre
 
 async function finLoad() {
   if (!window.pywebview || !window.pywebview.api || !window.pywebview.api.load_finances) {
@@ -17303,8 +17324,13 @@ function finRenderTxList() {
   const search   = (document.getElementById("fin-search").value || "").toLowerCase().trim();
   const catFilt  = document.getElementById("fin-filter-cat").value;
   const srcFilt  = document.getElementById("fin-filter-src").value;
+  const perEl    = document.getElementById("fin-filter-periode");
+  const tousMois = !!(perEl && perEl.value === "tout");
+  const titre = document.getElementById("fin-tx-titre");
+  if (titre) titre.textContent = tousMois ? "Toutes les transactions" : "Transactions du mois";
 
-  let txs = F.transactions.filter(tx => finTxIsInMonth(tx, _finMonth.year, _finMonth.month));
+  let txs = tousMois ? F.transactions.slice()
+                     : F.transactions.filter(tx => finTxIsInMonth(tx, _finMonth.year, _finMonth.month));
   if (catFilt) txs = txs.filter(tx => String(tx.categoryId) === String(catFilt));
   if (srcFilt) txs = txs.filter(tx => String(tx.sourceId)   === String(srcFilt));
   if (search) {
@@ -17323,6 +17349,13 @@ function finRenderTxList() {
     return (b.createdAt || "").localeCompare(a.createdAt || "");
   });
 
+  // Une action groupée ne touche que ce qu'on voit : une case cochée puis
+  // cachée par un filtre ou un autre mois est décochée
+  const vus = new Set(txs.map(tx => tx.id));
+  [..._finSel].forEach(id => { if (!vus.has(id)) _finSel.delete(id); });
+  _finTxVus = txs.map(tx => tx.id);
+  finRenderSelBar();
+
   if (!txs.length) {
     list.innerHTML = `<div class="fin-empty">Aucune transaction.</div>`;
     return;
@@ -17337,7 +17370,9 @@ function finRenderTxList() {
     const pillStyle = cat ? `background:${cat.color}22;color:color-mix(in srgb, ${cat.color} 45%, var(--txt))` : "";
     const amountStr = (tx.type === "income" ? "+" : "−") + finFmtAbs(Number(tx.amount) || 0);
     const recIcon = tx.recurrenceId ? ` <span title="Issue d'un récurrent" style="color:var(--txt3);font-size:10px">↻</span>` : "";
-    return `<div class="fin-tx-row">
+    const coche = _finSel.has(tx.id);
+    return `<div class="fin-tx-row${coche ? " sel" : ""}">
+      <input type="checkbox" class="fin-tx-chk" ${coche ? "checked" : ""} onchange="finSelBasculer(${tx.id}, this.checked)" aria-label="Cocher ${_finEsc(tx.label)}">
       <span class="fin-tx-date">${_finDateToFR(tx.date)}</span>
       <div>
         <div class="fin-tx-label">${_finEsc(tx.label)}${recIcon}</div>
@@ -17636,9 +17671,14 @@ function finSaveTx() {
                  : !catId ? "la catégorie" : "la source";
     showToastModern("Indique " + manque + ".", "err"); return;
   }
+  let pareil = null;   // catégorie changée : proposée ensuite aux autres du même libellé
   if (_finEditingTxId) {
     const tx = F.transactions.find(t => t.id === _finEditingTxId);
-    if (tx) Object.assign(tx, { date, amount, label, type: _finTxModalType, categoryId: catId, subcategoryId: subId, sourceId: srcId, note });
+    if (tx) {
+      const avant = { categoryId: tx.categoryId, subcategoryId: tx.subcategoryId || null };
+      Object.assign(tx, { date, amount, label, type: _finTxModalType, categoryId: catId, subcategoryId: subId, sourceId: srcId, note });
+      if (avant.categoryId !== catId || avant.subcategoryId !== subId) pareil = tx;
+    }
   } else {
     F.transactions.push({
       id: finUid("tx"), date, amount, label,
@@ -17653,6 +17693,7 @@ function finSaveTx() {
   if (typeof dashRender === "function") dashRender();   // tuile « Ajouter une dépense »
   showToastModern(_finEditingTxId ? "Transaction modifiée" : "Transaction enregistrée", "ok");
   _finEditingTxId = null;
+  if (pareil) finProposerPareil(pareil);
 }
 
 function finDeleteTx(id) {
@@ -17936,7 +17977,8 @@ function finRenderCatsList() {
         <span class="fin-sub-name">↳ <span class="fin-ico">${_finEsc(finSubIcon(s))}</span> ${_finEsc(s.name)}</span>
         <button class="fin-tx-act-btn" onclick="finChangeSubIcon(${c.id},${s.id})" title="Changer l'emoji"><i class="ph ph-smiley"></i></button>
         <button class="fin-tx-act-btn" onclick="finRenameSub(${c.id},${s.id})" title="Renommer"><i class="ph ph-pencil-simple"></i></button>
-        <button class="fin-tx-act-btn del" onclick="finDeleteSub(${c.id},${s.id})" title="${subUsed ? 'Bloqué : sous-catégorie utilisée par des transactions' : 'Supprimer'}" ${subUsed ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}><i class="ph ph-x"></i></button>
+        <button class="fin-tx-act-btn" onclick="finMoveSub(${c.id},${s.id})" title="Déplacer dans une autre catégorie, avec ses transactions"><i class="ph ph-arrow-bend-up-right"></i></button>
+        <button class="fin-tx-act-btn del" onclick="finDeleteSub(${c.id},${s.id})" title="${subUsed ? 'Supprimer : ses transactions iront ailleurs' : 'Supprimer'}"><i class="ph ph-x"></i></button>
       </div>`;
     }).join("");
     return `<div class="fin-cat-block">
@@ -17948,7 +17990,7 @@ function finRenderCatsList() {
         <button class="fin-tx-act-btn" onclick="finChangeCatIcon(${c.id})" title="Changer l'emoji"><i class="ph ph-smiley"></i></button>
         <button class="fin-tx-act-btn" onclick="finRenameCat(${c.id})"  title="Renommer"><i class="ph ph-pencil-simple"></i></button>
         <button class="fin-tx-act-btn" onclick="finChangeColor(${c.id})" title="Changer la couleur"><i class="ph ph-palette"></i></button>
-        <button class="fin-tx-act-btn del" onclick="finDeleteCat(${c.id})" title="${used ? 'Bloqué : transactions ou récurrents liés' : 'Supprimer'}" ${used ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}><i class="ph ph-x"></i></button>
+        <button class="fin-tx-act-btn del" onclick="finDeleteCat(${c.id})" title="${used ? 'Supprimer ou fusionner : ses transactions iront ailleurs' : 'Supprimer'}"><i class="ph ph-x"></i></button>
       </div>
       ${subsHtml}
       <div class="fin-add-line">
@@ -17980,11 +18022,25 @@ function finAddCategory() {
   finPersist(); finRenderCatsList(); finRefreshFilters();
   showToastModern("Catégorie ajoutée", "ok");
 }
-function finDeleteCat(id) {
-  if (finIsCatUsed(id)) { showToastModern("Cette catégorie sert encore : change d'abord la catégorie de ses transactions et récurrents.", "err"); return; }
-  if (!confirm("Supprimer cette catégorie ?")) return;
-  F.categories = F.categories.filter(c => c.id !== id);
-  finPersist(); finRenderCatsList(); finRefreshFilters(); finRenderAll();
+/* Une catégorie qui sert encore se supprime en envoyant ses transactions et
+   récurrents ailleurs (c'est aussi la façon de fusionner deux catégories). */
+async function finDeleteCat(id) {
+  const c = finCatById(id); if (!c) return;
+  if (!finIsCatUsed(id)) {
+    if (!confirm("Supprimer cette catégorie ?")) return;
+    F.categories = F.categories.filter(x => x.id !== id);
+    finPersist(); finRenderCatsList(); finRefreshFilters(); finRenderAll();
+    return;
+  }
+  const n = finCompter(t => t.categoryId === id);
+  const dest = await finChoisirDest("Supprimer « " + c.name + " »",
+    finPhraseCompte(n) + " Où les mettre ? La catégorie sera ensuite supprimée.",
+    c.type, { sansCat: id }, "Déplacer et supprimer");
+  if (!dest) return;
+  const snap = finSnapshot();
+  finReclasser(t => t.categoryId === id, dest);
+  F.categories = F.categories.filter(x => x.id !== id);
+  finApresLot("« " + c.name + " » supprimée, " + finPhraseNb(n) + " déplacé" + finAccord(n) + " vers " + finNomDest(dest), snap);
 }
 async function finRenameCat(id) {
   const c = finCatById(id); if (!c) return;
@@ -18036,12 +18092,282 @@ async function finRenameSub(catId, subId) {
   s.name = v.trim();
   finPersist(); finRenderCatsList(); finRenderAll();
 }
-function finDeleteSub(catId, subId) {
-  if (finIsSubUsed(catId, subId)) { showToastModern("Cette sous-catégorie sert encore : change d'abord celle de ses transactions et récurrents.", "err"); return; }
-  if (!confirm("Supprimer cette sous-catégorie ?")) return;
-  const c = finCatById(catId); if (!c) return;
-  c.subs = (c.subs || []).filter(s => s.id !== subId);
-  finPersist(); finRenderCatsList();
+async function finDeleteSub(catId, subId) {
+  const c = finCatById(catId), s = finSubById(catId, subId); if (!c || !s) return;
+  if (!finIsSubUsed(catId, subId)) {
+    if (!confirm("Supprimer cette sous-catégorie ?")) return;
+    c.subs = (c.subs || []).filter(x => x.id !== subId);
+    finPersist(); finRenderCatsList();
+    return;
+  }
+  const deLaSub = t => t.categoryId === catId && t.subcategoryId === subId;
+  const n = finCompter(deLaSub);
+  const dest = await finChoisirDest("Supprimer « " + s.name + " »",
+    finPhraseCompte(n) + " Où les mettre ? La sous-catégorie sera ensuite supprimée.",
+    c.type, { sansSub: [catId, subId] }, "Déplacer et supprimer");
+  if (!dest) return;
+  const snap = finSnapshot();
+  finReclasser(deLaSub, dest);
+  c.subs = (c.subs || []).filter(x => x.id !== subId);
+  finApresLot("« " + s.name + " » supprimée, " + finPhraseNb(n) + " déplacé" + finAccord(n) + " vers " + finNomDest(dest), snap);
+}
+
+/* Déplace une sous-catégorie (et ce qui l'utilise) dans une autre catégorie
+   du même type. Les numéros de sous-catégorie sont propres à chaque
+   catégorie : elle y reçoit un nouveau numéro, ou rejoint celle du même nom. */
+async function finMoveSub(catId, subId) {
+  const c = finCatById(catId), s = finSubById(catId, subId); if (!c || !s) return;
+  const autres = finCatsOrdered(c.type).filter(x => x.id !== catId);
+  if (!autres.length) { showToastModern("Aucune autre catégorie de " + (c.type === "income" ? "revenus" : "dépenses") + " où la mettre.", "warn"); return; }
+  const corps = `<div class="fg"><select data-dest aria-label="Catégorie de destination">${autres.map(x =>
+    `<option value="${x.id}">${_finEsc(finCatIcon(x) + "  " + x.name)}</option>`).join("")}</select></div>`;
+  const n = finCompter(t => t.categoryId === catId && t.subcategoryId === subId);
+  const m = await finFenetre("Déplacer « " + s.name + " »",
+    "Dans quelle catégorie ? " + (n.tx + n.rec ? finPhraseNb(n) + (n.tx + n.rec > 1 ? " la suivront." : " la suivra.") : ""), corps, "Déplacer");
+  if (!m) return;
+  const dc = finCatById(Number(m.querySelector("[data-dest]").value)); if (!dc) return;
+  const snap = finSnapshot();
+  dc.subs = dc.subs || [];
+  let ds = dc.subs.find(x => finNorm(x.name) === finNorm(s.name));
+  if (!ds) {
+    ds = { ...s, id: dc.subs.reduce((mx, x) => Math.max(mx, x.id || 0), 0) + 1 };
+    dc.subs.push(ds);
+  }
+  finReclasser(t => t.categoryId === catId && t.subcategoryId === subId, { catId: dc.id, subId: ds.id });
+  c.subs = c.subs.filter(x => x.id !== subId);
+  finApresLot("« " + s.name + " » déplacée dans « " + dc.name + " »" + (n.tx + n.rec ? ", avec " + finPhraseNb(n) : ""), snap);
+}
+
+// ════════════════════════════════════════════════════════
+// CHANGEMENTS EN LOT : reclasser, cocher plusieurs lignes, « faire pareil »
+// Chaque lot se défait par « Annuler » dans le toast qui le suit (l'état
+// d'avant est gardé en mémoire, pas sur le disque).
+// ════════════════════════════════════════════════════════
+function finCompter(pred) {
+  return { tx: F.transactions.filter(pred).length, rec: F.recurrences.filter(pred).length };
+}
+function finPhraseNb(n) {
+  const p = [];
+  if (n.tx)  p.push(n.tx + " transaction" + (n.tx > 1 ? "s" : ""));
+  if (n.rec) p.push(n.rec + " récurrent" + (n.rec > 1 ? "s" : ""));
+  return p.join(" et ");
+}
+/** Accord de « déplacé » : féminin s'il n'y a que des transactions. */
+function finAccord(n) {
+  return (n.rec ? "" : "e") + (n.tx + n.rec > 1 ? "s" : "");
+}
+function finPhraseCompte(n) {
+  return finPhraseNb(n) + (n.tx + n.rec > 1 ? " l'utilisent." : " l'utilise.");
+}
+function finNomDest(d) {
+  const c = finCatById(d.catId), s = d.subId ? finSubById(d.catId, d.subId) : null;
+  return "« " + (c ? c.name : "?") + (s ? " › " + s.name : "") + " »";
+}
+/** Met dans la catégorie (et sous-catégorie) d → transactions et récurrents choisis. */
+function finReclasser(pred, d) {
+  [F.transactions, F.recurrences].forEach(arr => arr.forEach(t => {
+    if (!pred(t)) return;
+    t.categoryId = d.catId;
+    t.subcategoryId = d.subId || null;
+  }));
+}
+
+function finSnapshot() {
+  return JSON.stringify({ categories: F.categories, transactions: F.transactions, recurrences: F.recurrences });
+}
+function finApresLot(msg, snap) {
+  _finSel.clear();
+  finPersist(); finRefreshFilters(); finRenderAll();
+  if (document.getElementById("ov-fin-cats").classList.contains("open")) finRenderCatsList();
+  if (typeof dashRender === "function") dashRender();
+  finToastAnnuler(msg, snap);
+}
+/** Toast « … — Annuler » : remet catégories, transactions et récurrents d'avant le lot. */
+function finToastAnnuler(msg, snap) {
+  showToastModern(msg, "ok", 10000);   // le temps de cliquer « Annuler »
+  const stack = document.getElementById("toast-stack");
+  const el = stack && stack.lastElementChild; if (!el) return;
+  el.classList.add("fin-undo");
+  const b = document.createElement("button");
+  b.className = "btn btn-ghost btn-sm"; b.textContent = "Annuler";
+  b.onclick = () => {
+    const o = JSON.parse(snap);
+    F.categories = o.categories; F.transactions = o.transactions; F.recurrences = o.recurrences;
+    _finSel.clear();
+    finPersist(); finRefreshFilters(); finRenderAll();
+    if (document.getElementById("ov-fin-cats").classList.contains("open")) finRenderCatsList();
+    if (typeof dashRender === "function") dashRender();
+    el.remove();
+    showToastModern("Annulé", "ok");
+  };
+  el.appendChild(b);
+}
+
+/* Petite fenêtre à champs libres, sur le modèle de demander() : promesse de
+   la .modal (pour y lire les champs) ou null si on annule. */
+function finFenetre(titre, texte, corpsHtml, ok) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "ov";
+    ov.innerHTML = `<div class="modal" style="max-width:440px"><h2>${escHtml(titre)}</h2>
+      ${texte ? `<p style="white-space:pre-line;color:var(--txt2);font-size:13px;margin:0 0 10px">${escHtml(texte)}</p>` : ""}
+      ${corpsHtml}
+      <div class="mact"><button type="button" class="btn btn-ghost" data-r="0">Annuler</button>
+        <button type="button" class="btn btn-primary" data-r="1">${escHtml(ok || "Valider")}</button></div></div>`;
+    document.body.appendChild(ov);
+    const modal = ov.querySelector(".modal");
+    let fini = false;
+    const fin = v => {
+      if (fini) return; fini = true;
+      ov.classList.remove("open");
+      setTimeout(() => ov.remove(), 0);
+      resolve(v ? modal : null);
+    };
+    ov.querySelector('[data-r="1"]').onclick = () => fin(true);
+    ov.querySelector('[data-r="0"]').onclick = () => fin(false);
+    ov.addEventListener("click", e => { if (e.target === ov) fin(false); });
+    ov.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fin(false); }
+    });
+    ov.style.zIndex = 9700;
+    ov.classList.add("open");
+    setTimeout(() => (modal.querySelector("select, input") || ov.querySelector('[data-r="1"]')).focus(), 40);
+  });
+}
+
+/** Catégories et sous-catégories d'un type, en <option value="cat:sub">.
+    excl.sansCat : catégorie écartée ; excl.sansSub : [cat, sub] écartée. */
+function finDestOptions(type, excl) {
+  excl = excl || {};
+  return finCatsOrdered(type).filter(c => c.id !== excl.sansCat).map(c => {
+    const ss = (c.subs || []).filter(s => !(excl.sansSub && excl.sansSub[0] === c.id && excl.sansSub[1] === s.id));
+    return `<option value="${c.id}:">${_finEsc(finCatIcon(c) + "  " + c.name)}</option>` +
+      ss.map(s => `<option value="${c.id}:${s.id}">${_finEsc("    ↳ " + finSubIcon(s) + " " + s.name + " (" + c.name + ")")}</option>`).join("");
+  }).join("");
+}
+async function finChoisirDest(titre, texte, type, excl, ok) {
+  const opts = finDestOptions(type, excl);
+  if (!opts) { showToastModern("Aucune autre catégorie où les mettre : crée-la d'abord.", "warn"); return null; }
+  const m = await finFenetre(titre, texte,
+    `<div class="fg"><select data-dest aria-label="Catégorie de destination">${opts}</select></div>`, ok || "Appliquer");
+  if (!m) return null;
+  const [c, s] = m.querySelector("[data-dest]").value.split(":");
+  return { catId: Number(c), subId: s ? Number(s) : null };
+}
+
+/* ── Cases à cocher de la liste ── */
+function finSelBasculer(id, on) {
+  if (on) _finSel.add(id); else _finSel.delete(id);
+  finRenderTxList();
+}
+function finSelTout(on) {
+  _finTxVus.forEach(id => on ? _finSel.add(id) : _finSel.delete(id));
+  finRenderTxList();
+}
+function finSelVider() { _finSel.clear(); finRenderTxList(); }
+function finSelTxs() { return F.transactions.filter(t => _finSel.has(t.id)); }
+
+function finRenderSelBar() {
+  const bar = document.getElementById("fin-selbar");
+  const tout = document.getElementById("fin-tx-chk-tout");
+  const n = _finSel.size;
+  if (tout) {
+    tout.checked = n > 0 && n === _finTxVus.length;
+    tout.indeterminate = n > 0 && n < _finTxVus.length;
+  }
+  if (!bar) return;
+  if (!n) { bar.hidden = true; bar.innerHTML = ""; return; }
+  const net = finSelTxs().reduce((s, t) => s + (t.type === "income" ? 1 : -1) * (Number(t.amount) || 0), 0);
+  bar.hidden = false;
+  bar.innerHTML = `<b>${n} cochée${n > 1 ? "s" : ""} · ${finFmtSigned(net)}</b>
+    <button class="btn btn-ghost btn-sm" onclick="finSelCategorie()"><i class="ph ph-tag"></i> Catégorie</button>
+    <button class="btn btn-ghost btn-sm" onclick="finSelSource()"><i class="ph ph-wallet"></i> Source</button>
+    <button class="btn btn-ghost btn-sm" onclick="finSelDate()"><i class="ph ph-calendar-blank"></i> Date</button>
+    <button class="btn btn-ghost btn-sm" onclick="finSelSupprimer()"><i class="ph ph-trash"></i> Supprimer</button>
+    <button class="fin-tx-act-btn" onclick="finSelVider()" title="Tout décocher" aria-label="Tout décocher"><i class="ph ph-x"></i></button>`;
+}
+
+async function finSelCategorie() {
+  const txs = finSelTxs(); if (!txs.length) return;
+  const types = new Set(txs.map(t => t.type));
+  if (types.size > 1) { showToastModern("Coche seulement des dépenses, ou seulement des revenus, pour changer leur catégorie.", "warn"); return; }
+  const n = txs.length;
+  const dest = await finChoisirDest("Changer la catégorie",
+    n + " transaction" + (n > 1 ? "s" : "") + " cochée" + (n > 1 ? "s" : "") + ".", [...types][0], {}, "Appliquer");
+  if (!dest) return;
+  const snap = finSnapshot();
+  const ids = new Set(txs.map(t => t.id));
+  F.transactions.forEach(t => { if (ids.has(t.id)) { t.categoryId = dest.catId; t.subcategoryId = dest.subId || null; } });
+  finApresLot(n + " transaction" + (n > 1 ? "s" : "") + " mise" + (n > 1 ? "s" : "") + " dans " + finNomDest(dest), snap);
+}
+
+async function finSelSource() {
+  const txs = finSelTxs(); if (!txs.length) return;
+  if (!F.sources.length) { showToastModern("Aucune source enregistrée.", "warn"); return; }
+  const m = await finFenetre("Changer la source", txs.length + " transaction" + (txs.length > 1 ? "s" : "") + " cochée" + (txs.length > 1 ? "s" : "") + ".",
+    `<div class="fg"><select data-src aria-label="Source">${F.sources.map(s => `<option value="${s.id}">${_finEsc(s.name)}</option>`).join("")}</select></div>`, "Appliquer");
+  if (!m) return;
+  const src = finSrcById(Number(m.querySelector("[data-src]").value)); if (!src) return;
+  const snap = finSnapshot();
+  txs.forEach(t => { t.sourceId = src.id; });
+  finApresLot(txs.length + " transaction" + (txs.length > 1 ? "s" : "") + " payée" + (txs.length > 1 ? "s" : "") + " avec « " + src.name + " »", snap);
+}
+
+/** Même jour, k mois plus tard (ou plus tôt), ramené au dernier jour du mois s'il n'existe pas. */
+function finDecalerMois(iso, k) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const r = new Date(y, m - 1 + k, 1);
+  r.setDate(Math.min(d, _finLastDayOfMonth(r.getFullYear(), r.getMonth())));
+  return _finDateToISO(r);
+}
+async function finSelDate() {
+  const txs = finSelTxs(); if (!txs.length) return;
+  const m = await finFenetre("Changer la date", txs.length + " transaction" + (txs.length > 1 ? "s" : "") + " cochée" + (txs.length > 1 ? "s" : "") + ".",
+    `<div class="fg"><select data-mode aria-label="Changement de date"
+        onchange="this.closest('.modal').querySelector('[data-jour]').style.display = this.value === 'jour' ? '' : 'none'">
+      <option value="1">Un mois plus tard (même jour)</option>
+      <option value="-1">Un mois plus tôt (même jour)</option>
+      <option value="jour">Toutes au même jour…</option>
+    </select></div>
+    <div class="fg" data-jour style="display:none"><input type="date" data-date value="${_finDateToISO(new Date())}" aria-label="Nouvelle date"></div>`, "Appliquer");
+  if (!m) return;
+  const mode = m.querySelector("[data-mode]").value;
+  const jour = m.querySelector("[data-date]").value;
+  if (mode === "jour" && !jour) { showToastModern("Indique la date.", "err"); return; }
+  const snap = finSnapshot();
+  txs.forEach(t => { t.date = mode === "jour" ? jour : finDecalerMois(t.date, Number(mode)); });
+  const ou = mode === "jour" ? "au " + _finDateToFR(jour) : mode === "1" ? "d'un mois plus tard" : "d'un mois plus tôt";
+  finApresLot(txs.length + " transaction" + (txs.length > 1 ? "s" : "") + (mode === "jour" ? " mise" + (txs.length > 1 ? "s " : " ") : " décalée" + (txs.length > 1 ? "s " : " ")) + ou, snap);
+}
+
+function finSelSupprimer() {
+  const txs = finSelTxs(); if (!txs.length) return;
+  if (!confirm("Supprimer " + txs.length + " transaction" + (txs.length > 1 ? "s" : "") + " ?")) return;
+  const snap = finSnapshot();
+  const ids = new Set(txs.map(t => t.id));
+  F.transactions = F.transactions.filter(t => !ids.has(t.id));
+  finApresLot(txs.length + " transaction" + (txs.length > 1 ? "s" : "") + " supprimée" + (txs.length > 1 ? "s" : ""), snap);
+}
+
+/* Après avoir changé la catégorie d'une transaction : proposer la même aux
+   autres transactions (et récurrents) du même libellé. Rien sans « Oui ». */
+async function finProposerPareil(tx) {
+  const k = finNorm(tx.label || ""); if (!k) return;
+  const sub = tx.subcategoryId || null;
+  const autre = t => t !== tx && t.type === tx.type && finNorm(t.label || "") === k &&
+                     (t.categoryId !== tx.categoryId || (t.subcategoryId || null) !== sub);
+  const n = finCompter(autre);
+  if (!(n.tx + n.rec)) return;
+  const dest = { catId: tx.categoryId, subId: sub };
+  const tot = n.tx + n.rec;
+  const m = await finFenetre("Faire pareil pour les autres ?",
+    finPhraseNb(n) + " s'appelle" + (tot > 1 ? "nt" : "") + " aussi « " + tx.label + " ». " +
+    (tot > 1 ? "Les" : "La") + " mettre aussi dans " + finNomDest(dest) + " ?", "",
+    tot > 1 ? "Oui, les " + tot : "Oui");
+  if (!m) return;
+  const snap = finSnapshot();
+  finReclasser(autre, dest);
+  finApresLot(finPhraseNb(n) + " de plus dans " + finNomDest(dest), snap);
 }
 
 // ════════════════════════════════════════════════════════

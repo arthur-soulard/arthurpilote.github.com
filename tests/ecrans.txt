@@ -11,8 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 01/11/2026 (4.4.48) : barres des comptes du bilan de la semaine, parties de
-# la gauche, longues comme les euros. Pas de « ; » dans une ligne (le test
-# sépare les écrans par « ; »).
-# 1. La fenêtre du bilan (semaine passée), rubrique Bourse.
-js:bilanOuvrir()
+# 01/11/2026 : Mes comptes, changements en lot. Pas de « ; » ni d'espace dans
+# un appel js (le test sépare les écrans par « ; » et l'appel du défilement
+# par une espace).
+# 1. Tous les mois, tout coché : barre des transactions cochées, en bas de page.
+js:goTab('fin-month'),document.getElementById('fin-filter-periode').value='tout',finSelTout(true) 5000
+# 2. Gérer les catégories : flèche « Déplacer » et ✕ actifs.
+js:goTab('fin-month'),finOpenCategories()
+# 3. Supprimer une catégorie utilisée : choix de la destination.
+js:goTab('fin-month'),finDeleteCat(1)

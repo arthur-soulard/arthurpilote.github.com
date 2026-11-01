@@ -34,6 +34,31 @@ liste des transactions, sélecteurs, camembert, top de l'année, récurrents.
     fermer la fenêtre.
   - Après un choix, le montant est sélectionné : il se remplace d'une frappe (courses).
 
+## Changements en lot (demandés par Arthur le 01/11/2026)
+
+Avant, tout se faisait une transaction à la fois, et une catégorie utilisée
+ne se supprimait pas (bouton grisé). Bloc « CHANGEMENTS EN LOT » après les
+catégories dans index.html. Tout se défait par « Annuler » dans le toast qui
+suit (10 s, `finToastAnnuler`) : l'état d'avant (`finSnapshot` : catégories,
+transactions, récurrents) est gardé en mémoire seulement.
+* **Supprimer une catégorie ou sous-catégorie utilisée** (`finDeleteCat`,
+  `finDeleteSub`) : on choisit où vont ses transactions **et récurrents**
+  (`finChoisirDest`), puis elle est supprimée. C'est aussi la façon de fusionner.
+* **Déplacer une sous-catégorie** dans une autre catégorie du même type
+  (`finMoveSub`, flèche ↱). Les numéros de sous-catégorie sont propres à chaque
+  catégorie : elle y reçoit le suivant, ou rejoint celle du même nom (sans
+  accents ni casse).
+* **Cases à cocher** dans la liste (`_finSel`), barre `#fin-selbar` : catégorie
+  (dépenses seules ou revenus seuls), source, date (un mois plus tard ou plus tôt,
+  même jour ramené au dernier du mois, ou un jour fixe : `finDecalerMois`),
+  supprimer. Une case cachée par un filtre ou un autre mois est décochée : une
+  action ne touche que ce qu'on voit. Filtre « Tous les mois »
+  (`#fin-filter-periode`) pour chercher dans tout l'historique.
+* **« Faire pareil pour les autres ? »** (`finProposerPareil`) : après avoir
+  changé la catégorie d'une transaction, Pilote propose la même aux autres
+  transactions et récurrents du même libellé et du même type. Rien sans « Oui ».
+  Pas de règles automatiques (libellé → catégorie) : écartées pour rester simple.
+
 ## Importer (JSON ou CSV d'une autre appli, 4.4.40)
 
 Bouton « Importer » de l'en-tête du mois (`finImportLire`). Tout se fait en JS,
