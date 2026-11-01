@@ -25898,8 +25898,10 @@ function bilanResume(b) {
   return { titre: t.join(" · ") || "rien de saisi cette semaine", texte: l.join("\n") };
 }
 
-/** La page du bilan (document autonome : iframe, impression, PDF). */
-function bilanPageHtml(b) {
+/** La page du bilan (document autonome : iframe, impression, PDF). `tel` :
+    la version du téléphone, une colonne, faite pour un PDF d'une seule page
+    à 420 px de large (plateforme.html_vers_pdf), jointe à la notification. */
+function bilanPageHtml(b, tel) {
   const css = getComputedStyle(document.documentElement);
   const accent = css.getPropertyValue("--accent").trim() || "#9C4A7A";
   const G = "#15803d", R = "#b91c1c";
@@ -26035,7 +26037,20 @@ function bilanPageHtml(b) {
   .vide { color: #8a827a; font-style: italic; margin: 4px 0; }
   footer { margin-top: 28px; color: #a39a90; font-size: 10.5px; text-align: center; }
   @media (max-width: 640px) { body { padding: 20px 16px; } .cpt { grid-template-columns: 1fr auto; } .cpt .bar, .cpt .cv { display: none; } .deux { grid-template-columns: 1fr; } }
-</style></head><body>
+  /* Téléphone : tout sur une colonne */
+  body.tel { padding: 22px 18px 16px; }
+  .tel h1 { font-size: 25px; }
+  .tel .kpis { grid-template-columns: 1fr 1fr; }
+  .tel .kv { font-size: 21px; }
+  .tel .cpt { grid-template-columns: 1fr auto auto; row-gap: 2px; }
+  .tel .cpt .bar { grid-column: 1 / -1; grid-row: 2; height: 6px; }
+  .tel .cpt .cv { display: none; }
+  .tel .deux { grid-template-columns: 1fr; gap: 14px; }
+  .tel .cat { grid-template-columns: 1fr 70px auto; }
+  .tel .av { grid-template-columns: 96px 1fr; }
+  .tel .sem { height: 110px; gap: 5px; }
+  .tel .spark { width: 100%; }
+</style></head><body${tel ? ' class="tel"' : ""}>
 <div class="kick">Bilan de la semaine${enCours ? " · en cours" : ""}</div>
 <h1>Ta semaine <em>${bilanSemaineLbl(b.lundi)}</em></h1>
 <p class="sub">${escHtml(typeof homeDisplayName === "function" ? homeDisplayName() || "" : "")}${typeof homeDisplayName === "function" && homeDisplayName() ? " · " : ""}chiffres du ${quand}</p>
@@ -26140,9 +26155,10 @@ async function bilanEnvoyerAuTelephone() {
   if (_estCto() || !(window.pywebview && pywebview.api && pywebview.api.save_agenda_bilans)) return;
   const cur = bilanLundiDe(todayISO()), out = {};
   for (const l of [bilanPlus(cur, -7), cur]) {
-    const b = await bilanCalculer(l, true);
+    const b = await bilanCalculer(l);
     if (!b) return;
-    out[l] = Object.assign(bilanResume(b), {
+    // html : la page en version téléphone, que Python écrit en PDF et joint
+    out[l] = Object.assign(bilanResume(b), { html: bilanPageHtml(b, true),
       calculeA: b.calculeA.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
                   .replace(/ 1 /, " 1er ") + " à " + b.calculeA.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) });
   }

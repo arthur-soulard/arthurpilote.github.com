@@ -21,4 +21,6 @@ js:bilanOuvrir()
 # 3. La même page, défilée (sport, dépenses, santé, semaine qui vient).
 js:document.getElementById('bilan-frame').contentWindow.scrollTo(0,640)
 # 4. « Nouveau dans Pilote » : Agenda retiré des modules connus, en mémoire.
-js:document.getElementById('ov-bilan').remove();S.uiPrefs.modulesConnus=S.uiPrefs.modulesConnus.filter(function(x){return(x!=='sec-agenda')});_demanderNouveauxModules()
+#    Pas de « ; » dans une ligne (le test sépare les écrans par « ; ») ;
+#    écran à part si les lots coupent avant : la fenêtre du bilan peut manquer.
+js:(document.getElementById('ov-bilan')&&document.getElementById('ov-bilan').remove(),S.uiPrefs.modulesConnus=S.uiPrefs.modulesConnus.filter(function(x){return(x!=='sec-agenda')}),_demanderNouveauxModules())

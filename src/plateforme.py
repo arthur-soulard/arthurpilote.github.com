@@ -154,6 +154,69 @@ def ouvrir(chemin: str) -> None:
         subprocess.Popen(["xdg-open", chemin])
 
 
+# ─── Page HTML -> PDF d'une seule page (bilan de la semaine, 01/11/2026) ─────
+# Pour le telephone : une page longue, sans coupure, a la largeur d'un ecran de
+# telephone (la page passe sur une colonne). pywebview ne sait pas ecrire un PDF
+# sans la fenetre d'impression ; un navigateur Chromium sans fenetre, si :
+# Edge, present sur tout Windows 10 et 11 ; sur Mac, Chrome, Edge ou Brave
+# s'il y en a un (sinon pas de PDF, la notification reste en texte).
+
+def _chromium() -> str:
+    if sys.platform == "win32":
+        bases = [os.environ.get("ProgramFiles(x86)", ""), os.environ.get("ProgramFiles", ""),
+                 os.environ.get("LOCALAPPDATA", "")]
+        noms = [r"Microsoft\Edge\Application\msedge.exe", r"Google\Chrome\Application\chrome.exe"]
+        candidats = [os.path.join(b, n) for n in noms for b in bases if b]
+    elif sys.platform == "darwin":
+        candidats = [f"/Applications/{a}.app/Contents/MacOS/{a}" for a in
+                     ("Google Chrome", "Microsoft Edge", "Brave Browser", "Chromium")]
+    else:
+        candidats = ["/usr/bin/chromium", "/usr/bin/google-chrome"]
+    return next((c for c in candidats if os.path.isfile(c)), "")
+
+
+def html_vers_pdf(html: str, chemin_pdf: str, largeur: int = 420) -> bool:
+    """Ecrit `html` en PDF d'une seule page de `largeur` px (sa hauteur suit la
+    page). Les polices de Pilote (ui/vendor) sont reprises depuis le disque.
+    False sans navigateur ou en cas d'echec, sans lever d'exception."""
+    import tempfile
+    from pathlib import Path
+    exe = _chromium()
+    if not exe:
+        return False
+    base = Path(getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__))))
+    polices = (base / "ui" / "vendor" / "fonts.css").as_uri()
+    html = re.sub(r'href="https?://[^"]*/vendor/fonts\.css[^"]*"', f'href="{polices}"', html)
+    # La hauteur de la page une fois dessinee devient celle du papier
+    # (une fois les polices chargees : avant, le texte plus etroit donnait une
+    # page trop courte et la derniere ligne passait sur une 2e page)
+    html = html.replace("</body>", "<script>addEventListener('load',function(){"
+                        f"document.documentElement.style.width='{largeur}px';"
+                        "document.fonts.ready.then(function(){"
+                        "var h=Math.ceil(document.body.getBoundingClientRect().height)+24,"
+                        "s=document.createElement('style');"
+                        f"s.textContent='@page{{size:{largeur}px '+h+'px;margin:0}}';"
+                        "document.head.appendChild(s);});});</script></body>", 1)
+    try:
+        with tempfile.TemporaryDirectory(prefix="pilote-pdf-") as tmp:
+            source = Path(tmp) / "page.html"
+            source.write_text(html, encoding="utf-8")
+            sortie = Path(tmp) / "page.pdf"
+            drapeaux = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            subprocess.run([exe, "--headless=new", "--disable-gpu", "--no-first-run",
+                            "--no-pdf-header-footer", f"--user-data-dir={Path(tmp) / 'profil'}",
+                            f"--window-size={largeur},900", "--virtual-time-budget=4000",
+                            f"--print-to-pdf={sortie}", source.as_uri()],
+                           timeout=60, capture_output=True, creationflags=drapeaux)
+            if not sortie.is_file() or sortie.stat().st_size < 1000:
+                return False
+            Path(chemin_pdf).parent.mkdir(parents=True, exist_ok=True)
+            Path(chemin_pdf).write_bytes(sortie.read_bytes())
+            return True
+    except Exception:
+        return False
+
+
 # ─── Mac : pont JS <-> Python de pywebview sans eval ──────────────────────────
 # La CSP de la page (server._CSP) interdit d'evaluer du texte comme du code :
 # pas de 'unsafe-eval'. Sous Windows, WebView2 exempte le script que pywebview

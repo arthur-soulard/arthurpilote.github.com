@@ -574,6 +574,25 @@ class TestAgenda(unittest.TestCase):
         r = agenda.enregistrer_bilans({"2026-10-12": {"titre": "a"}, "2026-10-19": {"titre": "b"},
                                        "2026-10-26": {"titre": "c"}, "pas une date": {"titre": "x"}})
         self.assertEqual(list(r["bilans"]), ["2026-10-19", "2026-10-26"])
+        # La page en PDF : écrite une fois, refaite seulement si les chiffres changent,
+        # puis annoncée dans l'événement (X-PILOTE-PDF), que _envoyer joint
+        import plateforme
+        appels = []
+        def faux_pdf(html, chemin, largeur=420):
+            appels.append(html)
+            open(chemin, "wb").write(b"%PDF-1.4 " + html.encode() * 200)
+            return True
+        vrai, plateforme.html_vers_pdf = plateforme.html_vers_pdf, faux_pdf
+        try:
+            b = {lundi: {"titre": "bourse +1 %", "texte": "PEA", "calculeA": "x", "html": "<p>page</p>"}}
+            r = agenda.enregistrer_bilans(b)
+            self.assertRegex(r["bilans"][lundi]["pdf"], r"^[0-9a-f]{16}$")
+            agenda.enregistrer_bilans(b)
+            self.assertEqual(len(appels), 1)
+            ev = agenda.evenements({}, {}, {}, [], {"resume": "dimanche"}, [], r["bilans"])
+            self.assertIn("X-PILOTE-PDF:" + lundi + ":" + r["bilans"][lundi]["pdf"], ev["resume"])
+        finally:
+            plateforme.html_vers_pdf = vrai
         # Réglages acceptés par type
         propres = agenda._alertes_propres({"resume": "matin", "sport": "dimanche", "objectif": "semaine"})
         self.assertEqual((propres["resume"], propres["sport"], propres["objectif"]), ("", "", "semaine"))

@@ -213,6 +213,25 @@ Calendrier doit être autorisé.
   dernier lancement, et la description dit lesquels (« Chiffres du dim. 1er
   nov. à 17:00 »). Rien de calculé pour cette semaine : « Ouvre Pilote pour
   voir le bilan ». La page du bilan est décrite dans `docs/accueil.md`.
+* **La page en pièce jointe** (01/11/2026, « je veux la page sur la notif ») :
+  la page en version téléphone (`bilanPageHtml(b, true)`, une colonne) part
+  avec les chiffres ; `plateforme.html_vers_pdf` en fait un PDF d'**une seule
+  page** de 420 px de large (Edge sans fenêtre sous Windows ; sur Mac Chrome,
+  Edge ou Brave s'il y en a un, sinon pas de PDF), dans `users/<slug>/bilans/
+  <lundi>.pdf`, refait seulement quand les chiffres changent. L'événement porte
+  `X-PILOTE-PDF:<lundi>:<empreinte>` ; `_joindre_pdf` le joint (pièce jointe
+  gérée, RFC 8607 : iCloud annonce `calendar-managed-attachments`).
+  **Piège constaté sur le vrai iCloud :** déposer la pièce jointe réécrit
+  l'événement **sans son alerte** (la notification n'a pas sonné). D'où trois
+  temps : PUT, POST `?action=attachment-add`, puis PUT de l'événement complet
+  avec la ligne `ATTACH` qu'iCloud a posée. Si ce dernier PUT échoue,
+  l'empreinte n'est pas notée et tout repart au prochain envoi. Vérifié sur son
+  iPhone avec une page fictive : notification reçue, PDF ouvert en une page.
+  Une notification de Calendrier ouvre toujours l'événement, pas le PDF
+  (deux gestes) ; un Raccourci iPhone sur un PDF d'iCloud Drive l'ouvrirait
+  directement, écarté par Arthur (iCloud Drive pas installé sur son PC).
+  Données envoyées à iCloud : la page entière (valeur de chaque compte,
+  dépenses, poids), plus que le texte seul ; voir CLAUDE.md.
 * **Envoyer un essai** (`save_agenda_essai` → `agenda.tester`, demande
   d'Arthur du 26/10/2026 : « je peux pas envoyer de notif test ») : un
   événement 2 à 3 minutes plus tard, alerte à l'heure, envoyé tout de suite

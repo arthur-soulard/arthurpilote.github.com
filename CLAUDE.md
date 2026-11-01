@@ -7,7 +7,9 @@ Deux exceptions, voulues : le module Actus se connecte à la boîte Gmail de
 l'utilisateur pour la lire (`docs/modules/actus.md`) ; il n'y envoie rien de Pilote.
 Et la section Agenda (22/10/2026) écrit dans l'agenda iCloud de l'utilisateur ses
 notes et ce qu'il a coché, et lit ses autres agendas pour les afficher sans jamais
-les modifier (`docs/modules/agenda.md`).
+les modifier (`docs/modules/agenda.md`). Si la notification « Bilan de la semaine »
+est réglée, elle emporte aussi la page du bilan en PDF (valeur des comptes, dépenses,
+poids : décidé avec Arthur le 01/11/2026).
 **Aussi sur Mac depuis la 4.4.8** (décidé le 11/10/2026, Mac à puce Apple) : une seule
 app pour les deux systèmes, pas de copie séparée ; ce qui diffère passe par
 `sys.platform` ou `plateforme.py`, le chemin Windows y reste celui d'avant. Avant de

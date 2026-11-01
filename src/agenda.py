@@ -204,13 +204,15 @@ def _redirection_permise(depuis: str, vers: str) -> bool:
 
 def _requete(methode: str, url: str, auth: tuple, corps: bytes = None,
              type_corps: str = "application/xml; charset=utf-8", profondeur: str = None,
-             accepte=(200, 201, 204, 207)) -> tuple:
+             accepte=(200, 201, 204, 207), entetes: dict = None) -> tuple:
     """(statut, url finale, corps). Un statut hors de `accepte` leve ErreurAgenda."""
     jeton = base64.b64encode(f"{auth[0]}:{auth[1]}".encode("utf-8")).decode("ascii")
     for _ in range(5):
         req = urllib.request.Request(url, data=corps, method=methode)
         req.add_header("Authorization", "Basic " + jeton)
         req.add_header("User-Agent", "Pilote")
+        for k, v in (entetes or {}).items():
+            req.add_header(k, v)
         if corps is not None:
             req.add_header("Content-Type", type_corps)
         if profondeur is not None:
@@ -731,14 +733,21 @@ def _resume(valeur: str, bilans: dict = None) -> list:
         debut += datetime.timedelta(days=7)
     lundi = debut.date() - datetime.timedelta(days=6 if valeur == "dimanche" else 7)
     b = (bilans or {}).get(lundi.isoformat()) if isinstance(bilans, dict) else None
+    pj = ""
     if isinstance(b, dict) and b.get("titre"):
         titre = "📊 Ta semaine : " + str(b["titre"])
         texte = str(b.get("texte") or "") + (f"\n\nChiffres du {b['calculeA']}." if b.get("calculeA") else "")
+        # La page en PDF, jointe par _envoyer (« lundi:empreinte »)
+        if re.fullmatch(r"[0-9a-f]{16}", str(b.get("pdf") or "")):
+            pj = f"{lundi.isoformat()}:{b['pdf']}"
+            texte += "\nLa page du bilan est en pièce jointe."
     else:
         titre = "📊 Ta semaine dans Pilote"
         texte = "Ouvre Pilote pour voir le bilan de ta semaine."
-    return [_element("resume", "resume", titre, debut.date(), debut,
-                     debut + datetime.timedelta(minutes=15), texte.strip(), alerte="0")]
+    e = _element("resume", "resume", titre, debut.date(), debut,
+                 debut + datetime.timedelta(minutes=15), texte.strip(), alerte="0")
+    e["pj"] = pj
+    return [e]
 
 
 def a_venir(lundi_iso: str) -> list:
@@ -763,10 +772,18 @@ def a_venir(lundi_iso: str) -> list:
     return sorted(out, key=lambda x: (x["jour"], x["heure"] or "99"))
 
 
+def _dossier_bilans():
+    return storage.get_user_dir() / "bilans"
+
+
 def enregistrer_bilans(bilans: dict) -> dict:
     """Les chiffres du bilan de la semaine, calcules par la page (elle seule a
     les calculs de la bourse) : les deux semaines les plus recentes. Renvoyes
-    au telephone si le resume part."""
+    au telephone si le resume part. `html` : la page en version telephone,
+    ecrite en PDF d'une seule page (bilans/<lundi>.pdf) et jointe a
+    l'evenement ; refaite seulement quand les chiffres changent."""
+    import plateforme
+    avant = _store.load().get("bilans") or {}
     propres = {}
     for k, b in (bilans if isinstance(bilans, dict) else {}).items():
         if _jour(k) and isinstance(b, dict):
@@ -774,7 +791,25 @@ def enregistrer_bilans(bilans: dict) -> dict:
                                     "texte": str(b.get("texte") or "")[:2000],
                                     "calculeA": str(b.get("calculeA") or "")[:40]}
     garde = dict(sorted(propres.items())[-2:])
-    avant = _store.load().get("bilans")
+    dossier = _dossier_bilans()
+    for k, b in garde.items():
+        a = avant.get(k) if isinstance(avant.get(k), dict) else {}
+        pdf = dossier / f"{k}.pdf"
+        html = (bilans[k] or {}).get("html") if k in bilans else None
+        memes = (a.get("titre"), a.get("texte")) == (b["titre"], b["texte"])
+        if memes and a.get("pdf") and pdf.is_file():
+            b["pdf"], b["calculeA"] = a["pdf"], a.get("calculeA") or b["calculeA"]
+        elif isinstance(html, str) and html:
+            dossier.mkdir(parents=True, exist_ok=True)
+            if plateforme.html_vers_pdf(html, str(pdf)):
+                b["pdf"] = hashlib.sha256(pdf.read_bytes()).hexdigest()[:16]
+    if dossier.is_dir():   # les PDF des semaines oubliees
+        for f in dossier.glob("*.pdf"):
+            if f.stem not in garde:
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
     if garde != avant:
         _modifier(lambda d: d.update(bilans=garde))
         planifier_si("resume")
@@ -849,6 +884,8 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
             lignes.append("RRULE:" + e["regle"])
         if e["texte"]:
             lignes.append("DESCRIPTION:" + _echapper(e["texte"]))
+        if e.get("pj"):   # PDF a joindre (bilan) : son empreinte change l'evenement
+            lignes.append("X-PILOTE-PDF:" + e["pj"])
         out[e["cle"]] = lignes + _alarme(e, e["alerte"] or alertes.get(e["type"]))
     return out
 
@@ -1018,6 +1055,34 @@ def _ics(uid: str, lignes: list) -> bytes:
     return ("\r\n".join(_plier(l) for l in tout if l) + "\r\n").encode("utf-8")
 
 
+def _joindre_pdf(url: str, auth: tuple, uid: str, lignes: list, pj: str) -> bool:
+    """Joint au bilan de la semaine la page en PDF (piece jointe geree par
+    iCloud, RFC 8607 : « calendar-managed-attachments », verifie le
+    01/11/2026). iCloud reecrit alors l'evenement SANS son alerte (constate
+    ce jour-la, la notification n'a pas sonne) : on le renvoie donc avec la
+    ligne ATTACH qu'il a posee. True si c'est fait ou s'il n'y a rien a
+    joindre ; False si l'alerte a pu etre perdue (a renvoyer)."""
+    lundi = pj.split(":", 1)[0]
+    pdf = _dossier_bilans() / f"{lundi}.pdf"
+    if not _jour(lundi) or not pdf.is_file():
+        return True
+    try:
+        _requete("POST", url + "?action=attachment-add", auth, pdf.read_bytes(),
+                 type_corps="application/pdf",
+                 entetes={"Content-Disposition": 'attachment;filename="Bilan de la semaine.pdf"'})
+    except ErreurAgenda:
+        return True    # pas de piece jointe : l'evenement reste tel qu'envoye
+    try:
+        _, _, corps = _requete("GET", url, auth)
+        attach = [l for l in _deplier_ics(corps.decode("utf-8", "replace")) if l.startswith("ATTACH")]
+        i = lignes.index("BEGIN:VALARM") if "BEGIN:VALARM" in lignes else len(lignes)
+        _requete("PUT", url, auth, _ics(uid, lignes[:i] + attach + lignes[i:]),
+                 type_corps="text/calendar; charset=utf-8")
+        return True
+    except ErreurAgenda:
+        return False
+
+
 def _empreinte(lignes: list) -> str:
     return hashlib.sha256("\n".join(lignes).encode("utf-8")).hexdigest()[:16]
 
@@ -1126,6 +1191,9 @@ def _envoyer(data: dict, dossier: str) -> int:
             continue
         _requete("PUT", cal + urllib.parse.quote(nom), auth, _ics(nom[:-4], lignes),
                  type_corps="text/calendar; charset=utf-8")
+        pj = next((l.split(":", 1)[1] for l in lignes if l.startswith("X-PILOTE-PDF:")), "")
+        if pj and not _joindre_pdf(cal + urllib.parse.quote(nom), auth, nom[:-4], lignes, pj):
+            continue   # alerte peut-etre perdue : renvoye au prochain envoi
         faits[nom] = emp
     # Utilisateur change pendant l'envoi : ne pas ecrire dans le fichier de l'autre
     if str(storage.get_user_dir()) == dossier:

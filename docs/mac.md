@@ -185,7 +185,8 @@ sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
 | ⌘Q (pywebview) : arrêt sans vider les enregistrements en attente (0,4 s) | pywebview | réglé (étape 3) : voir « Fenêtre Mac » |
 | Mot de passe Gmail d'Actus chiffré par DPAPI (session Windows) | `actus.py` | réglé (étape 5) : Trousseau de la session |
 | Certificats HTTPS (Yahoo, Gmail, GitHub) : le Python embarqué n'utilise pas forcément ceux du système | `server.py`, `actus.py`, `updater.py` | test du 12/10/2026 (annotation « HTTPS ») : l'app compilée cherche ses certificats dans `/Library/Frameworks/Python.framework/Versions/3.11/etc/openssl/cert.pem`, le Python installé sur la machine de GitHub. Yahoo, Gmail et GitHub y répondent, mais un Mac ordinaire n'a pas ce fichier. Avec `/etc/ssl/cert.pem` (fourni avec macOS), les trois répondent aussi. **Réglé** : `plateforme.certificats_mac()`, en tête d'`app.py` avant tout contexte TLS, pointe `SSL_CERT_FILE` sur ce fichier quand celui du Python manque ; le test cache désormais le fichier de GitHub (`sudo mv`) : Yahoo, Gmail, GitHub OK et cours lu |
-| Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | réglé (étape 5) : pywebview Mac n'imprime que la page principale ; le rapport s'ouvre dans le navigateur (`Api.ouvrir_rapport`), où ⌘P l'imprime |
+| Imprimer / PDF du rapport annuel : `frame.contentWindow.print()` dans une iframe | `index.html` | réglé (étape 5) : pywebview Mac n'imprime que la page principale ; le rapport s'ouvre dans le navigateur (`Api.ouvrir_rapport`), où ⌘P l'imprime ; même chemin pour le bilan de la semaine (`_rapportImprimer`) |
+| PDF du bilan joint à la notification (`plateforme.html_vers_pdf`, 01/11/2026) | `plateforme.py` | Edge sans fenêtre sous Windows ; sur Mac, Chrome, Edge ou Brave seulement s'il y en a un, sinon la notification reste en texte. Pas encore essayé sur Mac |
 
 ## Lecture d'images, Trousseau, rapport (étape 5, 12/10/2026)
 
