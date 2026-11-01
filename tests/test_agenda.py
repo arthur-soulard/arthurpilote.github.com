@@ -437,8 +437,8 @@ class TestAgenda(unittest.TestCase):
         self.assertIn("DTSTART;VALUE=DATE:" + auj.replace(day=5).strftime("%Y%m%d"), ev["pesee"])
         self.assertIn("RRULE:FREQ=MONTHLY", ev["pesee"])
         self.assertIn("TRIGGER:-PT6H", ev["releve"])
-        self.assertIn("SUMMARY:💶 Versement PEA prévu · 300\\,00 €", ev["versement-7"])
-        self.assertIn("SUMMARY:💶 Dividende · Amundi MSCI World · 12\\,50 €", ev["dividende-d1"])
+        self.assertIn("SUMMARY:Pilote : 💶 Versement PEA prévu · 300\\,00 €", ev["versement-7"])
+        self.assertIn("SUMMARY:Pilote : 💶 Dividende · Amundi MSCI World · 12\\,50 €", ev["dividende-d1"])
 
         # Pesée et relevé faits ce mois-ci : le rappel passe au mois suivant
         sante.save_data({"mesures": [{"id": 1, "date": auj.isoformat(), "poids": 70}]})
@@ -542,7 +542,7 @@ class TestAgenda(unittest.TestCase):
         notes = [{"id": f"n{i}", "titre": f"Note {i}", "date": (auj + datetime.timedelta(days=i)).isoformat()}
                  for i in range(15)]
         ev = agenda.evenements({}, {}, {}, notes, {"resume": "dimanche"}, [])
-        self.assertIn("SUMMARY:🗓️ Ta semaine : 7 notes", ev["resume"])
+        self.assertIn("SUMMARY:Pilote : 🗓️ Ta semaine : 7 notes", ev["resume"])
         self.assertIn("TRIGGER:PT0S", ev["resume"])
         self.assertTrue(re.search(r"DTSTART:\d{8}T180000", "\n".join(ev["resume"])))
         e = agenda.retenus({}, {}, {}, [], {"resume": "lundi"})[0]

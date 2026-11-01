@@ -108,6 +108,18 @@ class Coinbase(unittest.TestCase):
         ])
         self.assertEqual(r["ignores"].get("transferts_crypto"), 1)
 
+    def test_reception_comptee_au_cours_du_jour(self):
+        # Un compte qui n'a que des réceptions (export d'un utilisateur, 01/11/2026)
+        r = lire([
+            ["ID", "Timestamp", "Transaction Type", "Asset", "Quantity Transacted", "Price Currency",
+             "Price at Transaction", "Subtotal", "Total (inclusive of fees and/or spread)", "Fees and/or Spread", "Notes"],
+            ["r1", "2024-01-05 10:00:00 UTC", "Receive", "SOL", "0.5", "USD", "$110.00", "$55.00", "$55.00", "$0.00",
+             "Received 0.5 SOL from an external account"],
+        ])
+        self.assertEqual(resume(r), [("Achat", "SOL", 0.5, 50.0, 0.0, "recu")])
+        self.assertTrue(r["operations"][0]["alerte"])
+        self.assertFalse(r["ignores"].get("transferts_crypto"))
+
 
 class Kraken(unittest.TestCase):
     def test_ledgers(self):
@@ -213,6 +225,14 @@ class Delta(unittest.TestCase):
         self.assertEqual(r["banque"], "Delta")
         self.assertEqual(resume(r), [("Achat", "BTC", 0.002, 100.0, 0.4, "ordre")])
         self.assertEqual((r["ignores"].get("classe"), r["ignores"].get("transferts_crypto")), (1, 1))
+
+    def test_nom_entre_parentheses(self):
+        r = lire([
+            ["Date", "Way", "Base amount", "Base currency (name)", "Base type", "Quote amount", "Quote currency",
+             "Fee amount", "Fee currency (name)"],
+            ["2024-01-05T10:00:00+01:00", "BUY", "1", "SOL (Solana)", "CRYPTO", "100", "EUR", "", ""],
+        ])
+        self.assertEqual(resume(r), [("Achat", "SOL", 1.0, 100.0, 0.0, "ordre")])
 
 
 class EtoroEtUniversel(unittest.TestCase):

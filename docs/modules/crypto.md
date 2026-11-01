@@ -112,14 +112,25 @@ Règles (en tête de `releves_crypto.py`) :
   plateforme, comme les actions offertes de Trade Republic ;
 * envoi ou réception de crypto : ignoré, compté (`transferts_crypto`, dit à
   l'écran : « importe aussi l'export de cette plateforme ») ;
+* **sauf « Receive » chez Coinbase** (01/11/2026, décidé avec Arthur) : un
+  utilisateur dont l'export Coinbase n'avait que des réceptions voyait un
+  portefeuille vide. Une réception devient un achat `origine: "recu"` (badge
+  « Reçu ») à la valeur que donne l'export (`Subtotal`, converti en euros),
+  sinon au cours du jour. L'aperçu de l'import prévient : si l'export d'où
+  vient la crypto est aussi importé, son achat y est déjà (compté deux fois).
+  Les envois restent ignorés ;
+* Delta écrit `SOL (Solana)` : seul le symbole avant la parenthèse est gardé
+  (jusqu'au 01/11/2026, « SOL (SOLANA) » restait sans cotation) ;
 * toute opération porte `compte: "CRYPTO"`. Depuis le PEA ou un CTO, l'import
   propose de l'envoyer dans la section Crypto ; depuis la Crypto, les actions
   d'un relevé de banque restent dehors (`titres_hors_crypto`).
 
 Tests : `tests/test_releves_crypto.py` (exports fictifs, cours fixés). Vérifié
 au banc : un export Coinbase importé dans la section (achat, staking en
-« offert », envoi ignoré, Solana reconnu). **Aucun vrai export d'une
-plateforme n'a encore été essayé.**
+« offert », envoi ignoré, Solana reconnu). Le 01/11/2026, deux fichiers
+d'un autre utilisateur : un vrai export Coinbase (5 réceptions : BTC, ETH,
+SOL, DOGE importés au banc avec leur cours) et le modèle d'exemple de Delta
+(pas un vrai historique). Les autres plateformes : aucun vrai export essayé.
 
 ## Tuiles et Patrimoine
 

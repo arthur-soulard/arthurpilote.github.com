@@ -26,6 +26,7 @@ Ce que devient chaque ligne :
       Republic : la quantité suit celle de la plateforme ;
   envoi ou réception de crypto (vers un portefeuille, une autre plateforme)
       -> ignoré et compté (« transferts ») : la crypto a été achetée ailleurs ;
+      sauf « Receive » chez Coinbase : un achat « reçu » au cours du jour ;
   dépôt ou retrait d'euros -> versement ou retrait (que le compte déduit
       des ordres, comme un CTO).
 Toutes les opérations portent compte « CRYPTO » : un fichier ouvert depuis le
@@ -356,6 +357,18 @@ def _coinbase(c, lignes, lot):
                     valeur=eur(sub if sub is not None else tot))
         elif _RECOMPENSE.search(typ) or typ in ("coinbase earn", "learning reward"):
             recompense(lot, date, quand, sym, qty, eur(tot if tot else sub), refx)
+        elif typ == "receive" and symbole(sym) not in FIAT:
+            # Crypto reçue d'un autre portefeuille : une entrée à sa valeur du
+            # jour, sinon un compte qui n'a que des réceptions resterait vide
+            # (export d'un utilisateur, 01/11/2026). Les envois restent ignorés.
+            v = eur(sub if sub is not None else tot) or _eur(sym, qty, date)
+            if not v:
+                _compter(lot, "conversion")
+                continue
+            op = _ajoute(lot, "Achat", date, sym, abs(qty), v, 0, quand, refx, origine="recu")
+            if op:
+                op["alerte"] = ("reçue d'un autre portefeuille, au cours du jour : si tu importes aussi "
+                                "l'export d'où elle vient, son achat y est déjà")
         elif typ in ("send", "receive", "deposit", "withdrawal", "exchange deposit", "exchange withdrawal",
                      "pro deposit", "pro withdrawal"):
             especes(lot, date, quand, sym, -abs(qty) if typ in ("send", "withdrawal") or "withdrawal" in typ else abs(qty), refx)
@@ -579,13 +592,16 @@ def _delta(c, lignes, lot):
     col = lambda d: next((i for k, i in c.items() if k.startswith(d)), None)
     i_bc, i_qc, i_fa, i_fc = col("base currency"), col("quote currency"), col("fee amount"), col("fee currency")
     g = lambda r, i: r[i].strip() if i is not None and i < len(r) else ""
+    # « SOL (Solana) » : le nom entre parenthèses lève une ambiguïté chez
+    # Delta, seul le symbole sert ici
+    sy = lambda r, i: g(r, i).split("(")[0].strip().upper()
     for r in lignes:
         quand = _quand(g(r, c.get("date")))
         date, way = quand[:10], g(r, c.get("way")).upper()
-        sym, qty = g(r, i_bc).upper(), _num(g(r, c.get("base amount")))
+        sym, qty = sy(r, i_bc), _num(g(r, c.get("base amount")))
         btype = g(r, c.get("base type")).upper()
-        qcur, qmt = g(r, i_qc).upper() or "EUR", _num(g(r, c.get("quote amount")))
-        fee, fsym = _num(g(r, i_fa)), g(r, i_fc).upper()
+        qcur, qmt = sy(r, i_qc) or "EUR", _num(g(r, c.get("quote amount")))
+        fee, fsym = _num(g(r, i_fa)), sy(r, i_fc)
         if not date or not sym or not qty:
             continue
         if btype and btype not in ("CRYPTO", "COIN", "CRYPTOCURRENCY", "FIAT"):

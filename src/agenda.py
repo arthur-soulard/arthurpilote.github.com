@@ -781,11 +781,15 @@ def _alarme(e: dict, valeur: str) -> list:
     else:
         # Toute la journee : le debut est minuit
         declencheur = {"veille": "-PT6H", "semaine": "-P6DT15H"}.get(valeur, "PT9H")
-    return ["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + _echapper(e["titre"]),
+    return ["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + _echapper(_PREFIXE + e["titre"]),
             "TRIGGER:" + declencheur, "END:VALARM"]
 
 
 _CASES = {"sport": "sport", "objectif": "objectifs", "pret": "pret"}
+
+# Sur l'iPhone, la notification est celle de l'app Calendrier (son logo, le
+# titre de l'evenement) : sans ce debut, rien ne dit qu'elle vient de Pilote
+_PREFIXE = "Pilote : "
 
 
 def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
@@ -796,7 +800,7 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
     out = {}
     alertes = alertes or {}
     for e in retenus(sp, pr, choix, notes, alertes, en_plus):
-        lignes = ["SUMMARY:" + _echapper(e["titre"])]
+        lignes = ["SUMMARY:" + _echapper(_PREFIXE + e["titre"])]
         if e["debut"]:
             lignes += ["DTSTART:" + e["debut"].strftime("%Y%m%dT%H%M%S"),
                        "DTEND:" + e["fin"].strftime("%Y%m%dT%H%M%S")]
@@ -911,11 +915,14 @@ def lire_ics(texte: str) -> list:
                 jour_fin = (fin - datetime.timedelta(seconds=1)).date() if fin > debut else debut.date()
         except (ValueError, KeyError, TypeError, AttributeError):
             continue   # date illisible ou melange date / date-heure : evenement ignore
+        titre = _desechapper(ev.get("SUMMARY", ("", "Sans titre"))[1])
+        if titre.startswith(_PREFIXE):   # dans Pilote, inutile de le rappeler
+            titre = titre[len(_PREFIXE):]
         res.append({"debut": (debut if journee else debut.date()).isoformat(),
                     "fin": jour_fin.isoformat(),
                     "heure": "" if journee else debut.strftime("%H:%M"),
                     "heureFin": "" if journee else fin.strftime("%H:%M"),
-                    "titre": _desechapper(ev.get("SUMMARY", ("", "Sans titre"))[1]) or "Sans titre"})
+                    "titre": titre or "Sans titre"})
     return res
 
 

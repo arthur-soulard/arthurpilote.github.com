@@ -139,6 +139,12 @@ c'est l'iPhone qui la sonne, Pilote fermé ou non. Rien de nouveau ne sort du
 PC : mêmes événements, même agenda. Sur l'iPhone, Réglages › Notifications ›
 Calendrier doit être autorisé.
 
+* **« Pilote : » en tête du titre** (01/11/2026, Arthur : « on comprend pas
+  directement que c'est ça ») : la notification est celle de Calendrier, avec
+  son logo, et reprend le titre de l'événement. `agenda._PREFIXE` est donc mis
+  devant le `SUMMARY` et la description de l'alerte, puis retiré par `lire_ics`
+  pour que le calendrier de Pilote ne le répète pas. Le logo ne peut pas changer.
+
 * **Rangé en pastilles, une par section** (26/10/2026, demande d'Arthur :
   « une liste énorme de propositions, l'utilisateur coche ce qu'il veut ») :
   PEA, CTO, Mes comptes, Prêt (nom libre, `prNom()`), Sports, Patrimoine,

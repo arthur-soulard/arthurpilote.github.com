@@ -11,14 +11,11 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 31/10/2026 (4.4.44) : plateformes crypto, lecture de leurs exports.
-# Pas de « ; » dans une ligne js: (la liste est coupée aux « ; ») : des virgules.
-# Pas d'espace non plus (chaque écran est coupé aux espaces) : sélecteurs en « > ».
-# 1. Crypto › Réglages du compte, liste ouverte sur Kraken. Attendu : champ
-#    « Plateforme », Kraken choisi et son tarif dessous (1 %, Kraken Pro).
-js:goTab("crypto-pos"),setTimeout(()=>{ctoOuvrirCompte(cryptoCompte().id),document.getElementById("cto-cpt-courtier").value="kraken",ctoCompteResume()},800)
-# 2. Crypto › Transactions. Attendu : barre « Trade Republic » avec son tarif,
-#    aucune alerte « frais ≠ grille ».
-crypto-tx
-# 3. Crypto › Positions. Attendu : Bitcoin et Ethereum, badge « Crypto ».
+# 01/11/2026 (4.4.45) : réceptions Coinbase, symboles Delta entre parenthèses,
+# « Pilote : » devant les événements iCloud (rien de visible dans l'app).
+# Le changement visible est dans l'aperçu d'un import, que les données
+# d'exemple ne contiennent pas : on vérifie que la Crypto s'affiche toujours.
+# 1. Crypto › Positions. Attendu : Bitcoin et Ethereum, badge « Crypto ».
 crypto-pos
+# 2. Crypto › Transactions. Attendu : les ordres, sans erreur.
+crypto-tx

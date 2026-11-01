@@ -13830,11 +13830,12 @@ function pacFraisOrdre(m, o) {
 
 /* Origine d'un ordre importé (plan, Saveback, arrondi, action offerte,
    division du titre) */
-const TX_ORIGINES = { plan: "Plan", saveback: "Saveback", arrondi: "Arrondi", offert: "Offert", division: "Division" };
+const TX_ORIGINES = { plan: "Plan", saveback: "Saveback", arrondi: "Arrondi", offert: "Offert", division: "Division", recu: "Reçu" };
 function txOrigineBadge(t) {
   const l = TX_ORIGINES[t.origine];
   const titre = l === "Plan" ? "Ordre d'un plan d'investissement programmé"
     : l === "Division" ? "Division du titre : ni achat ni vente réels, les nouvelles parts reprennent le coût des anciennes"
+    : l === "Reçu" ? "Crypto reçue d'un autre portefeuille, comptée au cours du jour de la réception"
     : "Ordre automatique (" + l + ")";
   return l ? `<span class="badge" style="background:var(--bg3);color:var(--txt2)" title="${titre}">${l}</span>` : "";
 }
@@ -24298,7 +24299,7 @@ function ctoImportRender() {
       <td>${t.prixPaye ? eur(t.prixPaye) : "—"}</td>
       <td>${prixActuel ? eur(prixActuel) : "—"}${ecart != null && Math.abs(ecart) > 0.2 && !(c && c.ecart != null) ? ` <span class="cto-ecart" title="Loin du dernier prix payé : vérifie que c'est le bon titre">${ecart > 0 ? "+" : "−"}${Math.round(Math.abs(ecart) * 100)} %</span>` : ""}</td></tr>`;
   }).join("");
-  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", dividende: "", division: "", especes: "", taxe: "" };
+  const ORIG = { ordre: "", plan: "plan", saveback: "Saveback", arrondi: "arrondi", offert: "offert", recu: "reçu", dividende: "", division: "", especes: "", taxe: "" };
   const LIB = { Taxe: "Taxe (TTF)" };
   const etat = o => o.type === "Taxe" ? (o.ordreTaxe ? (o.deja ? "ordre déjà dans Pilote" : "ajoutée aux frais de l'ordre") : "ordre absent : non reprise")
     : (o.type === "Versement" || o.type === "Retrait") && _estCto() ? "ignoré (CTO)"
