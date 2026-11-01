@@ -11,16 +11,8 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 01/11/2026 (4.4.47) : bilan de la semaine passée, et nouveaux modules
-# demandés à leur arrivée. La fenêtre du bilan n'est pas une .ov : elle reste
-# ouverte d'un écran à l'autre, l'écran 4 la retire.
-# 1. Accueil : la tuile « Bilan de la semaine » en tête.
-home
-# 2. La fenêtre du bilan (semaine passée), haut de la page.
+# 01/11/2026 (4.4.48) : barres des comptes du bilan de la semaine, parties de
+# la gauche, longues comme les euros. Pas de « ; » dans une ligne (le test
+# sépare les écrans par « ; »).
+# 1. La fenêtre du bilan (semaine passée), rubrique Bourse.
 js:bilanOuvrir()
-# 3. La même page, défilée (sport, dépenses, santé, semaine qui vient).
-js:document.getElementById('bilan-frame').contentWindow.scrollTo(0,640)
-# 4. « Nouveau dans Pilote » : Agenda retiré des modules connus, en mémoire.
-#    Pas de « ; » dans une ligne (le test sépare les écrans par « ; ») ;
-#    écran à part si les lots coupent avant : la fenêtre du bilan peut manquer.
-js:(document.getElementById('ov-bilan')&&document.getElementById('ov-bilan').remove(),S.uiPrefs.modulesConnus=S.uiPrefs.modulesConnus.filter(function(x){return(x!=='sec-agenda')}),_demanderNouveauxModules())

@@ -25922,13 +25922,16 @@ function bilanPageHtml(b, tel) {
     b.sante ? kpi("Poids", kg(b.sante.poids), b.sante.delta != null ? (b.sante.delta >= 0 ? "+" : "−") + kg(Math.abs(b.sante.delta)) + " " + b.sante.ref : "") : "",
   ].filter(Boolean).join("");
 
-  // Bourse : une barre par compte, de part et d'autre de zéro
-  const maxPct = Math.max(0.5, ...b.comptes.map(c => Math.abs(c.pct || 0)));
+  // Bourse : une barre par compte, partie de la gauche, longue comme son gain
+  // ou sa perte en euros (le chiffre en gras) ; la couleur dit le sens.
+  // Jusqu'au 01/11/2026 : % depuis le milieu, Arthur la trouvait trompeuse
+  // (−2,64 € en crypto plus long que −12 € sur le PEA)
+  const maxEur = Math.max(0.01, ...b.comptes.map(c => Math.abs(c.eur || 0)));
   const bourse = b.comptes.length ? `
     <div class="cptes">${b.comptes.map(c => {
-      const w = Math.min(50, Math.abs(c.pct || 0) / maxPct * 50);
+      const w = Math.abs(c.eur || 0) / maxEur * 100;
       return `<div class="cpt"><span class="cn">${escHtml(c.nom)}</span>
-        <span class="bar"><i style="${(c.pct || 0) >= 0 ? "left:50%" : "right:50%"};width:${w.toFixed(1)}%;background:${coul(c.eur)}"></i></span>
+        <span class="bar"><i style="left:0;width:${w.toFixed(1)}%;background:${coul(c.eur)}"></i></span>
         <span class="ce" style="color:${coul(c.eur)}">${eur(c.eur, true)}</span>
         <span class="cp" style="color:${coul(c.pct)}">${c.pct != null ? pct(c.pct) : ""}</span>
         <span class="cv">${c.valeur != null ? eur(c.valeur) : ""}</span></div>`;
@@ -26005,8 +26008,7 @@ function bilanPageHtml(b, tel) {
   .cptes { display: flex; flex-direction: column; gap: 7px; }
   .cpt { display: grid; grid-template-columns: 130px 1fr 100px 70px 100px; gap: 10px; align-items: center; }
   .cn { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar { position: relative; height: 10px; background: #f3eee7; border-radius: 5px; }
-  .bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: #c9bfb2; }
+  .bar { position: relative; height: 10px; background: #f3eee7; border-radius: 5px; overflow: hidden; }
   .bar i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
   .ce, .cp, .cv, .mvp, .catm { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ce { font-weight: 600; } .cv { color: #6b6560; font-size: 12px; }
