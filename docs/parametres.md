@@ -91,6 +91,19 @@ plus chargé aux lancements suivants ; le recocher le charge tout de suite
 dès qu'un de ses onglets est visible. Les onglets et blocs cachés, listés sous les
 modules jusqu'à la 4.4.33, ont leur propre section, Masqués.
 
+**Nouveau module : demandé une fois (01/11/2026, demande d'Arthur).** Un module
+ajouté par une mise à jour n'est dans aucun `hiddenSidebar` : il s'affichait chez
+tout le monde (Crypto en 4.4.43). `S.uiPrefs.modulesConnus` liste les sections déjà
+proposées ; au lancement, une fois les modules lus, `_demanderNouveauxModules()`
+ouvre « Nouveau dans Pilote » pour les autres, **décochés par défaut**, après la
+fiche des nouveautés (jamais par-dessus) et jamais avant des Premiers pas à venir.
+Valider masque les non cochés et les ajoute à `modulesConnus`. Les Premiers pas
+mettent toutes les sections dans `modulesConnus`. Utilisateur d'avant ce réglage
+(`_modulesConnusDepart`) : tout est connu sauf Crypto, si elle est affichée sans
+portefeuille créé. Un nouveau module n'a donc rien à faire : il suffit qu'il soit
+dans `NAV_SECTIONS`. Vérifié au banc : ancien utilisateur, nouvel utilisateur,
+après la fiche des nouveautés, choix gardé après relance.
+
 **Masqués (4.4.34, 29/10/2026).** Arthur voyait deux « Dividendes » dans la liste
 des onglets masqués, celui du PEA et celui du CTO, sans savoir lequel était lequel.
 Il a demandé une entrée « Masqués » où chaque module a sa case ; il a choisi de ne

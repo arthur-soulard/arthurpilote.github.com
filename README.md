@@ -1,6 +1,6 @@
 # Pilote
 
-Application Windows et Mac de suivi personnel : bourse (PEA et comptes-titres), budget,
+Application Windows et Mac de suivi personnel : bourse (PEA, comptes-titres et crypto), budget,
 prêt, sport, patrimoine, santé et newsletters réunis dans une seule app, sans compte ni
 serveur. Les cours sont actualisés automatiquement depuis Yahoo Finance.
 
@@ -123,6 +123,10 @@ d'ordres, règles de stratégie vérifiées automatiquement, rapport annuel impr
 courtier et sa grille de frais, et l'import des relevés (Trade Republic, Fortuneo et
 d'autres banques).
 
+**Crypto** : un portefeuille suivi comme un compte-titres (positions, cours en euros,
+courbe, plus-value), sa plateforme, et l'import des exports de Trade Republic, Coinbase,
+Binance, Kraken et d'autres plateformes.
+
 **Mes comptes** : budget mois par mois, dépenses et revenus catégorisés, échéances
 récurrentes, récapitulatif annuel.
 
@@ -131,8 +135,8 @@ remboursements, PEA dédié, assurance vie, livret, frais.
 
 **Sports** : agenda des séances, sports personnalisés, objectifs, statistiques d'heures.
 
-**Patrimoine** : tous tes comptes relevés une fois par mois (le PEA, les CTO et le prêt se
-remplissent seuls), biens immobiliers et leur crédit, valeur nette et son évolution.
+**Patrimoine** : tous tes comptes relevés une fois par mois (le PEA, les CTO, la crypto et le
+prêt se remplissent seuls), biens immobiliers et leur crédit, valeur nette et son évolution.
 
 **Santé** : pesées et mesures saisies à la main ou lues sur des captures de l'app FitDays.
 

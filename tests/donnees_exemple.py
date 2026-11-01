@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["bilan", "crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",

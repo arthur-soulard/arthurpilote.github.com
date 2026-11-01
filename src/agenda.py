@@ -43,7 +43,8 @@ Emplacement : <app_dir>/users/<slug>/agenda.json
    "aNettoyer": [agenda quitte, a vider], "aSupprimer": [agenda « Pilote » quitte],
    "notes": [{id, titre, date, heure, duree (min), texte, repete, alerte}],
    "alertes": {type: valeur de ALERTES_VALEURS}, "jours": {rappel de MENSUELS: jour du mois},
-   "delais": {rappel de DELAIS: nombre de jours}, "test": "AAAA-MM-JJTHH:MM" (notification d'essai)}
+   "delais": {rappel de DELAIS: nombre de jours}, "test": "AAAA-MM-JJTHH:MM" (notification d'essai),
+   "bilans": {lundi ISO: {titre, texte, calculeA}} (bilan de la semaine, calcule par la page)}
 
 Le mot de passe suit le chemin de celui d'Actus : verifie aupres d'iCloud
 avant d'etre garde, chiffre (DPAPI sous Windows, Trousseau sur Mac), et ne
@@ -607,7 +608,9 @@ def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
     if alertes.get("cto-investir") or alertes.get("cto-dividende") or alertes.get("cto-plan"):
         for c in cto.load_data().get("comptes") or []:
             cid = re.sub(r"[^A-Za-z0-9_-]", "", str(c.get("id") or ""))
-            if not cid:
+            # Le portefeuille crypto vit dans cto.json mais n'est pas un compte-titres
+            # (il devenait « Investir ce mois · CTO Crypto »)
+            if not cid or c.get("crypto"):
                 continue
             if alertes.get("cto-dividende"):
                 out += _dividendes(c, f"cto-dividende-{cid}", "cto-dividende", " · " + _nom_cto(c))
@@ -676,12 +679,11 @@ def essai(quand: str) -> list:
                      debut.date(), debut, debut + datetime.timedelta(minutes=15), alerte="0")]
 
 
-# Resume de la semaine : ce qui est compte, au singulier et au pluriel
+# « Semaine à venir » du bilan : ce qui est compte, au singulier et au pluriel
 _RESUME_NOMS = {"sport": ("séance", "séances"), "note": ("note", "notes"),
                 "objectif": ("objectif", "objectifs"), "pret": ("mensualité", "mensualités"),
                 "dividende": ("dividende", "dividendes"), "cto-dividende": ("dividende", "dividendes"),
                 "versement": ("versement", "versements"), "pense-bete": ("pense-bête", "pense-bêtes"), "fin-recurrent": ("opération récurrente", "opérations récurrentes")}
-_RESUME_ECARTES = ("sport-pause", "sante-pause", "sauvegarde", "ouvrir", "essai", "resume")
 
 
 def _occurrences(e: dict, debut: datetime.date, fin: datetime.date) -> list:
@@ -712,10 +714,13 @@ def _occurrences(e: dict, debut: datetime.date, fin: datetime.date) -> list:
     return out
 
 
-def _resume(retenus: list, valeur: str) -> list:
-    """Le resume de la semaine : le dimanche 18 h (la semaine qui suit) ou le
-    lundi 8 h (celle qui commence). Son titre compte ce que Pilote met dans
-    l'agenda ces sept jours-la ; il est refait a chaque envoi."""
+def _resume(valeur: str, bilans: dict = None) -> list:
+    """Le bilan de la semaine ecoulee (01/11/2026, demande d'Arthur, a la place
+    de « ce qui t'attend ») : le dimanche 18 h (la semaine qui s'acheve) ou le
+    lundi 8 h (celle d'avant). Ses chiffres viennent de la page (bilans :
+    {lundi ISO: {titre, texte, calculeA}}, enregistrer_bilans) : Pilote n'est
+    peut-etre pas ouvert a l'heure de la notification, ils sont donc ceux du
+    dernier lancement, et le texte dit de quand."""
     if valeur not in RESUME_VALEURS[1:]:
         return []
     maintenant = datetime.datetime.now()
@@ -724,25 +729,56 @@ def _resume(retenus: list, valeur: str) -> list:
     debut = datetime.datetime.combine(jour, datetime.time(heure))
     if debut <= maintenant:
         debut += datetime.timedelta(days=7)
-    lundi = debut.date() + datetime.timedelta(days=1 if valeur == "dimanche" else 0)
-    dimanche = lundi + datetime.timedelta(days=6)
-    compte, lignes = {}, []
-    for e in retenus:
-        if e["type"] in _RESUME_ECARTES:
-            continue
-        noms = _RESUME_NOMS.get(e["type"], ("rappel", "rappels"))
-        for j in _occurrences(e, lundi, dimanche):
-            compte[noms] = compte.get(noms, 0) + 1
-            lignes.append((j, e["debut"].strftime("%H:%M") if e["debut"] else "", e["titre"]))
-    if compte:
-        titre = "🗓️ Ta semaine : " + " · ".join(f"{n} {noms[n > 1]}" for noms, n in compte.items())
+    lundi = debut.date() - datetime.timedelta(days=6 if valeur == "dimanche" else 7)
+    b = (bilans or {}).get(lundi.isoformat()) if isinstance(bilans, dict) else None
+    if isinstance(b, dict) and b.get("titre"):
+        titre = "📊 Ta semaine : " + str(b["titre"])
+        texte = str(b.get("texte") or "") + (f"\n\nChiffres du {b['calculeA']}." if b.get("calculeA") else "")
     else:
-        titre = "🗓️ Ta semaine : rien de prévu dans Pilote"
-    jours_fr = ("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim.")
-    texte = "\n".join(f"{jours_fr[j.weekday()]} {j.day} {h} {t}".replace("  ", " ")
-                      for j, h, t in sorted(lignes))
+        titre = "📊 Ta semaine dans Pilote"
+        texte = "Ouvre Pilote pour voir le bilan de ta semaine."
     return [_element("resume", "resume", titre, debut.date(), debut,
-                     debut + datetime.timedelta(minutes=15), texte, alerte="0")]
+                     debut + datetime.timedelta(minutes=15), texte.strip(), alerte="0")]
+
+
+def a_venir(lundi_iso: str) -> list:
+    """« Semaine a venir » du bilan : ce que Pilote sait dater du lundi au
+    dimanche (seances, mensualites, dividendes, notes…), que l'agenda iCloud
+    soit connecte ou non. [{jour, heure, titre, type}], dans l'ordre."""
+    lundi = _jour(lundi_iso)
+    if not lundi:
+        return []
+    dimanche = lundi + datetime.timedelta(days=6)
+    data = _store.load()
+    tout = {t: "matin" for t in RAPPELS if t != "resume"}
+    evs = list(elements(sports.load_data(), pret.load_data(), data.get("notes") or [])) \
+        + rappels(tout, data.get("jours") or {}, data.get("delais"))
+    out = []
+    for e in evs:
+        if e["type"] not in _RESUME_NOMS:
+            continue
+        for j in _occurrences(e, lundi, dimanche):
+            out.append({"jour": j.isoformat(), "heure": e["debut"].strftime("%H:%M") if e["debut"] else "",
+                        "titre": e["titre"], "type": e["type"]})
+    return sorted(out, key=lambda x: (x["jour"], x["heure"] or "99"))
+
+
+def enregistrer_bilans(bilans: dict) -> dict:
+    """Les chiffres du bilan de la semaine, calcules par la page (elle seule a
+    les calculs de la bourse) : les deux semaines les plus recentes. Renvoyes
+    au telephone si le resume part."""
+    propres = {}
+    for k, b in (bilans if isinstance(bilans, dict) else {}).items():
+        if _jour(k) and isinstance(b, dict):
+            propres[str(k)[:10]] = {"titre": str(b.get("titre") or "")[:200],
+                                    "texte": str(b.get("texte") or "")[:2000],
+                                    "calculeA": str(b.get("calculeA") or "")[:40]}
+    garde = dict(sorted(propres.items())[-2:])
+    avant = _store.load().get("bilans")
+    if garde != avant:
+        _modifier(lambda d: d.update(bilans=garde))
+        planifier_si("resume")
+    return {"bilans": garde}
 
 
 def _decalage(e: dict, valeur: str) -> datetime.timedelta:
@@ -793,13 +829,13 @@ _PREFIXE = "Pilote : "
 
 
 def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
-               alertes: dict = None, en_plus: list = ()) -> dict:
+               alertes: dict = None, en_plus: list = (), bilans: dict = None) -> dict:
     """{cle: lignes iCalendar de l'evenement, sans UID ni DTSTAMP}. Les notes
     partent toujours : elles sont ecrites pour l'agenda. `en_plus` : les
     rappels (rappels()), deja tries selon leur alerte."""
     out = {}
     alertes = alertes or {}
-    for e in retenus(sp, pr, choix, notes, alertes, en_plus):
+    for e in retenus(sp, pr, choix, notes, alertes, en_plus, bilans):
         lignes = ["SUMMARY:" + _echapper(_PREFIXE + e["titre"])]
         if e["debut"]:
             lignes += ["DTSTART:" + e["debut"].strftime("%Y%m%dT%H%M%S"),
@@ -818,13 +854,13 @@ def evenements(sp: dict, pr: dict, choix: dict, notes: list = (),
 
 
 def retenus(sp: dict, pr: dict, choix: dict, notes: list = (),
-            alertes: dict = None, en_plus: list = ()) -> list:
+            alertes: dict = None, en_plus: list = (), bilans: dict = None) -> list:
     """Ce qui part dans l'agenda : les cases cochees, les rappels, puis le
-    resume de la semaine, qui les compte."""
+    bilan de la semaine."""
     alertes = alertes or {}
     out = [e for e in list(elements(sp, pr, notes)) + list(en_plus)
            if not (e["type"] in _CASES and not choix.get(_CASES[e["type"]]))]
-    return out + _resume(out, alertes.get("resume"))
+    return out + _resume(alertes.get("resume"), bilans)
 
 
 def prochaines(n: int = 6) -> list:
@@ -839,7 +875,7 @@ def prochaines(n: int = 6) -> list:
     for e in retenus(sports.load_data(), pret.load_data(), data.get("choix") or {},
                      data.get("notes") or [], alertes,
                      rappels(alertes, data.get("jours") or {}, data.get("delais"))
-                     + essai(data.get("test"))):
+                     + essai(data.get("test")), data.get("bilans")):
         d = _decalage(e, e["alerte"] or alertes.get(e["type"]))
         if d is None:
             continue
@@ -1074,7 +1110,7 @@ def _envoyer(data: dict, dossier: str) -> int:
     tous = evenements(sports.load_data(), pret.load_data(),
                       data.get("choix") or {}, data.get("notes") or [],
                       alertes, rappels(alertes, data.get("jours") or {}, data.get("delais"))
-                      + essai(data.get("test")))
+                      + essai(data.get("test")), data.get("bilans"))
     # Les notes d'abord : ecrites a la main pour l'agenda, elles n'attendent
     # pas derriere cinquante seances
     voulus = {prefixe + cle + ".ics": tous[cle]

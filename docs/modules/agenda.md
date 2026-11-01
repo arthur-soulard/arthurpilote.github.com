@@ -182,7 +182,7 @@ Calendrier doit être autorisé.
   | PEA | `pea-plan` | prochain achat de chaque plan (Plan d'épargne), date `prochaine` écrite par l'UI |
   | CTO | `cto-plan` | idem pour chaque CTO, nom du CTO en fin de titre |
   | CTO | `cto-dividende` | dividendes attendus de chaque CTO, nom du CTO en fin de titre |
-  | CTO | `cto-investir` | un rappel du mois par CTO (clé `cto-investir-<id>`) |
+  | CTO | `cto-investir` | un rappel du mois par CTO (clé `cto-investir-<id>`), pas pour le portefeuille crypto |
   | Mes comptes | `fin-saisie` | du mois, fait = une opération ajoutée (`createdAt`) le jour du rappel ou après |
   | Mes comptes | `fin-recurrent` | prochaine échéance (`nextDue`) de chaque récurrence pas en pause |
   | Prêt | `pret-etapes` | première et dernière mensualité, si elles sont à venir |
@@ -191,7 +191,7 @@ Calendrier doit être autorisé.
   | Santé | `sante-pause` | X jours après la dernière mesure |
   | Santé | `sante-objectif` | objectifs actifs avec une date à venir |
   | Patrimoine | `releve` | « Relevé du patrimoine », du mois (`patrimoine.mois_saisi`) |
-  | Agenda | `resume` | résumé de la semaine (voir plus bas) |
+  | Agenda | `resume` | bilan de la semaine écoulée (voir plus bas) |
   | Pilote | `sauvegarde` | X jours après la dernière sauvegarde USB (`lastBackupAt`, rien sans) |
   | Pilote | `ouvrir` | aujourd'hui + X jours, recule à chaque envoi, donc à chaque lancement |
   | Pilote | `pense-bete` | pense-bêtes de l'accueil (`uiPrefs.penseBete` du PEA) datés, à venir, pas cochés ; titre « 📌 texte ». `save_ui_prefs` relance l'envoi (27/10/2026) |
@@ -200,13 +200,19 @@ Calendrier doit être autorisé.
 * **Rappels « depuis X jours »** (`DELAIS`, `DELAIS_VALEURS`) : au plus tôt
   demain. En retard, ils sonnent le lendemain matin et reculent d'un jour à
   chaque envoi tant que rien n'est saisi (`_depuis`).
-* **Résumé de la semaine** (`_resume`, appelé par `retenus`) : un événement le
-  dimanche 18 h (semaine qui suit) ou le lundi 8 h (semaine qui commence), alerte
-  à l'heure. Son titre compte ce que Pilote met dans l'agenda ces sept jours
-  (« 🗓️ Ta semaine : 3 séances · 1 mensualité »), le détail jour par jour en
-  description. Refait à chaque envoi : chaque module ajoute `"resume"` à son
-  `planifier_si`. Les rappels « depuis X jours », l'essai et le résumé
-  lui-même ne sont pas comptés.
+* **Bilan de la semaine** (clé `resume`, `_resume` appelé par `retenus`) :
+  jusqu'au 01/11/2026, il comptait la semaine à venir ; Arthur, déçu, a demandé
+  la semaine **écoulée**. Un événement le dimanche 18 h (la semaine qui
+  s'achève) ou le lundi 8 h (celle d'avant), alerte à l'heure : « 📊 Ta
+  semaine : bourse −0,27 % · 4 séances · 47 € dépensés », le détail par compte,
+  la plus forte hausse et baisse, le sport, les dépenses et le poids en
+  description. Ces chiffres viennent de la page (`bilanEnvoyerAuTelephone` →
+  `save_agenda_bilans` → `agenda.json` « bilans », les deux dernières semaines),
+  qui seule a les calculs de la bourse : au lancement, puis toutes les heures
+  Pilote ouvert. Pilote fermé à l'heure de la notification : chiffres du
+  dernier lancement, et la description dit lesquels (« Chiffres du dim. 1er
+  nov. à 17:00 »). Rien de calculé pour cette semaine : « Ouvre Pilote pour
+  voir le bilan ». La page du bilan est décrite dans `docs/accueil.md`.
 * **Envoyer un essai** (`save_agenda_essai` → `agenda.tester`, demande
   d'Arthur du 26/10/2026 : « je peux pas envoyer de notif test ») : un
   événement 2 à 3 minutes plus tard, alerte à l'heure, envoyé tout de suite

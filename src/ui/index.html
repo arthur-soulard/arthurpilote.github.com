@@ -2753,6 +2753,19 @@ label[for="pp-prenom"] { font-size: 13px; font-weight: 600; color: var(--txt); w
 .maj-grp li { font-size: 13px; line-height: 1.55; color: var(--txt); }
 .maj-grp li::marker { color: var(--txt3); }
 .maj-scroll { max-height: 46vh; overflow-y: auto; padding-right: 6px; }
+/* Bilan de la semaine : fenêtre du rapport, barre de réglages au-dessus de la page */
+.bilan-ov { position: fixed; inset: 36px 0 0; z-index: 9500; background: rgba(20, 16, 14, .55);
+  display: flex; flex-direction: column; align-items: center; padding: 14px 20px 20px; gap: 10px; }
+.bilan-barre { width: 100%; max-width: 900px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--bg2); border: 1px solid var(--brd); border-radius: 12px; padding: 8px 12px; }
+.bilan-sem { display: flex; align-items: center; gap: 6px; }
+.bilan-sem b { font-family: var(--serif); font-weight: 500; font-size: 15px; color: var(--txt); }
+.bilan-sem .m-iconbtn:disabled { opacity: .35; cursor: default; }
+label.bilan-auto { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--txt2); margin: 0; }
+label.bilan-auto input[type="time"] { width: auto; padding: 3px 6px; font-size: 12.5px; }
+.bilan-sp { flex: 1; }
+#bilan-frame { width: 100%; max-width: 900px; flex: 1; background: #fffdf9; border: 0; border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
 .modal.maj-modal { max-width: 560px; }
 .maj-modal h2 { margin-bottom: .9rem; }
 .maj-kick { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent-text); margin-bottom: .3rem; }
@@ -11252,24 +11265,28 @@ ${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>$
   const frame = ov.querySelector("#rep-frame");
   // srcdoc charge l'HTML directement dans l'iframe (pas de window.open)
   frame.srcdoc = html;
-  ov.querySelector("#rep-print").onclick = async () => {
-    // Mac : pywebview n'imprime que la page principale, pas cette iframe. Le
-    // rapport s'ouvre donc dans le navigateur, où ⌘P l'imprime ou en fait un PDF.
-    if (EST_MAC) {
-      const r = await pywebview.api.ouvrir_rapport(html, "Pilote_rapport_" + year);
-      if (r && r.ok) showToastModern("Rapport ouvert dans ton navigateur : ⌘P pour l'imprimer ou l'enregistrer en PDF", "ok");
-      else showToastModern("Ouverture du rapport impossible : " + ((r && r.error) || ""), "err");
-      return;
-    }
-    try {
-      // Imprime UNIQUEMENT le contenu de l'iframe (popup d'impression Windows)
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-    } catch(e) { alert("Erreur d'impression : " + e.message); }
-  };
+  ov.querySelector("#rep-print").onclick = () => _rapportImprimer(frame, html, "Pilote_rapport_" + year);
   ov.querySelector("#rep-close").onclick = () => ov.remove();
   // Fermer aussi en cliquant le fond
   ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+}
+
+/** Imprime (ou enregistre en PDF) la page d'une iframe de rapport : le
+    rapport annuel, le bilan de la semaine. */
+async function _rapportImprimer(frame, html, nom) {
+  // Mac : pywebview n'imprime que la page principale, pas cette iframe. Le
+  // rapport s'ouvre donc dans le navigateur, où ⌘P l'imprime ou en fait un PDF.
+  if (EST_MAC) {
+    const r = await pywebview.api.ouvrir_rapport(html, nom);
+    if (r && r.ok) showToastModern("Rapport ouvert dans ton navigateur : ⌘P pour l'imprimer ou l'enregistrer en PDF", "ok");
+    else showToastModern("Ouverture du rapport impossible : " + ((r && r.error) || ""), "err");
+    return;
+  }
+  try {
+    // Imprime UNIQUEMENT le contenu de l'iframe (popup d'impression Windows)
+    frame.contentWindow.focus();
+    frame.contentWindow.print();
+  } catch(e) { alert("Erreur d'impression : " + e.message); }
 }
 
 /* ─── Helpers PIN OTP (4 cases separees) ─── */
@@ -11824,6 +11841,7 @@ async function _showWelcomeIfFirstRun() {
     const tuiles = new Set(pris.flatMap(id => (NAV_MODULES[id] || {}).tuiles || []));
     S.uiPrefs.dash = DASH_WIDGETS.map(w => ({ id: w.id, on: tuiles.has(w.id) }));
     S.uiPrefs.premiersPas = true;
+    S.uiPrefs.modulesConnus = NAV_SECTIONS.map(s => s.id);   // tous proposés ici
     if (hist && hist.version) S.uiPrefs.nouveautesVues = hist.version;
     _enregistrerUiPrefs();
     nommer();
@@ -12244,9 +12262,14 @@ function _cfgRenderMasques() {
   // Un onglet retiré de l'app (ceux de Formation, 11/10/2026) reste dans les
   // réglages de qui l'avait masqué : il n'a plus rien à restaurer.
   const hid = ((S.uiPrefs && S.uiPrefs.hiddenSidebar) || []).filter(id => SIDEBAR_ITEMS.some(x => x.id === id));
-  const comptes = (typeof ctoComptes === "function") ? ctoComptes() : [];
+  // Sans le portefeuille crypto : il a sa propre case, celle de la section Crypto
+  const comptes = (typeof ctoComptesTitres === "function") ? ctoComptesTitres() : [];
   const avecCto = vis.has("sec-cto") && comptes.length > 0;
+  const avecCrypto = vis.has("sec-crypto") && typeof cryptoCompte === "function" && !!cryptoCompte();
   const ctoDe = tab => NAV_SECTIONS.find(s => s.id === "sec-cto").children.some(c => c.id === "cto-" + tab);
+  const cryptoDe = tab => NAV_SECTIONS.find(s => s.id === "sec-crypto").children.some(c => c.id === "crypto-" + tab);
+  const aussi = tab => [avecCto && ctoDe(tab) ? "tes CTO" : "", avecCrypto && cryptoDe(tab) ? "ta Crypto" : ""]
+    .filter(Boolean).join(" et ");
   // Un bloc : son onglet, celui du pane qui le contient (card-strat → strat)
   const blocs = ((S.uiPrefs && S.uiPrefs.hiddenCards) || []).map(id => {
     const it = CARD_ITEMS.find(x => x.id === id);
@@ -12277,10 +12300,13 @@ function _cfgRenderMasques() {
     if (s.id === "sec-cto") {
       mesBlocs = avecCto ? blocs.filter(b => ctoDe(b.tab))
         .map(b => ligne("card", b.id, escHtml(b.nom), escHtml(b.onglet) + " · aussi caché sur le PEA")) : [];
+    } else if (s.id === "sec-crypto") {
+      mesBlocs = avecCrypto ? blocs.filter(b => cryptoDe(b.tab))
+        .map(b => ligne("card", b.id, escHtml(b.nom), escHtml(b.onglet) + " · aussi caché sur le PEA")) : [];
     } else {
       mesBlocs = blocs.filter(b => (_navSectionOf(b.tab) || {}).id === s.id)
         .map(b => ligne("card", b.id, escHtml(b.nom),
-          escHtml(b.onglet) + (s.id === "sec-pea" && avecCto && ctoDe(b.tab) ? " · aussi caché sur tes CTO" : "")));
+          escHtml(b.onglet) + (s.id === "sec-pea" && aussi(b.tab) ? " · aussi caché sur " + aussi(b.tab) : "")));
     }
     if (!off && !onglets.length && !mesBlocs.length) return;
     let titre = s.label, sous = "";
@@ -16412,6 +16438,66 @@ async function _majFicheApresMiseAJour() {
   ov.querySelector("[data-maj-ok]").onclick = () => ov.remove();
   ov.querySelector("[data-maj-histo]").onclick = () => { ov.remove(); openSettings("maj"); };
   ov.querySelector("[data-maj-ok]").focus();
+}
+
+/* ─── Nouveaux modules (01/11/2026, demande d'Arthur) ───
+   Un module ajouté par une mise à jour n'est dans aucune liste de masqués : il
+   apparaissait d'office (Crypto en 4.4.43). On demande donc, une fois, s'il faut
+   l'afficher, décoché par défaut. S.uiPrefs.modulesConnus : les sections déjà
+   proposées à cet utilisateur (toutes après les Premiers pas). */
+function _modulesConnusDepart() {
+  // Avant ce réglage : tout est connu, sauf Crypto qui s'est affichée sans
+  // être demandée. Déjà un portefeuille, ou module décoché : choix déjà fait.
+  const vis = _modulesVisibles();
+  const cryptoAChoisir = vis.has("sec-crypto") && !(typeof cryptoCompte === "function" && cryptoCompte());
+  return NAV_SECTIONS.map(s => s.id).filter(id => !(id === "sec-crypto" && cryptoAChoisir));
+}
+
+async function _demanderNouveauxModules() {
+  if (!_hydrationDone || document.getElementById("ov-welcome") || document.getElementById("ov-modules-neufs")) return;
+  // Premiers pas à venir (ils s'affichent après quelques lectures) : ils
+  // proposent déjà tous les modules. Même condition que _showWelcomeIfFirstRun.
+  const peaVide = !(S.positions || []).length && !(S.transactions || []).length && !(S.depots || []).length;
+  if (peaVide && !(S.uiPrefs && S.uiPrefs.premiersPas)) return;
+  // Après la fiche des nouveautés, pas par-dessus
+  const fiche = document.getElementById("ov-maj-vue");
+  if (fiche) await new Promise(ok => {
+    const obs = new MutationObserver(() => { if (!fiche.isConnected) { obs.disconnect(); ok(); } });
+    obs.observe(document.body, { childList: true });
+  });
+  S.uiPrefs = S.uiPrefs || {};
+  if (!Array.isArray(S.uiPrefs.modulesConnus)) {
+    S.uiPrefs.modulesConnus = _modulesConnusDepart();
+    _enregistrerUiPrefs();
+  }
+  const neufs = NAV_SECTIONS.filter(s => !S.uiPrefs.modulesConnus.includes(s.id));
+  if (!neufs.length) return;
+
+  const ov = document.createElement("div");
+  ov.id = "ov-modules-neufs";
+  ov.className = "ov open";
+  const un = neufs.length === 1;
+  ov.innerHTML = `
+    <div class="modal maj-modal" role="dialog" aria-modal="true" aria-labelledby="mod-neufs-t">
+      <div class="maj-kick"><i class="ph ph-sparkle"></i> Nouveau dans Pilote</div>
+      <h2 id="mod-neufs-t">${un ? "Un nouveau module" : neufs.length + " nouveaux modules"}</h2>
+      <p class="pp-lead">Coche ${un ? "le" : "ceux"} que tu veux afficher. Sinon, ${un ? "il reste masqué" : "ils restent masqués"} :
+        Paramètres → Modules ${un ? "le" : "les"} remet quand tu veux.</p>
+      <div class="pp-mods">${neufs.map(s => _modCarteHtml(s, false)).join("")}</div>
+      <div class="mact"><button class="btn btn-primary" data-mod-ok>Valider</button></div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("[data-mod-ok]").onclick = () => {
+    const pris = [...ov.querySelectorAll(".pp-mods input:checked")].map(i => i.value);
+    neufs.forEach(s => _afficherModule(s.id, pris.includes(s.id)));
+    S.uiPrefs.modulesConnus = [...new Set([...S.uiPrefs.modulesConnus, ...neufs.map(s => s.id)])];
+    _enregistrerUiPrefs();
+    ov.remove();
+    _reconstruireSidebar();
+    pris.forEach(_chargerModule);
+    if (typeof dashRender === "function") dashRender();
+  };
+  ov.querySelector("[data-mod-ok]").focus();
 }
 
 /** Paramètres → Mises à jour : version installée, version proposée avec sa
@@ -25091,6 +25177,11 @@ const DASH_WIDGETS = [
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
     render() { return dashNotesTuile(); },
   },
+  {
+    // Bilan de la semaine passée (01/11/2026) : la page, avec son PDF
+    id: "bilan", label: "Bilan de la semaine", module: "Bilan", tab: null,
+    render() { return dashBilanTuile(); },
+  },
 ];
 
 const DASH_DEFAUT = ["pea", "sport", "sport-goal"];   // l'accueil historique
@@ -25142,6 +25233,7 @@ function dashModuleReady(mod) {
     case "Sauvegarde": return !!window._dashUsb;
     case "Comptes":    return _finBootstrapped;
     case "CTO":        return _ctoBootstrapped;
+    case "Crypto":     return _ctoBootstrapped;
     // Module CTO masqué : jamais chargé, la tuile n'a pas à l'attendre
     case "Bourse":     return !!window._peaPv && (_ctoBootstrapped || !_modulesVisibles().has("sec-cto"));
     // Boîte connectée : attendre le premier relevé (réussi ou non)
@@ -25467,6 +25559,7 @@ function dashAvecCto(id, fn) {
    (comme celui de la tuile du PEA), à part de _perfHistory qui est celui du
    compte affiché. Hors ligne : la copie locale que garde la courbe du CTO. */
 const _dashCtoHist = {};     // id -> "attente" | historique | null
+const _dashCtoHistP = {};    // id -> la lecture en cours (le bilan de la semaine l'attend)
 
 function dashCtoChargerHist(id) {
   const c = ctoCompte(id);
@@ -25477,7 +25570,7 @@ function dashCtoChargerHist(id) {
                                ...(c.closedPositions || []).map(x => x.ticker)].filter(Boolean))];
   if (!tickers.length) { _dashCtoHist[id] = null; return; }
   _dashCtoHist[id] = "attente";
-  fetch(LOCAL_HIST_URL + "?tickers=" + tickers.map(encodeURIComponent).join(",")
+  _dashCtoHistP[id] = fetch(LOCAL_HIST_URL + "?tickers=" + tickers.map(encodeURIComponent).join(",")
         + (dashAvecCto(id, _perfDepuisParam) || ""), { cache: "no-store" })
     .then(r => r.ok ? r.json() : null)
     .then(d => { _dashCtoHist[id] = (d && d.ok && d.history && Object.keys(d.history).length) ? d.history : copie(); })
@@ -25640,6 +25733,449 @@ async function dashAddExpense(type) {
     return;
   }
   finOpenTx(type || "expense");
+}
+
+/* ── Bilan de la semaine (01/11/2026, demande d'Arthur) ──────────────────────
+   La semaine écoulée, du lundi au dimanche : la bourse (chaque compte, puis
+   les plus fortes hausses et baisses), le sport, les dépenses, la santé, et ce
+   qui attend la semaine suivante. Une page à garder en PDF, dans la même
+   fenêtre que le rapport annuel, ouverte par sa tuile ou, au choix, chaque
+   dimanche à une heure (S.uiPrefs.bilan = {auto, heure, vu}). Rien n'est
+   recalculé à part : la semaine d'un compte est le computePnl de sa courbe,
+   comme la pastille 1S de sa tuile Performance. Ses chiffres partent aussi
+   dans la notification « Résumé de la semaine » (save_agenda_bilans). */
+
+let _bilanCache = {};      // lundi -> bilan calculé (la tuile en montre le total)
+
+function bilanPlus(iso, n) {
+  const d = spParseISO(iso);
+  return spDateISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n));
+}
+/** Lundi de la semaine qui contient `iso`. */
+function bilanLundiDe(iso) { return bilanPlus(iso, -((spParseISO(iso).getDay() + 6) % 7)); }
+/** La semaine « passée » : celle qui s'achève le dimanche, la précédente les autres jours. */
+function bilanLundiDefaut() {
+  const auj = todayISO();
+  return spParseISO(auj).getDay() === 0 ? bilanLundiDe(auj) : bilanPlus(bilanLundiDe(auj), -7);
+}
+function bilanSemaineLbl(lundi) {
+  // « 1er novembre », pas « 1 novembre »
+  const f = (iso, o) => spParseISO(iso).toLocaleDateString("fr-FR", o).replace(/^1(?=\D|$)/, "1er");
+  const memeMois = lundi.slice(0, 7) === bilanPlus(lundi, 6).slice(0, 7);
+  return "du " + f(lundi, memeMois ? { day: "numeric" } : { day: "numeric", month: "long" })
+       + " au " + f(bilanPlus(lundi, 6), { day: "numeric", month: "long", year: "numeric" });
+}
+
+/** Les comptes de la bourse : le PEA, chaque CTO et le portefeuille crypto
+    qui ont des lignes, dans un module affiché. */
+function _bilanComptes() {
+  const vis = _modulesVisibles(), l = [];
+  if (vis.has("sec-pea") && (S.transactions || []).length)
+    l.push({ nom: "PEA", calcul: fn => fn(), serie: () => perfSeriesAsync(), hist: () => _perfHistory });
+  if (_ctoBootstrapped) ctoComptes().forEach(c => {
+    const crypto = ctoEstCrypto(c);
+    if (!vis.has(crypto ? "sec-crypto" : "sec-cto") || !(c.transactions || []).length) return;
+    l.push({ nom: crypto ? "Crypto" : ctoNomSection(c), crypto,
+             calcul: fn => dashAvecCto(c.id, fn), serie: () => _bilanSerieCto(c.id), hist: () => _dashCtoHist[c.id] });
+  });
+  return l;
+}
+async function _bilanSerieCto(id) {
+  if (_dashCtoHist[id] === undefined) dashCtoChargerHist(id);
+  if (_dashCtoHist[id] === "attente") await _dashCtoHistP[id];
+  return dashCtoSerie(id);
+}
+
+/** Tout le bilan de la semaine de `lundi`. Le PEA doit être dans S (pas une
+    section CTO ouverte) : null sinon, ou s'il en sort pendant le calcul. */
+async function bilanCalculer(lundi, sansAvenir) {
+  const dim = bilanPlus(lundi, 6), veille = bilanPlus(lundi, -1), vis = _modulesVisibles();
+  const b = { lundi, dim, comptes: [], hausses: [], baisses: [], total: null };
+  const hors = () => _estCto();
+  if (hors()) return null;
+
+  // Bourse : la semaine de chaque compte sur sa courbe, de la clôture du
+  // dimanche d'avant à la dernière de la semaine
+  const lignes = [];
+  let eurT = 0, engageT = 0;
+  for (const c of _bilanComptes()) {
+    let full = null;
+    try { full = await c.serie(); } catch (e) {}
+    if (hors()) return null;
+    const res = full ? c.calcul(() => {
+      let i0 = -1, i1 = -1;
+      full.forEach((p, i) => { const d = normDate(p.date); if (d <= veille) i0 = i; if (d <= dim) i1 = i; });
+      const s = i1 >= 0 ? full.slice(Math.max(i0, 0), i1 + 1) : [];
+      const r = s.length >= 2 ? computePnl(s, "1W") : null;
+      // Variation du cours de chaque ligne sur la semaine
+      const h = c.hist();
+      if (h && typeof h === "object") S.positions.forEach(p => {
+        const m = h[p.ticker] ? buildSortedPriceMap(h[p.ticker]) : null;
+        const a = m && priceAt(m, veille), z = m && priceAt(m, dim);
+        if (a > 0 && z > 0) lignes.push({ nom: p.name || p.ticker, compte: c.nom, pct: (z / a - 1) * 100 });
+      });
+      return r && r.pnlEur != null ? { eur: r.pnlEur, pct: r.pnlPct, engage: r.engage || 0, valeur: s[s.length - 1].val } : null;
+    }) : null;
+    if (!res) continue;
+    b.comptes.push(Object.assign({ nom: c.nom, crypto: !!c.crypto }, res));
+    eurT += res.eur; engageT += res.engage;
+  }
+  if (b.comptes.length)
+    b.total = { eur: Math.round(eurT * 100) / 100, pct: engageT > 0 ? eurT / engageT * 100 : null };
+  b.hausses = lignes.filter(x => x.pct > 0.005).sort((x, y) => y.pct - x.pct).slice(0, 3);
+  b.baisses = lignes.filter(x => x.pct < -0.005).sort((x, y) => x.pct - y.pct).slice(0, 3);
+
+  // Sport : séances, temps par jour et par sport, comparé à la moyenne
+  if (vis.has("sec-sport") && _spBootstrapped) {
+    const ss = spSessions().filter(s => s.date >= lundi && s.date <= dim);
+    const parSport = {};
+    ss.forEach(s => {
+      const sp = spSportById(s.sport);
+      const x = parSport[sp.id] || (parSport[sp.id] = { nom: sp.label, icon: sp.icon, n: 0, min: 0 });
+      x.n++; x.min += spNum(s.duration);
+    });
+    b.sport = Object.assign(spTotals(ss), {
+      jours: [0, 1, 2, 3, 4, 5, 6].map(k => spTotals(ss.filter(s => s.date === bilanPlus(lundi, k))).min),
+      parSport: Object.values(parSport).sort((x, y) => y.min - x.min),
+      moy: spMoyenneHebdo(+lundi.slice(0, 4)).min });
+  }
+
+  // Dépenses : total, revenus, catégories, les plus grosses
+  if (vis.has("sec-comptes") && _finBootstrapped && typeof F !== "undefined" && F) {
+    const tx = (F.transactions || []).filter(t => t.date >= lundi && t.date <= dim);
+    const dep = tx.filter(t => t.type !== "income");
+    const somme = l => l.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const parCat = {};
+    dep.forEach(t => {
+      const c = finCatById(t.categoryId), k = c ? c.id : "_";
+      const x = parCat[k] || (parCat[k] = { nom: c ? c.name : "Sans catégorie", icon: finCatIcon(c), montant: 0 });
+      x.montant += Number(t.amount) || 0;
+    });
+    b.depenses = { total: somme(dep), revenus: somme(tx.filter(t => t.type === "income")), n: dep.length,
+      parCat: Object.values(parCat).sort((x, y) => y.montant - x.montant),
+      grosses: dep.slice().sort((x, y) => (Number(y.amount) || 0) - (Number(x.amount) || 0)).slice(0, 3)
+        .map(t => ({ label: t.label || (finCatById(t.categoryId) || {}).name || "Dépense", montant: Number(t.amount) || 0, date: t.date })) };
+  }
+
+  // Santé : pesées de la semaine, écart avec la dernière d'avant
+  if (vis.has("sec-sante") && _saBootstrapped) {
+    const toutes = saSorted().filter(m => m.poids != null && !isNaN(m.poids));
+    const sem = toutes.filter(m => m.date >= lundi && m.date <= dim);
+    if (sem.length) {
+      const avant = toutes.filter(m => m.date < lundi).pop();
+      const der = sem[sem.length - 1];
+      b.sante = { poids: der.poids, n: sem.length, points: sem.map(m => m.poids),
+                  delta: avant ? der.poids - avant.poids : sem.length > 1 ? der.poids - sem[0].poids : null,
+                  ref: avant ? "depuis le " + dateCourte(avant.date) : "depuis lundi" };
+    }
+  }
+
+  // La semaine qui vient : ce que Pilote sait dater
+  if (!sansAvenir && window.pywebview && pywebview.api && pywebview.api.agenda_a_venir) {
+    try {
+      const r = await pywebview.api.agenda_a_venir(bilanPlus(lundi, 7));
+      if (r && r.ok) b.avenir = r.evenements;
+    } catch (e) {}
+  }
+  b.calculeA = new Date();
+  _bilanCache[lundi] = b;
+  return b;
+}
+
+/** Une ligne pour la notification et son texte (le téléphone n'a pas la page). */
+function bilanResume(b) {
+  const kg = x => x.toFixed(1).replace(".", ",") + " kg";
+  const t = [], l = [];
+  if (b.total) t.push("bourse " + pct(b.total.pct != null ? b.total.pct : 0));
+  if (b.sport) t.push(b.sport.n + " séance" + (b.sport.n > 1 ? "s" : ""));
+  if (b.depenses) t.push(Math.round(b.depenses.total).toLocaleString("fr-FR") + " € dépensés");
+  b.comptes.forEach(c => l.push(c.nom + " : " + eur(c.eur, true) + (c.pct != null ? " (" + pct(c.pct) + ")" : "")));
+  if (b.hausses[0]) l.push("Plus forte hausse : " + b.hausses[0].nom + " " + pct(b.hausses[0].pct));
+  if (b.baisses[0]) l.push("Plus forte baisse : " + b.baisses[0].nom + " " + pct(b.baisses[0].pct));
+  if (b.sport) l.push("Sport : " + b.sport.n + " séance" + (b.sport.n > 1 ? "s" : "") + (b.sport.min ? ", " + spFmtDur(b.sport.min) : ""));
+  if (b.depenses) l.push("Dépenses : " + eur(b.depenses.total) + (b.depenses.revenus ? " · revenus : " + eur(b.depenses.revenus) : ""));
+  if (b.sante) l.push("Poids : " + kg(b.sante.poids) + (b.sante.delta != null ? " (" + (b.sante.delta >= 0 ? "+" : "−") + kg(Math.abs(b.sante.delta)) + ")" : ""));
+  return { titre: t.join(" · ") || "rien de saisi cette semaine", texte: l.join("\n") };
+}
+
+/** La page du bilan (document autonome : iframe, impression, PDF). */
+function bilanPageHtml(b) {
+  const css = getComputedStyle(document.documentElement);
+  const accent = css.getPropertyValue("--accent").trim() || "#9C4A7A";
+  const G = "#15803d", R = "#b91c1c";
+  const coul = x => x == null ? "#6b6560" : x >= 0 ? G : R;
+  const kg = x => x.toFixed(1).replace(".", ",") + "&nbsp;kg";
+  const nb = x => Math.round(x).toLocaleString("fr-FR");
+  const jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const vide = t => `<p class="vide">${t}</p>`;
+  const enCours = b.dim >= todayISO();
+
+  // Chiffres du haut
+  const kpi = (lbl, val, sub, c) => `<div class="kpi"><span class="kl">${lbl}</span>
+      <span class="kv"${c ? ` style="color:${c}"` : ""}>${val}</span><span class="ks">${sub || ""}</span></div>`;
+  const kpis = [
+    b.total ? kpi("Bourse", eur(b.total.eur, true), b.total.pct != null ? pct(b.total.pct) + " sur la semaine" : "", coul(b.total.eur)) : "",
+    b.sport ? kpi("Sport", b.sport.min ? spFmtDur(b.sport.min) : "0&nbsp;h", b.sport.n + " séance" + (b.sport.n > 1 ? "s" : "")) : "",
+    b.depenses ? kpi("Dépenses", eur(b.depenses.total), b.depenses.n + " opération" + (b.depenses.n > 1 ? "s" : "")) : "",
+    b.sante ? kpi("Poids", kg(b.sante.poids), b.sante.delta != null ? (b.sante.delta >= 0 ? "+" : "−") + kg(Math.abs(b.sante.delta)) + " " + b.sante.ref : "") : "",
+  ].filter(Boolean).join("");
+
+  // Bourse : une barre par compte, de part et d'autre de zéro
+  const maxPct = Math.max(0.5, ...b.comptes.map(c => Math.abs(c.pct || 0)));
+  const bourse = b.comptes.length ? `
+    <div class="cptes">${b.comptes.map(c => {
+      const w = Math.min(50, Math.abs(c.pct || 0) / maxPct * 50);
+      return `<div class="cpt"><span class="cn">${escHtml(c.nom)}</span>
+        <span class="bar"><i style="${(c.pct || 0) >= 0 ? "left:50%" : "right:50%"};width:${w.toFixed(1)}%;background:${coul(c.eur)}"></i></span>
+        <span class="ce" style="color:${coul(c.eur)}">${eur(c.eur, true)}</span>
+        <span class="cp" style="color:${coul(c.pct)}">${c.pct != null ? pct(c.pct) : ""}</span>
+        <span class="cv">${c.valeur != null ? eur(c.valeur) : ""}</span></div>`;
+    }).join("")}</div>` : vide("Pas de cours sur cette semaine (aucune ligne, ou historique pas encore chargé).");
+  const mouv = (l, titre) => `<div class="mv"><h3>${titre}</h3>${l.length ? l.map(x => `<div class="mvl">
+      <span class="mvn">${escHtml(x.nom)}<small>${escHtml(x.compte)}</small></span>
+      <span class="mvp" style="color:${coul(x.pct)}">${pct(x.pct)}</span></div>`).join("") : vide("Aucune")}</div>`;
+
+  // Sport : le temps de chaque jour
+  let sport = "";
+  if (b.sport) {
+    const mx = Math.max(...b.sport.jours, 1);
+    sport = `<div class="sem">${b.sport.jours.map((m, k) => `<div class="j"><span class="jv">${m ? spFmtDur(m) : ""}</span>
+        <span class="jb"><i style="height:${(m / mx * 100).toFixed(0)}%"></i></span><span class="jl">${jours[k]}</span></div>`).join("")}</div>
+      ${b.sport.parSport.length ? `<div class="chips">${b.sport.parSport.map(s => `<span class="chip">${s.icon || ""} ${escHtml(s.nom)} · ${s.n} · ${spFmtDur(s.min)}</span>`).join("")}</div>` : vide("Aucune séance cette semaine.")}
+      ${b.sport.moy > 0 ? `<p class="note">Ta moyenne cette année : ${spFmtDur(b.sport.moy)} par semaine${b.sport.min ? ` · cette semaine : ${Math.round(b.sport.min / b.sport.moy * 100)}&nbsp;%` : ""}.</p>` : ""}`;
+  }
+
+  // Dépenses : les catégories en barres, les plus grosses
+  let depenses = "";
+  if (b.depenses) {
+    const mx = Math.max(...b.depenses.parCat.map(c => c.montant), 1);
+    depenses = b.depenses.n ? `<div class="deux"><div>${b.depenses.parCat.map(c => `<div class="cat">
+        <span class="catn">${c.icon} ${escHtml(c.nom)}</span><span class="bar1"><i style="width:${(c.montant / mx * 100).toFixed(1)}%"></i></span>
+        <span class="catm">${eur(c.montant)}</span></div>`).join("")}</div>
+      <div><h3>Les plus grosses</h3>${b.depenses.grosses.map(t => `<div class="mvl"><span class="mvn">${escHtml(t.label)}<small>${dateCourte(t.date)}</small></span>
+        <span class="mvp">${eur(t.montant)}</span></div>`).join("")}
+        ${b.depenses.revenus ? `<p class="note">Revenus de la semaine : ${eur(b.depenses.revenus)}</p>` : ""}</div></div>`
+      : vide("Aucune dépense saisie cette semaine.");
+  }
+
+  // Santé : les pesées de la semaine
+  let sante = "";
+  if (b.sante) {
+    const p = b.sante.points, mn = Math.min(...p), mx = Math.max(...p);
+    const spark = p.length > 1 ? `<svg viewBox="0 0 200 40" class="spark"><polyline fill="none" stroke="${accent}" stroke-width="2"
+        points="${p.map((v, i) => (i / (p.length - 1) * 196 + 2).toFixed(1) + "," + (mx > mn ? 36 - (v - mn) / (mx - mn) * 32 : 20).toFixed(1)).join(" ")}"/></svg>` : "";
+    sante = `<div class="pds"><span class="kv">${kg(b.sante.poids)}</span>
+      <span class="ks">${b.sante.n} pesée${b.sante.n > 1 ? "s" : ""}${b.sante.delta != null ? " · " + (b.sante.delta >= 0 ? "+" : "−") + kg(Math.abs(b.sante.delta)) + " " + b.sante.ref : ""}</span>${spark}</div>`;
+  }
+
+  // La semaine qui vient, jour par jour
+  let avenir = "";
+  if (b.avenir) {
+    const parJour = {};
+    b.avenir.forEach(e => (parJour[e.jour] = parJour[e.jour] || []).push(e));
+    avenir = Object.keys(parJour).length ? Object.keys(parJour).sort().map(j => `<div class="av"><span class="avj">${spParseISO(j).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}</span>
+        <div>${parJour[j].map(e => `<div class="ave">${e.heure ? `<b>${e.heure}</b> ` : ""}${escHtml(e.titre)}</div>`).join("")}</div></div>`).join("")
+      : vide("Rien de prévu dans Pilote.");
+  }
+
+  const section = (titre, ico, corps) => corps ? `<section><h2>${titre}</h2>${corps}</section>` : "";
+  const quand = b.calculeA.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }).replace(/^1(?=\D)/, "1er") + " à "
+              + b.calculeA.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Bilan de la semaine ${bilanSemaineLbl(b.lundi)}</title>
+<link href="${location.origin}/vendor/fonts.css?v=3" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; padding: 34px 40px 28px; background: #fffdf9; color: #26221f; font: 13px/1.5 "Onest", system-ui, sans-serif; }
+  .kick { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: ${accent}; font-weight: 600; }
+  h1 { font: 500 30px/1.15 "Newsreader", Georgia, serif; margin: 4px 0 2px; }
+  h1 em { color: ${accent}; }
+  .sub { color: #6b6560; margin: 0 0 22px; font-size: 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .kpi { border: 1px solid #ebe4da; border-radius: 12px; padding: 12px 14px; background: #fff; display: flex; flex-direction: column; }
+  .kl { font-size: 11px; color: #6b6560; text-transform: uppercase; letter-spacing: .06em; }
+  .kv { font: 500 24px/1.2 "Newsreader", Georgia, serif; margin-top: 2px; }
+  .ks { font-size: 11.5px; color: #6b6560; }
+  section { margin-top: 22px; break-inside: avoid; }
+  h2 { font: 500 19px/1.2 "Newsreader", Georgia, serif; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid ${accent}; }
+  h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6b6560; margin: 0 0 6px; font-weight: 600; }
+  .cptes { display: flex; flex-direction: column; gap: 7px; }
+  .cpt { display: grid; grid-template-columns: 130px 1fr 100px 70px 100px; gap: 10px; align-items: center; }
+  .cn { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar { position: relative; height: 10px; background: #f3eee7; border-radius: 5px; }
+  .bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: #c9bfb2; }
+  .bar i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+  .ce, .cp, .cv, .mvp, .catm { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ce { font-weight: 600; } .cv { color: #6b6560; font-size: 12px; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 14px; }
+  section > .deux:first-child { margin-top: 0; }
+  .mvl { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f0e9df; }
+  .mvn { display: flex; flex-direction: column; min-width: 0; }
+  .mvn small { color: #8a827a; font-size: 11px; }
+  .mvp { font-weight: 600; }
+  .sem { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; height: 130px; }
+  .j { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .jv { font-size: 10.5px; color: #6b6560; height: 15px; white-space: nowrap; }
+  .jb { flex: 1; width: 60%; max-width: 38px; background: #f3eee7; border-radius: 6px; position: relative; overflow: hidden; }
+  .jb i { position: absolute; left: 0; right: 0; bottom: 0; background: ${accent}; border-radius: 6px; }
+  .jl { font-size: 11px; color: #6b6560; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip { border: 1px solid #ebe4da; background: #fff; border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+  .cat { display: grid; grid-template-columns: 150px 1fr 90px; gap: 10px; align-items: center; padding: 4px 0; }
+  .catn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar1 { height: 8px; background: #f3eee7; border-radius: 4px; overflow: hidden; }
+  .bar1 i { display: block; height: 100%; background: ${accent}; border-radius: 4px; }
+  .pds { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .spark { width: 200px; height: 40px; }
+  .av { display: grid; grid-template-columns: 130px 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f0e9df; }
+  .avj { color: #6b6560; text-transform: capitalize; }
+  .ave b { color: ${accent}; font-weight: 600; }
+  .note { color: #6b6560; font-size: 12px; margin: 10px 0 0; }
+  .vide { color: #8a827a; font-style: italic; margin: 4px 0; }
+  footer { margin-top: 28px; color: #a39a90; font-size: 10.5px; text-align: center; }
+  @media (max-width: 640px) { body { padding: 20px 16px; } .cpt { grid-template-columns: 1fr auto; } .cpt .bar, .cpt .cv { display: none; } .deux { grid-template-columns: 1fr; } }
+</style></head><body>
+<div class="kick">Bilan de la semaine${enCours ? " · en cours" : ""}</div>
+<h1>Ta semaine <em>${bilanSemaineLbl(b.lundi)}</em></h1>
+<p class="sub">${escHtml(typeof homeDisplayName === "function" ? homeDisplayName() || "" : "")}${typeof homeDisplayName === "function" && homeDisplayName() ? " · " : ""}chiffres du ${quand}</p>
+${kpis ? `<div class="kpis">${kpis}</div>` : ""}
+${section("Bourse", "", b.comptes.length || b.hausses.length || b.baisses.length
+  ? bourse + `<div class="deux">${mouv(b.hausses, "Ce qui a le plus monté")}${mouv(b.baisses, "Ce qui a le plus baissé")}</div>` : "")}
+${section("Sport", "", sport)}
+${section("Dépenses", "", depenses)}
+${section("Santé", "", sante)}
+${section("La semaine qui vient", "", avenir)}
+<footer>Pilote · bilan calculé sur ton ordinateur le ${quand}</footer>
+</body></html>`;
+}
+
+/** Ouvre la fenêtre du bilan (semaine de `lundi`, par défaut la semaine passée). */
+async function bilanOuvrir(lundi) {
+  // Les calculs lisent le PEA dans S : on quitte une section CTO ouverte
+  if (_estCto()) { goTab("home"); _setActiveSidebar("home"); }
+  lundi = lundi || bilanLundiDefaut();
+  let ov = document.getElementById("ov-bilan");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "ov-bilan";
+    ov.className = "bilan-ov";
+    ov.innerHTML = `
+      <div class="bilan-barre">
+        <div class="bilan-sem">
+          <button type="button" class="m-iconbtn" data-bilan-sem="-7" title="Semaine précédente" aria-label="Semaine précédente"><i class="ph ph-caret-left"></i></button>
+          <b id="bilan-lbl"></b>
+          <button type="button" class="m-iconbtn" data-bilan-sem="7" title="Semaine suivante" aria-label="Semaine suivante"><i class="ph ph-caret-right"></i></button>
+        </div>
+        <label class="bilan-auto" title="Le bilan s'ouvre tout seul ce jour-là, ou au premier lancement qui suit"><input type="checkbox" id="bilan-auto"> Chaque dimanche à
+          <input type="time" id="bilan-heure" value="18:00"></label>
+        <span class="bilan-sp"></span>
+        <button type="button" class="btn btn-primary btn-sm" id="bilan-pdf"><i class="ph ph-file-pdf"></i> Enregistrer en PDF</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="bilan-fermer">Fermer</button>
+      </div>
+      <iframe id="bilan-frame" title="Bilan de la semaine"></iframe>`;
+    document.body.appendChild(ov);
+    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+    ov.querySelector("#bilan-fermer").onclick = () => ov.remove();
+    ov.querySelectorAll("[data-bilan-sem]").forEach(bt => {
+      bt.onclick = () => bilanOuvrir(bilanPlus(ov.dataset.lundi, +bt.dataset.bilanSem));
+    });
+    const p = (S.uiPrefs || {}).bilan || {};
+    const auto = ov.querySelector("#bilan-auto"), heure = ov.querySelector("#bilan-heure");
+    auto.checked = !!p.auto;
+    heure.value = /^\d\d:\d\d$/.test(p.heure || "") ? p.heure : "18:00";
+    // Activer ou changer l'heure ne rouvre pas tout de suite le bilan qu'on a sous les yeux
+    const regler = () => {
+      S.uiPrefs = S.uiPrefs || {};
+      S.uiPrefs.bilan = { auto: auto.checked, heure: heure.value || "18:00", vu: _bilanDernierRdv(heure.value) };
+      _enregistrerUiPrefs();
+      showToastModern(auto.checked ? "Le bilan s'ouvrira chaque dimanche à " + (heure.value || "18:00").replace(":", " h ") : "Le bilan ne s'ouvrira plus tout seul", "ok");
+    };
+    auto.onchange = regler;
+    heure.onchange = () => { if (auto.checked) regler(); };
+  }
+  ov.dataset.lundi = lundi;
+  ov.querySelector("#bilan-lbl").textContent = "Semaine " + bilanSemaineLbl(lundi);
+  ov.querySelector('[data-bilan-sem="7"]').disabled = lundi >= bilanLundiDe(todayISO());
+  const frame = ov.querySelector("#bilan-frame");
+  frame.srcdoc = `<body style="margin:0;display:grid;place-items:center;height:100vh;background:#fffdf9;color:#6b6560;font:14px system-ui">Calcul du bilan…</body>`;
+  const b = await bilanCalculer(lundi);
+  if (!document.body.contains(ov) || ov.dataset.lundi !== lundi) return;
+  if (!b) { ov.remove(); return; }
+  const html = bilanPageHtml(b);
+  frame.srcdoc = html;
+  ov.querySelector("#bilan-pdf").onclick = () => _rapportImprimer(frame, html, "Pilote_bilan_" + lundi);
+  if (typeof dashRender === "function") dashRender();   // le total de la tuile
+}
+
+/** Lundi de la semaine dont le dimanche à `heure` est le dernier passé. */
+function _bilanDernierRdv(heure) {
+  const [h, m] = (/^\d\d:\d\d$/.test(heure || "") ? heure : "18:00").split(":").map(Number);
+  const now = new Date();
+  const dim = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay(), h, m);
+  if (dim > now) dim.setDate(dim.getDate() - 7);
+  return bilanPlus(spDateISO(dim), -6);
+}
+
+/** Chaque minute : le dimanche à l'heure choisie (ou au premier lancement
+    qui suit), le bilan s'ouvre, une fois par semaine. */
+function bilanVerifierDimanche() {
+  const p = (S.uiPrefs || {}).bilan || {};
+  if (!p.auto || !_hydrationDone || _estCto()) return;
+  const lundi = _bilanDernierRdv(p.heure);
+  if (p.vu === lundi) return;
+  // Pas par-dessus une autre fenêtre (premiers pas, nouveautés, saisie…)
+  if (document.querySelector(".ov.open, #ov-bilan, #ov-report")) return;
+  S.uiPrefs.bilan = Object.assign({}, p, { vu: lundi });
+  _enregistrerUiPrefs();
+  bilanOuvrir(lundi);
+}
+
+/** La notification « Résumé de la semaine » de l'Agenda : ses chiffres, ceux
+    de la semaine en cours et de la précédente (le résumé du lundi parle de
+    celle d'avant). Seulement si elle est réglée, et pas pendant un CTO. */
+async function bilanEnvoyerAuTelephone() {
+  const ag = typeof AG !== "undefined" ? AG : null;
+  if (!(ag && ag.config && ag.config.connecte && (ag.config.alertes || {}).resume)) return;
+  if (_estCto() || !(window.pywebview && pywebview.api && pywebview.api.save_agenda_bilans)) return;
+  const cur = bilanLundiDe(todayISO()), out = {};
+  for (const l of [bilanPlus(cur, -7), cur]) {
+    const b = await bilanCalculer(l, true);
+    if (!b) return;
+    out[l] = Object.assign(bilanResume(b), {
+      calculeA: b.calculeA.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
+                  .replace(/ 1 /, " 1er ") + " à " + b.calculeA.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) });
+  }
+  pywebview.api.save_agenda_bilans(out);
+}
+
+/** Au lancement : l'ouverture du dimanche, les chiffres du téléphone (puis
+    toutes les heures, Pilote ouvert), le total de la tuile. */
+function bilanDemarrer() {
+  setInterval(bilanVerifierDimanche, 60000);
+  setTimeout(bilanVerifierDimanche, 3000);
+  const fond = async () => {
+    try {
+      await bilanEnvoyerAuTelephone();
+      const tuile = dashConfig().some(c => c.id === "bilan" && c.on);
+      if (tuile && !_bilanCache[bilanLundiDefaut()] && !_estCto()) {
+        await bilanCalculer(bilanLundiDefaut(), true);
+        if (typeof dashRender === "function") dashRender();
+      }
+    } catch (e) { console.warn("[bilan]", e); }
+  };
+  setTimeout(fond, 15000);
+  setInterval(() => { _bilanCache = {}; fond(); }, 3600000);
+}
+
+/** Tuile « Bilan de la semaine » : le total de la bourse s'il est calculé, et le bouton. */
+function dashBilanTuile() {
+  const l = bilanLundiDefaut(), b = _bilanCache[l];
+  const bouton = `<button type="button" class="btn btn-primary btn-sm dash-tile-btn"
+      onclick="event.stopPropagation();bilanOuvrir()"><i class="ph ph-chart-bar"></i> Voir le bilan</button>`;
+  if (b && b.total) return { lbl: "Bilan de la semaine", val: eur(b.total.eur, true), cls: b.total.eur >= 0 ? "c-g" : "c-r",
+    sub: "bourse " + (b.total.pct != null ? pct(b.total.pct) + " · " : "") + bilanSemaineLbl(l), viz: bouton };
+  return { lbl: "Bilan de la semaine", val: null, sub: "Semaine " + bilanSemaineLbl(l), viz: bouton };
 }
 
 /* ── Outils communs des tuiles ──────────────────────────────────────────── */
@@ -26096,7 +26632,7 @@ const DASH_ICONS = {
   "Santé": "heartbeat", "Prêt": "hand-coins",
   "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase", "Crypto": "currency-btc",
   "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
-  "Agenda": "calendar-blank",
+  "Agenda": "calendar-blank", "Bilan": "chart-bar",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -26828,7 +27364,7 @@ const AG_NOTIFS = [
   ["sante-pause", "sante", "hourglass-medium", "Pas de pesée depuis…", "compté depuis la dernière mesure", AG_ALERTES_RAPPEL, "delai"],
   ["sante-objectif", "sante", "target", "Objectifs à date", "ceux de l'onglet Objectifs qui ont une date", AG_ALERTES_DATE],
   ["note", "agenda", "note-pencil", "Notes de l'agenda", "le texte que tu veux ; chaque note peut avoir sa propre notification et se répéter", AG_ALERTES_HEURE],
-  ["resume", "agenda", "calendar-check", "Résumé de la semaine", "compte ce qui t'attend : séances, mensualités, dividendes…", AG_ALERTES_RESUME],
+  ["resume", "agenda", "calendar-check", "Bilan de la semaine", "la semaine écoulée : bourse, sport, dépenses, poids ; chiffres du dernier lancement de Pilote", AG_ALERTES_RESUME],
   ["sauvegarde", "general", "usb", "Sauvegarde en retard", "comptée depuis la dernière sauvegarde", AG_ALERTES_RAPPEL, "delai"],
   ["ouvrir", "general", "compass", "Pilote pas ouvert depuis…", "recule à chaque lancement de Pilote", AG_ALERTES_RAPPEL, "delai"],
   ["pense-bete", "general", "push-pin", "Pense-bêtes datés", "ceux de la tuile Pense-bête de l'accueil qui ont une date et ne sont pas cochés", AG_ALERTES_DATE],
@@ -27156,6 +27692,10 @@ function _appReady() {
                                  e => { console.warn("[" + nom + "] bootstrap KO:", e);
                                         _jn(nom + " KO : " + ((e && e.message) || e)); })));
       _jn("modules charges");
+      // Un module arrivé avec la mise à jour : l'afficher ? (il faut le
+      // portefeuille crypto lu pour savoir si Crypto sert déjà)
+      _demanderNouveauxModules().catch(e => console.warn("[nouveaux modules]", e));
+      bilanDemarrer();
       // CTO : une ligne par compte dans le Patrimoine (il faut les deux lus),
       // et leurs cours tout de suite pour leurs tuiles d'accueil
       if (_ctoBootstrapped && ctoComptes().length) {

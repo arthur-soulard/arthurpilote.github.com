@@ -489,7 +489,9 @@ class TestAgenda(unittest.TestCase):
         cto.save_data({"comptes": [{"id": "c2", "nom": "TR", "transactions": [],
                                     "positions": [{"ticker": "AAPL", "name": "Apple"}],
                                     "plansProg": [{"id": 7, "ticker": "AAPL", "montant": 25, "prochaine": j(4)}],
-                                    "divFuture": [{"id": "x", "date": j(10), "ticker": "AAPL", "montant": 1.2}]}]})
+                                    "divFuture": [{"id": "x", "date": j(10), "ticker": "AAPL", "montant": 1.2}]},
+                                   {"id": "c3", "nom": "Crypto", "crypto": True, "transactions": [],
+                                    "positions": [{"ticker": "BTC-EUR", "name": "Bitcoin"}]}]})
         finances.save_data({"transactions": [{"id": 1, "createdAt": j(-40) + "T10:00:00"}],
                             "recurrences": [{"id": 5, "label": "Loyer", "type": "expense", "amount": 450,
                                              "nextDue": j(5), "status": "active"},
@@ -513,6 +515,7 @@ class TestAgenda(unittest.TestCase):
         self.assertEqual(r["pea-depot"]["jour"], auj.replace(day=1))          # pas de versement ce mois-ci
         self.assertEqual(r["cto-dividende-c2-x"]["titre"], "💶 Dividende · Apple · 1,20 € · CTO TR")
         self.assertEqual(r["cto-investir-c2"]["titre"], "📈 Investir ce mois · CTO TR")
+        self.assertNotIn("cto-investir-c3", r)                               # le portefeuille crypto n'est pas un CTO
         # Achats programmés : le prochain de chaque plan, pas une date passée
         self.assertEqual((r["pea-plan-1"]["jour"].isoformat(), r["pea-plan-1"]["titre"]),
                          (j(3), "🔁 Achat programmé · Amundi MSCI World · 100,00 €"))
@@ -541,14 +544,36 @@ class TestAgenda(unittest.TestCase):
         auj = maintenant.date()
         notes = [{"id": f"n{i}", "titre": f"Note {i}", "date": (auj + datetime.timedelta(days=i)).isoformat()}
                  for i in range(15)]
+        # Bilan de la semaine écoulée : le dimanche, celle qui s'achève ; le
+        # lundi, celle d'avant. Chiffres venus de la page (bilans).
         ev = agenda.evenements({}, {}, {}, notes, {"resume": "dimanche"}, [])
-        self.assertIn("SUMMARY:Pilote : 🗓️ Ta semaine : 7 notes", ev["resume"])
+        self.assertIn("SUMMARY:Pilote : 📊 Ta semaine dans Pilote", ev["resume"])
         self.assertIn("TRIGGER:PT0S", ev["resume"])
-        self.assertTrue(re.search(r"DTSTART:\d{8}T180000", "\n".join(ev["resume"])))
-        e = agenda.retenus({}, {}, {}, [], {"resume": "lundi"})[0]
+        dtstart = re.search(r"DTSTART:(\d{8})T180000", "\n".join(ev["resume"]))
+        self.assertTrue(dtstart)
+        dim = datetime.datetime.strptime(dtstart.group(1), "%Y%m%d").date()
+        lundi = (dim - datetime.timedelta(days=6)).isoformat()
+        bilans = {lundi: {"titre": "bourse +1,20 % · 3 séances", "texte": "PEA +1,20 %", "calculeA": "dim. 1 nov. à 17:00"}}
+        ev = agenda.evenements({}, {}, {}, [], {"resume": "dimanche"}, [], bilans)
+        self.assertIn("SUMMARY:Pilote : 📊 Ta semaine : bourse +1\\,20 % · 3 séances", ev["resume"])
+        self.assertIn("Chiffres du dim. 1 nov. à 17:00.", "\n".join(ev["resume"]))
+        e = agenda.retenus({}, {}, {}, [], {"resume": "lundi"}, [], {lundi: bilans[lundi]})[0]
         self.assertEqual((e["debut"].weekday(), e["debut"].hour), (0, 8))
         self.assertGreater(e["debut"], maintenant)
-        self.assertEqual(e["titre"], "🗓️ Ta semaine : rien de prévu dans Pilote")
+        # Le lundi qui suit ce dimanche-là parle de la même semaine, sauf si ce
+        # lundi est déjà passé (alors celle d'après, pas encore calculée)
+        attendu = e["debut"].date() - datetime.timedelta(days=7) == dim - datetime.timedelta(days=6)
+        self.assertEqual(e["titre"].startswith("📊 Ta semaine : bourse"), attendu)
+        # Ce qui t'attend : les notes de la semaine, iCloud connecté ou non
+        lun = auj - datetime.timedelta(days=auj.weekday())
+        agenda.enregistrer_notes(notes)
+        av = agenda.a_venir(lun.isoformat())
+        self.assertTrue(av and all(lun.isoformat() <= x["jour"] <= (lun + datetime.timedelta(days=6)).isoformat() for x in av))
+        agenda.enregistrer_notes([])
+        # Les bilans gardés : les deux semaines les plus récentes
+        r = agenda.enregistrer_bilans({"2026-10-12": {"titre": "a"}, "2026-10-19": {"titre": "b"},
+                                       "2026-10-26": {"titre": "c"}, "pas une date": {"titre": "x"}})
+        self.assertEqual(list(r["bilans"]), ["2026-10-19", "2026-10-26"])
         # Réglages acceptés par type
         propres = agenda._alertes_propres({"resume": "matin", "sport": "dimanche", "objectif": "semaine"})
         self.assertEqual((propres["resume"], propres["sport"], propres["objectif"]), ("", "", "semaine"))

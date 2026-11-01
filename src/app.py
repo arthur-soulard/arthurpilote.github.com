@@ -613,6 +613,20 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def save_agenda_bilans(self, bilans: dict) -> dict:
+        """Chiffres du bilan de la semaine, pour la notification « Resume »."""
+        try:
+            return {"ok": True, **agenda.enregistrer_bilans(bilans or {})}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def agenda_a_venir(self, lundi: str) -> dict:
+        """Bilan de la semaine : ce que Pilote sait dater dans la semaine de `lundi`."""
+        try:
+            return {"ok": True, "evenements": agenda.a_venir(lundi)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def agenda_icloud(self, debut: str, fin: str) -> dict:
         """Ce qu'il y a dans les agendas iCloud (le calendrier de Pilote), en lecture seule."""
         try:

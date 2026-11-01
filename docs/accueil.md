@@ -236,6 +236,31 @@ jamais un second calcul :
 | Prêt | `pret-mensualite`, `pret-gains` | configuration du prêt, `prOverview().benefice_net` |
 | Comptes | `fin-solde`, `fin-revenu` | `finComputeMonthTotals` |
 | Pense-bête | `pense-bete` | `S.uiPrefs.penseBete` |
+| Bilan | `bilan` (01/11/2026) | total de la bourse sur la semaine passée (`_bilanCache`, calculé 15 s après le lancement si la tuile est affichée), bouton « Voir le bilan » |
+
+### Bilan de la semaine (01/11/2026)
+
+Demande d'Arthur : un bilan de la semaine **passée** (du lundi au dimanche), en
+page et pas en texte, avec la performance de la semaine du PEA, de chaque CTO
+et de la Crypto, ce qui a le plus monté et baissé, le sport, les dépenses, la
+santé et la semaine à venir. Direction artistique validée sur capture
+(« parfait pour la DA ») : identité Carnet, page claire imprimable.
+
+* `bilanOuvrir(lundi)` : fenêtre `#ov-bilan` (barre : semaine ‹ ›, « Chaque
+  dimanche à HH:MM », Enregistrer en PDF, Fermer), page dans une iframe
+  (`bilanPageHtml`), impression par `_rapportImprimer`, commun avec le rapport
+  annuel (Mac : ouverte dans le navigateur). La semaine par défaut est celle qui
+  s'achève le dimanche, la précédente les autres jours (`bilanLundiDefaut`).
+* `bilanCalculer(lundi)` : chaque compte = `computePnl` sur sa courbe, de la
+  clôture d'avant le lundi à la dernière de la semaine (comme la pastille 1S) ;
+  hausses et baisses = cours des lignes détenues aujourd'hui, à ces deux dates.
+  Le PEA doit être dans S : une section CTO ouverte est quittée pour l'accueil.
+  Un module masqué n'a pas sa rubrique. « La semaine qui vient » :
+  `agenda.a_venir` (ce que Pilote sait dater, iCloud connecté ou non).
+* Ouverture du dimanche (`S.uiPrefs.bilan = {auto, heure, vu}`, éteinte par
+  défaut) : vérifiée chaque minute ; Pilote fermé à l'heure dite, au premier
+  lancement qui suit ; une fois par semaine, jamais par-dessus une autre fenêtre.
+* La notification iCloud en reprend les chiffres : `docs/modules/agenda.md`.
 
 Choix d'Arthur et pièges :
 

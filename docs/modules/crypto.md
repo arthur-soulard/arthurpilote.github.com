@@ -41,9 +41,16 @@ Ce qui le distingue :
 * Position de type `crypto` (badge « Crypto »), `sector: null`.
 * Ordre de la barre : `sec-crypto` suit `sec-cto` dans `NAV_ORDRE_DEFAUT` ; dans
   une barre déjà réordonnée, elle se range après le dernier CTO (`_navOrdre`).
-* Module à part (`NAV_MODULES`, `MODULES_A_CHARGER`) : masquable seul. Les deux
-  sections lisent le même `cto.json`, une seule fois (`ctoBootstrap` garde sa
-  promesse en cours).
+* Module à part (`NAV_MODULES`, `MODULES_A_CHARGER`) : masquable seul, proposé
+  aux Premiers pas et dans Paramètres › Modules (listes tirées de `NAV_SECTIONS`).
+  Les deux sections lisent le même `cto.json`, une seule fois (`ctoBootstrap`
+  garde sa promesse en cours).
+* Paramètres › Masqués (01/11/2026) : sa propre case, avec les blocs des écrans
+  du PEA qu'elle montre (`crypto-dash`, `-pos`, `-tx`) ; la case CTO ne compte
+  plus le portefeuille parmi les comptes-titres.
+* Agenda : aucun rappel (`agenda.py` saute le compte `crypto` ; jusqu'au
+  01/11/2026, « Investir ce mois » le nommait « CTO Crypto »). Pas d'entrée dans
+  la colonne des Paramètres : nom et plateforme se règlent dans la section.
 
 ## Cours en euros
 
