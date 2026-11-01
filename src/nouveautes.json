@@ -2,6 +2,20 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.49",
+      "date": "2026-11-01",
+      "titre": "Ranger ses dépenses en quelques clics",
+      "nouveau": [
+        "Mes comptes : coche plusieurs transactions pour changer d'un coup leur catégorie, leur source ou leur date (un mois plus tard, un mois plus tôt ou un jour précis), ou pour les supprimer. Le choix « Tous les mois », à côté de la recherche, montre tout l'historique : cherche « Uber », coche tout, choisis la catégorie.",
+        "Quand tu changes la catégorie d'une dépense, Pilote te propose de faire pareil pour les autres du même nom. Rien ne change sans ton « Oui ».",
+        "Gérer les catégories : la flèche à côté d'une sous-catégorie la déplace dans une autre catégorie, avec ses transactions."
+      ],
+      "ameliore": [
+        "Une catégorie ou une sous-catégorie qui sert encore se supprime : Pilote demande où mettre ses transactions et ses récurrents. C'est aussi la façon de fusionner deux catégories.",
+        "Chaque changement groupé s'annule avec le bouton « Annuler » du message qui suit, pendant 10 secondes."
+      ]
+    },
+    {
       "version": "4.4.48",
       "date": "2026-11-01",
       "titre": "Bilan de la semaine plus lisible",
