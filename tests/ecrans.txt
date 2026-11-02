@@ -11,12 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 01/11/2026 : Mes comptes, changements en lot. Pas de « ; » ni d'espace dans
-# un appel js (le test sépare les écrans par « ; » et l'appel du défilement
-# par une espace).
-# 1. Tous les mois, tout coché : barre des transactions cochées, en bas de page.
-js:goTab('fin-month'),document.getElementById('fin-filter-periode').value='tout',finSelTout(true) 5000
-# 2. Gérer les catégories : flèche « Déplacer » et ✕ actifs.
-js:goTab('fin-month'),finOpenCategories()
-# 3. Supprimer une catégorie utilisée : choix de la destination.
-js:goTab('fin-month'),finDeleteCat(1)
+# 02/11/2026 : Sports, durée en heures + minutes, tuile à jour. Pas de « ; » ni
+# d'espace dans un appel js (le test sépare les écrans par « ; » et l'appel du
+# défilement par une espace).
+# 1. Nouvelle séance : champ Durée en « h » et « min ».
+js:goTab('home'),spOpenSession(null)
+# 2. Séance de 1 h 30 enregistrée depuis l'accueil : la tuile « Sport du mois » suit.
+js:goTab('home'),spOpenSession(null),document.getElementById('sp-f-dur-h').value=1,document.getElementById('sp-f-dur').value=30,spSaveSession()
+# 3. Agenda des sports après l'ajout.
+sp-agenda

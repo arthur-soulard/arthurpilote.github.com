@@ -1195,6 +1195,9 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 /* Ligne de champs a largeur variable : les champs masques ne laissent pas de trou */
 .sp-frow { display: flex; flex-wrap: wrap; gap: 10px; }
 .sp-frow > .fg { flex: 1 1 150px; margin-bottom: .8rem; }
+.sp-dur { display: flex; align-items: center; gap: 6px; }
+.sp-dur input { flex: 1; min-width: 0; }
+.sp-dur span { color: var(--txt2); font-size: .85rem; }
 @media (max-width: 620px) { .fg-row, .fg-row3 { grid-template-columns: 1fr; } }
 
 /* ══════════════════════════════════════════════════
@@ -3936,8 +3939,11 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
     <div class="sp-frow">
       <div class="fg" id="sp-w-dur">
-        <label>Durée (min)</label>
-        <input id="sp-f-dur" type="number" step="1" placeholder="0">
+        <label>Durée</label>
+        <div class="sp-dur">
+          <input id="sp-f-dur-h" type="number" min="0" step="1" placeholder="0" aria-label="Heures"><span>h</span>
+          <input id="sp-f-dur" type="number" min="0" step="1" placeholder="0" aria-label="Minutes"><span>min</span>
+        </div>
       </div>
       <div class="fg" id="sp-w-dist">
         <label id="sp-l-dist">Distance (km)</label>
@@ -18637,7 +18643,7 @@ let SP_BASE_CATALOG = SP_CATALOG.slice();
 
 // Champs qu'un sport peut demander a la saisie (ecrase par Python au chargement)
 let SP_FIELD_CATALOG = [
-  { id: "duration",    label: "Durée",               hint: "en minutes" },
+  { id: "duration",    label: "Durée",               hint: "en heures et minutes" },
   { id: "distance_km", label: "Distance (km)",       hint: "décimales autorisées" },
   { id: "distance_m",  label: "Distance (m)",        hint: "comme la natation" },
   { id: "elevation",   label: "Dénivelé +",          hint: "en mètres" },
@@ -19196,7 +19202,10 @@ function spOpenSession(id, iso) {
   document.getElementById("sp-f-date").value = s ? s.date : (iso || spDateISO(new Date()));
   document.getElementById("sp-f-time").value = s ? (s.time || "") : "";
   document.getElementById("sp-f-dist").value = (s && spNum(s.distance))  ? s.distance  : "";
-  document.getElementById("sp-f-dur").value  = (s && spNum(s.duration))  ? s.duration  : "";
+  // Durée gardée en minutes ; saisie en heures + minutes (90 min → 1 h 30)
+  const durMin = s ? Math.round(spNum(s.duration)) : 0;
+  document.getElementById("sp-f-dur-h").value = durMin >= 60 ? Math.floor(durMin / 60) : "";
+  document.getElementById("sp-f-dur").value   = durMin ? (durMin >= 60 ? durMin % 60 : durMin) : "";
   document.getElementById("sp-f-elev").value = (s && spNum(s.elevation)) ? s.elevation : "";
   document.getElementById("sp-f-kind").value = (s && s.kind) || "entrainement";
   document.getElementById("sp-f-lieu").value = (s && s.lieu) ? String(s.lieu) : "libre";
@@ -19211,7 +19220,8 @@ async function spSaveSession() {
   const date = document.getElementById("sp-f-date").value;
   if (!date) { showToastModern("Date obligatoire", "warn"); return; }
 
-  const dur  = spNum(document.getElementById("sp-f-dur").value);
+  const dur  = spNum(document.getElementById("sp-f-dur-h").value) * 60
+             + spNum(document.getElementById("sp-f-dur").value);
   const dist = spNum(document.getElementById("sp-f-dist").value);
   if (!dur && !dist) { showToastModern("Renseigne au moins une durée ou une distance", "warn"); return; }
 
@@ -19729,6 +19739,8 @@ function spRenderAll() {
   spRenderAgenda();
   spRenderGoals();
   spRenderStats();
+  // Une séance peut s'ajouter depuis l'accueil : ses tuiles suivent tout de suite
+  if (typeof dashRender === "function") dashRender();
 }
 
 async function spBootstrap() {

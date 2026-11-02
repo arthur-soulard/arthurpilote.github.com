@@ -31,7 +31,12 @@ Ne pas remettre d'`id` de sport en dur dans le code : c'est `spHasField()` qui d
 
 Données :
 * sessions : `{id, date "YYYY-MM-DD", time, sport, duration (min), distance
-  (km, ou mètres si le sport a le champ distance_m), elevation, note, + champs du sport}`
+  (km, ou mètres si le sport a le champ distance_m), elevation, note, + champs du sport}`.
+  La durée reste en minutes ; le formulaire la saisit en heures + minutes
+  (`sp-f-dur-h` et `sp-f-dur`, 4.4.50).
+* `spRenderAll()` redessine aussi les tuiles de l'accueil (4.4.50) : une séance
+  ajoutée depuis la tuile « Sport du mois » y comptait seulement après un changement
+  d'onglet.
 * routines : `{id, name, note}` — de simples libellés de circuits, rattachés aux
   séances de muscu par `routineId`. PAS de liste d'exercices.
 * goals    : kind `perf` (validation manuelle) ou `event` (date + compte à rebours)
