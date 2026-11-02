@@ -61,9 +61,11 @@ def main() -> None:
 
     # Le dossier du paquet : l'app telle que PyInstaller l'a faite, plus le
     # manifeste et les logos
+    # Sans Donnees/ : l'essai de l'exe (release.yml, build-windows.yml) en cree
+    # un a cote de lui, qui partait dans le paquet (test du 02/11/2026)
     if SORTIE.exists():
         shutil.rmtree(SORTIE)
-    shutil.copytree(DIST, SORTIE)
+    shutil.copytree(DIST, SORTIE, ignore=shutil.ignore_patterns("Donnees", "*.log"))
 
     manifeste = (RACINE / "build" / "AppxManifest.xml").read_text(encoding="utf-8")
     for champ, valeur in (("__IDENTITE__", args.identite), ("__EDITEUR__", args.editeur),
