@@ -11,12 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 02/11/2026 : Sports, durée en heures + minutes, tuile à jour. Pas de « ; » ni
-# d'espace dans un appel js (le test sépare les écrans par « ; » et l'appel du
-# défilement par une espace).
-# 1. Nouvelle séance : champ Durée en « h » et « min ».
-js:goTab('home'),spOpenSession(null)
-# 2. Séance de 1 h 30 enregistrée depuis l'accueil : la tuile « Sport du mois » suit.
-js:goTab('home'),spOpenSession(null),document.getElementById('sp-f-dur-h').value=1,document.getElementById('sp-f-dur').value=30,spSaveSession()
-# 3. Agenda des sports après l'ajout.
-sp-agenda
+# 02/11/2026 (4.4.51) : version Microsoft Store (docs/microsoft-store.md). Rien
+# ne change hors du paquet du Store : on vérifie l'accueil et Paramètres ›
+# Mises à jour, qui doivent rester comme avant (fiche 4.4.51 en tête). Pas de
+# « ; » ni d'espace dans un appel js (le test sépare les écrans par « ; » et
+# l'appel du défilement par une espace).
+# 1. Accueil.
+home
+# 2. Paramètres › Mises à jour : version 4.4.51 et sa fiche.
+js:openSettings('general'),setGoSection('maj')
