@@ -393,6 +393,11 @@ def apply_to_shortcuts(color: str) -> dict:
     """
     if sys.platform != "win32":
         return {"ok": False, "error": "Windows uniquement", "count": 0}
+    import plateforme
+    if plateforme.version_store():
+        # Pas de .lnk a soi : ceux trouves seraient ceux du Setup, s'il est
+        # aussi installe. L'icone du menu Demarrer vient du paquet.
+        return {"ok": False, "error": "version Microsoft Store", "count": 0}
     path = ico_for(color)
     if not path:
         return {"ok": False, "error": "Pillow indisponible", "count": 0}

@@ -132,3 +132,44 @@ jobs:
           if (-not $up) { Write-Output "::error title=Setup::Pilote relance par le Setup ne repond pas"; exit 1 }
           if (-not (Test-Path "$dir\Donnees")) { Write-Output "::error title=Setup::Donnees absent a cote de l'exe"; exit 1 }
           Write-Output "::notice title=Setup::installe, lance (ping $up s), Donnees a cote de l'exe"
+
+      # Le paquet du Microsoft Store (docs/microsoft-store.md) : fabrique, signe
+      # par un certificat d'essai (le Store re-signe le vrai), installe, lance.
+      # Les donnees doivent aller dans ~\Pilote\Donnees, pas dans le paquet, et
+      # rester apres la desinstallation.
+      - name: Build and try the Store package
+        shell: pwsh
+        run: |
+          Get-Process Pilote -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          python build/msix.py
+          if ($LASTEXITCODE -ne 0) { Write-Output "::error title=MSIX::fabrication impossible"; exit 1 }
+          $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=Pilote Essai" -KeyUsage DigitalSignature `
+                    -FriendlyName "Pilote essai" -CertStoreLocation "Cert:\CurrentUser\My" `
+                    -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+          $pfx = Join-Path $env:RUNNER_TEMP "essai.pfx"
+          $mdp = ConvertTo-SecureString -String "essai" -Force -AsPlainText
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $mdp | Out-Null
+          Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\LocalMachine\TrustedPeople -Password $mdp | Out-Null
+          $signtool = (Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName | Select-Object -Last 1).FullName
+          & $signtool sign /fd SHA256 /f $pfx /p essai dist\Pilote.msix
+          if ($LASTEXITCODE -ne 0) { Write-Output "::error title=MSIX::signature d'essai impossible"; exit 1 }
+          Add-AppxPackage -Path dist\Pilote.msix
+          $pkg = Get-AppxPackage -Name Pilote.Essai
+          if (-not $pkg) { Write-Output "::error title=MSIX::paquet non installe"; exit 1 }
+          Start-Process explorer.exe "shell:AppsFolder\$($pkg.PackageFamilyName)!Pilote"
+          $up = $null
+          for ($i = 1; $i -le 90; $i++) {
+            try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:7438/ping -TimeoutSec 2 | Out-Null; $up = $i; break } catch { Start-Sleep 1 }
+          }
+          Start-Sleep 3
+          $exe = (Get-Process Pilote -ErrorAction SilentlyContinue | Select-Object -First 1).Path
+          Get-Process Pilote -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $donnees = Join-Path $HOME "Pilote\Donnees"
+          Write-Output "::notice title=MSIX::ping $(if ($up) { "$up s" } else { 'KO' }) - exe $exe - donnees $((Get-ChildItem $donnees -ErrorAction SilentlyContinue).Name -join ', ')"
+          if (-not $up) { Write-Output "::error title=MSIX::Pilote du paquet ne repond pas"; exit 1 }
+          if ($exe -notmatch "WindowsApps") { Write-Output "::error title=MSIX::le Pilote lance n'est pas celui du paquet"; exit 1 }
+          if (-not (Test-Path $donnees)) { Write-Output "::error title=MSIX::$donnees absent"; exit 1 }
+          if (Test-Path (Join-Path $pkg.InstallLocation "Donnees")) { Write-Output "::error title=MSIX::Donnees dans le paquet"; exit 1 }
+          Remove-AppxPackage -Package $pkg.PackageFullName
+          if (-not (Test-Path $donnees)) { Write-Output "::error title=MSIX::donnees effacees par la desinstallation"; exit 1 }
+          Write-Output "::notice title=MSIX::installe, lance, donnees dans ~\Pilote\Donnees, gardees apres desinstallation"

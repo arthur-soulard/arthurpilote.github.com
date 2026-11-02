@@ -16356,7 +16356,9 @@ async function manualCheckUpdate() {
     }
     if (!r) { status.textContent = "❌ pas de réponse"; return; }
     if (!r.checked) { status.textContent = "Pas de réponse à temps : réessaie dans un moment"; return; }
-    if (r.erreur) {
+    if (r.store) {
+      status.textContent = "Les mises à jour arrivent par le Microsoft Store";
+    } else if (r.erreur) {
       status.textContent = r.erreur;
     } else if (r.hasUpdate) {
       status.textContent = `✓ Mise à jour disponible : v${r.version}`;

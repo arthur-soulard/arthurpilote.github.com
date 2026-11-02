@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paquet Microsoft Store de Pilote (docs/microsoft-store.md). Les __CHAMPS__
+     sont remplis par build/msix.py : identite et editeur viennent de Partner
+     Center (Identite du produit), la version de src/app.py. -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity Name="__IDENTITE__" Publisher="__EDITEUR__" Version="__VERSION__"
+            ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Pilote</DisplayName>
+    <PublisherDisplayName>__NOM_EDITEUR__</PublisherDisplayName>
+    <Logo>Images\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="fr-fr" />
+  </Resources>
+
+  <Applications>
+    <Application Id="Pilote" Executable="Pilote.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Pilote"
+                          Description="Suivi personnel : bourse, budget, prêt, sport, santé et patrimoine, 100 % local."
+                          BackgroundColor="transparent"
+                          Square150x150Logo="Images\Square150x150Logo.png"
+                          Square44x44Logo="Images\Square44x44Logo.png" />
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

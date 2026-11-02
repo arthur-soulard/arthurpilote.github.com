@@ -339,6 +339,13 @@ def _notes_distantes(latest: str, current: str) -> list | None:
 
 
 def start_check(current_version: str) -> None:
+    import plateforme
+    if plateforme.version_store():
+        # Le Microsoft Store met Pilote a jour lui-meme et interdit qu'une app
+        # s'installe autre chose : rien a verifier ni a proposer (02/11/2026)
+        with _lock:
+            _state.update({"checked": True, "erreur": None, "hasUpdate": False, "store": True})
+        return
     threading.Thread(target=_fetch, args=(current_version,), daemon=True).start()
 
 
@@ -356,6 +363,10 @@ def get_progress() -> dict:
 
 def start_install_async() -> None:
     """Lance l'installation dans un thread — retourne immediatement."""
+    import plateforme
+    if plateforme.version_store():
+        _set_progress("error", 0, "Les mises à jour passent par le Microsoft Store.")
+        return
     _log("INSTALL: thread starting")
     _set_progress("downloading", 0)
     threading.Thread(target=_do_install, daemon=True).start()

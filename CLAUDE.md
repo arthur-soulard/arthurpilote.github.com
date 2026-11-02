@@ -215,6 +215,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/modules/agenda.md` | Agenda : calendrier, notes, iCloud en CalDAV (écriture et lecture), synchronisation | `agenda.py`, `ag*`, `save_agenda*` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
+| `docs/microsoft-store.md` | version Microsoft Store : paquet MSIX, données dans `~\Pilote\Donnees`, pas d'auto-update, test | `build/msix.py`, `build/AppxManifest.xml`, `plateforme.version_store`, `storage.get_app_dir`, `updater.start_check` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
 
 Rappelés ici parce qu'une erreur ne se voit qu'une fois l'exe installé (détail

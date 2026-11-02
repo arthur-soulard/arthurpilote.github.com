@@ -95,9 +95,17 @@ def get_app_dir() -> Path:
     Telechargements. Les donnees vont donc la ou Apple les attend. Le dossier
     Donnees/ est garde pour que app_dir.parent reste a Pilote (archive de
     securite de sauvegarde.restore_from).
+
+    Version Microsoft Store : le dossier de l'exe est en lecture seule, et le
+    dossier prive du paquet (AppData\\Local\\Packages) est efface a la
+    desinstallation. Donc C:\\Users\\<nom>\\Pilote\\Donnees, hors de OneDrive
+    (choix d'Arthur, 02/11/2026, docs/microsoft-store.md).
     """
+    import plateforme
     if sys.platform == "darwin" and getattr(sys, "frozen", False):
         base = Path.home() / "Library" / "Application Support" / APP_NAME / "Donnees"
+    elif plateforme.version_store():
+        base = Path.home() / APP_NAME / "Donnees"
     else:
         base = _exe_dir() / "Donnees"
     try:

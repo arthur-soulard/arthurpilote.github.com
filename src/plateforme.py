@@ -18,6 +18,27 @@ import subprocess
 # ou se trouvaient les failles de securite connues (SUP-05)
 _FORMATS_IMAGE = ["PNG", "JPEG", "WEBP", "BMP", "GIF"]
 
+_store = None
+
+def version_store() -> bool:
+    """Windows : True quand Pilote tourne depuis son paquet du Microsoft Store
+    (MSIX, decision du 02/11/2026, docs/microsoft-store.md). Un paquet a une
+    identite : GetCurrentPackageFullName rend alors 0, et 15700
+    (APPMODEL_ERROR_NO_PACKAGE) pour le Setup et le dev."""
+    global _store
+    if _store is None:
+        _store = False
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                n = ctypes.c_uint32(0)
+                rc = ctypes.windll.kernel32.GetCurrentPackageFullName(ctypes.byref(n), None)
+                _store = rc != 15700        # 122 (tampon trop petit) : paquet present
+            except Exception:
+                _store = False
+    return _store
+
+
 def certificats_mac() -> None:
     """Mac : donne a Python les certificats fournis avec macOS quand il n'en a pas.
 
