@@ -16,7 +16,8 @@ paquet MSIX, lui, est re-signé par le Store : aucun certificat à acheter.
 `build/msix.py` le fabrique à partir de `dist/Pilote/` (après PyInstaller) :
 copie de l'app, `build/AppxManifest.xml` rempli (identité, éditeur,
 version de `src/app.py` au format `4.4.50.0`), logos tirés de
-`assets/icon_512.png`, puis `makeappx pack` du Windows SDK.
+`assets/icon.ico` (`icon_512.png` n'est pas dans le dépôt : premier test en
+échec le 02/11/2026), puis `makeappx pack` du Windows SDK.
 
 ```
 python build/msix.py --identite <Nom du paquet> --editeur "CN=<...>" --nom-editeur "<...>"

@@ -74,7 +74,9 @@ def main() -> None:
     from PIL import Image
     images = SORTIE / "Images"
     images.mkdir()
-    with Image.open(RACINE / "assets" / "icon_512.png") as icone:
+    # icon.ico (256 px, la plus grande taille, ouverte par defaut) : icon_512.png
+    # n'est pas dans le depot (.gitignore)
+    with Image.open(RACINE / "assets" / "icon.ico") as icone:
         icone = icone.convert("RGBA")
         for nom, cote in LOGOS.items():
             icone.resize((cote, cote), Image.LANCZOS).save(images / nom)
