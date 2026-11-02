@@ -77,6 +77,13 @@ jobs:
           if ($diag -match "ERREUR ") { Write-Output "::error title=Lancement::erreur JavaScript au demarrage"; exit 1 }
           if ($diag -match "REJET ") { Write-Output "::warning title=Lancement::promesse rejetee au demarrage" }
 
+      # Paquet du Microsoft Store (docs/microsoft-store.md), joint a la release
+      # pour la soumission dans Partner Center. S'il echoue, le Setup part quand
+      # meme : action-gh-release ignore un fichier absent.
+      - name: Build Store package (MSIX)
+        continue-on-error: true
+        run: python build/msix.py
+
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
 
@@ -97,9 +104,11 @@ jobs:
           prerelease: false
           body_path: notes_release.md
           # Build onedir : Pilote.exe seul ne tourne pas sans son _internal/,
-          # seul le Setup est publie (c'est aussi lui que prend updater.py)
+          # seul le Setup est publie (c'est aussi lui que prend updater.py).
+          # Pilote.msix sert a la soumission au Store, pas aux mises a jour.
           files: |
             dist/Pilote_Setup.exe
+            dist/Pilote.msix
 
   # App Mac (docs/mac.md), jointe a la meme release APRES le Setup : job a
   # part, qui attend que la release existe ; s'il echoue, le Setup est deja

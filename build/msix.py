@@ -4,11 +4,11 @@ msix.py — Paquet Microsoft Store de Pilote (Pilote.msix), a partir de dist/Pil
 A lancer apres PyInstaller (build/pilote.spec) :
     python build/msix.py [--identite ...] [--editeur "CN=..."] [--nom-editeur ...]
 
-Identite, editeur et nom d'editeur viennent de Partner Center (Gestion du
-produit > Identite du produit). Sans eux, des valeurs d'essai : le paquet
-s'installe sur une machine de test (signe par un certificat d'essai), pas dans
-le Store. Le Store re-signe le paquet qu'on lui envoie : pas de certificat a
-acheter. Detail et decisions : docs/microsoft-store.md.
+Par defaut, l'identite de Pilote dans Partner Center (Gestion du produit >
+Identite du produit, relevee le 02/11/2026) : c'est le paquet a envoyer au
+Store, qui le re-signe (pas de certificat a acheter). Le test de
+build-windows.yml passe une identite d'essai, celle de son certificat.
+Detail et decisions : docs/microsoft-store.md.
 """
 from __future__ import annotations
 
@@ -41,8 +41,9 @@ def version_app() -> str:
 
 def makeappx() -> str:
     """makeappx.exe du Windows SDK le plus recent."""
-    kits = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
-    trouves = sorted(glob.glob(os.path.join(kits, "Windows Kits", "10", "bin", "*", "x64", "makeappx.exe")))
+    kits = os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), "Windows Kits", "10")
+    trouves = sorted(glob.glob(os.path.join(kits, "bin", "*", "x64", "makeappx.exe")))
+    trouves += glob.glob(os.path.join(kits, "App Certification Kit", "makeappx.exe"))
     if not trouves:
         sys.exit("makeappx.exe introuvable : installer le Windows SDK")
     return trouves[-1]
@@ -50,9 +51,9 @@ def makeappx() -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--identite", default="Pilote.Essai")
-    ap.add_argument("--editeur", default="CN=Pilote Essai")
-    ap.add_argument("--nom-editeur", default="Pilote")
+    ap.add_argument("--identite", default="ARSOL.Pilote")
+    ap.add_argument("--editeur", default="CN=EA040BB3-FE8B-4FEE-9E20-3D788F376B39")
+    ap.add_argument("--nom-editeur", default="ARSOL")
     args = ap.parse_args()
 
     if not (DIST / "Pilote.exe").is_file():
