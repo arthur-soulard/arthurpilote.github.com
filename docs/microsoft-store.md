@@ -65,13 +65,21 @@ par le menu Démarrer, attend le serveur, vérifie que l'exe lancé est bien cel
 de `WindowsApps`, que `~\Pilote\Donnees` existe et pas `Donnees` dans le paquet,
 puis désinstalle et vérifie que les données sont restées.
 
-## Reste à faire (02/11/2026)
+## Partner Center (02/11/2026)
 
-1. **Arthur** : compte Partner Center de particulier (gratuit, pièce
-   d'identité et selfie), puis réserver le nom de l'app (« Pilote » s'il est
-   libre). Ça donne l'identité et l'éditeur à passer à `build/msix.py`.
-2. Politique de confidentialité en ligne (site GitHub Pages) : aucune donnée
-   collectée, deux exceptions voulues (Gmail d'Actus, iCloud d'Agenda).
-3. Fiche du store : description, captures sur les données d'exemple de Camille,
-   classification par âge.
-4. Joindre `Pilote.msix` à la release (`release.yml`), puis première soumission.
+* Compte de particulier, app « Pilote » réservée : ID Store `9NLZ93TP5HD3`,
+  identité `ARSOL.Pilote`, éditeur affiché `ARSOL` (valeurs par défaut de
+  `build/msix.py`).
+* `Pilote.msix` est joint à chaque release (`release.yml`), à déposer à la
+  main dans Partner Center (28 Mo).
+* Politique de confidentialité : https://arthur-soulard.github.io/pilote/confidentialite.html
+  (dépôt du site, `pilote/confidentialite.html`).
+* Première soumission (v4.4.51) envoyée le 02/11/2026 : gratuite, **lien
+  direct seulement** (pas dans les recherches), 3 ans et plus (IARC),
+  catégorie Finances personnelles › Banque + investissements, 7 captures
+  1366 × 768 au nom de **Brice** (pas Camille dans ce qui est public, demande
+  d'Arthur), publication **manuelle** (« Publier maintenant » après la
+  certification). Justification de `runFullTrust` limitée à 500 caractères.
+* Ensuite : Arthur installe depuis le lien du Store et fait le tour des
+  fonctions, puis on passe la visibilité à « détectable ». À chaque nouvelle
+  version, nouvelle soumission avec le nouveau `Pilote.msix`.
