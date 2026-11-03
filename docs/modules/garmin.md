@@ -8,7 +8,9 @@ La montre Garmin, lue dans le compte Garmin Connect de l'utilisateur. Demandé
 par Arthur le 03/11/2026 (« est-ce que ça pourrait être possible d'ajouter la
 connexion Garmin à Pilote ? »), codé le même jour pendant son absence, essayé
 avec sa vraie clé, **publié en 4.4.52** (03/11/2026). Une section « Garmin » dans Vie perso, deux onglets :
-**Ma forme** (`ga-forme`) et **Connexion** (`ga-connexion`).
+**Ma forme** (`ga-forme`) et **Connexion** (`ga-connexion`). Devenue « Montres »
+le 03/11/2026 (branche `montres`) : Coros et les fichiers .fit s'y ajoutent,
+Connexion s'appelle « Garmin » (`docs/modules/montres.md`).
 
 API Python : `load_garmin()` → `{connecte, connecteLe, depuis, choix, derniere,
 jours}` ; `save_garmin(cle, depuis)` connecte ; `save_garmin_reglages(choix,

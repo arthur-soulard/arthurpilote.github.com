@@ -112,6 +112,11 @@ Autres pistes :
   vraie app iPhone (compte Apple à 99 €/an) ou une page web ajoutée à l'écran
   d'accueil, avec Web Push : notifications seulement Pilote ouvert, page hébergée
   en ligne, données hors du PC. Pas de préfixe « Pilote · » non plus.
+- **Connexion à Strava** : écartée avec Arthur le 03/11/2026. Créer son accès à
+  l'API exige un abonnement Strava payant, et l'API Policy interdit de garder les
+  données plus de 7 jours, alors que Pilote garde les séances dans Sports. Coros
+  passe par son serveur MCP, toute autre montre par ses fichiers .fit
+  (`docs/modules/montres.md`).
 
 **Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est

@@ -65,6 +65,8 @@ import sante
 import actus
 import agenda
 import garmin
+import coros
+import fit
 import expositions
 import sauvegarde
 import notifications
@@ -592,6 +594,74 @@ class Api:
             return {"ok": True, **garmin.marquer_vus(ids or [])}
         except Exception as e:
             return {"ok": False, "error": str(e)}
+
+    # -- Coros : la montre, lue par le serveur MCP officiel de Coros ---------
+    # Connexion dans le navigateur (OAuth) ; le jeton de renouvellement ne
+    # ressort jamais (coros.py). load_coros_etat suit la connexion en cours.
+
+    def load_coros(self) -> dict:
+        try:
+            return {"ok": True, **coros.config()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def load_coros_etat(self) -> dict:
+        try:
+            return {"ok": True, **coros.etat_connexion()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_coros_connexion(self, depuis: str = "") -> dict:
+        """Rend l'adresse de la page de connexion de Coros, a ouvrir dans le navigateur."""
+        try:
+            return {"ok": True, **coros.demarrer_connexion(depuis or "")}
+        except coros.ErreurCoros as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "api", "error": str(e)}
+
+    def save_coros_annuler(self) -> dict:
+        try:
+            return {"ok": True, **coros.annuler_connexion()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_coros_reglages(self, choix: dict, depuis: str = "") -> dict:
+        try:
+            return {"ok": True, **coros.regler(choix or {}, depuis or "")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_coros_deconnexion(self) -> dict:
+        try:
+            return {"ok": True, **coros.deconnecter()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_coros_synchro(self) -> dict:
+        """Lit Coros et garde la forme du jour (coros.json) ; renvoie les
+        seances nouvelles, que la page ajoute a Sports."""
+        try:
+            return {"ok": True, **coros.synchroniser()}
+        except coros.ErreurCoros as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "api", "error": "Coros : " + str(e),
+                    "trace": traceback.format_exc()}
+
+    def save_coros_vus(self, ids: list) -> dict:
+        try:
+            return {"ok": True, **coros.marquer_vus(ids or [])}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def fit_lire(self, fichiers: list) -> dict:
+        """Fichiers .fit (ou .zip) choisis dans la page, en base64 -> seances a
+        ajouter a Sports (rien n'est ecrit ici : fit.py)."""
+        try:
+            return {"ok": True, **fit.lire(fichiers or [])}
+        except Exception as e:
+            return {"ok": False, "error": "Lecture impossible : " + str(e)}
 
     # -- Agenda : Pilote ecrit dans l'agenda iCloud (propre a l'utilisateur actif) --
     # Comme pour Actus, le mot de passe pour app entre par save_agenda et ne ressort jamais.

@@ -2038,6 +2038,10 @@ label.sv-check, label.sv-inline {
 .ga-cycle-bar .r { background: color-mix(in srgb, var(--r) 55%, transparent); }
 .ga-cycle-bar .f { background: color-mix(in srgb, var(--accent) 45%, transparent); }
 .ga-cycle-bar .j { width: 3px; background: var(--txt); border-radius: 2px; }
+/* ── Montres : Coros et fichiers .fit (coros.py, fit.py) ── */
+.mo-fit-l .ga-seance input { flex: none; margin: 0; }
+.mo-fit-l .ga-seance.deja { opacity: .55; }
+.mo-fit-pied { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 .ga-cycle-leg { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--txt3); }
 .ga-cycle-leg span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
 /* Onglet Notifications : une ligne par type, icône · nom et aide · réglage */
@@ -3904,14 +3908,14 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
     <span class="m-nav-lbl">Ma forme</span>
     <div class="m-spacer"></div>
     <span class="ga-maj" id="ga-maj"></span>
-    <button class="btn btn-ghost" id="ga-btn-synchro" onclick="gaSynchroniser()"><i class="ph ph-arrows-clockwise"></i> Synchroniser</button>
+    <button class="btn btn-ghost" id="ga-btn-synchro" onclick="moSynchroniser()"><i class="ph ph-arrows-clockwise"></i> Synchroniser</button>
   </div>
   <div id="ga-forme"></div>
 </div>
 
 <div class="pane" id="pane-ga-connexion">
   <div class="m-head">
-    <span class="m-nav-lbl">Connexion</span>
+    <span class="m-nav-lbl">Garmin</span>
     <div class="m-spacer"></div>
   </div>
   <div class="ac-cnx">
@@ -3942,6 +3946,75 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
             lire&nbsp;: rien de Pilote ne part vers ton compte Garmin.</p>
           <p><b>Pour la retirer</b>&nbsp;: sur la page de la clé, supprime-la. Pilote ne peut alors plus rien lire.</p>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ COROS ET FICHIERS .FIT (coros.py, fit.py, bloc co*/mo* en fin de fichier) ════════════════════ -->
+<div class="pane" id="pane-co-connexion">
+  <div class="m-head">
+    <span class="m-nav-lbl">Coros</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="ac-cnx">
+    <div class="card">
+      <div class="card-h"><span class="card-t">Comment ça marche</span></div>
+      <div class="card-b">
+        <p class="ac-intro">Pilote lit ta montre par le <b>serveur MCP de Coros</b>&nbsp;: celui que Coros a
+          ouvert pour les assistants comme Claude ou ChatGPT. Tu te connectes sur la page de Coros, dans ton
+          navigateur&nbsp;: Pilote ne voit jamais ton mot de passe.</p>
+        <ol class="ac-etapes">
+          <li><b>Clique sur «&nbsp;Connecter&nbsp;»</b>&nbsp;: la page de connexion de Coros s'ouvre.</li>
+          <li><b>Connecte-toi</b> avec ton compte Coros, puis accepte l'accès demandé par Pilote.</li>
+          <li><b>Reviens dans Pilote</b>&nbsp;: tes séances arrivent dans Sports, ta forme dans Ma forme.
+            <small>La connexion se renouvelle seule&nbsp;: rien à refaire tant que tu ne la retires pas.</small></li>
+        </ol>
+        <p class="ac-note"><b>À l'essai.</b> Coros ne publie pas le détail de ce que son serveur renvoie&nbsp;:
+          si une séance ou un chiffre manque, importe ses fichiers .fit en attendant.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Ton compte Coros</span></div>
+      <div class="card-b">
+        <div id="co-cnx-boite"></div>
+        <div class="ac-pied">
+          <p>Pilote garde la connexion <span class="txt-win">chiffrée par Windows sur ce PC</span><span
+            class="txt-mac">dans le Trousseau de ce Mac</span>, et ne parle qu'à Coros. Il ne fait que
+            lire&nbsp;: aucun entraînement n'est créé ni modifié sur ton compte.</p>
+          <p><b>Pour la retirer</b>&nbsp;: «&nbsp;Déconnecter&nbsp;» ci-dessus.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pane" id="pane-mo-fit">
+  <div class="m-head">
+    <span class="m-nav-lbl">Fichiers .fit</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="ac-cnx">
+    <div class="card">
+      <div class="card-h"><span class="card-t">Exporter depuis la montre</span></div>
+      <div class="card-b">
+        <p class="ac-intro">Le <b>.fit</b> est le fichier que toutes les montres savent exporter (Coros, Garmin,
+          Suunto, Polar, Wahoo…). Pilote le lit sur ce PC, sans compte ni connexion.</p>
+        <ol class="ac-etapes">
+          <li><b>Coros</b>&nbsp;: dans l'app, ouvre la séance, puis «&nbsp;⋯&nbsp;» › Exporter › .fit. Ou sur
+            t.coros.com (Training Hub)&nbsp;: la séance › Exporter.</li>
+          <li><b>Autre montre</b>&nbsp;: son site ou son app propose aussi l'export «&nbsp;FIT&nbsp;» de chaque séance.</li>
+          <li><b>Choisis les fichiers</b> ci-contre&nbsp;: plusieurs d'un coup, ou un .zip.
+            <small>Un fichier déjà importé n'ajoute pas la séance une seconde fois.</small></li>
+        </ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Importer</span></div>
+      <div class="card-b">
+        <input type="file" id="mo-fit-input" accept=".fit,.zip" multiple hidden onchange="moFitLire(this)">
+        <button class="btn btn-primary" onclick="moFitChoisir()"><i class="ph ph-file-arrow-down"></i> Choisir des fichiers .fit</button>
+        <div id="mo-fit-liste"></div>
       </div>
     </div>
   </div>
@@ -4681,7 +4754,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
         <button type="button" class="set-nav-btn" data-set="sport" data-mod="sec-sport"
                 onclick="setGoSection('sport')"><span class="set-nav-ico"><i class="ph ph-person-simple-run"></i></span>Sports</button>
         <button type="button" class="set-nav-btn" data-set="garmin" data-mod="sec-garmin"
-                onclick="setGoSection('garmin')"><span class="set-nav-ico"><i class="ph ph-watch"></i></span>Garmin</button>
+                onclick="setGoSection('garmin')"><span class="set-nav-ico"><i class="ph ph-watch"></i></span>Montres</button>
         <div class="set-nav-grp" id="set-nav-app"></div>
         <button type="button" class="set-nav-btn" data-set="sauvegarde"
                 onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-floppy-disk"></i></span>Sauvegarde</button>
@@ -4818,8 +4891,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 
         <!-- ──── GARMIN ──── -->
         <div class="set-sec" data-sec="garmin">
-          <h3>Garmin</h3>
-          <p class="set-lead">Ta montre : séances, pesées et forme du jour, lues dans ton compte Garmin Connect.</p>
+          <h3>Montres</h3>
+          <p class="set-lead">Tes montres : séances et forme du jour, lues dans ton compte Garmin Connect ou Coros, ou dans leurs fichiers .fit.</p>
           <div class="set-res-liste" id="cfg-garmin"></div>
           <div class="set-links" style="margin-top:10px">
             <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ga-connexion')"><i class="ph ph-plug"></i> Connexion</button>
@@ -11706,10 +11779,10 @@ const NAV_MODULES = {
     besoin: "Pour l'iPhone : un compte Apple avec la double authentification. Sans iPhone, le calendrier marche quand même.",
     tab: "ag-cal", tuiles: ["ag-jour", "ag-notes", "ag-alertes"] },
   "sec-garmin": {
-    desc: "Ta montre Garmin : séances ajoutées à Sports, pesées à Santé, sommeil, Body Battery, VFC et pas.",
-    pas:  "Crée ta clé API personnelle sur Garmin Connect et colle-la : l'onglet Connexion explique comment.",
-    besoin: "Il te faut une montre Garmin et un compte Garmin Connect.",
-    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite"] },
+    desc: "Tes montres Garmin et Coros, ou toute autre par ses fichiers .fit : séances ajoutées à Sports, sommeil, VFC, pas.",
+    pas:  "Connecte ta montre Garmin ou Coros, ou importe un fichier .fit : chaque onglet explique comment.",
+    besoin: "Il te faut une montre, et son compte Garmin Connect ou Coros (ou ses fichiers .fit).",
+    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "mo-derniere"] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -12396,7 +12469,11 @@ function cfgRenderModule(id) {
     box.innerHTML = cfg.connecte
       ? ligne("check-circle", "Compte Garmin connecté", "Dernière synchronisation : " + escHtml(gaQuand(cfg.derniere))
           + (cfg.expire ? " · clé valable jusqu'au " + escHtml(dashDateCourte(cfg.expire)) : ""))
-      : ligne("watch", "Pas encore de compte Garmin", "Connexion : la clé API personnelle créée sur Garmin Connect");
+      : ligne("watch", "Pas encore de compte Garmin", "Garmin : la clé API personnelle créée sur Garmin Connect");
+    const co = (typeof CO !== "undefined" && CO.config) || {};
+    box.innerHTML += co.connecte
+      ? ligne("check-circle", "Compte Coros connecté", "Dernière synchronisation : " + escHtml(gaQuand(co.derniere)))
+      : ligne("watch", "Pas encore de compte Coros", "Coros : connexion sur la page de Coros, dans le navigateur");
   }
 }
 
@@ -15637,11 +15714,15 @@ const NAV_SECTIONS = [
     { id: "sa-mesures", label: "Mesures"   },
     { id: "sa-goals",   label: "Objectifs" },
   ]},
-  // Garmin (03/11/2026) : la montre, lue par la clé API personnelle ; ses
-  // séances vont dans Sports, ses pesées dans Santé
-  { id: "sec-garmin", label: "Garmin", children: [
+  // Montres (« Garmin » à sa création le 03/11/2026 ; l'id reste, il est
+  // dans les réglages enregistrés) : Garmin par sa clé API, Coros par son
+  // serveur MCP, toute montre par ses fichiers .fit. Les séances vont dans
+  // Sports, les pesées de Garmin dans Santé
+  { id: "sec-garmin", label: "Montres", children: [
     { id: "ga-forme",     label: "Ma forme"  },
-    { id: "ga-connexion", label: "Connexion" },
+    { id: "ga-connexion", label: "Garmin"    },
+    { id: "co-connexion", label: "Coros"     },
+    { id: "mo-fit",       label: "Fichiers .fit" },
   ]},
   { id: "sec-actus", label: "Actus", children: [
     { id: "ac-boite",     label: "Newsletters" },
@@ -19097,7 +19178,7 @@ function spOpenDay(iso) {
     return `<div class="sp-srow">
       <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
       <div style="flex:1;min-width:0">
-        <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}${s.garminId ? ` <span class="m-tag ga-tag" title="Venue de la montre Garmin"><i class="ph ph-watch"></i> Garmin</span>` : ""}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</div>
+        <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}${s.garminId ? ` <span class="m-tag ga-tag" title="Venue de la montre Garmin"><i class="ph ph-watch"></i> Garmin</span>` : ""}${s.corosId ? ` <span class="m-tag ga-tag" title="Venue de la montre Coros"><i class="ph ph-watch"></i> Coros</span>` : ""}${s.fitId ? ` <span class="m-tag ga-tag" title="Importée d'un fichier .fit"><i class="ph ph-file-arrow-down"></i> ${escHtml(s.marque || ".fit")}</span>` : ""}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</div>
         <div class="sp-smeta">${escHtml(spSummary(s) || "—")}${pace ? " · " + pace : ""}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</div>
         ${s.note ? `<div class="sp-snote">${escHtml(s.note)}</div>` : ""}
       </div>
@@ -19392,9 +19473,9 @@ async function spSaveSession() {
   if (spHasField(_spSport, "lieu"))    s.lieu    = document.getElementById("sp-f-lieu").value;
   if (spHasField(_spSport, "routine")) s.routineId = spNum(document.getElementById("sp-f-routine").value) || null;
   if (spHasField(_spSport, "groups"))  s.groups  = _spGroups.slice();
-  // Séance venue de la montre (bloc Garmin) : elle le reste une fois modifiée
+  // Séance venue d'une montre (bloc Garmin, Coros, .fit) : elle le reste une fois modifiée
   const avant = _spEditingId ? spSessions().find(x => x.id === _spEditingId) : null;
-  if (avant) ["garminId", "fcMoy", "kcal", "record"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
+  if (avant) ["garminId", "corosId", "fitId", "marque", "fcMoy", "kcal", "record"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
 
   if (_spEditingId) {
     const i = spSessions().findIndex(x => x.id === _spEditingId);
@@ -25696,6 +25777,20 @@ const DASH_WIDGETS = [
     render() { return dashGaRecord(); },
   },
   {
+    // Montres (03/11/2026) : la dernière séance de Garmin, Coros ou d'un .fit
+    id: "mo-derniere", label: "Dernière séance de la montre", module: "Montres", tab: "ga-forme",
+    render() { return dashMoDerniere(); },
+  },
+  {
+    // Seulement avec une montre connectée : rouge si l'accès est refusé
+    id: "mo-synchro", label: "Synchro des montres", module: "Montres", tab: "ga-forme",
+    render() { return dashMoSynchro(); },
+  },
+  {
+    id: "co-forme", label: "Forme Coros", module: "Montres", tab: "ga-forme",
+    render() { return dashCoForme(); },
+  },
+  {
     // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
     // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
@@ -25765,6 +25860,7 @@ function dashModuleReady(mod) {
     // Première lecture d'iCloud en cours : squelette, ensuite on garde la dernière
     case "Agenda":     return _agBootstrapped && !(_dashAg.attente && !_dashAg.debut);
     case "Garmin":     return _gaBootstrapped;
+    case "Montres":    return _gaBootstrapped && _coBootstrapped;
   }
   return true;
 }
@@ -27209,7 +27305,7 @@ const DASH_ICONS = {
   "Santé": "heartbeat", "Prêt": "hand-coins",
   "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase", "Crypto": "currency-btc",
   "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
-  "Agenda": "calendar-blank", "Bilan": "chart-bar", "Garmin": "watch",
+  "Agenda": "calendar-blank", "Bilan": "chart-bar", "Garmin": "watch", "Montres": "watch",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -28147,6 +28243,9 @@ async function agEssai() {
 
 const GA = { config: null, enCours: false, erreur: "", code: "", erreurs: [], formCle: false, mesure: "sommeil" };
 let _gaBootstrapped = false;
+// Coros (bloc co* plus bas) : déclaré ici, Ma forme et les tuiles le lisent
+const CO = { config: null, enCours: false, erreur: "", code: "", erreurs: [], attente: false, erreurCnx: "", choixCnx: null };
+let _coBootstrapped = false;
 let _gaChart = null;
 const GA_LIEN_CLE = "https://connect.garmin.com/app/settings/personalApiToken";
 const GA_AUTO_MS = 60 * 60 * 1000;     // au lancement, si la dernière synchronisation date de plus d'une heure
@@ -28176,7 +28275,14 @@ const GA_VFC = { BALANCED: "équilibrée", UNBALANCED: "déséquilibrée", LOW: 
 
 function gaApi() { const a = window.pywebview && window.pywebview.api; return a && a.load_garmin ? a : null; }
 function gaConnecte() { return !!(GA.config && GA.config.connecte); }
-function gaJours() { return (GA.config && GA.config.jours) || {}; }
+/** La forme de chaque jour : Garmin, et Coros pour ce que Garmin n'a pas mesuré. */
+function gaJours() {
+  const g = (GA.config && GA.config.jours) || {}, c = (CO.config && CO.config.jours) || {};
+  if (!Object.keys(c).length) return g;
+  const out = {};
+  Object.keys(c).concat(Object.keys(g)).forEach(k => { out[k] = Object.assign({}, c[k], g[k]); });
+  return out;
+}
 
 /** [jour, valeurs] du jour le plus récent qui a `cle`, ou [null, null]. */
 function gaDernier(cle) {
@@ -28278,36 +28384,44 @@ async function gaSynchroniser(discret) {
   if (typeof dashRender === "function") dashRender();
 }
 
-/** Même jour, même sport, durée proche : la séance saisie à la main est la même. */
-function gaMemeSeance(s, g) {
-  if (s.garminId || s.date !== g.date || s.sport !== g.sport) return false;
+/** Même jour, même sport, durée proche : la séance saisie à la main est la même.
+    Déjà venue d'une autre montre (ou d'un .fit) : la même seulement à 10 min près. */
+function gaMemeSeance(s, g, cle) {
+  if (s[cle || "garminId"] || s.date !== g.date || s.sport !== g.sport) return false;
+  if (s.garminId || s.corosId || s.fitId) {
+    const mn = t => { const [h, m] = String(t).split(":").map(Number); return h * 60 + (m || 0); };
+    return !!(s.time && g.time && Math.abs(mn(s.time) - mn(g.time)) <= 10);
+  }
   const a = spNum(s.duration), b = spNum(g.duration);
   return !a || !b || Math.abs(a - b) <= Math.max(15, 0.25 * b);
 }
 
 /** Ajoute à Sports et Santé ce qui n'y est pas ; rien n'est marqué vu tant
-    que l'enregistrement du module n'a pas réussi. */
-async function gaAjouter(seances, pesees) {
-  const api = gaApi(), vus = [], n = { seances: 0, pesees: 0, records: 0 };
+    que l'enregistrement du module n'a pas réussi. src : d'où viennent les
+    séances (Garmin par défaut ; Coros et les .fit ont leur identifiant). */
+async function gaAjouter(seances, pesees, src) {
+  src = src || { cle: "garminId", nom: "Garmin", vus: ids => gaApi().save_garmin_vus(ids) };
+  const cle = src.cle, api = window.pywebview && pywebview.api, vus = [], n = { seances: 0, pesees: 0, records: 0 };
   if (seances.length && SP) {
     const avant = spSessions(), liste = avant.map(s => Object.assign({}, s)), pris = [];
     seances.forEach(g => {
-      if (liste.some(s => String(s.garminId || "") === g.garminId)) { pris.push(g.garminId); return; }
-      const deja = liste.find(s => gaMemeSeance(s, g));
-      if (deja) { deja.garminId = g.garminId; if (g.record) deja.record = true; pris.push(g.garminId); return; }
+      if (liste.some(s => String(s[cle] || "") === g[cle])) { pris.push(g[cle]); return; }
+      const deja = liste.find(s => gaMemeSeance(s, g, cle));
+      if (deja) { deja[cle] = g[cle]; if (g.record) deja.record = true; pris.push(g[cle]); return; }
       const s = { id: spNextId("session"), date: g.date, time: g.time || "", sport: g.sport,
                   duration: g.duration, distance: g.distance, elevation: g.elevation,
-                  note: g.note || "", garminId: g.garminId };
+                  note: g.note || "", [cle]: g[cle] };
+      if (g.marque) s.marque = g.marque;
       if (g.lieu && spHasField(g.sport, "lieu")) s.lieu = g.lieu;
       if (g.fcMoy) s.fcMoy = g.fcMoy;
       if (g.kcal) s.kcal = g.kcal;
       if (g.record) { s.record = true; n.records++; }
-      liste.push(s); pris.push(g.garminId); n.seances++;
+      liste.push(s); pris.push(g[cle]); n.seances++;
     });
     SP.sessions = liste;
     const w = await api.save_sports(SP);
     if (w && w.ok) vus.push(...pris);
-    else { SP.sessions = avant; n.seances = 0; n.records = 0; if (!(w && w.gele)) showToastModern("Garmin : séances non enregistrées dans Sports", "err"); }
+    else { SP.sessions = avant; n.seances = 0; n.records = 0; if (!(w && w.gele)) showToastModern(src.nom + " : séances non enregistrées dans Sports", "err"); }
     if (n.seances) spRenderAll();
   }
   if (pesees.length && SA) {
@@ -28323,8 +28437,8 @@ async function gaAjouter(seances, pesees) {
     else { SA.mesures = avant; n.pesees = 0; }
     if (n.pesees && String(document.body.dataset.activeTab || "").startsWith("sa-")) saRenderAll();
   }
-  if (vus.length) {
-    try { await api.save_garmin_vus(vus); } catch (e) { console.warn("[garmin] vus KO", e); }
+  if (vus.length && src.vus) {
+    try { await src.vus(vus); } catch (e) { console.warn("[" + src.nom + "] vus KO", e); }
   }
   return n;
 }
@@ -28462,20 +28576,24 @@ async function gaDeconnecter() {
 /* ── Ma forme ────────────────────────────────────────────────────────────── */
 
 function gaRenderEtat() {
+  const conn = gaConnecte() || coConnecte();
+  const der = [gaConnecte() && GA.config.derniere, coConnecte() && CO.config.derniere].filter(Boolean).sort().pop();
   const maj = document.getElementById("ga-maj");
-  if (maj) maj.textContent = !gaConnecte() ? "" : GA.enCours ? "Synchronisation…"
-    : "Synchronisé " + gaQuand(GA.config && GA.config.derniere);
+  if (maj) maj.textContent = !conn ? "" : GA.enCours || CO.enCours ? "Synchronisation…" : "Synchronisé " + gaQuand(der);
   const btn = document.getElementById("ga-btn-synchro");
   // .btn impose son display : [hidden] seul ne le cacherait pas
-  if (btn) { btn.disabled = GA.enCours || !gaConnecte(); btn.style.display = gaConnecte() ? "" : "none"; }
+  if (btn) { btn.disabled = GA.enCours || CO.enCours || !conn; btn.style.display = conn ? "" : "none"; }
   const etat = document.getElementById("ga-cnx-etat");
   if (etat) etat.textContent = gaEtatTexte();
+  const etatCo = document.getElementById("co-cnx-etat");
+  if (etatCo) etatCo.textContent = coEtatTexte();
 }
 
 function gaRenderTout() {
   gaRenderEtat();
   gaRenderForme();
   gaRenderConnexion();
+  coRenderConnexion();
   if (typeof cfgRenderModule === "function") cfgRenderModule("garmin");
 }
 
@@ -28488,11 +28606,13 @@ function gaRenderForme() {
   const box = document.getElementById("ga-forme");
   if (!box) return;
   const jours = gaJours();
-  if (!gaConnecte() && !Object.keys(jours).length) {
+  if (!gaConnecte() && !coConnecte() && !Object.keys(jours).length) {
     box.innerHTML = `<div class="card"><div class="card-b"><div class="m-empty">
-      Connecte ton compte Garmin pour voir ici ton sommeil, ta Body Battery, ta VFC et tes pas,
-      et retrouver les séances de ta montre dans Sports.<br><br>
-      <button class="btn btn-primary" onclick="goTab('ga-connexion');_setActiveSidebar('ga-connexion')"><i class="ph ph-plug"></i> Connecter mon compte</button>
+      Connecte ta montre Garmin ou Coros pour voir ici ton sommeil, ta VFC et tes pas,
+      et retrouver ses séances dans Sports. Une autre montre&nbsp;: importe ses fichiers .fit.<br><br>
+      <button class="btn btn-primary" onclick="goTab('ga-connexion');_setActiveSidebar('ga-connexion')"><i class="ph ph-plug"></i> Garmin</button>
+      <button class="btn btn-primary" onclick="goTab('co-connexion');_setActiveSidebar('co-connexion')"><i class="ph ph-plug"></i> Coros</button>
+      <button class="btn btn-ghost" onclick="goTab('mo-fit');_setActiveSidebar('mo-fit')"><i class="ph ph-file-arrow-down"></i> Fichiers .fit</button>
     </div></div></div>`;
     return;
   }
@@ -28500,8 +28620,11 @@ function gaRenderForme() {
   const alerte = GA.erreur
     ? `<div class="ga-erreurs"><b>Synchronisation impossible.</b> ${escHtml(GA.erreur)}</div>`
     : GA.erreurs.length ? `<div class="ga-erreurs"><b>Synchronisation incomplète.</b> ${GA.erreurs.map(escHtml).join(" · ")}</div>`
-    : !gaConnecte() ? `<div class="ga-erreurs">Aucun compte Garmin connecté : ces chiffres sont ceux déjà lus.
-        <a href="#" onclick="event.preventDefault();goTab('ga-connexion');_setActiveSidebar('ga-connexion')">Connexion</a></div>` : "";
+    : !gaConnecte() && !coConnecte() ? `<div class="ga-erreurs">Aucune montre connectée : ces chiffres sont ceux déjà lus.
+        <a href="#" onclick="event.preventDefault();goTab('ga-connexion');_setActiveSidebar('ga-connexion')">Garmin</a> ·
+        <a href="#" onclick="event.preventDefault();goTab('co-connexion');_setActiveSidebar('co-connexion')">Coros</a></div>` : "";
+  const alerteCo = CO.erreur ? `<div class="ga-erreurs"><b>Coros : synchronisation impossible.</b> ${escHtml(CO.erreur)}</div>`
+    : CO.erreurs.length ? `<div class="ga-erreurs"><b>Coros : synchronisation incomplète.</b> ${CO.erreurs.map(escHtml).join(" · ")}</div>` : "";
   const reste = gaJoursAvantExpiration();
   const rappel = reste != null && reste <= GA_RAPPEL_JOURS
     ? `<div class="ga-erreurs"><b>${reste < 0 ? "Ta clé Garmin a expiré" : "Ta clé Garmin expire " + (reste === 0 ? "aujourd'hui" : reste === 1 ? "demain" : "dans " + reste + " jours")}.</b>
@@ -28514,7 +28637,7 @@ function gaRenderForme() {
       dans Garmin › Connexion.</div></div></div>`;
   } else if (!Object.keys(jours).length) {
     forme = `<div class="card"><div class="card-b"><div class="m-empty">${GA.enCours ? "Lecture de Garmin…"
-      : "Rien de Garmin pour l'instant : synchronise, ou porte ta montre une nuit."}</div></div></div>`;
+      : "Rien de ta montre pour l'instant : synchronise, ou porte-la une nuit."}</div></div></div>`;
   } else {
     const [jS, s] = gaDernier("sommeil");
     const [jB, b] = gaDernier("bbMax");
@@ -28534,8 +28657,10 @@ function gaRenderForme() {
     const [jR, rs] = gaDernier("respiration");
     const age = GA.config && GA.config.ageForme;
     const im = gaIntensiteSemaine();
+    const [jC, rc] = gaDernier("recup");
     const kpis2 = [
       im ? gaKpi("Minutes intenses", im.total + " min", "cette semaine" + (im.objectif ? " · objectif " + im.objectif + " min" : "")) : "",
+      rc ? gaKpi("Récupération", rc.recup + " %", "d'après Coros · " + gaLeJour(jC)) : "",
       o ? gaKpi("SpO2", o.spo2 + " %", "moyenne du jour · " + dashDateCourte(jO)) : "",
       rs ? gaKpi("Respiration", rs.respiration + " /min", "moyenne du jour · " + dashDateCourte(jR)) : "",
       age ? gaKpi("Âge physique", String(age.age).replace(".", ",") + " ans",
@@ -28551,7 +28676,7 @@ function gaRenderForme() {
         <div class="card-b"><div class="ga-chart"><canvas id="ga-chart"></canvas></div></div></div>`;
   }
 
-  box.innerHTML = alerte + rappel + forme + gaCycleHtml() + gaSeancesHtml();
+  box.innerHTML = alerte + alerteCo + rappel + forme + gaCycleHtml() + gaSeancesHtml();
   gaRenderCourbe();
 }
 
@@ -28668,10 +28793,10 @@ function gaRenderCourbe() {
   });
 }
 
-/** Les dernières séances venues de la montre (elles vivent dans Sports). */
+/** Les dernières séances venues des montres (elles vivent dans Sports). */
 function gaSeancesHtml() {
   if (typeof SP === "undefined" || !SP) return "";
-  const l = spSessions().filter(s => s.garminId)
+  const l = spSessions().filter(s => s.garminId || s.corosId || s.fitId)
     .sort((a, b) => (b.date + (b.time || "")).localeCompare(a.date + (a.time || ""))).slice(0, 8);
   if (!l.length) return "";
   return `<div class="card"><div class="card-h"><span class="card-t">Séances de la montre</span>
@@ -28681,7 +28806,7 @@ function gaSeancesHtml() {
       return `<div class="ga-seance">
         <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
         <div class="ga-seance-txt"><b>${escHtml(s.note || sp.label)}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</b>
-          <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</small></div>
+          <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""} · ${escHtml(moSource(s))}</small></div>
         <span class="ga-seance-d">${escHtml(dashDateCourte(s.date))}</span>
         <button class="m-iconbtn" title="Modifier" onclick="spOpenSession(${s.id}, null)"><i class="ph ph-pencil-simple"></i></button>
       </div>`; }).join("")}</div></div></div>`;
@@ -28752,6 +28877,332 @@ function dashGaRecord() {
            go: "Ma forme" };
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   MONTRES : COROS ET FICHIERS .FIT (coros.py, fit.py, docs/modules/montres.md)
+   Coros : connexion sur la page de Coros, dans le navigateur, puis lecture
+   par son serveur MCP. Ses séances passent par gaAjouter comme celles de
+   Garmin ; sa forme du jour (coros.json) se mêle à celle de Garmin dans Ma
+   forme (gaJours : Garmin l'emporte un jour où les deux ont mesuré).
+   Fichiers .fit : n'importe quelle montre, à la main ; rien n'entre dans
+   Sports avant « Ajouter ».
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const CO_CHOIX = [
+  ["seances", "Séances", "chaque activité de la montre devient une séance de Sports"],
+  ["forme",   "Forme du jour", "sommeil, VFC, FC au repos, pas, récupération"],
+];
+let _coSuivi = null;      // minuterie : la connexion se fait dans le navigateur
+let _moFit = [];          // séances lues dans les .fit, pas encore ajoutées
+
+function coApi() { const a = window.pywebview && window.pywebview.api; return a && a.load_coros ? a : null; }
+function coConnecte() { return !!(CO.config && CO.config.connecte); }
+
+function coAncienne() {
+  const d = CO.config && CO.config.derniere;
+  return !d || Date.now() - new Date(d).getTime() > GA_AUTO_MS;
+}
+
+/** D'où vient une séance de Sports (pour la liste de Ma forme). */
+function moSource(s) { return s.garminId ? "Garmin" : s.corosId ? "Coros" : (s.marque || "fichier .fit"); }
+
+async function coBootstrap() {
+  if (_coBootstrapped) return;
+  const api = coApi();
+  if (!api) return;
+  const r = await api.load_coros();
+  if (!r || !r.ok) { console.warn("[coros] load KO", r); return; }
+  CO.config = r;
+  _coBootstrapped = true;
+  // Comme Garmin : au lancement si la dernière date de plus d'une heure, puis toutes les 2 heures
+  if (coConnecte() && coAncienne()) setTimeout(() => coSynchroniser(true), 6000);
+  setInterval(() => {
+    const d = CO.config && CO.config.derniere;
+    if (coConnecte() && (!d || Date.now() - new Date(d).getTime() > GA_PERIODE_MS)) coSynchroniser(true);
+  }, 10 * 60 * 1000);
+}
+
+/** discret : au lancement, rien à dire s'il n'y a rien de nouveau. */
+async function coSynchroniser(discret) {
+  const api = coApi();
+  if (!api || CO.enCours || !coConnecte()) return;
+  CO.enCours = true;
+  gaRenderEtat();
+  let r = null;
+  try {
+    if (_modulesVisibles().has("sec-sport") && !_spBootstrapped) await spBootstrap();
+    r = await api.save_coros_synchro();
+  } catch (e) { r = { ok: false, error: String(e) }; }
+  CO.enCours = false;
+  if (r && r.gele) { gaRenderEtat(); return; }
+  if (!r || !r.ok) {
+    CO.erreur = (r && r.error) || "Synchronisation impossible.";
+    CO.code = (r && r.code) || "";
+    if (!discret || CO.code === "auth") showToastModern("Coros : " + CO.erreur, "err");
+    gaRenderTout();
+    return;
+  }
+  CO.erreur = ""; CO.code = "";
+  CO.erreurs = r.erreurs || [];
+  CO.config = Object.assign({}, CO.config, { connecte: r.connecte, connecteLe: r.connecteLe, depuis: r.depuis,
+                                              choix: r.choix, derniere: r.derniere, jours: r.jours });
+  let n = { seances: 0 };
+  try { n = await gaAjouter(r.seances || [], [], { cle: "corosId", nom: "Coros", vus: ids => api.save_coros_vus(ids) }); }
+  catch (e) { console.warn("[coros] ajout KO", e); }
+  if (n.seances || !discret || CO.erreurs.length) {
+    showToastModern(n.seances ? "Coros : " + n.seances + (n.seances > 1 ? " séances ajoutées" : " séance ajoutée")
+                    : CO.erreurs.length ? "Coros : synchronisation incomplète" : "Coros : rien de nouveau",
+                    CO.erreurs.length ? "warn" : "ok");
+  }
+  gaRenderTout();
+  if (typeof dashRender === "function") dashRender();
+}
+
+/** Le bouton Synchroniser de Ma forme : chaque montre connectée. */
+function moSynchroniser() {
+  gaSynchroniser();
+  coSynchroniser();
+}
+
+/* ── Connexion à Coros ───────────────────────────────────────────────────── */
+
+function coLireCases() {
+  const choix = {};
+  document.querySelectorAll("#co-cnx-boite .ga-cases input").forEach(i => { choix[i.value] = i.checked; });
+  return choix;
+}
+
+function coCasesHtml(choix, onchange) {
+  return `<div class="ga-cases">${CO_CHOIX.map(([cle, nom, aide]) => `
+    <label class="sv-check"><input type="checkbox" value="${cle}"${onchange ? ` onchange="${onchange}"` : ""}${!choix || choix[cle] ? " checked" : ""}>
+      <span><b>${nom}</b> <span class="ag-aide">${aide}</span></span></label>`).join("")}</div>`;
+}
+
+function coEtatTexte() {
+  if (CO.enCours) return "Synchronisation en cours…";
+  return "Dernière synchronisation : " + gaQuand(CO.config && CO.config.derniere) + ". Pilote synchronise à chaque "
+       + "lancement (si la dernière date de plus d'une heure), toutes les 2 heures, et quand tu cliques sur Synchroniser.";
+}
+
+function coRenderConnexion() {
+  const box = document.getElementById("co-cnx-boite");
+  if (!box) return;
+  if (!coApi()) { box.innerHTML = `<p class="ac-note">Disponible dans l'application.</p>`; return; }
+  const cfg = CO.config || { connecte: false, choix: null };
+  const err = CO.code === "auth" || CO.code === "config" ? escHtml(CO.erreur) : "";
+  if (cfg.connecte) {
+    box.innerHTML = `
+      <div class="ac-etat"><i class="ph ph-check-circle"></i><span>Connecté${cfg.connecteLe ? " depuis le <b>" + escHtml(dashDateCourte(cfg.connecteLe)) + "</b>" : ""}</span></div>
+      <div class="fg"><label>Ce que Pilote lit</label>${coCasesHtml(cfg.choix, "coRegler()")}</div>
+      <div class="fg"><label for="co-depuis">Séances depuis le</label>
+        <input id="co-depuis" type="date" value="${escHtml(cfg.depuis || "")}" max="${todayISO()}" onchange="coRegler()"></div>
+      <p class="ac-note" id="co-cnx-etat">${coEtatTexte()}</p>
+      <div class="ac-btns">
+        <button type="button" class="btn btn-primary" onclick="coSynchroniser()"${CO.enCours ? " disabled" : ""}><i class="ph ph-arrows-clockwise"></i> Synchroniser maintenant</button>
+        <button type="button" class="btn btn-ghost" onclick="coDeconnecter()">Déconnecter</button>
+      </div>
+      <div class="ac-err">${err}</div>`;
+    return;
+  }
+  const d = new Date(); d.setDate(d.getDate() - 30);
+  const att = CO.attente;
+  box.innerHTML = `
+    <div class="fg"><label for="co-depuis">Séances depuis le</label>
+      <input id="co-depuis" type="date" value="${todayISO(d)}" max="${todayISO()}"${att ? " disabled" : ""}></div>
+    <div class="fg"><label>Ce que Pilote lit</label>${coCasesHtml(att ? CO.choixCnx : null, "")}</div>
+    <p class="ac-note">${att ? "La page de Coros est ouverte dans ton navigateur : connecte-toi, accepte, puis reviens ici."
+      : "Pilote ouvre la page de connexion de Coros dans ton navigateur. Une séance déjà saisie à la main (même jour, même sport) n'est pas ajoutée une seconde fois."}</p>
+    <div class="ac-btns">
+      <button class="btn btn-primary" id="co-btn-cnx" onclick="coConnecter()"${att ? " disabled" : ""}><i class="ph ${att ? "ph-circle-notch ac-tourne" : "ph-plug"}"></i> ${att ? "En attente de Coros…" : "Connecter"}</button>
+      ${att ? `<button class="btn btn-ghost" onclick="coAnnuler()">Annuler</button>` : ""}
+    </div>
+    <div class="ac-err">${escHtml(CO.erreurCnx || "") || err}</div>`;
+}
+
+async function coConnecter() {
+  const api = coApi();
+  if (!api || CO.attente) return;
+  const depuis = document.getElementById("co-depuis").value;
+  CO.choixCnx = coLireCases();
+  CO.erreurCnx = "";
+  let r = null;
+  try { r = await api.save_coros_connexion(depuis); } catch (e) { r = { ok: false, error: String(e) }; }
+  if (r && r.gele) return;
+  if (!r || !r.ok) { CO.erreurCnx = (r && r.error) || "Connexion impossible."; coRenderConnexion(); return; }
+  api.open_url(r.url);
+  CO.attente = true;
+  coRenderConnexion();
+  clearInterval(_coSuivi);
+  _coSuivi = setInterval(coSuivreConnexion, 1500);
+}
+
+/** Python attend le retour de la page de Coros ; on lui demande où il en est. */
+async function coSuivreConnexion() {
+  const api = coApi();
+  if (!api) return;
+  let r = null;
+  try { r = await api.load_coros_etat(); } catch (e) { return; }
+  if (!r || !r.ok || r.etat === "attente") return;
+  clearInterval(_coSuivi); _coSuivi = null;
+  CO.attente = false;
+  if (r.etat !== "ok") { CO.erreurCnx = r.erreur || "Connexion interrompue."; coRenderConnexion(); return; }
+  let cfg = r;
+  if (CO.choixCnx) {
+    const w = await api.save_coros_reglages(CO.choixCnx, "");
+    if (w && w.ok) cfg = w;
+  }
+  CO.config = cfg;
+  CO.erreur = ""; CO.code = ""; CO.erreurs = []; CO.erreurCnx = "";
+  _coBootstrapped = true;
+  showToastModern("Compte Coros connecté", "ok");
+  goTab("ga-forme"); _setActiveSidebar("ga-forme");
+  coSynchroniser(false);
+}
+
+async function coAnnuler() {
+  clearInterval(_coSuivi); _coSuivi = null;
+  CO.attente = false;
+  const api = coApi();
+  if (api) { try { await api.save_coros_annuler(); } catch (e) {} }
+  coRenderConnexion();
+}
+
+async function coRegler() {
+  const api = coApi();
+  if (!api) return;
+  const champ = document.getElementById("co-depuis");
+  const r = await api.save_coros_reglages(coLireCases(), champ ? champ.value : "");
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Réglage non enregistré", "err"); return; }
+  CO.config = r;
+  gaRenderTout();
+  if (typeof dashRender === "function") dashRender();
+}
+
+async function coDeconnecter() {
+  const api = coApi();
+  if (!api) return;
+  const r = await api.save_coros_deconnexion();
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Déconnexion impossible", "err"); return; }
+  CO.config = r;
+  CO.erreur = ""; CO.code = ""; CO.erreurs = [];
+  gaRenderTout();
+  showToastModern("Compte Coros déconnecté : Pilote a oublié la connexion", "ok");
+}
+
+/* ── Fichiers .fit ───────────────────────────────────────────────────────── */
+
+function moFitChoisir() { document.getElementById("mo-fit-input").click(); }
+
+async function moFitLire(input) {
+  const fichiers = Array.from(input.files || []);
+  input.value = "";
+  const box = document.getElementById("mo-fit-liste");
+  const api = window.pywebview && pywebview.api;
+  if (!fichiers.length || !box || !api || !api.fit_lire) return;
+  if (_modulesVisibles().has("sec-sport") && !_spBootstrapped) await spBootstrap();
+  if (typeof SP === "undefined" || !SP) {
+    box.innerHTML = `<div class="ac-err">Le module Sports est masqué : coche-le dans Paramètres › Modules pour y ajouter des séances.</div>`;
+    return;
+  }
+  box.innerHTML = `<p class="ac-note">Lecture de ${fichiers.length} fichier${fichiers.length > 1 ? "s" : ""}…</p>`;
+  let r = null;
+  try { r = await api.fit_lire(await Promise.all(fichiers.map(async f => ({ nom: f.name, b64: await _ctoImpBase64(f) })))); }
+  catch (e) { r = { ok: false, error: String(e) }; }
+  if (!r || !r.ok) { box.innerHTML = `<div class="ac-err">${escHtml((r && r.error) || "Lecture impossible.")}</div>`; return; }
+  _moFit = (r.seances || []).map(s => Object.assign(s, {
+    deja: spSessions().some(x => x.fitId === s.fitId || gaMemeSeance(x, s, "fitId")) }));
+  moFitRender(r.erreurs || []);
+}
+
+function moFitRender(erreurs) {
+  const box = document.getElementById("mo-fit-liste");
+  if (!box) return;
+  const nouvelles = _moFit.filter(s => !s.deja).length;
+  const lignes = _moFit.map((s, i) => {
+    const sp = spSportById(s.sport);
+    return `<label class="ga-seance${s.deja ? " deja" : ""}">
+      <input type="checkbox" data-i="${i}"${s.deja ? " disabled" : " checked"} onchange="moFitCompter()">
+      <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
+      <div class="ga-seance-txt"><b>${escHtml(sp.label)}${s.marque ? " · " + escHtml(s.marque) : ""}</b>
+        <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}${s.deja ? " · déjà dans Sports" : ""}</small></div>
+      <span class="ga-seance-d">${escHtml(dashDateCourte(s.date))}${s.time ? " " + escHtml(s.time) : ""}</span>
+    </label>`; }).join("");
+  const err = erreurs.length ? `<div class="ga-erreurs">${erreurs.map(e => `<b>${escHtml(e.nom)}</b> : ${escHtml(e.erreur)}`).join("<br>")}</div>` : "";
+  box.innerHTML = `<div class="mo-fit-l" style="margin-top:14px">${err}${lignes ? `<div class="ga-seances">${lignes}</div>` : ""}</div>
+    ${_moFit.length ? `<div class="mo-fit-pied">
+      <button class="btn btn-primary" id="mo-fit-ajouter" onclick="moFitAjouter()"${nouvelles ? "" : " disabled"}><i class="ph ph-plus"></i> <span id="mo-fit-n">${moFitLibelle(nouvelles)}</span></button>
+      <button class="btn btn-ghost" onclick="_moFit=[];moFitRender([])">Annuler</button></div>` : ""}`;
+}
+
+function moFitLibelle(n) { return n ? "Ajouter " + n + " séance" + (n > 1 ? "s" : "") + " à Sports" : "Rien de nouveau à ajouter"; }
+
+function moFitCoches() {
+  return Array.from(document.querySelectorAll("#mo-fit-liste input[data-i]:checked")).map(i => _moFit[Number(i.dataset.i)]);
+}
+
+function moFitCompter() {
+  const n = moFitCoches().length, btn = document.getElementById("mo-fit-ajouter");
+  if (btn) btn.disabled = !n;
+  const lbl = document.getElementById("mo-fit-n");
+  if (lbl) lbl.textContent = moFitLibelle(n);
+}
+
+async function moFitAjouter() {
+  const choisies = moFitCoches();
+  if (!choisies.length) return;
+  const n = await gaAjouter(choisies, [], { cle: "fitId", nom: "Fichiers .fit", vus: null });
+  if (!n.seances && choisies.length) { moFitRender([]); return; }
+  _moFit = [];
+  moFitRender([]);
+  showToastModern(n.seances + (n.seances > 1 ? " séances ajoutées" : " séance ajoutée") + " à Sports", "ok");
+  gaRenderForme();
+  if (typeof dashRender === "function") dashRender();
+}
+
+/* ── Tuiles des montres ──────────────────────────────────────────────────── */
+
+function dashMoDerniere() {
+  if (typeof SP === "undefined" || !SP) return null;
+  const s = spSessions().filter(x => x.garminId || x.corosId || x.fitId)
+    .sort((a, b) => (b.date + (b.time || "")).localeCompare(a.date + (a.time || "")))[0];
+  if (!s) return null;
+  const sp = spSportById(s.sport);
+  const km = spDistKm(s);
+  return { lbl: "Séance de la montre", val: escHtml(km ? spFmtNum(km, 1) + " km" : spFmtDur(spNum(s.duration))),
+           sub: (s.note || sp.label) + " · " + dashIlYa(s.date).toLowerCase() + " · " + moSource(s), go: "Ma forme" };
+}
+
+function dashMoSynchro() {
+  const l = [];
+  const reste = gaJoursAvantExpiration();
+  if (gaConnecte()) l.push(["Garmin", GA.config.derniere, GA.code === "auth" || (reste != null && reste < 0)]);
+  if (coConnecte()) l.push(["Coros", CO.config.derniere, CO.code === "auth"]);
+  if (!l.length) return null;
+  const panne = l.filter(x => x[2]).map(x => x[0]);
+  const recente = l.map(x => x[1]).filter(Boolean).sort().pop();
+  return { lbl: "Synchro des montres", val: panne.length ? "À reconnecter" : gaQuand(recente),
+           sub: panne.length ? panne.join(" et ") + " : accès refusé ou expiré"
+              : l.map(x => x[0] + " " + gaQuand(x[1])).join(" · ")
+                + (reste != null && reste >= 0 && reste <= GA_RAPPEL_JOURS ? " · clé Garmin : encore " + reste + " j" : ""),
+           cls: panne.length ? "c-r" : "", go: "Ma forme" };
+}
+
+function dashCoForme() {
+  const j = (CO.config && CO.config.jours) || {}, dates = Object.keys(j).sort();
+  const der = cle => {
+    for (let i = dates.length - 1; i >= 0; i--) if (j[dates[i]][cle] != null) return [dates[i], j[dates[i]][cle]];
+    return [null, null];
+  };
+  const [jS, s] = der("sommeil"), [, v] = der("vfc"), [jR, rc] = der("recup");
+  if (s == null && v == null && rc == null) return null;
+  return { lbl: rc != null ? "Récupération " + gaLeJour(jR) : s != null ? "Sommeil" : "VFC",
+           val: rc != null ? rc + " %" : s != null ? gaDuree(s) : v + " ms",
+           sub: [s != null && rc != null ? "sommeil " + gaDuree(s) + " (" + gaNuit(jS) + ")" : "",
+                 v != null && (rc != null || s != null) ? "VFC " + v + " ms" : ""].filter(Boolean).join(" · "),
+           go: "Ma forme", viz: rc != null ? dashProgress(rc) : "" };
+}
+
 /* ── Navigation ────────────────────────────────────────────────────────── */
 
 (function patchGoTabGarmin() {
@@ -28759,12 +29210,15 @@ function dashGaRecord() {
   if (typeof _prev !== "function") return;
   window.goTab = function(n) {
     _prev.call(this, n);
-    if (n !== "ga-forme" && n !== "ga-connexion") return;
-    Promise.resolve(_gaBootstrapped || gaBootstrap()).then(() => {
+    if (n !== "ga-forme" && n !== "ga-connexion" && n !== "co-connexion" && n !== "mo-fit") return;
+    Promise.all([_gaBootstrapped || gaBootstrap(), _coBootstrapped || coBootstrap()]).then(() => {
       if (n === "ga-connexion") { gaRenderConnexion(); return; }
+      if (n === "co-connexion") { coRenderConnexion(); return; }
+      if (n === "mo-fit") return;
       gaRenderEtat();
       gaRenderForme();
       if (gaConnecte() && gaAncienne()) gaSynchroniser(true);
+      if (coConnecte() && coAncienne()) coSynchroniser(true);
     });
   };
 })();
@@ -28784,7 +29238,7 @@ const MODULES_A_CHARGER = [
   ["cto",        "sec-cto",     () => ctoBootstrap()],
   ["crypto",     "sec-crypto",  () => ctoBootstrap()],   // même fichier (cto.json), lu une fois
   ["agenda",     "sec-agenda",  () => agBootstrap()],
-  ["garmin",     "sec-garmin",  () => gaBootstrap()],
+  ["montres",    "sec-garmin",  () => Promise.all([gaBootstrap(), coBootstrap()])],
 ];
 
 /** Un module qu'on vient de cocher (il était masqué au lancement, donc pas

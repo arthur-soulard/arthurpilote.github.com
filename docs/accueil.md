@@ -369,6 +369,13 @@ seulement s'il est coché et suivi dans Garmin), `ga-record` (dernier record de 
 montre, lu dans Sports). Elles lisent `GA.config` (`garmin.json`) et
 disparaissent tant que rien n'a été lu. Détail : `docs/modules/garmin.md`.
 
+### Tuiles des montres (03/11/2026, branche `montres`)
+
+`mo-derniere` (dernière séance de Garmin, Coros ou d'un .fit), `mo-synchro`
+(heure de synchronisation de chaque montre, rouge s'il faut reconnecter ;
+seulement avec une montre connectée), `co-forme` (récupération, sommeil et VFC
+de Coros). Module « Montres ». Détail : `docs/modules/montres.md`.
+
 ### Tuiles des CTO (4.4.0)
 
 Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de

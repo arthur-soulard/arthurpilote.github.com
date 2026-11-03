@@ -12,7 +12,9 @@ est réglée, elle emporte aussi la page du bilan en PDF (valeur des comptes, d�
 poids : décidé avec Arthur le 01/11/2026).
 Le module Garmin (4.4.52, 03/11/2026) lit la montre dans le compte Garmin
 Connect de l'utilisateur, avec sa clé API personnelle : il ne fait que lire
-(`docs/modules/garmin.md`).
+(`docs/modules/garmin.md`). La section Montres (branche `montres`, 03/11/2026)
+lit aussi une montre Coros par le serveur MCP officiel de Coros, sans rien y
+écrire, et les fichiers .fit, sur le PC (`docs/modules/montres.md`).
 **Aussi sur Mac depuis la 4.4.8** (décidé le 11/10/2026, Mac à puce Apple) : une seule
 app pour les deux systèmes, pas de copie séparée ; ce qui diffère passe par
 `sys.platform` ou `plateforme.py`, le chemin Windows y reste celui d'avant. Avant de
@@ -51,6 +53,8 @@ Pilote/
 │   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
 │   ├── agenda.py       # Agenda iCloud            (agenda.json) : séances, objectifs, mensualités, en CalDAV
 │   ├── garmin.py       # Module « Garmin »        (garmin.json) : la montre, par la clé API personnelle
+│   ├── coros.py        # Montre Coros             (coros.json) : serveur MCP de Coros, connexion OAuth
+│   ├── fit.py          # Fichiers .fit de toute montre -> séances de Sports (rien d'enregistré)
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
@@ -102,6 +106,7 @@ Donnees/
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
 │   ├── agenda.json           # Agenda iCloud : identifiant, code chiffré, agenda, cases (+ backups_agenda/)
 │   ├── garmin.json           # Garmin : clé chiffrée, cases, forme du jour, vus (+ backups_garmin/)
+│   ├── coros.json            # Coros : jeton de renouvellement chiffré, forme du jour, vus, aperçu (+ backups_coros/)
 │   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
 │   │                         #   laissés sur le disque, plus lus par l'app
 │   ├── vocabulaire.json      # module Vocabulaire retiré le 11/10/2026, idem
@@ -220,6 +225,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/modules/agenda.md` | Agenda : calendrier, notes, iCloud en CalDAV (écriture et lecture), synchronisation | `agenda.py`, `ag*`, `save_agenda*` |
 | `docs/modules/garmin.md` | Garmin : clé API personnelle, séances vers Sports, pesées vers Santé, forme du jour, ce qui reste à vérifier avec une vraie clé | `garmin.py`, `ga*`, `save_garmin*` |
+| `docs/modules/montres.md` | Section Montres : Coros (MCP, OAuth), fichiers .fit, doublons entre montres, Strava écarté | `coros.py`, `fit.py`, `co*`, `mo*`, `gaAjouter`, `gaMemeSeance`, `gaJours` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
 | `docs/microsoft-store.md` | version Microsoft Store : paquet MSIX, données dans `~\Pilote\Donnees`, pas d'auto-update, test | `build/msix.py`, `build/AppxManifest.xml`, `plateforme.version_store`, `storage.get_app_dir`, `updater.start_check` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
@@ -305,7 +311,7 @@ Paramètres.
 | Crypto          | crypto-dash, crypto-pos, crypto-tx (écrans du PEA, comme un CTO : `docs/modules/crypto.md`) |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 | Agenda          | ag-cal (« Calendrier »), ag-notifs (« Notifications »), ag-connexion (« iCloud ») |
-| Garmin          | ga-forme (« Ma forme »), ga-connexion (« Connexion »)               |
+| Montres (id `sec-garmin`) | ga-forme (« Ma forme »), ga-connexion (« Garmin »), co-connexion (« Coros »), mo-fit (« Fichiers .fit ») |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
