@@ -12056,6 +12056,7 @@ async function _showWelcomeIfFirstRun() {
     S.uiPrefs.dash = DASH_WIDGETS.map(w => ({ id: w.id, on: tuiles.has(w.id) }));
     S.uiPrefs.premiersPas = true;
     S.uiPrefs.modulesConnus = NAV_SECTIONS.map(s => s.id);   // tous proposés ici
+    S.uiPrefs.montresProposees = true;                       // Montres compris
     if (hist && hist.version) S.uiPrefs.nouveautesVues = hist.version;
     _enregistrerUiPrefs();
     nommer();
@@ -16723,6 +16724,14 @@ async function _demanderNouveauxModules() {
   S.uiPrefs = S.uiPrefs || {};
   if (!Array.isArray(S.uiPrefs.modulesConnus)) {
     S.uiPrefs.modulesConnus = _modulesConnusDepart();
+    _enregistrerUiPrefs();
+  }
+  // Garmin devenu Montres (Coros, fichiers .fit, 4.4.54) : reproposé une fois
+  // à qui l'avait refusé, puisqu'il ne sert plus seulement aux montres Garmin
+  if (!S.uiPrefs.montresProposees) {
+    S.uiPrefs.montresProposees = true;
+    if (!_modulesVisibles().has("sec-garmin"))
+      S.uiPrefs.modulesConnus = S.uiPrefs.modulesConnus.filter(id => id !== "sec-garmin");
     _enregistrerUiPrefs();
   }
   const neufs = NAV_SECTIONS.filter(s => !S.uiPrefs.modulesConnus.includes(s.id));

@@ -124,6 +124,11 @@ séance la remet, c'est voulu (geste explicite).
    `kcal`, `record` d'une séance modifiée.
 4. La section garde l'id `sec-garmin` et le module de chargement lit les deux
    (`MODULES_A_CHARGER`, « montres »).
+5. **Reproposée une fois** (demande d'Arthur, 03/11/2026) à qui avait refusé
+   Garmin en 4.4.52 : `S.uiPrefs.montresProposees`, posé par
+   `_demanderNouveauxModules` (qui retire alors `sec-garmin` de `modulesConnus`
+   si la section est masquée) et par les Premiers pas. Essayé sur le banc :
+   proposée après un refus, pas après un « oui », pas une seconde fois.
 
 ## Tuiles
 
