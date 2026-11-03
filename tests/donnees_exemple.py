@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["mo-derniere", "co-forme", "ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -126,6 +126,7 @@ def pea():
             # ni de fenêtre « Nouveau module » : tous déjà proposés, tous affichés
             "modulesConnus": ["sec-pea", "sec-cto", "sec-crypto", "sec-comptes", "sec-pret", "sec-sport",
                               "sec-patri", "sec-sante", "sec-garmin", "sec-actus", "sec-agenda"],
+            "montresProposees": True,         # section Montres déjà proposée (4.4.54)
             "dash": [{"id": t, "on": True} for t in tuiles],
             "dashPeaRange": "MAX",
             "penseBete": notes,
@@ -233,6 +234,10 @@ def sports():
                 if s["sport"] == "course" and not any(x.get("record") for x in seances):
                     s.update(record=True, distance=10.0, duration=48, note="10 km du parc")
             seances.append(s)
+    # Importée d'un fichier .fit (section Montres) : badge « Suunto »
+    seances.append({"id": len(seances) + 1, "date": jour(-2), "time": "10:15", "sport": "rando", "duration": 185,
+                    "distance": 14.2, "elevation": 640, "note": "Crêtes du Mont Aiguille", "fitId": "a1b2c3d4e5f60718",
+                    "marque": "Suunto", "fcMoy": 121, "kcal": 1150})
     return {"_meta": dict(META, schema="sports.v1"), "sessions": seances, "customSports": [], "routines": [],
             "goals": [{"id": 1, "kind": "event", "title": "Semi-marathon de la ville", "sport": "course",
                        "date": jour(24), "note": "21 km", "status": "active", "createdAt": jour(-60), "doneAt": None},
@@ -341,6 +346,15 @@ def garmin():
             "ageForme": {"age": 24.5, "reel": 27, "atteignable": 22.0}, "cycle": cycle}
 
 
+def coros():
+    """Compte Coros pas connecte : la recuperation, la VFC et le sommeil de
+    14 jours deja lus (tuile « Forme Coros », Ma forme)."""
+    jours = {jour(-k): {"recup": 72 + (k * 7) % 25, "vfc": 52 + (k * 5) % 12, "sommeil": 400 + (k * 29) % 90}
+             for k in range(14)}
+    return {"_meta": dict(META, schema="coros.v1"), "secret": "", "client": {}, "jours": jours,
+            "choix": {"seances": True, "forme": True}, "vus": [], "apercu": {}}
+
+
 def ecrire(dossier):
     utilisateur = os.path.join(dossier, "users", "demo")
     os.makedirs(utilisateur, exist_ok=True)
@@ -356,6 +370,7 @@ def ecrire(dossier):
         os.path.join(utilisateur, "patrimoine.json"): patrimoine(),
         os.path.join(utilisateur, "agenda.json"): agenda(),
         os.path.join(utilisateur, "garmin.json"): garmin(),
+        os.path.join(utilisateur, "coros.json"): coros(),
     }
     for chemin, contenu in fichiers.items():
         with open(chemin, "w", encoding="utf-8") as f:

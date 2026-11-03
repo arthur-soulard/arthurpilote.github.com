@@ -18,6 +18,7 @@
 ga-forme
 co-connexion
 mo-fit
+home
 # 4.4.53 (gardés tant qu'elle n'est pas vue sur Mac)
 # 1. Après la mise à jour, une seule version à lire : son titre en tête.
 js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.52',_majFicheApresMiseAJour()
