@@ -69,6 +69,7 @@ import xml.etree.ElementTree as ET
 import actus
 import cto
 import finances
+import garmin
 import jsonstore
 import patrimoine
 import pret
@@ -88,7 +89,8 @@ CHOIX     = ("sport", "objectifs", "pret")
 RAPPELS   = ("pesee", "releve", "versement", "dividende",
              "pea-depot", "pea-investir", "pea-anniv", "pea-plan", "cto-investir", "cto-dividende", "cto-plan",
              "fin-saisie", "fin-recurrent", "pret-etapes", "sport-pause",
-             "sante-pause", "sante-objectif", "resume", "sauvegarde", "ouvrir", "pense-bete")
+             "sante-pause", "sante-objectif", "resume", "sauvegarde", "ouvrir", "pense-bete",
+             "garmin-cle")
 ALERTES   = ("note", "sport", "objectif", "pret") + RAPPELS
 # "" : aucune alerte (un rappel n'est alors pas envoye) ; minutes avant le
 # debut ; « matin » : 9 h le jour meme ; « veille » : 18 h la veille ;
@@ -661,6 +663,13 @@ def rappels(alertes: dict, jours: dict, delais: dict = None) -> list:
         if derniere:   # jamais de sauvegarde : rien a rappeler
             jour, n = _depuis(derniere, _delai(delais, "sauvegarde"))
             out.append(_element("sauvegarde", "sauvegarde", f"💾 Pas de sauvegarde depuis {n} jours", jour))
+    if alertes.get("garmin-cle"):
+        # Date donnee a la connexion (garmin.json) ; cle oubliee : plus rien a rappeler
+        g = garmin.load_data()
+        fin = _jour(g.get("expire"))
+        if g.get("secret") and fin and fin >= auj:
+            out.append(_element("garmin-cle", "garmin-cle", "⌚ Clé Garmin à renouveler", fin,
+                                texte="Crée une nouvelle clé sur Garmin Connect, puis colle-la dans Pilote › Garmin › Connexion."))
     if alertes.get("ouvrir"):
         # Recule a chaque envoi, donc a chaque lancement de Pilote
         n = _delai(delais, "ouvrir")

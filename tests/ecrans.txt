@@ -15,13 +15,17 @@
 # forme des 30 derniers jours déjà lue (garmin.json, compte pas connecté) et
 # quelques séances venues de la montre. Pas de « ; » ni d'espace dans un appel
 # js (le test sépare les écrans par « ; » et l'appel du défilement par une espace).
-# 1. Accueil : tuiles Sommeil, Body Battery et VFC, Pas du jour en tête.
+# Puis (même jour) : records, SpO2, respiration, âge physique, cycle, rappel
+# d'expiration de la clé, bilan de la semaine, trois tuiles de plus.
+# 1. Accueil : les six tuiles Garmin en tête.
 home
-# 2. Garmin › Ma forme : chiffres du jour et courbe du sommeil.
+# 2. Garmin › Ma forme : neuf chiffres du jour.
 ga-forme
-# 3. Garmin › Ma forme, en bas : les séances de la montre.
-ga-forme 600
-# 4. Garmin › Connexion : la fiche pour créer la clé et le formulaire.
+# 3. Garmin › Ma forme, plus bas : carte du cycle et séances de la montre (record).
+ga-forme 700
+# 4. Garmin › Connexion : la fiche, la durée de la clé et les quatre cases.
 ga-connexion
-# 5. Paramètres › Garmin.
-js:openSettings('garmin')
+# 5. Sports › Objectifs : le record de la montre propose « Valider ».
+sp-goals
+# 6. Bilan de la semaine (section Forme).
+js:bilanOuvrir()

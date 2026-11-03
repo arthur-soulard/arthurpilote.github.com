@@ -12,7 +12,10 @@ sont lues, chacune a cocher :
   * seances : les activites, rendues pretes a entrer dans Sports ;
   * pesees  : les pesees (balance Index ou saisie dans Connect), pour Santé ;
   * forme   : un resume par jour (pas, FC au repos, sommeil, Body Battery,
-              stress, VFC), garde ici, pour l'onglet « Ma forme » et les tuiles.
+              stress, VFC, SpO2, respiration, minutes intenses) et l'age
+              physique, gardes ici, pour l'onglet « Ma forme » et les tuiles ;
+  * cycle   : le cycle menstruel du jour (decoche par defaut : Garmin n'en a
+              que si l'utilisateur le suit dans Connect).
 
 Les seances et les pesees ne sont PAS ecrites ici dans sports.json ni
 sante.json : la page tient SP et SA en memoire et les reecrit en entier ; une
@@ -46,7 +49,9 @@ BASE  = "https://personal.connectapi.garmin.com"   # remplace par les tests
 JETON = "/personalapitoken-service/personal-api/personal-api-key/token"
 DELAI = 30
 TROUSSEAU = "Pilote Garmin"
-CHOIX = ("seances", "pesees", "forme")
+CHOIX = ("seances", "pesees", "forme", "cycle")
+CHOIX_DEFAUT = {"seances": True, "pesees": True, "forme": True, "cycle": False}
+DUREES_CLE = (30, 90, 180, 365)   # durees proposees par Garmin a la creation de la cle
 JOURS_GARDES = 400        # resumes de forme gardes (un peu plus d'un an)
 PREMIERS_JOURS = 30       # forme lue a la premiere synchronisation
 RECOUVREMENT = 7          # jours relus a chaque synchronisation (une seance synchronisee en retard)
@@ -56,9 +61,9 @@ PAGES_MAX = 10            # 10 x 99 activites au plus par synchronisation
 class ErreurGarmin(Exception):
     """code : saisie, auth, reseau, limite, api, config."""
 
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str, statut: int = 0):
         super().__init__(message)
-        self.code, self.message = code, message
+        self.code, self.message, self.statut = code, message, statut
 
 
 def default_data() -> dict:
@@ -72,10 +77,13 @@ def default_data() -> dict:
         "secret":   "",
         "connecteLe": "",
         "depuis":   "",          # premiere date importee (seances, pesees)
-        "choix":    {c: True for c in CHOIX},
+        "choix":    dict(CHOIX_DEFAUT),
+        "expire":   "",          # fin de validite de la cle (AAAA-MM-JJ), donnee a la connexion
         "derniere": "",          # derniere synchronisation reussie (AAAA-MM-JJTHH:MM:SS)
         "vus":      [],          # activites et pesees deja proposees a la page
         "jours":    {},          # "AAAA-MM-JJ" -> resume de forme
+        "ageForme": None,        # age physique (fitness age) le plus recent
+        "cycle":    None,        # cycle menstruel du jour de la derniere synchronisation
     }
 
 
@@ -176,7 +184,7 @@ def _get(jeton: str, chemin: str, params: dict = None):
     if statut == 204 or (statut == 200 and not corps.strip()):
         return None
     if statut != 200:
-        raise ErreurGarmin("api", f"Garmin a répondu {statut} ({chemin.split('/')[1]}).")
+        raise ErreurGarmin("api", f"Garmin a répondu {statut} ({chemin.split('/')[1]}).", statut)
     try:
         return json.loads(corps.decode("utf-8"))
     except ValueError as e:
@@ -268,6 +276,8 @@ def seance(a: dict) -> dict:
     kcal = round(_nombre(a.get("calories")))
     if kcal:
         s["kcal"] = kcal
+    if a.get("isPR") is True:     # record personnel d'apres Garmin
+        s["record"] = True
     return s
 
 
@@ -369,6 +379,9 @@ def _forme(jeton: str, debut: datetime.date, fin: datetime.date, erreurs: list) 
                 if im.get("moderate") is not None or im.get("vigorous") is not None:
                     # Garmin compte une minute intense pour deux
                     d["intensite"] = round(_nombre(im.get("moderate")) + 2 * _nombre(im.get("vigorous")))
+                garder(d, "objectifIntensite", _entier(im.get("goal")))   # objectif de la semaine
+                garder(d, "spo2", _entier((s.get("pulseOx") or {}).get("avgValue")))
+                garder(d, "respiration", _entier((s.get("respiration") or {}).get("avgValue")))
     except ErreurGarmin as e:
         if e.code == "auth":
             raise
@@ -411,11 +424,49 @@ def _forme(jeton: str, debut: datetime.date, fin: datetime.date, erreurs: list) 
     return {k: v for k, v in jours.items() if v}
 
 
+def _age_forme(jeton: str, jour: datetime.date, erreurs: list):
+    """{age, reel, atteignable} : l'age physique (fitness age) le plus recent."""
+    try:
+        r = _get(jeton, f"/fitnessage-service/fitnessage/v2/{jour.isoformat()}")
+    except ErreurGarmin as e:
+        if e.code == "auth":
+            raise
+        # Introuvable : la montre ne calcule pas d'age physique, ce n'est pas une panne
+        if e.statut != 404:
+            erreurs.append("Âge physique : " + e.message)
+        return None
+    a = (r[0] if isinstance(r, list) and r else r) if r else None
+    if not isinstance(a, dict) or not _nombre(a.get("fitnessAge")):
+        return None
+    return {"age": round(_nombre(a["fitnessAge"]), 1), "reel": _entier(a.get("chronologicalAge")),
+            "atteignable": round(_nombre(a.get("achievableFitnessAge")), 1) or None}
+
+
+def _cycle(jeton: str, jour: datetime.date, erreurs: list):
+    """Le cycle du jour, ou None si Garmin n'en suit pas (204, ou rien de lisible)."""
+    try:
+        c = _get(jeton, f"/periodichealth-service/menstrualcycle/summary/{jour.isoformat()}")
+    except ErreurGarmin as e:
+        if e.code == "auth":
+            raise
+        if e.statut != 404:          # introuvable : pas de cycle suivi dans Connect
+            erreurs.append("Cycle : " + e.message)
+        return None
+    if not isinstance(c, dict) or not _entier(c.get("dayInCycle")):
+        return None
+    out = {"date": jour.isoformat(), "jour": _entier(c.get("dayInCycle")),
+           "duree": _entier(c.get("predictedCycleLength")), "regles": _entier(c.get("periodLength")),
+           "fertileDebut": _entier(c.get("fertileWindowStart")), "fertileDuree": _entier(c.get("lengthOfFertileWindow")),
+           "luteale": _entier(c.get("lutealPhaseStart")), "prochaine": _entier(c.get("daysUntilNextPhase")),
+           "grossesse": c.get("pregnancyCycle") is True}
+    return {k: v for k, v in out.items() if v is not None}
+
+
 # ─── API du module ───────────────────────────────────────────────────────────
 
 def _choix(data: dict) -> dict:
     choix = data.get("choix") if isinstance(data.get("choix"), dict) else {}
-    return {c: bool(choix.get(c, True)) for c in CHOIX}
+    return {c: bool(choix.get(c, CHOIX_DEFAUT[c])) for c in CHOIX}
 
 
 def config() -> dict:
@@ -426,11 +477,24 @@ def config() -> dict:
             "depuis":     data.get("depuis") or "",
             "choix":      _choix(data),
             "derniere":   data.get("derniere") or "",
-            "jours":      jours}
+            "expire":     data.get("expire") or "",
+            "jours":      jours,
+            "ageForme":   data.get("ageForme") if isinstance(data.get("ageForme"), dict) else None,
+            "cycle":      data.get("cycle") if isinstance(data.get("cycle"), dict) else None}
 
 
-def connecter(cle: str, depuis: str = "") -> dict:
-    """N'enregistre qu'une cle que Garmin vient d'accepter."""
+def _expiration(duree) -> str:
+    """Fin de validite d'une cle creee aujourd'hui pour `duree` jours ("" : inconnue)."""
+    try:
+        n = int(duree)
+    except (TypeError, ValueError):
+        return ""
+    return (datetime.date.today() + datetime.timedelta(days=n)).isoformat() if n in DUREES_CLE else ""
+
+
+def connecter(cle: str, depuis: str = "", duree=None) -> dict:
+    """N'enregistre qu'une cle que Garmin vient d'accepter. duree : jours de
+    validite choisis sur Garmin Connect (pour le rappel avant expiration)."""
     cle = re.sub(r"\s+", "", cle or "")
     if not cle:
         raise ErreurGarmin("saisie", "Colle la clé API créée sur Garmin Connect.")
@@ -445,14 +509,20 @@ def connecter(cle: str, depuis: str = "") -> dict:
         _obtenir_jeton(cle)
         secret = actus._chiffrer(cle, TROUSSEAU, "Pilote : clé API personnelle Garmin")
         _modifier(lambda d: d.update(secret=secret, connecteLe=aujourdhui.isoformat(),
-                                     depuis=debut.isoformat(), derniere=""))
+                                     depuis=debut.isoformat(), derniere="", expire=_expiration(duree)))
     return config()
 
 
-def regler(choix: dict, depuis: str = "") -> dict:
-    """depuis plus tot que l'ancien : la synchronisation suivante remonte jusque-la."""
+def regler(choix: dict, depuis: str = "", expire: str = None) -> dict:
+    """depuis plus tot que l'ancien : la synchronisation suivante remonte jusque-la.
+    expire : fin de la cle corrigee a la main ("" l'efface, None n'y touche pas)."""
     def changer(d):
         d["choix"] = {c: bool((choix or {}).get(c)) for c in CHOIX}
+        if not d["choix"]["cycle"]:
+            d["cycle"] = None          # decoche : rien ne reste du cycle
+        if expire is not None:
+            fin = _jour(expire, None)
+            d["expire"] = fin.isoformat() if fin else ""
         if depuis:
             nouveau = min(_jour(depuis, datetime.date.today()), datetime.date.today()).isoformat()
             if nouveau < (d.get("depuis") or ""):
@@ -468,7 +538,7 @@ def deconnecter() -> dict:
         data = _store.load()
         actus._oublier(data.get("secret") or "", TROUSSEAU)
         _jeton.update(cle="", valeur="", fin=0.0)
-        _modifier(lambda d: d.update(secret="", derniere=""))
+        _modifier(lambda d: d.update(secret="", derniere="", expire="", cycle=None))
     return config()
 
 
@@ -527,15 +597,21 @@ def synchroniser() -> dict:
                 erreurs.append("Pesées : " + e.message)
             pesees.sort(key=lambda m: (m["date"], m["time"]))
 
-        forme = {}
+        forme, age = {}, None
         if choix["forme"]:
             jours = data.get("jours") if isinstance(data.get("jours"), dict) else {}
             debut_forme = aujourdhui - datetime.timedelta(days=PREMIERS_JOURS - 1)
             if jours and derniere:
                 debut_forme = max(debut_forme, _jour(derniere, aujourdhui) - datetime.timedelta(days=2))
             forme = _forme(jeton, debut_forme, aujourdhui, erreurs)
+            age = _age_forme(jeton, aujourdhui, erreurs)
+        cycle = _cycle(jeton, aujourdhui, erreurs) if choix["cycle"] else None
 
         def changer(d):
+            if choix["forme"] and age:
+                d["ageForme"] = age
+            if choix["cycle"]:
+                d["cycle"] = cycle
             jours = d.get("jours") if isinstance(d.get("jours"), dict) else {}
             for k, v in forme.items():
                 jours[k] = {**jours.get(k, {}), **v}

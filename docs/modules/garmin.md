@@ -54,7 +54,24 @@ Jamais essayé avec une vraie clé (Arthur absent) : voir « À vérifier ».
 |---|---|---|
 | Séances | `/activitylist-service/activities/search/activities` (99 par page, 10 pages au plus) | séances de Sports : date et heure locales, sport, durée (min), distance (km, ou m pour la natation), D+, nom de l'activité en note, FC moyenne, kcal |
 | Pesées | `/weight-service/weight/all/{debut}/{fin}` | pesées de Santé : poids, IMC, graisse, eau (`source: "garmin"`) |
-| Forme du jour | `/usersummary-service/v2/dailysummaries` (1 an max), `/sleep-service/sleep/dailySleepSummariesByDate` (31 j max), `/hrv-service/hrv/daily/{a}/{b}` | `jours` de `garmin.json` : pas, objectif, FC au repos, Body Battery (max, min, dernière valeur), stress, minutes intenses, sommeil (min, score, profond, paradoxal), VFC (nuit, statut) |
+| Forme du jour | `/usersummary-service/v2/dailysummaries` (1 an max), `/sleep-service/sleep/dailySleepSummariesByDate` (31 j max), `/hrv-service/hrv/daily/{a}/{b}`, `/fitnessage-service/fitnessage/v2/{jour}` | `jours` de `garmin.json` : pas, objectif, FC au repos, Body Battery (max, min, dernière valeur), stress, minutes intenses et objectif de la semaine, SpO2 et respiration (moyennes du jour), sommeil (min, score, profond, paradoxal), VFC (nuit, statut) ; `ageForme` : âge physique, âge réel, âge atteignable |
+| Cycle menstruel (décochée par défaut) | `/periodichealth-service/menstrualcycle/summary/{jour}` | `cycle` : jour du cycle, durée prévue, règles, fenêtre fertile, début de la phase lutéale, grossesse |
+
+Les records : `isPR` de l'activité devient `record: true` sur la séance de Sports.
+
+**Cycle menstruel, pour qui ?** Pilote ne connaît pas le sexe de l'utilisateur
+(Garmin ne le donne pas dans l'API, et le profil de Santé ne le demande pas).
+La case est décochée pour tout le monde, et même cochée rien ne s'affiche tant
+que Garmin ne renvoie pas de cycle : Garmin n'en a que si l'utilisateur le suit
+dans Connect (204 sinon). Décocher efface le cycle gardé. Âge physique ou cycle
+introuvable (404) : pas de donnée, pas une panne (la synchronisation avance).
+
+**Expiration de la clé** : Garmin ne la donne pas. La durée choisie à la
+création (30 j, 90 j, 180 j, 1 an : `DUREES_CLE`) est demandée à la connexion et
+devient `expire` ; elle se corrige dans Connexion. Rappels : bandeau de Ma forme
+14 jours avant (`GA_RAPPEL_JOURS`), notification Agenda « Clé Garmin à
+renouveler » (`agenda.RAPPELS`, type `garmin-cle`, pastille Garmin) le jour
+de l'expiration, avec l'alerte choisie (une semaine avant, par exemple).
 
 Le sport vient du `typeKey` de Garmin, reconnu par morceau (`sport_pilote`) :
 `swim` → natation, `run` → course, `cycl`/`bik`/`ride` → vélo, `strength` →
@@ -78,8 +95,9 @@ de 1 000 est divisée par 1 000. Une pesée hors des bornes de Santé est ignor�
 3. **Doublons avec la saisie à la main** : même jour, même sport, durée à
    15 min ou 25 % près → la séance saisie est gardée et reçoit le `garminId`.
    Une pesée existe déjà ce jour-là (FitDays, à la main) → celle de Garmin est
-   écartée. `spSaveSession` garde `garminId`, `fcMoy` et `kcal` d'une séance
-   modifiée.
+   écartée. `spSaveSession` garde `garminId`, `fcMoy`, `kcal` et `record` d'une
+   séance modifiée. Un record reconnu sur une séance saisie à la main lui est
+   reporté.
 4. **La clé ne repasse jamais par la page** : vérifiée auprès de Garmin (jeton
    obtenu) avant d'être enregistrée, chiffrée par `actus._chiffrer` (DPAPI sous
    Windows, Trousseau sur Mac, service « Pilote Garmin »). Le jeton du jour vit
@@ -95,34 +113,56 @@ de 1 000 est divisée par 1 000. Une pesée hors des bornes de Santé est ignor�
 ### Quand Pilote synchronise
 
 Au lancement (4 s après, une fois Sports et Santé lus) si la dernière date de
-plus d'une heure, à l'ouverture de Ma forme dans le même cas, et au bouton
-Synchroniser. Pas de minuterie pendant que Pilote reste ouvert (version minimale).
+plus d'une heure, à l'ouverture de Ma forme dans le même cas, au bouton
+Synchroniser, et, Pilote resté ouvert, toutes les 2 heures (`GA_PERIODE_MS`,
+vérifié toutes les 10 min) : discrètement, un message seulement s'il y a du
+nouveau ou une panne.
 
 ### Écrans et tuiles
 
-* **Ma forme** : cinq chiffres (sommeil de la nuit avec score, Body Battery,
-  VFC et son statut, FC au repos et sa moyenne sur 30 j, pas et objectif), une
-  courbe des 30 derniers jours au choix (sommeil, Body Battery, VFC, FC au repos,
-  pas, stress), puis les 8 dernières séances venues de la montre. Garmin date le
-  sommeil du jour du réveil : « nuit du 2 au 3 nov. » (`gaNuit`).
-* **Connexion** : la fiche en quatre étapes, la clé, la date de départ, les trois
-  cases ; une fois connecté, les cases restent réglables.
-* **Tuiles** (`ga-sommeil`, `ga-forme`, `ga-pas`, éteintes par défaut comme toute
-  nouvelle tuile) : sommeil de la nuit avec moyenne 7 j et courbe 14 j, Body
-  Battery du jour avec VFC et FC au repos, pas du jour avec barre vers l'objectif.
-* Sports : badge « Garmin » et FC moyenne dans la liste du jour. Santé : icône de
-  montre dans l'historique.
+* **Ma forme** : jusqu'à neuf chiffres (sommeil de la nuit avec score, Body
+  Battery, VFC et son statut, FC au repos et sa moyenne sur 30 j, pas et
+  objectif, minutes intenses de la semaine, SpO2, respiration, âge physique :
+  chacun n'apparaît que si la montre le mesure), une courbe des 30 derniers
+  jours au choix (sommeil, Body Battery, VFC, FC au repos, pas, stress, minutes
+  intenses, SpO2, respiration), la carte du cycle (jour, phase, prochaines
+  règles, barre règles / fenêtre fertile / aujourd'hui), puis les 8 dernières
+  séances venues de la montre, records marqués. Garmin date le sommeil du jour
+  du réveil : « nuit du 2 au 3 nov. » (`gaNuit`). La phase du cycle se déduit
+  des jours donnés par Garmin (`gaPhase`), pas de son `currentPhase`, dont la
+  doc ne donne pas les valeurs ; le jour avance seul depuis la dernière
+  synchronisation (`gaCycleDuJour`).
+* **Connexion** : la fiche en quatre étapes, la clé, la durée choisie sur Garmin
+  Connect, la date de départ, les quatre cases ; une fois connecté, les cases,
+  la date de départ et la date d'expiration restent réglables.
+* **Tuiles** (éteintes par défaut comme toute nouvelle tuile) : `ga-sommeil`
+  (sommeil de la nuit, moyenne 7 j, courbe 14 j), `ga-forme` (Body Battery du
+  jour, VFC, FC au repos), `ga-pas` (pas du jour, barre vers l'objectif),
+  `ga-intensite` (minutes intenses depuis lundi, barre vers l'objectif de la
+  semaine), `ga-cycle` (jour du cycle, phase, prochaines règles), `ga-record`
+  (dernier record : distance ou durée en grand).
+* Sports : badges « Garmin » et « Record », FC moyenne dans la liste du jour.
+  Objectifs de performance : un record de la montre depuis la création de
+  l'objectif, du même sport, propose « Valider » (`gaRecordPour`) ; rien ne se
+  valide seul (Pilote ne lit pas « 10 km en 45 min »). Santé : icône de montre
+  dans l'historique.
+* **Bilan de la semaine** : section « Forme » (sommeil moyen, pas par jour, FC au
+  repos, minutes intenses, sommeil nuit par nuit, records de la semaine) et une
+  ligne « Forme : … » dans la notification.
 * **Nouveau module** : proposé une fois, décoché (`_demanderNouveauxModules`) ;
   `_modulesConnusDepart` l'exclut aussi pour une installation d'avant la 4.4.47.
 
 ### Tests
 
 * `tests/test_garmin.py` : faux serveur construit d'après le Swagger et le client
-  officiel (jeton JWT brut, ApiKey puis Bearer), 13 cas (mauvaise clé, clé jamais
-  en clair, conversion des séances et pesées, grammes, vus, relecture partielle,
-  source en panne, clé expirée, cases, réseau coupé).
+  officiel (jeton JWT brut, ApiKey puis Bearer), 17 cas (mauvaise clé, clé jamais
+  en clair, conversion des séances, records et pesées, grammes, SpO2,
+  respiration, âge physique, vus, relecture partielle, source en panne, âge
+  physique absent, clé expirée, cases, cycle suivi ou non, date d'expiration,
+  rappel dans l'Agenda, réseau coupé).
 * Données de Camille : `garmin.json` avec 30 jours de forme (compte pas
-  connecté), quelques séances avec `garminId`, tuiles Garmin en tête.
+  connecté), le cycle coché, quelques séances avec `garminId` dont un record, un
+  objectif de performance à valider, les six tuiles Garmin en tête.
 
 ### À vérifier avec une vraie clé
 
@@ -132,3 +172,6 @@ Synchroniser. Pas de minuterie pendant que Pilote reste ouvert (version minimale
 * Les noms réels des clés de `sleepScores` (`overall` supposé) et des statuts de
   VFC (`BALANCED`, `UNBALANCED`, `LOW`, `POOR`).
 * Les limites de requêtes (non documentées) et les plages de dates refusées.
+* `isPR` (records) sur une vraie activité, la réponse de l'âge physique (liste
+  d'un élément supposée) et celle du cycle pour un compte qui ne le suit pas
+  (204 supposé).

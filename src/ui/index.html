@@ -2026,6 +2026,18 @@ label.sv-check, label.sv-inline {
 .ga-cases label.sv-check { font-size: 13px; color: var(--txt); align-items: flex-start; }
 .ga-cases input { margin-top: 3px; }
 .ga-tag { display: inline-flex; align-items: center; gap: 3px; }
+.ga-rec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--accent-text, var(--accent)); }
+.ga-rec .btn { padding: 2px 9px; }
+.ga-cycle { display: flex; flex-direction: column; gap: 10px; }
+.ga-cycle-l { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; font-size: 13px; color: var(--txt2); }
+.ga-cycle-l b { font-family: var(--serif); font-weight: 500; font-size: 22px; color: var(--txt); }
+.ga-cycle-bar { position: relative; height: 12px; border-radius: 6px; background: var(--bg3); overflow: hidden; }
+.ga-cycle-bar i { position: absolute; top: 0; bottom: 0; }
+.ga-cycle-bar .r { background: color-mix(in srgb, var(--r) 55%, transparent); }
+.ga-cycle-bar .f { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.ga-cycle-bar .j { width: 3px; background: var(--txt); border-radius: 2px; }
+.ga-cycle-leg { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--txt3); }
+.ga-cycle-leg span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
 /* Onglet Notifications : une ligne par type, icône · nom et aide · réglage */
 .ag-notifs-t { font-size: 12px; font-weight: 600; color: var(--txt2); margin: 4px 0 6px; }
 .ag-notifs { display: flex; flex-direction: column; margin-bottom: 16px; }
@@ -11681,7 +11693,7 @@ const NAV_MODULES = {
     desc: "Ta montre Garmin : séances ajoutées à Sports, pesées à Santé, sommeil, Body Battery, VFC et pas.",
     pas:  "Crée ta clé API personnelle sur Garmin Connect et colle-la : l'onglet Connexion explique comment.",
     besoin: "Il te faut une montre Garmin et un compte Garmin Connect.",
-    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas"] },
+    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite"] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -12366,7 +12378,8 @@ function cfgRenderModule(id) {
     if (!box) return;
     const cfg = (typeof GA !== "undefined" && GA.config) || {};
     box.innerHTML = cfg.connecte
-      ? ligne("check-circle", "Compte Garmin connecté", "Dernière synchronisation : " + escHtml(gaQuand(cfg.derniere)))
+      ? ligne("check-circle", "Compte Garmin connecté", "Dernière synchronisation : " + escHtml(gaQuand(cfg.derniere))
+          + (cfg.expire ? " · clé valable jusqu'au " + escHtml(dashDateCourte(cfg.expire)) : ""))
       : ligne("watch", "Pas encore de compte Garmin", "Connexion : la clé API personnelle créée sur Garmin Connect");
   }
 }
@@ -19050,7 +19063,7 @@ function spOpenDay(iso) {
     return `<div class="sp-srow">
       <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
       <div style="flex:1;min-width:0">
-        <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}${s.garminId ? ` <span class="m-tag ga-tag" title="Venue de la montre Garmin"><i class="ph ph-watch"></i> Garmin</span>` : ""}</div>
+        <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}${s.garminId ? ` <span class="m-tag ga-tag" title="Venue de la montre Garmin"><i class="ph ph-watch"></i> Garmin</span>` : ""}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</div>
         <div class="sp-smeta">${escHtml(spSummary(s) || "—")}${pace ? " · " + pace : ""}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</div>
         ${s.note ? `<div class="sp-snote">${escHtml(s.note)}</div>` : ""}
       </div>
@@ -19347,7 +19360,7 @@ async function spSaveSession() {
   if (spHasField(_spSport, "groups"))  s.groups  = _spGroups.slice();
   // Séance venue de la montre (bloc Garmin) : elle le reste une fois modifiée
   const avant = _spEditingId ? spSessions().find(x => x.id === _spEditingId) : null;
-  if (avant) ["garminId", "fcMoy", "kcal"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
+  if (avant) ["garminId", "fcMoy", "kcal", "record"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
 
   if (_spEditingId) {
     const i = spSessions().findIndex(x => x.id === _spEditingId);
@@ -19619,8 +19632,12 @@ function spGoalCard(g) {
       <div class="sp-goal-meta">Préparation : ${spFmtDur(t.min)} · ${t.n} séance${t.n > 1 ? "s" : ""}${t.km ? " · " + spFmtNum(t.km, 1) + " km" : ""}</div>
       <div class="sp-goal-meta">Échéance : ${escHtml(spParseISO(g.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }))}</div>`;
   } else {
+    // Record personnel lu sur la montre depuis l'objectif (bloc Garmin) : on propose de valider
+    const rec = !done && typeof gaRecordPour === "function" ? gaRecordPour(g) : null;
     body = `
       <div class="sp-goal-meta">Fixé le ${escHtml(spParseISO(g.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }))}</div>
+      ${rec ? `<div class="sp-goal-meta ga-rec"><i class="ph ph-trophy"></i> Record Garmin le ${escHtml(dashDateCourte(rec.date))}${rec.note ? " (" + escHtml(rec.note) + ")" : ""} : objectif atteint ?
+        <button class="btn btn-ghost btn-sm" onclick="spToggleGoalDone(${g.id})">Valider</button></div>` : ""}
       ${done ? `<div class="sp-goal-meta" style="color:var(--g)">✓ Atteint le ${escHtml(spParseISO(g.doneAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }))}</div>` : ""}`;
   }
 
@@ -25632,6 +25649,19 @@ const DASH_WIDGETS = [
     render() { return dashGaPas(); },
   },
   {
+    id: "ga-intensite", label: "Minutes intenses de la semaine", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaIntensite(); },
+  },
+  {
+    // Seulement si le cycle est coché et suivi dans Garmin Connect
+    id: "ga-cycle", label: "Cycle", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaCycle(); },
+  },
+  {
+    id: "ga-record", label: "Dernier record", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaRecord(); },
+  },
+  {
     // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
     // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
@@ -26331,6 +26361,20 @@ async function bilanCalculer(lundi, sansAvenir) {
     }
   }
 
+  // Forme (Garmin) : moyennes de la semaine, lues dans garmin.json
+  if (vis.has("sec-garmin") && _gaBootstrapped) {
+    const j = gaJours(), sem = [0, 1, 2, 3, 4, 5, 6].map(k => j[bilanPlus(lundi, k)] || {});
+    const vals = cle => sem.map(x => x[cle]).filter(x => x != null);
+    const moy = cle => { const v = vals(cle); return v.length ? Math.round(v.reduce((a, x) => a + x, 0) / v.length) : null; };
+    const im = vals("intensite"), obj = vals("objectifIntensite");
+    const f = { sommeil: moy("sommeil"), sommeilJours: sem.map(x => x.sommeil || 0), pas: moy("pas"),
+                fcRepos: moy("fcRepos"), intensite: im.length ? im.reduce((a, x) => a + x, 0) : null,
+                objectifIntensite: obj.length ? obj[obj.length - 1] : null,
+                records: (typeof SP !== "undefined" && SP) ? spSessions().filter(s => s.record && s.date >= lundi && s.date <= dim)
+                  .map(s => ({ nom: s.note || spSportById(s.sport).label, date: s.date })) : [] };
+    if (f.sommeil != null || f.pas != null || f.fcRepos != null || f.intensite != null) b.forme = f;
+  }
+
   // La semaine qui vient : ce que Pilote sait dater
   if (!sansAvenir && window.pywebview && pywebview.api && pywebview.api.agenda_a_venir) {
     try {
@@ -26356,6 +26400,10 @@ function bilanResume(b) {
   if (b.sport) l.push("Sport : " + b.sport.n + " séance" + (b.sport.n > 1 ? "s" : "") + (b.sport.min ? ", " + spFmtDur(b.sport.min) : ""));
   if (b.depenses) l.push("Dépenses : " + eur(b.depenses.total) + (b.depenses.revenus ? " · revenus : " + eur(b.depenses.revenus) : ""));
   if (b.sante) l.push("Poids : " + kg(b.sante.poids) + (b.sante.delta != null ? " (" + (b.sante.delta >= 0 ? "+" : "−") + kg(Math.abs(b.sante.delta)) + ")" : ""));
+  if (b.forme) l.push("Forme : " + [b.forme.sommeil != null ? "sommeil moyen " + gaDuree(b.forme.sommeil) : "",
+    b.forme.pas != null ? b.forme.pas.toLocaleString("fr-FR") + " pas par jour" : "",
+    b.forme.intensite != null ? b.forme.intensite + " min intenses" : "",
+    b.forme.records.length ? b.forme.records.length + " record" + (b.forme.records.length > 1 ? "s" : "") : ""].filter(Boolean).join(", "));
   return { titre: t.join(" · ") || "rien de saisi cette semaine", texte: l.join("\n") };
 }
 
@@ -26432,6 +26480,21 @@ function bilanPageHtml(b, tel) {
         points="${p.map((v, i) => (i / (p.length - 1) * 196 + 2).toFixed(1) + "," + (mx > mn ? 36 - (v - mn) / (mx - mn) * 32 : 20).toFixed(1)).join(" ")}"/></svg>` : "";
     sante = `<div class="pds"><span class="kv">${kg(b.sante.poids)}</span>
       <span class="ks">${b.sante.n} pesée${b.sante.n > 1 ? "s" : ""}${b.sante.delta != null ? " · " + (b.sante.delta >= 0 ? "+" : "−") + kg(Math.abs(b.sante.delta)) + " " + b.sante.ref : ""}</span>${spark}</div>`;
+  }
+
+  // Forme (Garmin) : quatre moyennes, le sommeil de chaque nuit, les records
+  let forme = "";
+  if (b.forme) {
+    const f = b.forme, mx = Math.max(...f.sommeilJours, 1);
+    forme = `<div class="kpis">${[
+        f.sommeil != null ? kpi("Sommeil moyen", gaDuree(f.sommeil).replace(" ", "&nbsp;"), "par nuit") : "",
+        f.pas != null ? kpi("Pas", nb(f.pas), "par jour en moyenne") : "",
+        f.fcRepos != null ? kpi("FC au repos", f.fcRepos + "&nbsp;bpm", "moyenne de la semaine") : "",
+        f.intensite != null ? kpi("Minutes intenses", f.intensite + "&nbsp;min", f.objectifIntensite ? "objectif " + f.objectifIntensite + " min" : "sur la semaine") : "",
+      ].join("")}</div>
+      ${f.sommeil != null ? `<h3 style="margin-top:12px">Sommeil, nuit par nuit</h3><div class="sem">${f.sommeilJours.map((m, k) => `<div class="j"><span class="jv">${m ? gaDuree(m).replace(" ", "&nbsp;") : ""}</span>
+        <span class="jb"><i style="height:${(m / mx * 100).toFixed(0)}%"></i></span><span class="jl">${jours[k]}</span></div>`).join("")}</div>` : ""}
+      ${f.records.length ? `<div class="chips">${f.records.map(r => `<span class="chip">Record · ${escHtml(r.nom)} · ${dateCourte(r.date)}</span>`).join("")}</div>` : ""}`;
   }
 
   // La semaine qui vient, jour par jour
@@ -26523,6 +26586,7 @@ ${section("Bourse", "", b.comptes.length || b.hausses.length || b.baisses.length
 ${section("Sport", "", sport)}
 ${section("Dépenses", "", depenses)}
 ${section("Santé", "", sante)}
+${section("Forme", "", forme)}
 ${section("La semaine qui vient", "", avenir)}
 <footer>Pilote · bilan calculé sur ton ordinateur le ${quand}</footer>
 </body></html>`;
@@ -27814,7 +27878,8 @@ const AG_DELAIS = [2, 3, 4, 5, 7, 10, 14, 21, 30, 45, 60];   // agenda.DELAIS_VA
 const AG_NOTIF_CATS = [
   ["pea", "PEA", "sec-pea"], ["cto", "CTO", "sec-cto"], ["comptes", "Mes comptes", "sec-comptes"],
   ["pret", "Prêt", "sec-pret"], ["sport", "Sports", "sec-sport"], ["patri", "Patrimoine", "sec-patri"],
-  ["sante", "Santé", "sec-sante"], ["agenda", "Agenda", "sec-agenda"], ["general", "Pilote", null],
+  ["sante", "Santé", "sec-sante"], ["garmin", "Garmin", "sec-garmin"], ["agenda", "Agenda", "sec-agenda"],
+  ["general", "Pilote", null],
 ];
 // [type, pastille, icône, nom, aide, options, réglage en plus : case de
 // l'onglet iCloud (« sport », « objectifs », « pret »), « mois » (jour du mois)
@@ -27842,6 +27907,7 @@ const AG_NOTIFS = [
   ["pesee", "sante", "scales", "Pesée du mois", "passe au mois suivant dès que la pesée du mois est saisie", AG_ALERTES_RAPPEL, "mois"],
   ["sante-pause", "sante", "hourglass-medium", "Pas de pesée depuis…", "compté depuis la dernière mesure", AG_ALERTES_RAPPEL, "delai"],
   ["sante-objectif", "sante", "target", "Objectifs à date", "ceux de l'onglet Objectifs qui ont une date", AG_ALERTES_DATE],
+  ["garmin-cle", "garmin", "key", "Clé Garmin à renouveler", "le jour où elle expire, d'après la date de Garmin › Connexion", AG_ALERTES_DATE],
   ["note", "agenda", "note-pencil", "Notes de l'agenda", "le texte que tu veux ; chaque note peut avoir sa propre notification et se répéter", AG_ALERTES_HEURE],
   ["resume", "agenda", "calendar-check", "Bilan de la semaine", "la semaine écoulée : bourse, sport, dépenses, poids ; chiffres du dernier lancement de Pilote", AG_ALERTES_RESUME],
   ["sauvegarde", "general", "usb", "Sauvegarde en retard", "comptée depuis la dernière sauvegarde", AG_ALERTES_RAPPEL, "delai"],
@@ -28050,11 +28116,16 @@ let _gaBootstrapped = false;
 let _gaChart = null;
 const GA_LIEN_CLE = "https://connect.garmin.com/app/settings/personalApiToken";
 const GA_AUTO_MS = 60 * 60 * 1000;     // au lancement, si la dernière synchronisation date de plus d'une heure
+const GA_PERIODE_MS = 2 * 60 * 60 * 1000;   // Pilote resté ouvert : toutes les 2 heures
 const GA_CHOIX = [
-  ["seances", "Séances", "chaque activité de la montre devient une séance de Sports"],
+  ["seances", "Séances", "chaque activité de la montre devient une séance de Sports, records compris"],
   ["pesees",  "Pesées",  "les pesées de Garmin Connect (balance Index ou saisie dans l'app) vont dans Santé"],
-  ["forme",   "Forme du jour", "sommeil, Body Battery, VFC, FC au repos, pas et stress, dans l'onglet Ma forme"],
+  ["forme",   "Forme du jour", "sommeil, Body Battery, VFC, FC au repos, pas, stress, SpO2, respiration, âge physique"],
+  ["cycle",   "Cycle menstruel", "seulement si tu le suis dans Garmin Connect ; sans données, rien ne s'affiche"],
 ];
+// Garmin propose ces durées à la création de la clé (FAQ, 03/11/2026)
+const GA_DUREES = [[365, "1 an"], [180, "180 jours"], [90, "90 jours"], [30, "30 jours"]];
+const GA_RAPPEL_JOURS = 14;            // bandeau de Ma forme : la clé expire dans moins de deux semaines
 // [clé de garmin.json, libellé, unité, valeur affichée, type de courbe]
 const GA_MESURES = [
   ["sommeil", "Sommeil",      "h",   v => (v / 60).toFixed(1).replace(".", ","), "bar"],
@@ -28063,6 +28134,9 @@ const GA_MESURES = [
   ["fcRepos", "FC au repos",  "bpm", v => String(v),                                "line"],
   ["pas",     "Pas",          "",    v => Number(v).toLocaleString("fr-FR"),       "bar"],
   ["stress",  "Stress",       "",    v => String(v),                                "line"],
+  ["intensite", "Minutes intenses", "min", v => String(v),                         "bar"],
+  ["spo2",    "SpO2",         "%",   v => String(v),                                "line"],
+  ["respiration", "Respiration", "/min", v => String(v),                            "line"],
 ];
 const GA_VFC = { BALANCED: "équilibrée", UNBALANCED: "déséquilibrée", LOW: "basse", POOR: "faible" };
 
@@ -28116,6 +28190,11 @@ async function gaBootstrap() {
   _gaBootstrapped = true;
   // Au lancement, une fois Sports et Santé lus (on y ajoute ce qui arrive)
   if (gaConnecte() && gaAncienne()) setTimeout(() => gaSynchroniser(true), 4000);
+  // Pilote resté ouvert : une synchronisation discrète toutes les 2 heures
+  setInterval(() => {
+    const d = GA.config && GA.config.derniere;
+    if (gaConnecte() && (!d || Date.now() - new Date(d).getTime() > GA_PERIODE_MS)) gaSynchroniser(true);
+  }, 10 * 60 * 1000);
 }
 
 /* ── Synchronisation ─────────────────────────────────────────────────────── */
@@ -28146,7 +28225,7 @@ async function gaSynchroniser(discret) {
   GA.erreurs = r.erreurs || [];
   GA.config = Object.assign({}, GA.config, {
     connecte: r.connecte, connecteLe: r.connecteLe, depuis: r.depuis, choix: r.choix,
-    derniere: r.derniere, jours: r.jours });
+    derniere: r.derniere, expire: r.expire, jours: r.jours, ageForme: r.ageForme, cycle: r.cycle });
   let n = { seances: 0, pesees: 0 };
   try { n = await gaAjouter(r.seances || [], r.pesees || []); }
   catch (e) { console.warn("[garmin] ajout KO", e); }
@@ -28156,7 +28235,8 @@ async function gaSynchroniser(discret) {
   if (n.pesees)  parts.push(n.pesees + " pesée" + (n.pesees > 1 ? "s" : ""));
   if (parts.length || !discret || GA.erreurs.length) {
     const tot = n.seances + n.pesees;
-    showToastModern(parts.length ? "Garmin : " + parts.join(" et ") + " ajoutée" + (tot > 1 ? "s" : "")
+    const rec = n.records ? ", dont " + n.records + " record" + (n.records > 1 ? "s" : "") : "";
+    showToastModern(parts.length ? "Garmin : " + parts.join(" et ") + " ajoutée" + (tot > 1 ? "s" : "") + rec
                                  : (GA.erreurs.length ? "Garmin : synchronisation incomplète" : "Garmin : rien de nouveau"),
                     GA.erreurs.length ? "warn" : "ok");
   }
@@ -28174,25 +28254,26 @@ function gaMemeSeance(s, g) {
 /** Ajoute à Sports et Santé ce qui n'y est pas ; rien n'est marqué vu tant
     que l'enregistrement du module n'a pas réussi. */
 async function gaAjouter(seances, pesees) {
-  const api = gaApi(), vus = [], n = { seances: 0, pesees: 0 };
+  const api = gaApi(), vus = [], n = { seances: 0, pesees: 0, records: 0 };
   if (seances.length && SP) {
     const avant = spSessions(), liste = avant.map(s => Object.assign({}, s)), pris = [];
     seances.forEach(g => {
       if (liste.some(s => String(s.garminId || "") === g.garminId)) { pris.push(g.garminId); return; }
       const deja = liste.find(s => gaMemeSeance(s, g));
-      if (deja) { deja.garminId = g.garminId; pris.push(g.garminId); return; }
+      if (deja) { deja.garminId = g.garminId; if (g.record) deja.record = true; pris.push(g.garminId); return; }
       const s = { id: spNextId("session"), date: g.date, time: g.time || "", sport: g.sport,
                   duration: g.duration, distance: g.distance, elevation: g.elevation,
                   note: g.note || "", garminId: g.garminId };
       if (g.lieu && spHasField(g.sport, "lieu")) s.lieu = g.lieu;
       if (g.fcMoy) s.fcMoy = g.fcMoy;
       if (g.kcal) s.kcal = g.kcal;
+      if (g.record) { s.record = true; n.records++; }
       liste.push(s); pris.push(g.garminId); n.seances++;
     });
     SP.sessions = liste;
     const w = await api.save_sports(SP);
     if (w && w.ok) vus.push(...pris);
-    else { SP.sessions = avant; n.seances = 0; if (!(w && w.gele)) showToastModern("Garmin : séances non enregistrées dans Sports", "err"); }
+    else { SP.sessions = avant; n.seances = 0; n.records = 0; if (!(w && w.gele)) showToastModern("Garmin : séances non enregistrées dans Sports", "err"); }
     if (n.seances) spRenderAll();
   }
   if (pesees.length && SA) {
@@ -28223,7 +28304,7 @@ function gaLienGarmin() {
 
 function gaCasesHtml(choix, onchange) {
   return `<div class="ga-cases">${GA_CHOIX.map(([cle, nom, aide]) => `
-    <label class="sv-check"><input type="checkbox" value="${cle}"${onchange ? ` onchange="${onchange}"` : ""}${!choix || choix[cle] ? " checked" : ""}>
+    <label class="sv-check"><input type="checkbox" value="${cle}"${onchange ? ` onchange="${onchange}"` : ""}${(choix ? choix[cle] : cle !== "cycle") ? " checked" : ""}>
       <span><b>${nom}</b> <span class="ag-aide">${aide}</span></span></label>`).join("")}</div>`;
 }
 
@@ -28245,6 +28326,10 @@ function gaRenderConnexion() {
       <div class="fg"><label>Ce que Pilote lit</label>${gaCasesHtml(cfg.choix, "gaRegler()")}</div>
       <div class="fg"><label for="ga-depuis">Séances et pesées depuis le</label>
         <input id="ga-depuis" type="date" value="${escHtml(cfg.depuis || "")}" max="${todayISO()}" onchange="gaRegler()"></div>
+      <div class="fg"><label for="ga-expire">La clé expire le</label>
+        <input id="ga-expire" type="date" value="${escHtml(cfg.expire || "")}" onchange="gaRegler()"></div>
+      <p class="ac-note">Deux semaines avant, Ma forme te le rappelle ; ton iPhone peut aussi sonner
+        (Agenda › Notifications › Clé Garmin à renouveler).</p>
       <p class="ac-note" id="ga-cnx-etat">${gaEtatTexte()}</p>
       <div class="ac-btns">
         <button type="button" class="btn btn-primary" onclick="gaSynchroniser()"${GA.enCours ? " disabled" : ""}><i class="ph ph-arrows-clockwise"></i> Synchroniser maintenant</button>
@@ -28258,6 +28343,8 @@ function gaRenderConnexion() {
   box.innerHTML = `
     <div class="fg"><label for="ga-cle">Clé API personnelle</label>
       <input id="ga-cle" type="password" autocomplete="off" spellcheck="false" placeholder="Colle la clé ici"></div>
+    <div class="fg"><label for="ga-duree">Durée choisie sur Garmin Connect</label>
+      <select id="ga-duree">${GA_DUREES.map(([n, l]) => `<option value="${n}">${l}</option>`).join("")}</select></div>
     <div class="fg"><label for="ga-depuis">Séances et pesées depuis le</label>
       <input id="ga-depuis" type="date" value="${escHtml((cfg.connecte && cfg.depuis) || todayISO(d))}" max="${todayISO()}"></div>
     <div class="fg"><label>Ce que Pilote lit</label>${gaCasesHtml(cfg.connecte ? cfg.choix : null, "")}</div>
@@ -28286,6 +28373,7 @@ async function gaConnecter() {
   if (!api || !btn || btn.disabled) return;
   const cle = document.getElementById("ga-cle").value;
   const depuis = document.getElementById("ga-depuis").value;
+  const duree = Number(document.getElementById("ga-duree").value) || null;
   const choix = gaLireCases();
   const lbl = btn.innerHTML;
   btn.disabled = true;
@@ -28293,8 +28381,8 @@ async function gaConnecter() {
   err.textContent = "";
   let r = null;
   try {
-    r = await api.save_garmin(cle, depuis);
-    if (r && r.ok) r = await api.save_garmin_reglages(choix, "");
+    r = await api.save_garmin(cle, depuis, duree);
+    if (r && r.ok) r = await api.save_garmin_reglages(choix, "", null);
   } catch (e) { r = { ok: false, error: String(e) }; }
   btn.disabled = false;
   btn.innerHTML = lbl;
@@ -28316,7 +28404,8 @@ async function gaRegler() {
   const api = gaApi();
   if (!api) return;
   const champ = document.getElementById("ga-depuis");
-  const r = await api.save_garmin_reglages(gaLireCases(), champ ? champ.value : "");
+  const fin = document.getElementById("ga-expire");
+  const r = await api.save_garmin_reglages(gaLireCases(), champ ? champ.value : "", fin ? fin.value : null);
   if (r && r.gele) return;
   if (!r || !r.ok) { showToastModern((r && r.error) || "Réglage non enregistré", "err"); return; }
   GA.config = r;
@@ -28379,6 +28468,11 @@ function gaRenderForme() {
     : GA.erreurs.length ? `<div class="ga-erreurs"><b>Synchronisation incomplète.</b> ${GA.erreurs.map(escHtml).join(" · ")}</div>`
     : !gaConnecte() ? `<div class="ga-erreurs">Aucun compte Garmin connecté : ces chiffres sont ceux déjà lus.
         <a href="#" onclick="event.preventDefault();goTab('ga-connexion');_setActiveSidebar('ga-connexion')">Connexion</a></div>` : "";
+  const reste = gaJoursAvantExpiration();
+  const rappel = reste != null && reste <= GA_RAPPEL_JOURS
+    ? `<div class="ga-erreurs"><b>${reste < 0 ? "Ta clé Garmin a expiré" : "Ta clé Garmin expire " + (reste === 0 ? "aujourd'hui" : reste === 1 ? "demain" : "dans " + reste + " jours")}.</b>
+        Crée-en une nouvelle sur Garmin Connect, puis colle-la dans
+        <a href="#" onclick="event.preventDefault();GA.formCle=true;goTab('ga-connexion');_setActiveSidebar('ga-connexion')">Connexion</a>.</div>` : "";
 
   let forme = "";
   if (choix.forme === false && !Object.keys(jours).length) {
@@ -28401,9 +28495,21 @@ function gaRenderForme() {
       f ? gaKpi("FC au repos", f.fcRepos + " bpm", (moyF ? "moyenne 30 j : " + moyF + " · " : "") + dashDateCourte(jF)) : "",
       p ? gaKpi("Pas", Number(p.pas).toLocaleString("fr-FR"), (p.objectifPas ? "objectif " + Number(p.objectifPas).toLocaleString("fr-FR") + " · " : "") + gaLeJour(jP)) : "",
     ].join("");
+    // Deuxième rangée : ce que la montre mesure en plus (rien si elle ne le mesure pas)
+    const [jO, o] = gaDernier("spo2");
+    const [jR, rs] = gaDernier("respiration");
+    const age = GA.config && GA.config.ageForme;
+    const im = gaIntensiteSemaine();
+    const kpis2 = [
+      im ? gaKpi("Minutes intenses", im.total + " min", "cette semaine" + (im.objectif ? " · objectif " + im.objectif + " min" : "")) : "",
+      o ? gaKpi("SpO2", o.spo2 + " %", "moyenne du jour · " + dashDateCourte(jO)) : "",
+      rs ? gaKpi("Respiration", rs.respiration + " /min", "moyenne du jour · " + dashDateCourte(jR)) : "",
+      age ? gaKpi("Âge physique", String(age.age).replace(".", ",") + " ans",
+                  (age.reel ? "âge réel " + age.reel + " ans" : "") + (age.atteignable ? (age.reel ? " · " : "") + "atteignable " + String(age.atteignable).replace(".", ",") : "")) : "",
+    ].join("");
     const m = GA_MESURES.find(x => x[0] === GA.mesure) || GA_MESURES[0];
     const moy = gaMoyenne(m[0], 30);
-    forme = `<div class="mkpis">${kpis}</div>
+    forme = `<div class="mkpis">${kpis}${kpis2}</div>
       <div class="card"><div class="card-h ga-courbe-h"><span class="card-t">30 derniers jours</span>
         <div class="sa-ranges">${GA_MESURES.map(x => `<button class="btn btn-sm btn-ghost${x[0] === m[0] ? " active" : ""}"
           onclick="GA.mesure='${x[0]}';gaRenderForme()">${escHtml(x[1])}</button>`).join("")}</div>
@@ -28411,8 +28517,77 @@ function gaRenderForme() {
         <div class="card-b"><div class="ga-chart"><canvas id="ga-chart"></canvas></div></div></div>`;
   }
 
-  box.innerHTML = alerte + forme + gaSeancesHtml();
+  box.innerHTML = alerte + rappel + forme + gaCycleHtml() + gaSeancesHtml();
   gaRenderCourbe();
+}
+
+/** Jours avant la fin de la clé (date donnée à la connexion), ou null. */
+function gaJoursAvantExpiration() {
+  const fin = GA.config && GA.config.expire;
+  if (!gaConnecte() || !fin) return null;
+  return Math.round((spParseISO(fin) - spParseISO(todayISO())) / 864e5);
+}
+
+/** Minutes intenses du lundi à aujourd'hui (Garmin compte une minute intense
+    pour deux) et l'objectif de la semaine réglé dans Garmin, ou null. */
+function gaIntensiteSemaine() {
+  const j = gaJours(), auj = todayISO(), lundi = bilanLundiDe(auj);
+  let total = 0, vu = false, objectif = 0;
+  for (let k = lundi; k <= auj; k = bilanPlus(k, 1)) {
+    if (j[k] && j[k].intensite != null) { total += j[k].intensite; vu = true; }
+    if (j[k] && j[k].objectifIntensite) objectif = j[k].objectifIntensite;
+  }
+  return vu ? { total, objectif } : null;
+}
+
+/** Le cycle au jour près : celui lu à la dernière synchronisation, avancé
+    des jours passés depuis (tant qu'on reste dans le cycle prévu). */
+function gaCycleDuJour() {
+  const c = GA.config && GA.config.cycle;
+  if (!c || !c.jour || !(GA.config.choix || {}).cycle) return null;
+  const ecart = Math.round((spParseISO(todayISO()) - spParseISO(c.date)) / 864e5);
+  const jour = c.jour + Math.max(0, ecart);
+  return Object.assign({}, c, { jour, aJour: !c.duree || jour <= c.duree });
+}
+
+function gaPhase(c) {
+  if (c.grossesse) return "Grossesse suivie dans Garmin";
+  if (c.regles && c.jour <= c.regles) return "Règles";
+  if (c.fertileDebut && c.fertileDuree && c.jour >= c.fertileDebut && c.jour < c.fertileDebut + c.fertileDuree) return "Fenêtre fertile";
+  if (c.luteale && c.jour >= c.luteale) return "Phase lutéale";
+  return "Phase folliculaire";
+}
+
+function gaCycleHtml() {
+  const c = gaCycleDuJour();
+  if (!c) return "";
+  if (!c.aJour) return `<div class="card"><div class="card-h"><span class="card-t">Cycle</span></div><div class="card-b">
+    <p class="m-empty">Le cycle prévu par Garmin est terminé : synchronise pour lire le nouveau.</p></div></div>`;
+  const prochaines = c.duree ? bilanPlus(todayISO(), c.duree - c.jour + 1) : null;
+  const pctJ = j => (Math.max(0, j) / c.duree * 100).toFixed(1) + "%";
+  const barre = c.duree && !c.grossesse ? `<div class="ga-cycle-bar" role="img" aria-label="Jour ${c.jour} sur ${c.duree}">
+      ${c.regles ? `<i class="r" style="left:0;width:${pctJ(c.regles)}"></i>` : ""}
+      ${c.fertileDebut && c.fertileDuree ? `<i class="f" style="left:${pctJ(c.fertileDebut - 1)};width:${pctJ(c.fertileDuree)}"></i>` : ""}
+      <i class="j" style="left:calc(${pctJ(c.jour - 0.5)} - 1px)"></i></div>
+    <div class="ga-cycle-leg"><span style="--c:color-mix(in srgb, var(--r) 55%, transparent)">règles</span>
+      <span style="--c:color-mix(in srgb, var(--accent) 45%, transparent)">fenêtre fertile</span>
+      <span style="--c:var(--txt)">aujourd'hui</span></div>` : "";
+  return `<div class="card"><div class="card-h"><span class="card-t">Cycle</span>
+      <span class="ga-moy">estimations de Garmin, pas un avis médical</span></div>
+    <div class="card-b ga-cycle">
+      <div class="ga-cycle-l"><b>Jour ${c.jour}${c.duree ? " sur " + c.duree : ""}</b><span>${escHtml(gaPhase(c))}</span>
+        ${prochaines && !c.grossesse ? `<span>prochaines règles vers le ${escHtml(dashDateCourte(prochaines))}</span>` : ""}</div>
+      ${barre}
+    </div></div>`;
+}
+
+/** La séance record la plus récente pour un objectif de performance, depuis
+    qu'il a été fixé et du même sport (n'importe lequel s'il n'en a pas). */
+function gaRecordPour(g) {
+  if (typeof SP === "undefined" || !SP || g.kind === "event") return null;
+  const depuis = String(g.createdAt || "").slice(0, 10);
+  return spSessions().filter(s => s.record && s.date >= depuis && (!g.sport || s.sport === g.sport))
+    .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
 }
 
 /** Garmin date le sommeil du jour du réveil. */
@@ -28471,7 +28646,7 @@ function gaSeancesHtml() {
       const sp = spSportById(s.sport);
       return `<div class="ga-seance">
         <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
-        <div class="ga-seance-txt"><b>${escHtml(s.note || sp.label)}</b>
+        <div class="ga-seance-txt"><b>${escHtml(s.note || sp.label)}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</b>
           <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</small></div>
         <span class="ga-seance-d">${escHtml(dashDateCourte(s.date))}</span>
         <button class="m-iconbtn" title="Modifier" onclick="spOpenSession(${s.id}, null)"><i class="ph ph-pencil-simple"></i></button>
@@ -28510,6 +28685,37 @@ function dashGaPas() {
   return { lbl: "Pas " + gaLeJour(j), val: Number(p.pas).toLocaleString("fr-FR"),
            sub: obj ? "objectif " + obj.toLocaleString("fr-FR") + " · " + Math.round(pct) + " %" : "",
            cls: obj && p.pas >= obj ? "c-g" : "", go: "Ma forme", viz: obj ? dashProgress(pct) : "" };
+}
+
+function dashGaIntensite() {
+  const im = gaIntensiteSemaine();
+  if (!im) return null;
+  const pct = im.objectif ? im.total / im.objectif * 100 : 0;
+  return { lbl: "Minutes intenses", val: im.total + " min",
+           sub: "depuis lundi" + (im.objectif ? " · objectif " + im.objectif + " min · " + Math.round(pct) + " %" : ""),
+           cls: im.objectif && im.total >= im.objectif ? "c-g" : "", go: "Ma forme",
+           viz: im.objectif ? dashProgress(pct) : "" };
+}
+
+function dashGaCycle() {
+  const c = gaCycleDuJour();
+  if (!c || !c.aJour) return null;
+  const prochaines = c.duree && !c.grossesse ? bilanPlus(todayISO(), c.duree - c.jour + 1) : null;
+  return { lbl: "Cycle", val: "Jour " + c.jour, sub: gaPhase(c) + (prochaines ? " · règles vers le " + dashDateCourte(prochaines) : ""),
+           go: "Ma forme", viz: c.duree ? dashProgress(c.jour / c.duree * 100) : "" };
+}
+
+function dashGaRecord() {
+  if (typeof SP === "undefined" || !SP) return null;
+  const s = spSessions().filter(x => x.record).sort((a, b) => b.date.localeCompare(a.date))[0];
+  if (!s) return null;
+  const sp = spSportById(s.sport);
+  // En grand : la distance (ou la durée), le nom de la séance dessous
+  const km = spDistKm(s);
+  const val = km ? spFmtNum(km, 1) + " km" : spFmtDur(spNum(s.duration));
+  return { lbl: "Dernier record", val: escHtml(val),
+           sub: (s.note || sp.label) + " · " + dashIlYa(s.date).toLowerCase() + (km && s.duration ? " · " + spFmtDur(s.duration) : ""),
+           go: "Ma forme" };
 }
 
 /* ── Navigation ────────────────────────────────────────────────────────── */

@@ -554,18 +554,18 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    def save_garmin(self, cle: str, depuis: str = "") -> dict:
+    def save_garmin(self, cle: str, depuis: str = "", duree=None) -> dict:
         """Connecte le compte : rien n'est enregistre tant que Garmin n'a pas accepte la cle."""
         try:
-            return {"ok": True, **garmin.connecter(cle, depuis or "")}
+            return {"ok": True, **garmin.connecter(cle, depuis or "", duree)}
         except garmin.ErreurGarmin as e:
             return {"ok": False, "code": e.code, "error": e.message}
         except Exception as e:
             return {"ok": False, "code": "api", "error": str(e)}
 
-    def save_garmin_reglages(self, choix: dict, depuis: str = "") -> dict:
+    def save_garmin_reglages(self, choix: dict, depuis: str = "", expire: str = None) -> dict:
         try:
-            return {"ok": True, **garmin.regler(choix or {}, depuis or "")}
+            return {"ok": True, **garmin.regler(choix or {}, depuis or "", expire)}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

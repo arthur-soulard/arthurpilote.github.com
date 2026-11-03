@@ -142,9 +142,10 @@ prêt se remplissent seuls), biens immobiliers et leur crédit, valeur nette et 
 
 **Santé** : pesées et mesures saisies à la main ou lues sur des captures de l'app FitDays.
 
-**Garmin** : ta montre lue dans ton compte Garmin Connect. Ses séances vont dans Sports, ses
-pesées dans Santé ; sommeil, Body Battery, VFC, fréquence cardiaque au repos et pas sur
-30 jours. Pilote ne fait que lire.
+**Garmin** : ta montre lue dans ton compte Garmin Connect. Ses séances vont dans Sports,
+records compris, ses pesées dans Santé ; sommeil, Body Battery, VFC, fréquence cardiaque au
+repos, pas, minutes intenses, SpO2, respiration et âge physique sur 30 jours, et le cycle
+menstruel si tu le suis dans Garmin. Pilote ne fait que lire.
 
 **Actus** : la boîte Gmail qui reçoit tes newsletters, lue dans Pilote, avec un mot de passe
 d'application Google gardé chiffré par Windows, ou dans le Trousseau sur Mac.

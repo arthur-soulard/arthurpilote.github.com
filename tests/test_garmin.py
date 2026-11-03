@@ -55,6 +55,7 @@ class _Garmin(BaseHTTPRequestHandler):
     requetes = []
     pannes = {}             # morceau de chemin -> statut renvoye
     activites = []
+    cycle = None            # resume du cycle menstruel (None : 204, rien de suivi)
 
     def log_message(self, *a):
         pass
@@ -102,7 +103,8 @@ class _Garmin(BaseHTTPRequestHandler):
                 {"calendarDate": _iso(1), "movement": {"steps": {"value": 8412, "goal": 10000}},
                  "heartRate": {"restingValue": 52}, "stress": {"avgLevel": 31},
                  "bodyBattery": {"maxValue": 88, "minValue": 21, "latestValue": 40},
-                 "intensityMinutes": {"moderate": 20, "vigorous": 10}},
+                 "intensityMinutes": {"moderate": 20, "vigorous": 10, "goal": 150},
+                 "pulseOx": {"avgValue": 96}, "respiration": {"avgValue": 14}},
                 {"calendarDate": _iso(0), "movement": {"steps": {"value": 1200, "goal": 10000}}},
             ]}).encode())
         if p == "/sleep-service/sleep/dailySleepSummariesByDate":
@@ -110,6 +112,13 @@ class _Garmin(BaseHTTPRequestHandler):
                 {"calendarDate": _iso(0), "sleepTimeSeconds": 26100, "deepSleepSeconds": 4800,
                  "remSleepSeconds": 5400, "sleepScores": {"overall": {"value": 82, "qualifierKey": "GOOD"}}},
             ]).encode())
+        if p.startswith("/fitnessage-service/fitnessage/v2/"):
+            return self._repondre(200, json.dumps([
+                {"chronologicalAge": 21, "fitnessAge": 19.43, "achievableFitnessAge": 18.0}]).encode())
+        if p.startswith("/periodichealth-service/menstrualcycle/summary/"):
+            if _Garmin.cycle is None:
+                return self._repondre(204)
+            return self._repondre(200, json.dumps(_Garmin.cycle).encode())
         if p.startswith("/hrv-service/hrv/daily/"):
             return self._repondre(200, json.dumps({"hrvSummaries": [
                 {"calendarDate": _iso(0), "lastNightAvg": 54, "weeklyAvg": 50, "status": "BALANCED"},
@@ -142,9 +151,10 @@ class TestGarmin(unittest.TestCase):
     def setUp(self):
         _Garmin.requetes.clear()
         _Garmin.pannes.clear()
+        _Garmin.cycle = None
         _Garmin.activites = [
             _activite(101, 2, "trail_running", 3725.4, 10520.7, 412.3, "Trail du dimanche",
-                      averageHR=151.6, calories=812),
+                      averageHR=151.6, calories=812, isPR=True),
             _activite(102, 1, "lap_swimming", 1800, 1500, poolLength=25),
             _activite(103, 1, "road_biking", 5400, 42195),
             _activite(104, 0, "strength_training", 2700),
@@ -188,6 +198,8 @@ class TestGarmin(unittest.TestCase):
         self.assertEqual((trail["sport"], trail["date"], trail["time"]), ("course", _iso(2), "18:05"))
         self.assertEqual((trail["duration"], trail["distance"], trail["elevation"]), (62, 10.52, 412))
         self.assertEqual((trail["note"], trail["fcMoy"], trail["kcal"]), ("Trail du dimanche", 152, 812))
+        self.assertTrue(trail["record"])
+        self.assertNotIn("record", par_id["103"])
         nage = par_id["102"]
         self.assertEqual((nage["sport"], nage["distance"], nage["lieu"]), ("natation", 1500, "25"))
         self.assertEqual(par_id["103"]["sport"], "velo")
@@ -200,7 +212,11 @@ class TestGarmin(unittest.TestCase):
         # Forme gardée dans garmin.json
         j = garmin.config()["jours"]
         self.assertEqual(j[_iso(1)], {"pas": 8412, "objectifPas": 10000, "fcRepos": 52, "bbMax": 88,
-                                      "bbMin": 21, "bbFin": 40, "stress": 31, "intensite": 40})
+                                      "bbMin": 21, "bbFin": 40, "stress": 31, "intensite": 40,
+                                      "objectifIntensite": 150, "spo2": 96, "respiration": 14})
+        self.assertEqual(garmin.config()["ageForme"], {"age": 19.4, "reel": 21, "atteignable": 18.0})
+        self.assertIsNone(garmin.config()["cycle"])
+        self.assertFalse(any("menstrual" in p for _, p in _Garmin.requetes))   # décoché par défaut
         self.assertEqual((j[_iso(0)]["sommeil"], j[_iso(0)]["sommeilScore"], j[_iso(0)]["profond"]), (435, 82, 80))
         self.assertEqual((j[_iso(0)]["vfc"], j[_iso(0)]["vfcStatut"]), (54, "BALANCED"))
         self.assertTrue(garmin.config()["derniere"])
@@ -276,6 +292,48 @@ class TestGarmin(unittest.TestCase):
             self.assertEqual(e.exception.code, "reseau")
         finally:
             garmin.BASE = base
+
+    def test_cycle(self):
+        self._connecter()
+        garmin.regler({"seances": False, "pesees": False, "forme": False, "cycle": True})
+        r = garmin.synchroniser()                     # rien de suivi dans Connect : 204
+        self.assertEqual((r["erreurs"], r["cycle"]), ([], None))
+        _Garmin.cycle = {"dayInCycle": 9, "predictedCycleLength": 28, "periodLength": 5,
+                         "fertileWindowStart": 10, "lengthOfFertileWindow": 6, "lutealPhaseStart": 16,
+                         "daysUntilNextPhase": 1, "pregnancyCycle": False}
+        c = garmin.synchroniser()["cycle"]
+        self.assertEqual((c["jour"], c["duree"], c["regles"], c["fertileDebut"], c["prochaine"], c["grossesse"]),
+                         (9, 28, 5, 10, 1, False))
+        garmin.regler({"cycle": False})              # décoché : rien ne reste
+        self.assertIsNone(garmin.config()["cycle"])
+
+    def test_age_physique_absent_n_est_pas_une_panne(self):
+        self._connecter()
+        _Garmin.pannes["/fitnessage-service/"] = 404
+        r = garmin.synchroniser()
+        self.assertEqual(r["erreurs"], [])
+        self.assertIsNone(r["ageForme"])
+        self.assertTrue(r["derniere"])
+
+    def test_expiration_de_la_cle(self):
+        garmin.connecter(CLE, "", 365)
+        fin = (AUJ + datetime.timedelta(days=365)).isoformat()
+        self.assertEqual(garmin.config()["expire"], fin)
+        garmin.regler(garmin.config()["choix"], "", _iso(-20))      # corrigée à la main
+        self.assertEqual(garmin.config()["expire"], _iso(-20))
+        garmin.regler(garmin.config()["choix"])                     # None : inchangée
+        self.assertEqual(garmin.config()["expire"], _iso(-20))
+        garmin.connecter(CLE, "", 12)                               # durée que Garmin ne propose pas
+        self.assertEqual(garmin.config()["expire"], "")
+
+    def test_rappel_d_expiration_dans_l_agenda(self):
+        import agenda
+        garmin.connecter(CLE, "", 30)
+        r = agenda.rappels({"garmin-cle": "semaine"}, {})
+        self.assertEqual([(e["type"], e["jour"]) for e in r], [("garmin-cle", AUJ + datetime.timedelta(days=30))])
+        self.assertEqual(agenda.rappels({}, {}), [])               # alerte pas réglée
+        garmin.deconnecter()
+        self.assertEqual(agenda.rappels({"garmin-cle": "semaine"}, {}), [])
 
     def test_sport_pilote(self):
         for t, s in [("running", "course"), ("treadmill_running", "course"), ("open_water_swimming", "natation"),

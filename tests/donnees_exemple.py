@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["ga-sommeil", "ga-forme", "ga-pas", "bilan", "crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -230,11 +230,16 @@ def sports():
                 # Venues de la montre (module Garmin) : « Séances de la montre »
                 s.update(garminId=str(9000 + k), fcMoy=148 if s["sport"] == "course" else 136,
                          note="Footing" if s["sport"] == "course" else "Sortie vélo")
+                if s["sport"] == "course" and not any(x.get("record") for x in seances):
+                    s.update(record=True, distance=10.0, duration=48, note="10 km du parc")
             seances.append(s)
     return {"_meta": dict(META, schema="sports.v1"), "sessions": seances, "customSports": [], "routines": [],
             "goals": [{"id": 1, "kind": "event", "title": "Semi-marathon de la ville", "sport": "course",
-                       "date": jour(24), "note": "21 km", "status": "active", "createdAt": jour(-60), "doneAt": None}],
-            "_nid": {"session": len(seances) + 1, "routine": 1, "goal": 2}}
+                       "date": jour(24), "note": "21 km", "status": "active", "createdAt": jour(-60), "doneAt": None},
+                      # Un record de la montre depuis : l'objectif propose « Valider »
+                      {"id": 2, "kind": "perf", "title": "10 km en moins de 50 min", "sport": "course",
+                       "date": "", "note": "", "status": "active", "createdAt": jour(-40), "doneAt": None}],
+            "_nid": {"session": len(seances) + 1, "routine": 1, "goal": 3}}
 
 
 # ── Santé ──────────────────────────────────────────────────────────────────
@@ -326,8 +331,14 @@ def garmin():
             "bbMax": 68 + (k * 13) % 28, "bbMin": 15 + (k * 5) % 14, "bbFin": 45 + (k * 11) % 20,
             "stress": 24 + (k * 9) % 17, "sommeil": 375 + (k * 37) % 110, "sommeilScore": 62 + (k * 17) % 30,
             "profond": 70 + (k * 3) % 30, "paradoxal": 85 + (k * 7) % 25,
-            "vfc": 46 + (k * 11) % 17, "vfcStatut": "BALANCED"}
-    return {"_meta": dict(META, schema="garmin.v1"), "secret": "", "jours": jours}
+            "vfc": 46 + (k * 11) % 17, "vfcStatut": "BALANCED",
+            "intensite": (k * 23) % 45, "objectifIntensite": 150, "spo2": 95 + k % 3, "respiration": 13 + k % 3}
+    # Cycle coché et suivi dans Garmin Connect : carte et tuile « Cycle »
+    cycle = {"date": jour(0), "jour": 12, "duree": 28, "regles": 5, "fertileDebut": 11, "fertileDuree": 6,
+             "luteale": 17, "prochaine": 4, "grossesse": False}
+    return {"_meta": dict(META, schema="garmin.v1"), "secret": "", "jours": jours,
+            "choix": {"seances": True, "pesees": True, "forme": True, "cycle": True},
+            "ageForme": {"age": 24.5, "reel": 27, "atteignable": 22.0}, "cycle": cycle}
 
 
 def ecrire(dossier):

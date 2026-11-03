@@ -190,6 +190,7 @@ Calendrier doit être autorisé.
   | Santé | `pesee` | « Pesée du mois », du mois |
   | Santé | `sante-pause` | X jours après la dernière mesure |
   | Santé | `sante-objectif` | objectifs actifs avec une date à venir |
+  | Garmin | `garmin-cle` | le jour où la clé API expire (`expire` de `garmin.json`, donné à la connexion), tant qu'un compte est connecté ; titre « ⌚ Clé Garmin à renouveler » (03/11/2026, `docs/modules/garmin.md`) |
   | Patrimoine | `releve` | « Relevé du patrimoine », du mois (`patrimoine.mois_saisi`) |
   | Agenda | `resume` | bilan de la semaine écoulée (voir plus bas) |
   | Pilote | `sauvegarde` | X jours après la dernière sauvegarde USB (`lastBackupAt`, rien sans) |
