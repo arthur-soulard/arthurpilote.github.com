@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["bilan", "crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["ga-sommeil", "ga-forme", "ga-pas", "bilan", "crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -123,6 +123,9 @@ def pea():
         "uiPrefs": {
             "premiersPas": True,
             "nouveautesVues": "999.0.0",      # pas de fiche des nouveautés par-dessus l'écran
+            # ni de fenêtre « Nouveau module » : tous déjà proposés, tous affichés
+            "modulesConnus": ["sec-pea", "sec-cto", "sec-crypto", "sec-comptes", "sec-pret", "sec-sport",
+                              "sec-patri", "sec-sante", "sec-garmin", "sec-actus", "sec-agenda"],
             "dash": [{"id": t, "on": True} for t in tuiles],
             "dashPeaRange": "MAX",
             "penseBete": notes,
@@ -222,7 +225,12 @@ def sports():
         elif jsem == 6 and k % 14 < 7:
             s = {"sport": "natation", "duration": 40, "distance": 1500, "elevation": 0, "time": "11:00", "lieu": "25"}
         if s:
-            seances.append(dict(s, id=len(seances) + 1, date=d.isoformat(), note=""))
+            s = dict(s, id=len(seances) + 1, date=d.isoformat(), note="")
+            if k < 21 and s["sport"] in ("course", "velo"):
+                # Venues de la montre (module Garmin) : « Séances de la montre »
+                s.update(garminId=str(9000 + k), fcMoy=148 if s["sport"] == "course" else 136,
+                         note="Footing" if s["sport"] == "course" else "Sortie vélo")
+            seances.append(s)
     return {"_meta": dict(META, schema="sports.v1"), "sessions": seances, "customSports": [], "routines": [],
             "goals": [{"id": 1, "kind": "event", "title": "Semi-marathon de la ville", "sport": "course",
                        "date": jour(24), "note": "21 km", "status": "active", "createdAt": jour(-60), "doneAt": None}],
@@ -308,6 +316,20 @@ def agenda():
     ]}
 
 
+def garmin():
+    """Compte Garmin pas connecte (aucun echange reseau dans le test) : la forme
+    des 30 derniers jours deja lue, pour l'onglet Ma forme et ses tuiles."""
+    jours = {}
+    for k in range(30):
+        jours[jour(-k)] = {
+            "pas": 6200 + (k * 1931) % 6500, "objectifPas": 10000, "fcRepos": 50 + (k * 7) % 6,
+            "bbMax": 68 + (k * 13) % 28, "bbMin": 15 + (k * 5) % 14, "bbFin": 45 + (k * 11) % 20,
+            "stress": 24 + (k * 9) % 17, "sommeil": 375 + (k * 37) % 110, "sommeilScore": 62 + (k * 17) % 30,
+            "profond": 70 + (k * 3) % 30, "paradoxal": 85 + (k * 7) % 25,
+            "vfc": 46 + (k * 11) % 17, "vfcStatut": "BALANCED"}
+    return {"_meta": dict(META, schema="garmin.v1"), "secret": "", "jours": jours}
+
+
 def ecrire(dossier):
     utilisateur = os.path.join(dossier, "users", "demo")
     os.makedirs(utilisateur, exist_ok=True)
@@ -322,6 +344,7 @@ def ecrire(dossier):
         os.path.join(utilisateur, "pret.json"): pret(),
         os.path.join(utilisateur, "patrimoine.json"): patrimoine(),
         os.path.join(utilisateur, "agenda.json"): agenda(),
+        os.path.join(utilisateur, "garmin.json"): garmin(),
     }
     for chemin, contenu in fichiers.items():
         with open(chemin, "w", encoding="utf-8") as f:

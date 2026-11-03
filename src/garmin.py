@@ -1,0 +1,548 @@
+"""
+garmin.py — Module « Garmin » : les donnees de la montre, lues dans le compte
+Garmin Connect de l'utilisateur par la cle API personnelle (Personal API,
+ouverte par Garmin en octobre 2026 : docs/modules/garmin.md).
+
+Comme pour Actus et Agenda, la cle entre une fois (save_garmin), Python la
+verifie aupres de Garmin AVANT de l'enregistrer, puis la chiffre (DPAPI sous
+Windows, Trousseau sur Mac : actus._chiffrer). Aucune methode ne la renvoie.
+
+Pilote ne fait que LIRE : l'API personnelle n'a que des GET. Trois choses
+sont lues, chacune a cocher :
+  * seances : les activites, rendues pretes a entrer dans Sports ;
+  * pesees  : les pesees (balance Index ou saisie dans Connect), pour Santé ;
+  * forme   : un resume par jour (pas, FC au repos, sommeil, Body Battery,
+              stress, VFC), garde ici, pour l'onglet « Ma forme » et les tuiles.
+
+Les seances et les pesees ne sont PAS ecrites ici dans sports.json ni
+sante.json : la page tient SP et SA en memoire et les reecrit en entier ; une
+ecriture de Python par-dessous serait effacee au prochain enregistrement. La
+page les ajoute elle-meme, puis signale ce qu'elle a pris (save_garmin_vus) :
+une seance supprimee dans Pilote ne revient pas a la synchronisation suivante.
+
+Emplacement : <app_dir>/users/<slug>/garmin.json
+Backup quotidien : <app_dir>/users/<slug>/backups_garmin/garmin_YYYY-MM-DD.json
+"""
+from __future__ import annotations
+
+import base64
+import datetime
+import json
+import re
+import socket
+import ssl
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+import actus
+import jsonstore
+import sante
+import sports
+
+BASE  = "https://personal.connectapi.garmin.com"   # remplace par les tests
+JETON = "/personalapitoken-service/personal-api/personal-api-key/token"
+DELAI = 30
+TROUSSEAU = "Pilote Garmin"
+CHOIX = ("seances", "pesees", "forme")
+JOURS_GARDES = 400        # resumes de forme gardes (un peu plus d'un an)
+PREMIERS_JOURS = 30       # forme lue a la premiere synchronisation
+RECOUVREMENT = 7          # jours relus a chaque synchronisation (une seance synchronisee en retard)
+PAGES_MAX = 10            # 10 x 99 activites au plus par synchronisation
+
+
+class ErreurGarmin(Exception):
+    """code : saisie, auth, reseau, limite, api, config."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code, self.message = code, message
+
+
+def default_data() -> dict:
+    return {
+        "_meta": {
+            "version": 1,
+            "schema": "garmin.v1",
+            "createdAt":   datetime.date.today().isoformat(),
+            "lastSavedAt": datetime.datetime.now().isoformat(timespec="seconds"),
+        },
+        "secret":   "",
+        "connecteLe": "",
+        "depuis":   "",          # premiere date importee (seances, pesees)
+        "choix":    {c: True for c in CHOIX},
+        "derniere": "",          # derniere synchronisation reussie (AAAA-MM-JJTHH:MM:SS)
+        "vus":      [],          # activites et pesees deja proposees a la page
+        "jours":    {},          # "AAAA-MM-JJ" -> resume de forme
+    }
+
+
+_store = jsonstore.JsonStore(
+    filename="garmin.json",
+    backup_dirname="backups_garmin",
+    schema="garmin.v1",
+    default_factory=default_data,
+)
+
+_verrou = threading.RLock()
+_jeton  = {"cle": "", "valeur": "", "fin": 0.0}   # jeton du jour, en memoire seulement
+
+
+def load_data() -> dict:
+    return _store.load()
+
+
+def _modifier(changer) -> dict:
+    with _verrou:
+        data = _store.load()
+        changer(data)
+        _store.save(data)
+        return data
+
+
+def _jour(s, defaut: datetime.date) -> datetime.date:
+    try:
+        return datetime.date.fromisoformat(str(s)[:10])
+    except (TypeError, ValueError):
+        return defaut
+
+
+# ─── HTTP ────────────────────────────────────────────────────────────────────
+
+_ctx = ssl.create_default_context()
+
+
+def _ouvrir(req: urllib.request.Request) -> tuple:
+    """(statut, corps). Les erreurs reseau deviennent ErreurGarmin."""
+    try:
+        with urllib.request.urlopen(req, timeout=DELAI, context=_ctx) as r:
+            return r.status, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+    except (urllib.error.URLError, socket.timeout, ssl.SSLError, OSError) as e:
+        raise ErreurGarmin("reseau", "Garmin ne répond pas. Vérifie ta connexion "
+                                     "internet, puis réessaie.") from e
+
+
+def _fin_jwt(jeton: str) -> float:
+    """Le champ exp du JWT (sans verifier sa signature : seul Garmin la lit)."""
+    try:
+        morceau = jeton.split(".")[1]
+        return float(json.loads(base64.urlsafe_b64decode(morceau + "=" * (-len(morceau) % 4)))["exp"])
+    except (IndexError, KeyError, TypeError, ValueError):
+        return time.time() + 3600      # forme inattendue : redemande dans une heure
+
+
+def _obtenir_jeton(cle: str) -> str:
+    """La cle s'echange contre un jeton valable 24 h, sans jeton de
+    renouvellement : on en redemande un (FAQ de Garmin)."""
+    if _jeton["cle"] == cle and _jeton["fin"] - time.time() > 600:
+        return _jeton["valeur"]
+    req = urllib.request.Request(BASE + JETON, data=b"", method="POST")
+    req.add_header("Authorization", "ApiKey " + cle)
+    req.add_header("Accept", "*/*")
+    req.add_header("User-Agent", "Pilote")
+    statut, corps = _ouvrir(req)
+    if statut in (400, 401, 403):
+        raise ErreurGarmin("auth", "Garmin refuse cette clé : elle est expirée, supprimée ou mal "
+                                   "copiée. Crée-en une nouvelle sur Garmin Connect, puis colle-la.")
+    if statut == 429:
+        raise ErreurGarmin("limite", "Garmin reçoit trop de demandes : réessaie dans quelques minutes.")
+    if statut != 200:
+        raise ErreurGarmin("api", f"Garmin a répondu {statut} à la demande de jeton.")
+    valeur = corps.decode("utf-8", "replace").strip()
+    if not valeur or len(valeur) > 20000 or any(c.isspace() for c in valeur):
+        raise ErreurGarmin("api", "Garmin a renvoyé un jeton illisible.")
+    _jeton.update(cle=cle, valeur=valeur, fin=_fin_jwt(valeur))
+    return valeur
+
+
+def _get(jeton: str, chemin: str, params: dict = None):
+    """JSON decode, ou None quand Garmin n'a rien pour ces dates (204)."""
+    url = BASE + chemin + ("?" + urllib.parse.urlencode(params) if params else "")
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("Authorization", "Bearer " + jeton)
+    req.add_header("Accept", "application/json")
+    req.add_header("User-Agent", "Pilote")
+    statut, corps = _ouvrir(req)
+    if statut in (401, 403):
+        _jeton.update(cle="", valeur="", fin=0.0)
+        raise ErreurGarmin("auth", "Garmin refuse la clé : elle a sans doute expiré. "
+                                   "Crée-en une nouvelle sur Garmin Connect, puis colle-la.")
+    if statut == 429:
+        raise ErreurGarmin("limite", "Garmin reçoit trop de demandes : réessaie dans quelques minutes.")
+    if statut == 204 or (statut == 200 and not corps.strip()):
+        return None
+    if statut != 200:
+        raise ErreurGarmin("api", f"Garmin a répondu {statut} ({chemin.split('/')[1]}).")
+    try:
+        return json.loads(corps.decode("utf-8"))
+    except ValueError as e:
+        raise ErreurGarmin("api", "Garmin a renvoyé une réponse illisible.") from e
+
+
+def _cle(data: dict) -> str:
+    secret = data.get("secret") or ""
+    if not secret:
+        raise ErreurGarmin("config", "Aucun compte Garmin n'est connecté.")
+    try:
+        return actus._dechiffrer(secret, TROUSSEAU)
+    except Exception:
+        raise ErreurGarmin("config", "La clé enregistrée ne se relit pas ici (fichier venu d'un "
+                                     "autre PC ?). Colle-la de nouveau dans Garmin › Connexion.")
+
+
+# ─── Seances -> Sports ───────────────────────────────────────────────────────
+
+# typeKey de Garmin (running, trail_running, road_biking, lap_swimming...) :
+# reconnu par morceau, le plus specifique d'abord. Le reste va dans « Autre ».
+_SPORTS_GARMIN = [
+    ("swim", "natation"),
+    ("run", "course"),
+    ("cycl", "velo"), ("bik", "velo"), ("ride", "velo"),
+    ("strength", "muscu"),
+    ("hik", "rando"), ("mountaineering", "rando"),
+    ("soccer", "foot"), ("football", "foot"),
+]
+
+
+def sport_pilote(type_garmin: str) -> str:
+    t = (type_garmin or "").lower()
+    for morceau, sport in _SPORTS_GARMIN:
+        if morceau in t:
+            return sport
+    return "autre"
+
+
+def _champs(sport: str) -> list:
+    for s in sports.SPORTS:
+        if s["id"] == sport:
+            return s["fields"]
+    return ["duration"]
+
+
+def _nombre(x) -> float:
+    try:
+        n = float(x)
+        return n if n == n and abs(n) != float("inf") else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def seance(a: dict) -> dict:
+    """Une activite Garmin (SummarizedActivityDTO) en seance de Sports. None
+    si elle n'a ni identifiant ni date lisible."""
+    ident = a.get("activityId")
+    debut = str(a.get("startTimeLocal") or "")
+    m = re.match(r"(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})", debut)
+    if not ident or not m:
+        return None
+    type_ = (a.get("activityType") or {}).get("typeKey") or ""
+    sport = sport_pilote(type_)
+    champs = _champs(sport)
+    secondes = _nombre(a.get("duration")) or _nombre(a.get("movingDuration"))
+    metres = _nombre(a.get("distance"))
+    s = {
+        "garminId":  str(ident),
+        "date":      m.group(1),
+        "time":      m.group(2),
+        "sport":     sport,
+        "duration":  round(secondes / 60),
+        "distance":  0,
+        "elevation": round(_nombre(a.get("elevationGain"))) if "elevation" in champs else 0,
+        "note":      str(a.get("activityName") or "")[:200],
+        "garminType": type_,
+    }
+    if "distance_m" in champs:
+        s["distance"] = round(metres)
+    elif "distance_km" in champs:
+        s["distance"] = round(metres / 1000, 2)
+    if "lieu" in champs:
+        bassin = round(_nombre(a.get("poolLength")))
+        s["lieu"] = str(bassin) if bassin in (25, 50) else "libre"
+    fc = round(_nombre(a.get("averageHR")))
+    if fc:
+        s["fcMoy"] = fc
+    kcal = round(_nombre(a.get("calories")))
+    if kcal:
+        s["kcal"] = kcal
+    return s
+
+
+def _activites(jeton: str, debut: datetime.date, fin: datetime.date) -> list:
+    tout = []
+    for page in range(PAGES_MAX):
+        lot = _get(jeton, "/activitylist-service/activities/search/activities",
+                   {"start": page * 99, "limit": 99, "startDate": debut.isoformat(),
+                    "endDate": fin.isoformat()}) or []
+        if not isinstance(lot, list):
+            break
+        tout += lot
+        if len(lot) < 99:
+            break
+    return tout
+
+
+# ─── Pesees -> Santé ─────────────────────────────────────────────────────────
+
+def _borne(mid: str, v):
+    """La valeur arrondie comme Santé l'affiche, ou None hors des bornes."""
+    for m in sante.METRICS:
+        if m["id"] == mid:
+            if v is None:
+                return None
+            v = round(_nombre(v), m.get("decimals", 1))
+            lo, hi = m.get("range", [None, None])
+            return v if v and (lo is None or lo <= v <= hi) else None
+    return None
+
+
+def pesee(p: dict) -> dict:
+    """Une pesee Garmin (DateWeightDTO) en mesure de Santé, ou None."""
+    jour = str(p.get("calendarDate") or p.get("date") or "")[:10]
+    poids = _nombre(p.get("weight"))
+    if poids > 1000:          # l'API historique de Connect donnait des grammes
+        poids /= 1000
+    poids = _borne("poids", poids)
+    if not re.match(r"\d{4}-\d{2}-\d{2}$", jour) or poids is None:
+        return None
+    heure = ""
+    m = re.search(r"T(\d{2}:\d{2})", str(p.get("date") or ""))
+    if m:
+        heure = m.group(1)
+    ident = str(p.get("timestampGMT") or p.get("date") or jour) + "|" + str(poids)
+    mesure = {"garminId": ident, "date": jour, "time": heure, "poids": poids}
+    for cle, mid in (("bmi", "imc"), ("bodyFat", "graisse"), ("bodyWater", "eau")):
+        v = _borne(mid, p.get(cle))
+        if v is not None:
+            mesure[mid] = v
+    return mesure
+
+
+# ─── Forme du jour ───────────────────────────────────────────────────────────
+
+def _tranches(debut: datetime.date, fin: datetime.date, jours: int):
+    while debut <= fin:
+        bout = min(fin, debut + datetime.timedelta(days=jours - 1))
+        yield debut, bout
+        debut = bout + datetime.timedelta(days=1)
+
+
+def _entier(x):
+    n = _nombre(x)
+    return round(n) if n else None
+
+
+def _forme(jeton: str, debut: datetime.date, fin: datetime.date, erreurs: list) -> dict:
+    """{jour: {pas, objectifPas, fcRepos, bbMax, bbMin, bbFin, stress,
+    intensite, sommeil, sommeilScore, profond, paradoxal, vfc, vfcStatut}}.
+    Une source qui echoue n'empeche pas les autres (erreurs)."""
+    jours = {}
+
+    def jour(d):
+        return jours.setdefault(str(d)[:10], {})
+
+    def garder(d: dict, cle: str, v):
+        if v is not None:
+            d[cle] = v
+
+    try:   # resume du jour : jusqu'a un an par appel
+        for a, b in _tranches(debut, fin, 365):
+            r = _get(jeton, "/usersummary-service/v2/dailysummaries",
+                     {"startDate": a.isoformat(), "endDate": b.isoformat()}) or {}
+            for s in (r.get("data") or []) if isinstance(r, dict) else []:
+                if not s.get("calendarDate"):
+                    continue
+                d = jour(s["calendarDate"])
+                pas = ((s.get("movement") or {}).get("steps") or {})
+                garder(d, "pas", _entier(pas.get("value")))
+                garder(d, "objectifPas", _entier(pas.get("goal")))
+                garder(d, "fcRepos", _entier((s.get("heartRate") or {}).get("restingValue")))
+                bb = s.get("bodyBattery") or {}
+                garder(d, "bbMax", _entier(bb.get("maxValue")))
+                garder(d, "bbMin", _entier(bb.get("minValue")))
+                garder(d, "bbFin", _entier(bb.get("latestValue")))
+                garder(d, "stress", _entier((s.get("stress") or {}).get("avgLevel")))
+                im = s.get("intensityMinutes") or {}
+                if im.get("moderate") is not None or im.get("vigorous") is not None:
+                    # Garmin compte une minute intense pour deux
+                    d["intensite"] = round(_nombre(im.get("moderate")) + 2 * _nombre(im.get("vigorous")))
+    except ErreurGarmin as e:
+        if e.code == "auth":
+            raise
+        erreurs.append("Résumé du jour : " + e.message)
+
+    try:   # sommeil : 31 jours au plus par appel
+        for a, b in _tranches(debut, fin, 31):
+            for s in _get(jeton, "/sleep-service/sleep/dailySleepSummariesByDate",
+                          {"startDate": a.isoformat(), "endDate": b.isoformat()}) or []:
+                if not isinstance(s, dict) or not s.get("calendarDate"):
+                    continue
+                d = jour(s["calendarDate"])
+                sec = _nombre(s.get("sleepTimeSeconds"))
+                if sec:
+                    d["sommeil"] = round(sec / 60)
+                    garder(d, "profond", _entier(_nombre(s.get("deepSleepSeconds")) / 60))
+                    garder(d, "paradoxal", _entier(_nombre(s.get("remSleepSeconds")) / 60))
+                score = ((s.get("sleepScores") or {}).get("overall") or {}).get("value")
+                garder(d, "sommeilScore", _entier(score))
+    except ErreurGarmin as e:
+        if e.code == "auth":
+            raise
+        erreurs.append("Sommeil : " + e.message)
+
+    try:   # VFC (variabilite de la frequence cardiaque) de la nuit
+        for a, b in _tranches(debut, fin, 31):
+            r = _get(jeton, f"/hrv-service/hrv/daily/{a.isoformat()}/{b.isoformat()}") or {}
+            for s in (r.get("hrvSummaries") or []) if isinstance(r, dict) else []:
+                if not s.get("calendarDate"):
+                    continue
+                d = jour(s["calendarDate"])
+                garder(d, "vfc", _entier(s.get("lastNightAvg")))
+                if s.get("status"):
+                    d["vfcStatut"] = str(s["status"])[:20]
+    except ErreurGarmin as e:
+        if e.code == "auth":
+            raise
+        erreurs.append("VFC : " + e.message)
+
+    return {k: v for k, v in jours.items() if v}
+
+
+# ─── API du module ───────────────────────────────────────────────────────────
+
+def _choix(data: dict) -> dict:
+    choix = data.get("choix") if isinstance(data.get("choix"), dict) else {}
+    return {c: bool(choix.get(c, True)) for c in CHOIX}
+
+
+def config() -> dict:
+    data = _store.load()
+    jours = data.get("jours") if isinstance(data.get("jours"), dict) else {}
+    return {"connecte":   bool(data.get("secret")),
+            "connecteLe": data.get("connecteLe") or "",
+            "depuis":     data.get("depuis") or "",
+            "choix":      _choix(data),
+            "derniere":   data.get("derniere") or "",
+            "jours":      jours}
+
+
+def connecter(cle: str, depuis: str = "") -> dict:
+    """N'enregistre qu'une cle que Garmin vient d'accepter."""
+    cle = re.sub(r"\s+", "", cle or "")
+    if not cle:
+        raise ErreurGarmin("saisie", "Colle la clé API créée sur Garmin Connect.")
+    if len(cle) > 4000 or not re.match(r"^[\x21-\x7e]+$", cle):
+        raise ErreurGarmin("saisie", "Ce texte ne ressemble pas à une clé Garmin : recopie-la "
+                                     "telle qu'elle est affichée.")
+    aujourdhui = datetime.date.today()
+    debut = _jour(depuis, aujourdhui - datetime.timedelta(days=PREMIERS_JOURS))
+    debut = min(debut, aujourdhui)
+    with _verrou:
+        _jeton.update(cle="", valeur="", fin=0.0)
+        _obtenir_jeton(cle)
+        secret = actus._chiffrer(cle, TROUSSEAU, "Pilote : clé API personnelle Garmin")
+        _modifier(lambda d: d.update(secret=secret, connecteLe=aujourdhui.isoformat(),
+                                     depuis=debut.isoformat(), derniere=""))
+    return config()
+
+
+def regler(choix: dict, depuis: str = "") -> dict:
+    """depuis plus tot que l'ancien : la synchronisation suivante remonte jusque-la."""
+    def changer(d):
+        d["choix"] = {c: bool((choix or {}).get(c)) for c in CHOIX}
+        if depuis:
+            nouveau = min(_jour(depuis, datetime.date.today()), datetime.date.today()).isoformat()
+            if nouveau < (d.get("depuis") or ""):
+                d["derniere"] = ""
+            d["depuis"] = nouveau
+    _modifier(changer)
+    return config()
+
+
+def deconnecter() -> dict:
+    """Oublie la cle ; les resumes de forme deja lus restent (ils sont a l'utilisateur)."""
+    with _verrou:
+        data = _store.load()
+        actus._oublier(data.get("secret") or "", TROUSSEAU)
+        _jeton.update(cle="", valeur="", fin=0.0)
+        _modifier(lambda d: d.update(secret="", derniere=""))
+    return config()
+
+
+def marquer_vus(ids: list) -> dict:
+    """Ce que la page a ajoute (ou ecarte) : ne sera plus propose."""
+    ids = [str(i)[:200] for i in (ids or []) if i]
+
+    def changer(d):
+        d["vus"] = list(dict.fromkeys((d.get("vus") or []) + ids))[-5000:]
+    _modifier(changer)
+    return {"nb": len(ids)}
+
+
+def synchroniser() -> dict:
+    """Lit ce qui est nouveau depuis la derniere synchronisation (avec
+    RECOUVREMENT jours relus), garde la forme, renvoie seances et pesees a
+    ajouter par la page."""
+    with _verrou:
+        data = _store.load()
+        cle = _cle(data)
+        choix = _choix(data)
+        aujourdhui = datetime.date.today()
+        depuis = _jour(data.get("depuis"), aujourdhui - datetime.timedelta(days=PREMIERS_JOURS))
+        derniere = data.get("derniere") or ""
+        debut = depuis
+        if derniere:
+            debut = max(depuis, _jour(derniere, depuis) - datetime.timedelta(days=RECOUVREMENT))
+        vus = set(data.get("vus") or [])
+        erreurs = []
+        jeton = _obtenir_jeton(cle)
+
+        seances = []
+        if choix["seances"]:
+            try:
+                for a in _activites(jeton, debut, aujourdhui):
+                    s = seance(a) if isinstance(a, dict) else None
+                    if s and s["garminId"] not in vus and s["date"] >= depuis.isoformat():
+                        seances.append(s)
+            except ErreurGarmin as e:
+                if e.code == "auth":
+                    raise
+                erreurs.append("Séances : " + e.message)
+            seances.sort(key=lambda s: (s["date"], s["time"]))
+
+        pesees = []
+        if choix["pesees"]:
+            try:
+                for a, b in _tranches(debut, aujourdhui, 365):
+                    for p in _get(jeton, f"/weight-service/weight/all/{a.isoformat()}/{b.isoformat()}") or []:
+                        m = pesee(p) if isinstance(p, dict) else None
+                        if m and m["garminId"] not in vus:
+                            pesees.append(m)
+            except ErreurGarmin as e:
+                if e.code == "auth":
+                    raise
+                erreurs.append("Pesées : " + e.message)
+            pesees.sort(key=lambda m: (m["date"], m["time"]))
+
+        forme = {}
+        if choix["forme"]:
+            jours = data.get("jours") if isinstance(data.get("jours"), dict) else {}
+            debut_forme = aujourdhui - datetime.timedelta(days=PREMIERS_JOURS - 1)
+            if jours and derniere:
+                debut_forme = max(debut_forme, _jour(derniere, aujourdhui) - datetime.timedelta(days=2))
+            forme = _forme(jeton, debut_forme, aujourdhui, erreurs)
+
+        def changer(d):
+            jours = d.get("jours") if isinstance(d.get("jours"), dict) else {}
+            for k, v in forme.items():
+                jours[k] = {**jours.get(k, {}), **v}
+            limite = (aujourdhui - datetime.timedelta(days=JOURS_GARDES)).isoformat()
+            d["jours"] = {k: jours[k] for k in sorted(jours) if k >= limite}
+            if not erreurs:
+                d["derniere"] = datetime.datetime.now().isoformat(timespec="seconds")
+        _modifier(changer)
+
+    return {**config(), "seances": seances, "pesees": pesees, "erreurs": erreurs}

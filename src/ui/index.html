@@ -2005,6 +2005,26 @@ label.sv-check, label.sv-inline {
 .ag-choix input { margin-top: 3px; }
 .ag-aide { font-weight: 400; color: var(--txt3); }
 .ag-err { color: var(--r); }
+
+/* ── Garmin (garmin.py) ─────────────────────────────────────────────────── */
+.ga-maj { font-size: 12px; color: var(--txt3); }
+.ga-chart { position: relative; height: 260px; }
+.ga-courbe-h { flex-wrap: wrap; gap: .6rem; }
+.ga-moy { font-size: 12px; color: var(--txt2); margin-left: auto; }
+.ga-seances { display: flex; flex-direction: column; }
+.ga-seance { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--brd); font-size: 13px; }
+.ga-seance:first-child { border-top: 0; padding-top: 0; }
+.ga-seance .sp-sicon { flex: none; }
+.ga-seance-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ga-seance-txt small { color: var(--txt2); font-size: 12px; }
+.ga-seance-d { font-family: var(--mono); font-size: 12px; color: var(--txt3); white-space: nowrap; }
+.ga-erreurs { margin: 0 0 1rem; padding: 10px 14px; border-radius: var(--rad); border: 1px solid var(--brd);
+  background: var(--bg2); font-size: 12.5px; color: var(--txt2); line-height: 1.55; }
+.ga-erreurs b { color: var(--r); }
+.ga-cases { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 14px; }
+.ga-cases label.sv-check { font-size: 13px; color: var(--txt); align-items: flex-start; }
+.ga-cases input { margin-top: 3px; }
+.ga-tag { display: inline-flex; align-items: center; gap: 3px; }
 /* Onglet Notifications : une ligne par type, icône · nom et aide · réglage */
 .ag-notifs-t { font-size: 12px; font-weight: 600; color: var(--txt2); margin: 4px 0 6px; }
 .ag-notifs { display: flex; flex-direction: column; margin-bottom: 16px; }
@@ -3849,6 +3869,55 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   </div>
 </div>
 
+<!-- ════════════════════ GARMIN (garmin.py, bloc ga* en fin de fichier) ════════════════════ -->
+<div class="pane" id="pane-ga-forme">
+  <div class="m-head">
+    <span class="m-nav-lbl">Ma forme</span>
+    <div class="m-spacer"></div>
+    <span class="ga-maj" id="ga-maj"></span>
+    <button class="btn btn-ghost" id="ga-btn-synchro" onclick="gaSynchroniser()"><i class="ph ph-arrows-clockwise"></i> Synchroniser</button>
+  </div>
+  <div id="ga-forme"></div>
+</div>
+
+<div class="pane" id="pane-ga-connexion">
+  <div class="m-head">
+    <span class="m-nav-lbl">Connexion</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div class="ac-cnx">
+    <div class="card">
+      <div class="card-h"><span class="card-t">Créer la clé</span></div>
+      <div class="card-b">
+        <p class="ac-intro">Pilote lit ta montre par la <b>clé API personnelle</b> de Garmin&nbsp;: une clé que
+          tu crées toi-même sur Garmin Connect, pour lire tes propres données. Elle ne permet ni de
+          modifier ton compte ni de se connecter à sa place, et tu peux la supprimer à tout moment.</p>
+        <ol class="ac-etapes">
+          <li><b>Ouvre la page de la clé</b> sur le site Garmin Connect, connecté à ton compte.
+            <button class="btn btn-ghost btn-sm" onclick="gaLienGarmin()"><i class="ph ph-arrow-square-out"></i> Clé API personnelle</button></li>
+          <li><b>Clique sur «&nbsp;Create Key&nbsp;»</b>, lis et accepte les conditions de Garmin.</li>
+          <li><b>Choisis la durée</b> de la clé&nbsp;: un an est le plus pratique.
+            <small>Garmin t'écrit une semaine avant qu'elle expire&nbsp;; il suffira d'en coller une nouvelle ici.</small></li>
+          <li><b>Copie la clé</b> et colle-la ci-contre.
+            <small>Garmin ne l'affiche qu'une fois. Si tu la perds, supprime-la et crée-en une autre.</small></li>
+        </ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Ton compte Garmin</span></div>
+      <div class="card-b">
+        <div id="ga-cnx-boite"></div>
+        <div class="ac-pied">
+          <p>Pilote garde la clé <span class="txt-win">chiffrée par Windows sur ce PC</span><span
+            class="txt-mac">dans le Trousseau de ce Mac</span>, et ne l'envoie qu'à Garmin. Il ne fait que
+            lire&nbsp;: rien de Pilote ne part vers ton compte Garmin.</p>
+          <p><b>Pour la retirer</b>&nbsp;: sur la page de la clé, supprime-la. Pilote ne peut alors plus rien lire.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════ AGENDA (agenda.py, bloc ag* en fin de fichier) ════════════════════ -->
 <div class="pane" id="pane-ag-cal">
   <div class="m-head">
@@ -4582,6 +4651,8 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
                 onclick="setGoSection('pret')"><span class="set-nav-ico"><i class="ph ph-hand-coins"></i></span><span class="pr-nom">Prêt</span></button>
         <button type="button" class="set-nav-btn" data-set="sport" data-mod="sec-sport"
                 onclick="setGoSection('sport')"><span class="set-nav-ico"><i class="ph ph-person-simple-run"></i></span>Sports</button>
+        <button type="button" class="set-nav-btn" data-set="garmin" data-mod="sec-garmin"
+                onclick="setGoSection('garmin')"><span class="set-nav-ico"><i class="ph ph-watch"></i></span>Garmin</button>
         <div class="set-nav-grp" id="set-nav-app"></div>
         <button type="button" class="set-nav-btn" data-set="sauvegarde"
                 onclick="setGoSection('sauvegarde')"><span class="set-nav-ico"><i class="ph ph-floppy-disk"></i></span>Sauvegarde</button>
@@ -4713,6 +4784,17 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
           <div class="set-links" style="margin-top:10px">
             <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ag-connexion')"><i class="ph ph-cloud"></i> iCloud</button>
             <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ag-notifs')"><i class="ph ph-bell"></i> Notifications</button>
+          </div>
+        </div>
+
+        <!-- ──── GARMIN ──── -->
+        <div class="set-sec" data-sec="garmin">
+          <h3>Garmin</h3>
+          <p class="set-lead">Ta montre : séances, pesées et forme du jour, lues dans ton compte Garmin Connect.</p>
+          <div class="set-res-liste" id="cfg-garmin"></div>
+          <div class="set-links" style="margin-top:10px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ga-connexion')"><i class="ph ph-plug"></i> Connexion</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="_setAllerOnglet('ga-forme')"><i class="ph ph-heartbeat"></i> Ma forme</button>
           </div>
         </div>
 
@@ -11594,6 +11676,11 @@ const NAV_MODULES = {
     pas:  "Ajoute une note dans le calendrier, ou connecte ton agenda iCloud.",
     besoin: "Pour l'iPhone : un compte Apple avec la double authentification. Sans iPhone, le calendrier marche quand même.",
     tab: "ag-cal", tuiles: ["ag-jour", "ag-notes", "ag-alertes"] },
+  "sec-garmin": {
+    desc: "Ta montre Garmin : séances ajoutées à Sports, pesées à Santé, sommeil, Body Battery, VFC et pas.",
+    pas:  "Crée ta clé API personnelle sur Garmin Connect et colle-la : l'onglet Connexion explique comment.",
+    besoin: "Il te faut une montre Garmin et un compte Garmin Connect.",
+    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas"] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -12109,7 +12196,7 @@ function setGoSection(id) {
   if (id === "accueil" && typeof dashRenderConfig === "function") dashRenderConfig();
   if (id === "nav") cfgRenderModules();
   if (id === "masques") _cfgRenderMasques();
-  if (id === "cto" || id === "actus" || id === "agenda") cfgRenderModule(id);
+  if (id === "cto" || id === "actus" || id === "agenda" || id === "garmin") cfgRenderModule(id);
   if (id === "comptes" || id === "sport") _setCorps(id);
   if (id === "maj") majRenderSection();
   if (id === "donnees") _cheminDonnees().then(c => {
@@ -12272,6 +12359,14 @@ function cfgRenderModule(id) {
     box.innerHTML = cfg.connecte
       ? ligne("check-circle", `Connecté à ${escHtml(cfg.adresse)}`, "Tes notes et ce que tu coches partent sur ton iPhone")
       : ligne("cloud", "Pas encore relié à iCloud", "iCloud : ton identifiant Apple et un mot de passe pour app");
+  }
+  if (id === "garmin") {
+    const box = document.getElementById("cfg-garmin");
+    if (!box) return;
+    const cfg = (typeof GA !== "undefined" && GA.config) || {};
+    box.innerHTML = cfg.connecte
+      ? ligne("check-circle", "Compte Garmin connecté", "Dernière synchronisation : " + escHtml(gaQuand(cfg.derniere)))
+      : ligne("watch", "Pas encore de compte Garmin", "Connexion : la clé API personnelle créée sur Garmin Connect");
   }
 }
 
@@ -15512,6 +15607,12 @@ const NAV_SECTIONS = [
     { id: "sa-mesures", label: "Mesures"   },
     { id: "sa-goals",   label: "Objectifs" },
   ]},
+  // Garmin (03/11/2026) : la montre, lue par la clé API personnelle ; ses
+  // séances vont dans Sports, ses pesées dans Santé
+  { id: "sec-garmin", label: "Garmin", children: [
+    { id: "ga-forme",     label: "Ma forme"  },
+    { id: "ga-connexion", label: "Connexion" },
+  ]},
   { id: "sec-actus", label: "Actus", children: [
     { id: "ac-boite",     label: "Newsletters" },
     { id: "ac-connexion", label: "Connexion"          },
@@ -15590,7 +15691,7 @@ function _updateCrumb(id) {
    le premier CTO prend la place de la section CTO qui l'attendait, et celle-ci
    revient à la place du dernier CTO supprimé. */
 const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-crypto", "sec-actus", "@perso",
-                          "sec-agenda", "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante"];
+                          "sec-agenda", "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante", "sec-garmin"];
 
 /* Les blocs de la barre : {cle, sec, label, enfants: [{id, base, label}]} */
 function _navBlocs() {
@@ -15724,7 +15825,7 @@ const NAV_ICONS = {
   "sec-pea": "chart-line-up", "sec-cto": "briefcase", "sec-crypto": "currency-btc",
   "sec-comptes": "wallet", "sec-pret": "hand-coins",
   "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
-  "sec-actus": "newspaper", "sec-agenda": "calendar-blank",
+  "sec-actus": "newspaper", "sec-agenda": "calendar-blank", "sec-garmin": "watch",
 };
 
 function _injectSidebar() {
@@ -16477,7 +16578,8 @@ function _modulesConnusDepart() {
   // être demandée. Déjà un portefeuille, ou module décoché : choix déjà fait.
   const vis = _modulesVisibles();
   const cryptoAChoisir = vis.has("sec-crypto") && !(typeof cryptoCompte === "function" && cryptoCompte());
-  return NAV_SECTIONS.map(s => s.id).filter(id => !(id === "sec-crypto" && cryptoAChoisir));
+  // Garmin (03/11/2026) est venu après ce réglage : toujours à proposer
+  return NAV_SECTIONS.map(s => s.id).filter(id => !(id === "sec-crypto" && cryptoAChoisir) && id !== "sec-garmin");
 }
 
 async function _demanderNouveauxModules() {
@@ -18947,8 +19049,8 @@ function spOpenDay(iso) {
     return `<div class="sp-srow">
       <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
       <div style="flex:1;min-width:0">
-        <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}</div>
-        <div class="sp-smeta">${escHtml(spSummary(s) || "—")}${pace ? " · " + pace : ""}</div>
+        <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}${s.garminId ? ` <span class="m-tag ga-tag" title="Venue de la montre Garmin"><i class="ph ph-watch"></i> Garmin</span>` : ""}</div>
+        <div class="sp-smeta">${escHtml(spSummary(s) || "—")}${pace ? " · " + pace : ""}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</div>
         ${s.note ? `<div class="sp-snote">${escHtml(s.note)}</div>` : ""}
       </div>
       <div class="m-acts">
@@ -19242,6 +19344,9 @@ async function spSaveSession() {
   if (spHasField(_spSport, "lieu"))    s.lieu    = document.getElementById("sp-f-lieu").value;
   if (spHasField(_spSport, "routine")) s.routineId = spNum(document.getElementById("sp-f-routine").value) || null;
   if (spHasField(_spSport, "groups"))  s.groups  = _spGroups.slice();
+  // Séance venue de la montre (bloc Garmin) : elle le reste une fois modifiée
+  const avant = _spEditingId ? spSessions().find(x => x.id === _spEditingId) : null;
+  if (avant) ["garminId", "fcMoy", "kcal"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
 
   if (_spEditingId) {
     const i = spSessions().findIndex(x => x.id === _spEditingId);
@@ -21717,7 +21822,8 @@ function saRenderHist() {
       : d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
     return `<tr>
       <td><b>${escHtml(jour)}</b>${m.time ? ` <span style="color:var(--txt3)">${escHtml(m.time)}</span>` : ""}
-        ${m.source === "ocr" ? ` <span class="m-tag" title="Lu depuis une capture FitDays">📷</span>` : ""}</td>
+        ${m.source === "ocr" ? ` <span class="m-tag" title="Lu depuis une capture FitDays">📷</span>` : ""}
+        ${m.source === "garmin" ? ` <span class="m-tag ga-tag" title="Venue de Garmin Connect"><i class="ph ph-watch"></i></span>` : ""}</td>
       ${SA_METRICS.map(x => `<td>${saFmt(x.id, m[x.id])}</td>`).join("")}
       <td><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
                   onclick="saOpenMesure('${escHtml(m.id)}')" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button></td>
@@ -25512,6 +25618,19 @@ const DASH_WIDGETS = [
     render() { return dashAgAlertes(); },
   },
   {
+    // Garmin (03/11/2026) : la forme du jour lue sur la montre (garmin.json)
+    id: "ga-sommeil", label: "Sommeil de la nuit", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaSommeil(); },
+  },
+  {
+    id: "ga-forme", label: "Body Battery et VFC", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaForme(); },
+  },
+  {
+    id: "ga-pas", label: "Pas du jour", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaPas(); },
+  },
+  {
     // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
     // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
@@ -25580,6 +25699,7 @@ function dashModuleReady(mod) {
     case "Actus":      return _acBootstrapped && (!acConnecte() || !!AC.majA || !!AC.erreur);
     // Première lecture d'iCloud en cours : squelette, ensuite on garde la dernière
     case "Agenda":     return _agBootstrapped && !(_dashAg.attente && !_dashAg.debut);
+    case "Garmin":     return _gaBootstrapped;
   }
   return true;
 }
@@ -26990,7 +27110,7 @@ const DASH_ICONS = {
   "Santé": "heartbeat", "Prêt": "hand-coins",
   "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase", "Crypto": "currency-btc",
   "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
-  "Agenda": "calendar-blank", "Bilan": "chart-bar",
+  "Agenda": "calendar-blank", "Bilan": "chart-bar", "Garmin": "watch",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -27913,6 +28033,501 @@ async function agEssai() {
   };
 })();
 
+/* ══════════════════════════════════════════════════════════════════════════
+   MODULE GARMIN (garmin.py, docs/modules/garmin.md, 03/11/2026)
+   La montre, lue par la clé API personnelle de Garmin. Trois choses à cocher :
+   les séances (ajoutées à Sports), les pesées (ajoutées à Santé) et la forme
+   du jour (sommeil, Body Battery, VFC, FC au repos, pas, stress), gardée dans
+   garmin.json pour l'onglet Ma forme et les tuiles. Python lit Garmin ; c'est
+   ce bloc qui ajoute séances et pesées à SP et SA (la page les tient en
+   mémoire et les réécrit en entier), puis le signale (save_garmin_vus) : une
+   séance supprimée dans Pilote ne revient pas.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const GA = { config: null, enCours: false, erreur: "", code: "", erreurs: [], formCle: false, mesure: "sommeil" };
+let _gaBootstrapped = false;
+let _gaChart = null;
+const GA_LIEN_CLE = "https://connect.garmin.com/app/settings/personalApiToken";
+const GA_AUTO_MS = 60 * 60 * 1000;     // au lancement, si la dernière synchronisation date de plus d'une heure
+const GA_CHOIX = [
+  ["seances", "Séances", "chaque activité de la montre devient une séance de Sports"],
+  ["pesees",  "Pesées",  "les pesées de Garmin Connect (balance Index ou saisie dans l'app) vont dans Santé"],
+  ["forme",   "Forme du jour", "sommeil, Body Battery, VFC, FC au repos, pas et stress, dans l'onglet Ma forme"],
+];
+// [clé de garmin.json, libellé, unité, valeur affichée, type de courbe]
+const GA_MESURES = [
+  ["sommeil", "Sommeil",      "h",   v => (v / 60).toFixed(1).replace(".", ","), "bar"],
+  ["bbMax",   "Body Battery", "",    v => String(v),                                "line"],
+  ["vfc",     "VFC",          "ms",  v => String(v),                                "line"],
+  ["fcRepos", "FC au repos",  "bpm", v => String(v),                                "line"],
+  ["pas",     "Pas",          "",    v => Number(v).toLocaleString("fr-FR"),       "bar"],
+  ["stress",  "Stress",       "",    v => String(v),                                "line"],
+];
+const GA_VFC = { BALANCED: "équilibrée", UNBALANCED: "déséquilibrée", LOW: "basse", POOR: "faible" };
+
+function gaApi() { const a = window.pywebview && window.pywebview.api; return a && a.load_garmin ? a : null; }
+function gaConnecte() { return !!(GA.config && GA.config.connecte); }
+function gaJours() { return (GA.config && GA.config.jours) || {}; }
+
+/** [jour, valeurs] du jour le plus récent qui a `cle`, ou [null, null]. */
+function gaDernier(cle) {
+  const j = gaJours(), dates = Object.keys(j).sort();
+  for (let i = dates.length - 1; i >= 0; i--) if (j[dates[i]][cle] != null) return [dates[i], j[dates[i]]];
+  return [null, null];
+}
+
+/** Les `n` derniers jours (jusqu'à aujourd'hui) : [{jour, v}], v null sans mesure. */
+function gaSerie(cle, n) {
+  const j = gaJours(), out = [], d = new Date();
+  d.setDate(d.getDate() - (n - 1));
+  for (let i = 0; i < n; i++, d.setDate(d.getDate() + 1)) {
+    const k = todayISO(d);
+    out.push({ jour: k, v: j[k] && j[k][cle] != null ? j[k][cle] : null });
+  }
+  return out;
+}
+
+function gaDuree(min) {
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h ? h + " h " + String(m).padStart(2, "0") : m + " min";
+}
+
+function gaQuand(iso) {
+  if (!iso) return "jamais";
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  const jour = todayISO(d) === todayISO() ? "aujourd'hui" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return jour + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function gaAncienne() {
+  const d = GA.config && GA.config.derniere;
+  return !d || Date.now() - new Date(d).getTime() > GA_AUTO_MS;
+}
+
+async function gaBootstrap() {
+  if (_gaBootstrapped) return;
+  const api = gaApi();
+  if (!api) return;
+  const r = await api.load_garmin();
+  if (!r || !r.ok) { console.warn("[garmin] load KO", r); return; }
+  GA.config = r;
+  _gaBootstrapped = true;
+  // Au lancement, une fois Sports et Santé lus (on y ajoute ce qui arrive)
+  if (gaConnecte() && gaAncienne()) setTimeout(() => gaSynchroniser(true), 4000);
+}
+
+/* ── Synchronisation ─────────────────────────────────────────────────────── */
+
+/** discret : au lancement, rien à dire s'il n'y a rien de nouveau. */
+async function gaSynchroniser(discret) {
+  const api = gaApi();
+  if (!api || GA.enCours || !gaConnecte()) return;
+  GA.enCours = true;
+  gaRenderEtat();
+  let r = null;
+  try {
+    const vis = _modulesVisibles();
+    if (vis.has("sec-sport") && !_spBootstrapped) await spBootstrap();
+    if (vis.has("sec-sante") && !_saBootstrapped) await saBootstrap(true);
+    r = await api.save_garmin_synchro();
+  } catch (e) { r = { ok: false, error: String(e) }; }
+  if (r && r.gele) { GA.enCours = false; gaRenderEtat(); return; }
+  if (!r || !r.ok) {
+    GA.enCours = false;
+    GA.erreur = (r && r.error) || "Synchronisation impossible.";
+    GA.code = (r && r.code) || "";
+    if (!discret || GA.code === "auth") showToastModern("Garmin : " + GA.erreur, "err");
+    gaRenderTout();
+    return;
+  }
+  GA.erreur = ""; GA.code = "";
+  GA.erreurs = r.erreurs || [];
+  GA.config = Object.assign({}, GA.config, {
+    connecte: r.connecte, connecteLe: r.connecteLe, depuis: r.depuis, choix: r.choix,
+    derniere: r.derniere, jours: r.jours });
+  let n = { seances: 0, pesees: 0 };
+  try { n = await gaAjouter(r.seances || [], r.pesees || []); }
+  catch (e) { console.warn("[garmin] ajout KO", e); }
+  GA.enCours = false;
+  const parts = [];
+  if (n.seances) parts.push(n.seances + " séance" + (n.seances > 1 ? "s" : ""));
+  if (n.pesees)  parts.push(n.pesees + " pesée" + (n.pesees > 1 ? "s" : ""));
+  if (parts.length || !discret || GA.erreurs.length) {
+    const tot = n.seances + n.pesees;
+    showToastModern(parts.length ? "Garmin : " + parts.join(" et ") + " ajoutée" + (tot > 1 ? "s" : "")
+                                 : (GA.erreurs.length ? "Garmin : synchronisation incomplète" : "Garmin : rien de nouveau"),
+                    GA.erreurs.length ? "warn" : "ok");
+  }
+  gaRenderTout();
+  if (typeof dashRender === "function") dashRender();
+}
+
+/** Même jour, même sport, durée proche : la séance saisie à la main est la même. */
+function gaMemeSeance(s, g) {
+  if (s.garminId || s.date !== g.date || s.sport !== g.sport) return false;
+  const a = spNum(s.duration), b = spNum(g.duration);
+  return !a || !b || Math.abs(a - b) <= Math.max(15, 0.25 * b);
+}
+
+/** Ajoute à Sports et Santé ce qui n'y est pas ; rien n'est marqué vu tant
+    que l'enregistrement du module n'a pas réussi. */
+async function gaAjouter(seances, pesees) {
+  const api = gaApi(), vus = [], n = { seances: 0, pesees: 0 };
+  if (seances.length && SP) {
+    const avant = spSessions(), liste = avant.map(s => Object.assign({}, s)), pris = [];
+    seances.forEach(g => {
+      if (liste.some(s => String(s.garminId || "") === g.garminId)) { pris.push(g.garminId); return; }
+      const deja = liste.find(s => gaMemeSeance(s, g));
+      if (deja) { deja.garminId = g.garminId; pris.push(g.garminId); return; }
+      const s = { id: spNextId("session"), date: g.date, time: g.time || "", sport: g.sport,
+                  duration: g.duration, distance: g.distance, elevation: g.elevation,
+                  note: g.note || "", garminId: g.garminId };
+      if (g.lieu && spHasField(g.sport, "lieu")) s.lieu = g.lieu;
+      if (g.fcMoy) s.fcMoy = g.fcMoy;
+      if (g.kcal) s.kcal = g.kcal;
+      liste.push(s); pris.push(g.garminId); n.seances++;
+    });
+    SP.sessions = liste;
+    const w = await api.save_sports(SP);
+    if (w && w.ok) vus.push(...pris);
+    else { SP.sessions = avant; n.seances = 0; if (!(w && w.gele)) showToastModern("Garmin : séances non enregistrées dans Sports", "err"); }
+    if (n.seances) spRenderAll();
+  }
+  if (pesees.length && SA) {
+    const avant = saMesures().slice(), pris = [];
+    pesees.forEach(g => {
+      // Une pesée déjà saisie ce jour-là (FitDays, à la main) l'emporte
+      if (saMesures().some(m => String(m.garminId || "") === g.garminId || m.date === g.date)) { pris.push(g.garminId); return; }
+      const m = { id: saNextId("mesure"), date: g.date, time: g.time || "", source: "garmin", note: "", garminId: g.garminId };
+      ["poids", "imc", "graisse", "eau"].forEach(k => { if (g[k] != null) m[k] = g[k]; });
+      SA.mesures.push(m); pris.push(g.garminId); n.pesees++;
+    });
+    if (await saSave()) vus.push(...pris);
+    else { SA.mesures = avant; n.pesees = 0; }
+    if (n.pesees && String(document.body.dataset.activeTab || "").startsWith("sa-")) saRenderAll();
+  }
+  if (vus.length) {
+    try { await api.save_garmin_vus(vus); } catch (e) { console.warn("[garmin] vus KO", e); }
+  }
+  return n;
+}
+
+/* ── Connexion ───────────────────────────────────────────────────────────── */
+
+function gaLienGarmin() {
+  const api = gaApi();
+  if (api) api.open_url(GA_LIEN_CLE);
+}
+
+function gaCasesHtml(choix, onchange) {
+  return `<div class="ga-cases">${GA_CHOIX.map(([cle, nom, aide]) => `
+    <label class="sv-check"><input type="checkbox" value="${cle}"${onchange ? ` onchange="${onchange}"` : ""}${!choix || choix[cle] ? " checked" : ""}>
+      <span><b>${nom}</b> <span class="ag-aide">${aide}</span></span></label>`).join("")}</div>`;
+}
+
+function gaLireCases() {
+  const choix = {};
+  document.querySelectorAll("#ga-cnx-boite .ga-cases input").forEach(i => { choix[i.value] = i.checked; });
+  return choix;
+}
+
+function gaRenderConnexion() {
+  const box = document.getElementById("ga-cnx-boite");
+  if (!box) return;
+  if (!gaApi()) { box.innerHTML = `<p class="ac-note">Disponible dans l'application.</p>`; return; }
+  const cfg = GA.config || { connecte: false, choix: null };
+  const err = GA.code === "auth" || GA.code === "config" || GA.code === "saisie" ? escHtml(GA.erreur) : "";
+  if (cfg.connecte && !GA.formCle) {
+    box.innerHTML = `
+      <div class="ac-etat"><i class="ph ph-check-circle"></i><span>Connecté${cfg.connecteLe ? " depuis le <b>" + escHtml(dashDateCourte(cfg.connecteLe)) + "</b>" : ""}</span></div>
+      <div class="fg"><label>Ce que Pilote lit</label>${gaCasesHtml(cfg.choix, "gaRegler()")}</div>
+      <div class="fg"><label for="ga-depuis">Séances et pesées depuis le</label>
+        <input id="ga-depuis" type="date" value="${escHtml(cfg.depuis || "")}" max="${todayISO()}" onchange="gaRegler()"></div>
+      <p class="ac-note" id="ga-cnx-etat">${gaEtatTexte()}</p>
+      <div class="ac-btns">
+        <button type="button" class="btn btn-primary" onclick="gaSynchroniser()"${GA.enCours ? " disabled" : ""}><i class="ph ph-arrows-clockwise"></i> Synchroniser maintenant</button>
+        <button type="button" class="btn btn-ghost" onclick="GA.formCle=true;GA.erreur='';gaRenderConnexion()">Changer de clé</button>
+        <button type="button" class="btn btn-ghost" onclick="gaDeconnecter()">Déconnecter</button>
+      </div>
+      <div class="ac-err">${err}</div>`;
+    return;
+  }
+  const d = new Date(); d.setDate(d.getDate() - 30);
+  box.innerHTML = `
+    <div class="fg"><label for="ga-cle">Clé API personnelle</label>
+      <input id="ga-cle" type="password" autocomplete="off" spellcheck="false" placeholder="Colle la clé ici"></div>
+    <div class="fg"><label for="ga-depuis">Séances et pesées depuis le</label>
+      <input id="ga-depuis" type="date" value="${escHtml((cfg.connecte && cfg.depuis) || todayISO(d))}" max="${todayISO()}"></div>
+    <div class="fg"><label>Ce que Pilote lit</label>${gaCasesHtml(cfg.connecte ? cfg.choix : null, "")}</div>
+    <p class="ac-note">Pilote vérifie la clé auprès de Garmin avant de l'enregistrer. Une séance déjà
+      saisie à la main (même jour, même sport) n'est pas ajoutée une seconde fois.</p>
+    <div class="ac-btns">
+      <button class="btn btn-primary" id="ga-btn-cnx" onclick="gaConnecter()"><i class="ph ph-plug"></i> Connecter</button>
+      ${cfg.connecte ? `<button class="btn btn-ghost" onclick="GA.formCle=false;GA.erreur='';gaRenderConnexion()">Annuler</button>` : ""}
+    </div>
+    <div class="ac-err" id="ga-cnx-err">${err}</div>`;
+  const champ = document.getElementById("ga-cle");
+  champ.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); gaConnecter(); } });
+}
+
+function gaEtatTexte() {
+  if (GA.enCours) return "Synchronisation en cours…";
+  const d = GA.config && GA.config.derniere;
+  return "Dernière synchronisation : " + gaQuand(d) + ". Pilote synchronise à chaque lancement "
+       + "(si la dernière date de plus d'une heure) et quand tu cliques sur Synchroniser.";
+}
+
+async function gaConnecter() {
+  const api = gaApi();
+  const btn = document.getElementById("ga-btn-cnx");
+  const err = document.getElementById("ga-cnx-err");
+  if (!api || !btn || btn.disabled) return;
+  const cle = document.getElementById("ga-cle").value;
+  const depuis = document.getElementById("ga-depuis").value;
+  const choix = gaLireCases();
+  const lbl = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="ph ph-circle-notch ac-tourne"></i> Vérification auprès de Garmin…`;
+  err.textContent = "";
+  let r = null;
+  try {
+    r = await api.save_garmin(cle, depuis);
+    if (r && r.ok) r = await api.save_garmin_reglages(choix, "");
+  } catch (e) { r = { ok: false, error: String(e) }; }
+  btn.disabled = false;
+  btn.innerHTML = lbl;
+  if (r && r.gele) return;
+  if (!r || !r.ok) {
+    err.textContent = (r && r.error) || "Connexion impossible.";
+    document.getElementById("ga-cle").focus();
+    return;
+  }
+  GA.config = r;
+  GA.formCle = false; GA.erreur = ""; GA.code = ""; GA.erreurs = [];
+  _gaBootstrapped = true;
+  showToastModern("Compte Garmin connecté", "ok");
+  goTab("ga-forme"); _setActiveSidebar("ga-forme");
+  gaSynchroniser(false);
+}
+
+async function gaRegler() {
+  const api = gaApi();
+  if (!api) return;
+  const champ = document.getElementById("ga-depuis");
+  const r = await api.save_garmin_reglages(gaLireCases(), champ ? champ.value : "");
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Réglage non enregistré", "err"); return; }
+  GA.config = r;
+  gaRenderTout();
+  if (typeof dashRender === "function") dashRender();
+}
+
+async function gaDeconnecter() {
+  const api = gaApi();
+  if (!api) return;
+  const r = await api.save_garmin_deconnexion();
+  if (r && r.gele) return;
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Déconnexion impossible", "err"); return; }
+  GA.config = r;
+  GA.erreur = ""; GA.code = ""; GA.erreurs = []; GA.formCle = false;
+  gaRenderTout();
+  showToastModern("Compte Garmin déconnecté : Pilote a oublié la clé", "ok");
+}
+
+/* ── Ma forme ────────────────────────────────────────────────────────────── */
+
+function gaRenderEtat() {
+  const maj = document.getElementById("ga-maj");
+  if (maj) maj.textContent = !gaConnecte() ? "" : GA.enCours ? "Synchronisation…"
+    : "Synchronisé " + gaQuand(GA.config && GA.config.derniere);
+  const btn = document.getElementById("ga-btn-synchro");
+  // .btn impose son display : [hidden] seul ne le cacherait pas
+  if (btn) { btn.disabled = GA.enCours || !gaConnecte(); btn.style.display = gaConnecte() ? "" : "none"; }
+  const etat = document.getElementById("ga-cnx-etat");
+  if (etat) etat.textContent = gaEtatTexte();
+}
+
+function gaRenderTout() {
+  gaRenderEtat();
+  gaRenderForme();
+  gaRenderConnexion();
+  if (typeof cfgRenderModule === "function") cfgRenderModule("garmin");
+}
+
+function gaKpi(lbl, val, sub, accent) {
+  return `<div class="mkpi${accent ? " accent" : ""}"><span class="mkpi-lbl">${escHtml(lbl)}</span>
+    <span class="mkpi-val">${val}</span><span class="mkpi-sub">${escHtml(sub || "")}</span></div>`;
+}
+
+function gaRenderForme() {
+  const box = document.getElementById("ga-forme");
+  if (!box) return;
+  const jours = gaJours();
+  if (!gaConnecte() && !Object.keys(jours).length) {
+    box.innerHTML = `<div class="card"><div class="card-b"><div class="m-empty">
+      Connecte ton compte Garmin pour voir ici ton sommeil, ta Body Battery, ta VFC et tes pas,
+      et retrouver les séances de ta montre dans Sports.<br><br>
+      <button class="btn btn-primary" onclick="goTab('ga-connexion');_setActiveSidebar('ga-connexion')"><i class="ph ph-plug"></i> Connecter mon compte</button>
+    </div></div></div>`;
+    return;
+  }
+  const choix = (GA.config && GA.config.choix) || {};
+  const alerte = GA.erreur
+    ? `<div class="ga-erreurs"><b>Synchronisation impossible.</b> ${escHtml(GA.erreur)}</div>`
+    : GA.erreurs.length ? `<div class="ga-erreurs"><b>Synchronisation incomplète.</b> ${GA.erreurs.map(escHtml).join(" · ")}</div>`
+    : !gaConnecte() ? `<div class="ga-erreurs">Aucun compte Garmin connecté : ces chiffres sont ceux déjà lus.
+        <a href="#" onclick="event.preventDefault();goTab('ga-connexion');_setActiveSidebar('ga-connexion')">Connexion</a></div>` : "";
+
+  let forme = "";
+  if (choix.forme === false && !Object.keys(jours).length) {
+    forme = `<div class="card"><div class="card-b"><div class="m-empty">La forme du jour n'est pas cochée
+      dans Garmin › Connexion.</div></div></div>`;
+  } else if (!Object.keys(jours).length) {
+    forme = `<div class="card"><div class="card-b"><div class="m-empty">${GA.enCours ? "Lecture de Garmin…"
+      : "Rien de Garmin pour l'instant : synchronise, ou porte ta montre une nuit."}</div></div></div>`;
+  } else {
+    const [jS, s] = gaDernier("sommeil");
+    const [jB, b] = gaDernier("bbMax");
+    const [jV, v] = gaDernier("vfc");
+    const [jF, f] = gaDernier("fcRepos");
+    const [jP, p] = gaDernier("pas");
+    const moyF = gaMoyenne("fcRepos", 30);
+    const kpis = [
+      s ? gaKpi("Sommeil", gaDuree(s.sommeil), (s.sommeilScore != null ? "score " + s.sommeilScore + " · " : "") + gaNuit(jS), true) : "",
+      b ? gaKpi("Body Battery", String(b.bbMax), "au plus haut " + gaLeJour(jB) + (b.bbFin != null ? " · dernière valeur " + b.bbFin : "")) : "",
+      v ? gaKpi("VFC de la nuit", v.vfc + " ms", (GA_VFC[v.vfcStatut] || "") + (GA_VFC[v.vfcStatut] ? " · " : "") + dashDateCourte(jV)) : "",
+      f ? gaKpi("FC au repos", f.fcRepos + " bpm", (moyF ? "moyenne 30 j : " + moyF + " · " : "") + dashDateCourte(jF)) : "",
+      p ? gaKpi("Pas", Number(p.pas).toLocaleString("fr-FR"), (p.objectifPas ? "objectif " + Number(p.objectifPas).toLocaleString("fr-FR") + " · " : "") + gaLeJour(jP)) : "",
+    ].join("");
+    const m = GA_MESURES.find(x => x[0] === GA.mesure) || GA_MESURES[0];
+    const moy = gaMoyenne(m[0], 30);
+    forme = `<div class="mkpis">${kpis}</div>
+      <div class="card"><div class="card-h ga-courbe-h"><span class="card-t">30 derniers jours</span>
+        <div class="sa-ranges">${GA_MESURES.map(x => `<button class="btn btn-sm btn-ghost${x[0] === m[0] ? " active" : ""}"
+          onclick="GA.mesure='${x[0]}';gaRenderForme()">${escHtml(x[1])}</button>`).join("")}</div>
+        <span class="ga-moy">${moy != null ? "moyenne : " + m[3](moy) + (m[2] ? " " + m[2] : "") : ""}</span></div>
+        <div class="card-b"><div class="ga-chart"><canvas id="ga-chart"></canvas></div></div></div>`;
+  }
+
+  box.innerHTML = alerte + forme + gaSeancesHtml();
+  gaRenderCourbe();
+}
+
+/** Garmin date le sommeil du jour du réveil. */
+function gaNuit(iso) {
+  if (iso === todayISO()) return "cette nuit";
+  const d = spParseISO(iso), veille = new Date(d);
+  veille.setDate(d.getDate() - 1);
+  return "nuit du " + (veille.getMonth() !== d.getMonth()
+    ? veille.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : veille.getDate())
+    + " au " + dashDateCourte(iso);
+}
+
+function gaLeJour(iso) { return iso === todayISO() ? "aujourd'hui" : "le " + dashDateCourte(iso); }
+
+function gaMoyenne(cle, n) {
+  const v = gaSerie(cle, n).map(x => x.v).filter(x => x != null);
+  return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+}
+
+function gaRenderCourbe() {
+  const cv = document.getElementById("ga-chart");
+  if (_gaChart) { _gaChart.destroy(); _gaChart = null; }
+  if (!cv || !window.Chart) return;
+  const m = GA_MESURES.find(x => x[0] === GA.mesure) || GA_MESURES[0];
+  const serie = gaSerie(m[0], 30);
+  const acc = saCssVar("--accent", "#e07a2f"), grid = saCssVar("--brd", "rgba(128,128,128,.2)"), txt = saCssVar("--txt2", "#888");
+  _gaChart = new Chart(cv, {
+    type: m[4],
+    data: {
+      labels: serie.map(x => new Date(x.jour + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })),
+      datasets: [{ label: m[1] + (m[2] ? " (" + m[2] + ")" : ""),
+        data: serie.map(x => x.v == null ? null : (m[0] === "sommeil" ? Math.round(x.v / 6) / 10 : x.v)),
+        borderColor: acc, backgroundColor: m[4] === "bar" ? acc + "bb" : acc + "22",
+        borderWidth: 2, tension: .3, fill: m[4] !== "bar", pointRadius: 2, spanGaps: true }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: grid }, ticks: { color: txt, font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+        y: { grid: { color: grid }, ticks: { color: txt, font: { size: 10 } }, beginAtZero: m[4] === "bar" },
+      },
+    },
+  });
+}
+
+/** Les dernières séances venues de la montre (elles vivent dans Sports). */
+function gaSeancesHtml() {
+  if (typeof SP === "undefined" || !SP) return "";
+  const l = spSessions().filter(s => s.garminId)
+    .sort((a, b) => (b.date + (b.time || "")).localeCompare(a.date + (a.time || ""))).slice(0, 8);
+  if (!l.length) return "";
+  return `<div class="card"><div class="card-h"><span class="card-t">Séances de la montre</span>
+      <span class="ga-moy">ajoutées à Sports</span></div>
+    <div class="card-b"><div class="ga-seances">${l.map(s => {
+      const sp = spSportById(s.sport);
+      return `<div class="ga-seance">
+        <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
+        <div class="ga-seance-txt"><b>${escHtml(s.note || sp.label)}</b>
+          <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</small></div>
+        <span class="ga-seance-d">${escHtml(dashDateCourte(s.date))}</span>
+        <button class="m-iconbtn" title="Modifier" onclick="spOpenSession(${s.id}, null)"><i class="ph ph-pencil-simple"></i></button>
+      </div>`; }).join("")}</div></div></div>`;
+}
+
+/* ── Tuiles de l'accueil ─────────────────────────────────────────────────── */
+
+function dashGaSommeil() {
+  const [j, s] = gaDernier("sommeil");
+  if (!s) return null;
+  const moy = gaMoyenne("sommeil", 7);
+  return { lbl: "Sommeil", val: gaDuree(s.sommeil),
+           sub: (s.sommeilScore != null ? "score " + s.sommeilScore + " · " : "") + gaNuit(j)
+                + (moy ? " · moyenne 7 j : " + gaDuree(moy) : ""),
+           go: "Ma forme", viz: dashSpark(gaSerie("sommeil", 14).map(x => x.v).filter(x => x != null)) };
+}
+
+function dashGaForme() {
+  const [jB, b] = gaDernier("bbMax");
+  const [, v] = gaDernier("vfc");
+  const [, f] = gaDernier("fcRepos");
+  if (!b && !v && !f) return null;
+  const sub = [v ? "VFC " + v.vfc + " ms" + (GA_VFC[v.vfcStatut] ? " (" + GA_VFC[v.vfcStatut] + ")" : "") : "",
+               f ? "FC repos " + f.fcRepos : ""].filter(Boolean).join(" · ");
+  return { lbl: b ? "Body Battery " + gaLeJour(jB) : "Forme",
+           val: b ? String(b.bbMax) : (v ? v.vfc + " ms" : f.fcRepos + " bpm"),
+           sub, go: "Ma forme", viz: dashSpark(gaSerie("bbMax", 14).map(x => x.v).filter(x => x != null)) };
+}
+
+function dashGaPas() {
+  const [j, p] = gaDernier("pas");
+  if (!p) return null;
+  const obj = Number(p.objectifPas) || 0;
+  const pct = obj ? p.pas / obj * 100 : 0;
+  return { lbl: "Pas " + gaLeJour(j), val: Number(p.pas).toLocaleString("fr-FR"),
+           sub: obj ? "objectif " + obj.toLocaleString("fr-FR") + " · " + Math.round(pct) + " %" : "",
+           cls: obj && p.pas >= obj ? "c-g" : "", go: "Ma forme", viz: obj ? dashProgress(pct) : "" };
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────── */
+
+(function patchGoTabGarmin() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    if (n !== "ga-forme" && n !== "ga-connexion") return;
+    Promise.resolve(_gaBootstrapped || gaBootstrap()).then(() => {
+      if (n === "ga-connexion") { gaRenderConnexion(); return; }
+      gaRenderEtat();
+      gaRenderForme();
+      if (gaConnecte() && gaAncienne()) gaSynchroniser(true);
+    });
+  };
+})();
+
 /* Chargement de chaque module : [nom du journal, section de NAV_SECTIONS,
    chargement]. boot() ne charge que les sections affichées ; une section
    cochée plus tard dans Paramètres → Modules se charge à ce moment-là. Santé
@@ -27928,6 +28543,7 @@ const MODULES_A_CHARGER = [
   ["cto",        "sec-cto",     () => ctoBootstrap()],
   ["crypto",     "sec-crypto",  () => ctoBootstrap()],   // même fichier (cto.json), lu une fois
   ["agenda",     "sec-agenda",  () => agBootstrap()],
+  ["garmin",     "sec-garmin",  () => gaBootstrap()],
 ];
 
 /** Un module qu'on vient de cocher (il était masqué au lancement, donc pas

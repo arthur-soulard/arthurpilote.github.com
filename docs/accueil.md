@@ -359,6 +359,14 @@ notifications », ce qui va sonner sur le téléphone, `agenda_prochaines`). Ell
   `dashNotesAjuster` prend la première `.dash-notes` de l'accueil, il aurait
   ajusté cette tuile au lieu du pense-bête.
 
+### Tuiles de Garmin (03/11/2026)
+
+`ga-sommeil` (sommeil de la nuit, score, moyenne 7 j, courbe 14 j), `ga-forme`
+(Body Battery du jour, VFC et FC au repos, courbe 14 j de la Body Battery),
+`ga-pas` (pas du jour, barre vers l'objectif). Elles lisent `GA.config.jours`
+(`garmin.json`) et disparaissent tant que rien n'a été lu. Détail :
+`docs/modules/garmin.md`.
+
 ### Tuiles des CTO (4.4.0)
 
 Une tuile par CTO (`cto:<id>`), ajoutée à `DASH_WIDGETS` à la lecture de

@@ -64,6 +64,7 @@ import patrimoine
 import sante
 import actus
 import agenda
+import garmin
 import expositions
 import sauvegarde
 import notifications
@@ -543,6 +544,54 @@ class Api:
             return {"ok": False, "code": e.code, "error": e.message}
         except Exception as e:
             return {"ok": False, "code": "imap", "error": "Gmail a répondu : " + str(e)}
+
+    # -- Garmin : les donnees de la montre, lues par la cle API personnelle --
+    # Comme pour Actus, la cle entre par save_garmin et ne ressort jamais.
+
+    def load_garmin(self) -> dict:
+        try:
+            return {"ok": True, **garmin.config()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_garmin(self, cle: str, depuis: str = "") -> dict:
+        """Connecte le compte : rien n'est enregistre tant que Garmin n'a pas accepte la cle."""
+        try:
+            return {"ok": True, **garmin.connecter(cle, depuis or "")}
+        except garmin.ErreurGarmin as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "api", "error": str(e)}
+
+    def save_garmin_reglages(self, choix: dict, depuis: str = "") -> dict:
+        try:
+            return {"ok": True, **garmin.regler(choix or {}, depuis or "")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_garmin_deconnexion(self) -> dict:
+        try:
+            return {"ok": True, **garmin.deconnecter()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def save_garmin_synchro(self) -> dict:
+        """Lit Garmin et garde la forme du jour (garmin.json) ; renvoie les
+        seances et pesees nouvelles, que la page ajoute a Sports et Sante."""
+        try:
+            return {"ok": True, **garmin.synchroniser()}
+        except garmin.ErreurGarmin as e:
+            return {"ok": False, "code": e.code, "error": e.message}
+        except Exception as e:
+            return {"ok": False, "code": "api", "error": "Garmin : " + str(e),
+                    "trace": traceback.format_exc()}
+
+    def save_garmin_vus(self, ids: list) -> dict:
+        """Ce que la page a ajoute ou ecarte : plus propose ensuite."""
+        try:
+            return {"ok": True, **garmin.marquer_vus(ids or [])}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     # -- Agenda : Pilote ecrit dans l'agenda iCloud (propre a l'utilisateur actif) --
     # Comme pour Actus, le mot de passe pour app entre par save_agenda et ne ressort jamais.

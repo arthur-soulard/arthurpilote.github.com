@@ -10,6 +10,9 @@ notes et ce qu'il a coché, et lit ses autres agendas pour les afficher sans jam
 les modifier (`docs/modules/agenda.md`). Si la notification « Bilan de la semaine »
 est réglée, elle emporte aussi la page du bilan en PDF (valeur des comptes, dépenses,
 poids : décidé avec Arthur le 01/11/2026).
+Le module Garmin (03/11/2026, pas encore publié) lit la montre dans le compte Garmin
+Connect de l'utilisateur, avec sa clé API personnelle : il ne fait que lire
+(`docs/modules/garmin.md`).
 **Aussi sur Mac depuis la 4.4.8** (décidé le 11/10/2026, Mac à puce Apple) : une seule
 app pour les deux systèmes, pas de copie séparée ; ce qui diffère passe par
 `sys.platform` ou `plateforme.py`, le chemin Windows y reste celui d'avant. Avant de
@@ -47,6 +50,7 @@ Pilote/
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
 │   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
 │   ├── agenda.py       # Agenda iCloud            (agenda.json) : séances, objectifs, mensualités, en CalDAV
+│   ├── garmin.py       # Module « Garmin »        (garmin.json) : la montre, par la clé API personnelle
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
@@ -97,6 +101,7 @@ Donnees/
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
 │   ├── agenda.json           # Agenda iCloud : identifiant, code chiffré, agenda, cases (+ backups_agenda/)
+│   ├── garmin.json           # Garmin : clé chiffrée, cases, forme du jour, vus (+ backups_garmin/)
 │   ├── formation.json, certificats/  # module Formation retiré le 11/10/2026 :
 │   │                         #   laissés sur le disque, plus lus par l'app
 │   ├── vocabulaire.json      # module Vocabulaire retiré le 11/10/2026, idem
@@ -214,6 +219,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/import-releves.md` | import des relevés de toutes banques (PEA et CTO) : CSV conseillé et PDF, formats, pièges par banque, reconnaissance des titres (catalogue, ticker seul) | `releves.py`, `ctoImport*`, `/isin` |
 | `docs/modules/actus.md` | Actus : boîte Gmail en IMAP, code chiffré, mail en iframe sous ticket | `actus.py`, `/actus/mail/`, `ac*` |
 | `docs/modules/agenda.md` | Agenda : calendrier, notes, iCloud en CalDAV (écriture et lecture), synchronisation | `agenda.py`, `ag*`, `save_agenda*` |
+| `docs/modules/garmin.md` | Garmin : clé API personnelle, séances vers Sports, pesées vers Santé, forme du jour, ce qui reste à vérifier avec une vraie clé | `garmin.py`, `ga*`, `save_garmin*` |
 | `docs/mac.md` | version Mac : décisions, étapes, ce qui reste propre à Windows, build Mac | `plateforme.py`, tout `sys.platform`, `pilote-mac.spec`, `build-mac.yml` |
 | `docs/microsoft-store.md` | version Microsoft Store : paquet MSIX, données dans `~\Pilote\Donnees`, pas d'auto-update, test | `build/msix.py`, `build/AppxManifest.xml`, `plateforme.version_store`, `storage.get_app_dir`, `updater.start_check` |
 | `docs/pistes.md` | pistes proposées, et celles écartées (à ne pas reproposer) | toute suggestion de nouveauté |
@@ -299,6 +305,7 @@ Paramètres.
 | Crypto          | crypto-dash, crypto-pos, crypto-tx (écrans du PEA, comme un CTO : `docs/modules/crypto.md`) |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 | Agenda          | ag-cal (« Calendrier »), ag-notifs (« Notifications »), ag-connexion (« iCloud ») |
+| Garmin          | ga-forme (« Ma forme »), ga-connexion (« Connexion »)               |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
 | Sports          | sp-agenda, sp-goals, sp-stats                                      |
@@ -319,8 +326,8 @@ CTO précis ; `_navSectionOf` ignore le `@…`, `_setActiveSidebar` complète un
 `cto-pos` sans `@` par le CTO affiché (`_ongletComplet`). `body.dataset.activeTab`
 garde l'onglet sans `@`.
 
-Dix blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
-Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO, puis Agenda
+Onze blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
+Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO, puis Agenda et Garmin
 après le tableau de bord (`grep -n "window.goTab = function"`). Ils s'enchaînent : ne pas casser l'ordre.
 
 ## Serveur local (server.py, port 7438)
@@ -414,9 +421,9 @@ n'existent plus.
 
 * Tout l'UI vit dans `index.html` (~24 000 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `ac*`,
-  `cto*`, `dash*`, `sv*`, `home*`, `ag*`), avec leur propre patch de `goTab`. **Ordre des patchs :
+  `cto*`, `dash*`, `sv*`, `home*`, `ag*`, `ga*`), avec leur propre patch de `goTab`. **Ordre des patchs :
   Mes comptes → Sports → Prêt → Accueil → Santé → Sauvegarde USB → Patrimoine → Actus → CTO,
-  puis le tableau de bord, Agenda et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
+  puis le tableau de bord, Agenda, Garmin et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
 * **HTTP pour lire, pont pour écrire.** Le serveur local (`/data`, `/cours`, `/history`,
   `/isin`…) sert les lectures et Yahoo ; toute écriture passe par une méthode `save_*` du
   pont pywebview (`window.pywebview.api`), enveloppée par `_surveillerEcritures` (gel,
