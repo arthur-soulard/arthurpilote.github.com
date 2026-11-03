@@ -24,4 +24,4 @@ ga-forme 600
 # 4. Garmin › Connexion : la fiche pour créer la clé et le formulaire.
 ga-connexion
 # 5. Paramètres › Garmin.
-js:openSettings('general'),setGoSection('garmin')
+js:openSettings('garmin')
