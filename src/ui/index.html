@@ -2026,8 +2026,10 @@ label.sv-check, label.sv-inline {
 .ga-cases label.sv-check { font-size: 13px; color: var(--txt); align-items: flex-start; }
 .ga-cases input { margin-top: 3px; }
 .ga-tag { display: inline-flex; align-items: center; gap: 3px; }
-.ga-rec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--accent-text, var(--accent)); }
-.ga-rec .btn { padding: 2px 9px; }
+/* En ligne, pas en flex : le texte long passait seul à la ligne sous le trophée (Mac, 1024 px) */
+.ga-rec { color: var(--accent-text, var(--accent)); line-height: 1.6; }
+.ga-rec .ph { vertical-align: -2px; margin-right: 3px; }
+.ga-rec .btn { padding: 2px 9px; margin-left: 6px; vertical-align: middle; }
 .ga-cycle { display: flex; flex-direction: column; gap: 10px; }
 .ga-cycle-l { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; font-size: 13px; color: var(--txt2); }
 .ga-cycle-l b { font-family: var(--serif); font-weight: 500; font-size: 22px; color: var(--txt); }

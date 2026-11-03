@@ -27,5 +27,7 @@ ga-forme 700
 ga-connexion
 # 5. Sports › Objectifs : le record de la montre propose « Valider ».
 sp-goals
-# 6. Bilan de la semaine (section Forme).
+# 6. Bilan de la semaine (section Forme, plus bas dans la page).
 js:bilanOuvrir()
+# 7. Sports › Objectifs encore : trophée et texte sur la même ligne (retouche).
+sp-goals
