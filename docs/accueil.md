@@ -366,7 +366,9 @@ notifications », ce qui va sonner sur le téléphone, `agenda_prochaines`). Ell
 `ga-pas` (pas du jour, barre vers l'objectif), `ga-intensite` (minutes intenses
 depuis lundi, barre vers l'objectif de la semaine), `ga-cycle` (jour du cycle,
 seulement s'il est coché et suivi dans Garmin), `ga-record` (dernier record de la
-montre, lu dans Sports). Elles lisent `GA.config` (`garmin.json`) et
+montre, lu dans Sports), `ga-records` (03/11/2026 : record sur 5 km en grand, les
+autres distances dessous, lus dans `GA.config.records` ; allumée par Premiers pas
+avec le module). Elles lisent `GA.config` (`garmin.json`) et
 disparaissent tant que rien n'a été lu. Détail : `docs/modules/garmin.md`.
 
 ### Tuiles des montres (03/11/2026, branche `montres`)

@@ -56,10 +56,34 @@ Jamais essayé avec une vraie clé (Arthur absent) : voir « À vérifier ».
 |---|---|---|
 | Séances | `/activitylist-service/activities/search/activities` (99 par page, 10 pages au plus) | séances de Sports : date et heure locales, sport, durée (min), distance (km, ou m pour la natation), D+, nom de l'activité en note, FC moyenne, kcal |
 | Pesées | `/weight-service/weight/all/{debut}/{fin}` | pesées de Santé : poids, IMC, graisse, eau (`source: "garmin"`) |
-| Forme du jour | `/usersummary-service/v2/dailysummaries` (1 an max), `/sleep-service/sleep/dailySleepSummariesByDate` (31 j max), `/hrv-service/hrv/daily/{a}/{b}`, `/fitnessage-service/fitnessage/v2/{jour}` | `jours` de `garmin.json` : pas, objectif, FC au repos, Body Battery (max, min, dernière valeur), stress, minutes intenses et objectif de la semaine, SpO2 et respiration (moyennes du jour), sommeil (min, score, profond, paradoxal), VFC (nuit, statut) ; `ageForme` : âge physique, âge réel, âge atteignable |
+| Forme du jour | `/usersummary-service/v2/dailysummaries` (1 an max), `/sleep-service/sleep/dailySleepSummariesByDate` (31 j max), `/hrv-service/hrv/daily/{a}/{b}`, `/fitnessage-service/fitnessage/v2/{jour}` | `jours` de `garmin.json` : pas, objectif, FC au repos, Body Battery (max, min, dernière valeur), stress, minutes intenses et objectif de la semaine, SpO2 et respiration (moyennes du jour), sommeil (min, score, profond, paradoxal, heures de coucher et de lever), VFC (nuit, statut) ; `ageForme` : âge physique, âge réel, âge atteignable |
 | Cycle menstruel (décochée par défaut) | `/periodichealth-service/menstrualcycle/summary/{jour}` | `cycle` : jour du cycle, durée prévue, règles, fenêtre fertile, début de la phase lutéale, grossesse |
 
 Les records : `isPR` de l'activité devient `record: true` sur la séance de Sports.
+
+**Records de course** (03/11/2026, demande d'Arthur : « les records sur 5k,
+10k… ») : `fastestSplit_<m>` des activités de course (1 000, 5 000, 10 000,
+21 098, 42 195 m : `DISTANCES_RECORD`) donne le meilleur temps de chaque
+séance ; `records()` garde le plus rapide dans `garmin.json` (`records`, `{s,
+date, nom, garminId}`). Moins de 2 min 30 au km : erreur de GPS, ignorée. Pour
+avoir les records de toujours, la **première** synchronisation (ou la première
+d'une installation d'avant, `historique` absent) lit toutes les activités depuis
+le 01/01/2000 (`PAGES_HISTOIRE` : 30 × 99) ; les séances d'avant « depuis »
+n'entrent pas dans Sports pour autant. Ensuite, seulement les derniers jours.
+Une séance supprimée dans Garmin garde son record dans Pilote.
+
+**Effet d'entraînement** : `aerobicTrainingEffect` et `anaerobicTrainingEffect`
+(0 à 5, arrondis au dixième, 0 écarté) et `trainingEffectLabel` deviennent
+`effetAero`, `effetAnaero` et `effetType` sur la séance de Sports (gardés par
+`spSaveSession`, affichés dans Sports et Ma forme, libellés dans `GA_EFFETS`).
+
+**VO2max : pas lisible.** La spec annonce `vO2MaxValue` sur chaque activité,
+mais il n'est sur aucune des 175 séances d'Arthur (2022 à 2026, lues le
+03/11/2026), et aucune des 26 adresses de l'API ne donne la VO2max. Rien
+d'affiché tant que Garmin ne la rend pas.
+
+**SpO2** : la saturation en oxygène du sang (95 à 100 % d'habitude), mesurée la
+nuit si l'oxymètre de pouls est activé sur la montre. Absente chez Arthur.
 
 **Cycle menstruel, pour qui ?** Pilote ne connaît pas le sexe de l'utilisateur
 (Garmin ne le donne pas dans l'API, et le profil de Santé ne le demande pas).
@@ -78,6 +102,16 @@ de l'expiration, avec l'alerte choisie (une semaine avant, par exemple).
 Le sport vient du `typeKey` de Garmin, reconnu par morceau (`sport_pilote`) :
 `swim` → natation, `run` → course, `cycl`/`bik`/`ride` → vélo, `strength` →
 muscu, `hik` → rando, `soccer` → foot, le reste → Autre (yoga, marche…).
+
+Heures de coucher et de lever : `sleepStartTimestampLocal` et
+`sleepEndTimestampLocal`, des **nombres** en ms déjà décalés à l'heure locale
+(vu le 03/11/2026 : local − GMT = 1 h en novembre), lus comme de l'UTC
+(`_heure_locale`) et gardés en `"HH:MM"` (`coucher`, `lever`).
+
+**Un an de forme** (03/11/2026) : la première synchronisation lit 365 jours
+(`JOURS_AN`, au lieu de 30), une installation d'avant aussi, une fois
+(`formeAn` absent) ; ensuite les 2 derniers jours. Soit environ 25 appels la
+première fois (sommeil et VFC par tranches de 31 jours).
 
 Unités d'après la spec : durées en secondes, distances en mètres, poids en kg.
 L'ancienne API de Connect donnait le poids en **grammes** : une valeur au-dessus
@@ -122,12 +156,18 @@ nouveau ou une panne.
 
 ### Écrans et tuiles
 
-* **Ma forme** : jusqu'à neuf chiffres (sommeil de la nuit avec score, Body
+* **Ma forme** : jusqu'à douze chiffres (sommeil de la nuit, score de sommeil
+  avec son palier Garmin, excellent 90, bon 80, passable 60, et sa moyenne 7 j,
+  coucher et lever moyens sur 30 j avec la régularité du coucher en écart type
+  (`gaHoraires`, un coucher après minuit compte pour la veille), Body
   Battery, VFC et son statut, FC au repos et sa moyenne sur 30 j, pas et
   objectif, minutes intenses de la semaine, SpO2, respiration, âge physique :
-  chacun n'apparaît que si la montre le mesure), une courbe des 30 derniers
-  jours au choix (sommeil, Body Battery, VFC, FC au repos, pas, stress, minutes
-  intenses, SpO2, respiration), la carte du cycle (jour, phase, prochaines
+  chacun n'apparaît que si la montre le mesure), une courbe sur 7 jours, 1 mois,
+  6 mois ou 1 an (`GA_PERIODES` ; à partir de 6 mois, la moyenne de chaque
+  semaine, 26 ou 52 points : `gaPoints`) au choix (sommeil, score de sommeil,
+  Body Battery, VFC, FC au repos, pas, stress, minutes intenses, SpO2,
+  respiration), les records de course (temps, allure, date, nom de la séance),
+  la carte du cycle (jour, phase, prochaines
   règles, barre règles / fenêtre fertile / aujourd'hui), puis les 8 dernières
   séances venues de la montre, records marqués. Garmin date le sommeil du jour
   du réveil : « nuit du 2 au 3 nov. » (`gaNuit`). La phase du cycle se déduit
@@ -142,7 +182,8 @@ nouveau ou une panne.
   jour, VFC, FC au repos), `ga-pas` (pas du jour, barre vers l'objectif),
   `ga-intensite` (minutes intenses depuis lundi, barre vers l'objectif de la
   semaine), `ga-cycle` (jour du cycle, phase, prochaines règles), `ga-record`
-  (dernier record : distance ou durée en grand).
+  (dernier record : distance ou durée en grand), `ga-records` (record sur 5 km
+  en grand, les autres distances dessous).
 * Sports : badges « Garmin » et « Record », FC moyenne dans la liste du jour.
   Objectifs de performance : un record de la montre depuis la création de
   l'objectif, du même sport, propose « Valider » (`gaRecordPour`) ; rien ne se
@@ -157,7 +198,7 @@ nouveau ou une panne.
 ### Tests
 
 * `tests/test_garmin.py` : faux serveur construit d'après le Swagger et le client
-  officiel (jeton JWT brut, ApiKey puis Bearer), 17 cas (mauvaise clé, clé jamais
+  officiel (jeton JWT brut, ApiKey puis Bearer), 22 cas (records sur tout l'historique, effet d'entraînement, coucher et lever, un an de forme une fois, mauvaise clé, clé jamais
   en clair, conversion des séances, records et pesées, grammes, SpO2,
   respiration, âge physique, vus, relecture partielle, source en panne, âge
   physique absent, clé expirée, cases, cycle suivi ou non, date d'expiration,

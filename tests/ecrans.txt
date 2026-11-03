@@ -11,10 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 03/11/2026 : 4.4.54, section Montres (Coros, fichiers .fit, trois tuiles), puis la
-# fiche des nouveautes (4.4.53 et 4.4.54). Pas de « ; » ni d'espace dans un appel js.
+# 03/11/2026 : 4.4.55, Ma forme (score de sommeil, coucher et lever, courbe sur
+# 6 mois, records de course, effet d'entrainement des seances), tuile Records de
+# course, puis la fiche des nouveautes. Pas de « ; » ni d'espace dans un appel js.
 ga-forme
-co-connexion
-mo-fit
+js:GA.periode=182,GA.mesure='sommeilScore',gaRenderForme()
+ga-forme 900
 home
-js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.52',_majFicheApresMiseAJour()
+sp-agenda
+js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.54',_majFicheApresMiseAJour()

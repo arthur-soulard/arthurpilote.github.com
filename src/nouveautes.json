@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.55",
+      "date": "2026-11-03",
+      "titre": "Tes records de course et ta forme sur un an",
+      "nouveau": [
+        "Records de course : Montres › Ma forme montre tes meilleurs temps sur 1 km, 5 km, 10 km, semi-marathon et marathon, lus dans tout ton historique Garmin, avec l'allure, la date et le nom de la séance. Les anciennes séances ne sont pas ajoutées à Sports pour autant.",
+        "Score de sommeil : une case à lui, avec le palier de Garmin (excellent, bon, passable, médiocre) et ta moyenne sur 7 jours, et sa propre courbe.",
+        "Coucher et lever : tes heures moyennes sur 30 jours, et la régularité de ton coucher.",
+        "Effet d'entraînement : chaque séance de ta montre Garmin indique son effet (tempo, base aérobie, VO2max…) et ses notes aérobie et anaérobie, dans Sports et dans Ma forme.",
+        "Une tuile d'accueil Records de course : ton record sur 5 km en grand, les autres distances dessous."
+      ],
+      "ameliore": [
+        "Courbe de Ma forme : sur 7 jours, 1 mois, 6 mois ou 1 an (un point par semaine à partir de 6 mois). Pilote relit une fois ton année passée chez Garmin : la première synchronisation est un peu plus longue."
+      ]
+    },
+    {
       "version": "4.4.54",
       "date": "2026-11-03",
       "titre": "Ta montre Coros, et toutes les autres par leurs fichiers .fit",

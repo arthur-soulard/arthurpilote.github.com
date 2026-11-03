@@ -85,7 +85,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["mo-derniere", "co-forme", "ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["mo-derniere", "co-forme", "ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "ga-records", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -230,7 +230,9 @@ def sports():
             if k < 21 and s["sport"] in ("course", "velo"):
                 # Venues de la montre (module Garmin) : « Séances de la montre »
                 s.update(garminId=str(9000 + k), fcMoy=148 if s["sport"] == "course" else 136,
-                         note="Footing" if s["sport"] == "course" else "Sortie vélo")
+                         note="Footing" if s["sport"] == "course" else "Sortie vélo",
+                         effetAero=round(2.4 + (k % 5) * 0.4, 1), effetAnaero=round((k % 4) * 0.6, 1),
+                         effetType="TEMPO" if k % 3 == 0 else "AEROBIC_BASE")
                 if s["sport"] == "course" and not any(x.get("record") for x in seances):
                     s.update(record=True, distance=10.0, duration=48, note="10 km du parc")
             seances.append(s)
@@ -328,22 +330,29 @@ def agenda():
 
 def garmin():
     """Compte Garmin pas connecte (aucun echange reseau dans le test) : la forme
-    des 30 derniers jours deja lue, pour l'onglet Ma forme et ses tuiles."""
+    de l'annee passee deja lue (courbe sur un an), les records de course, pour
+    l'onglet Ma forme et ses tuiles."""
     jours = {}
-    for k in range(30):
+    for k in range(365):
         jours[jour(-k)] = {
             "pas": 6200 + (k * 1931) % 6500, "objectifPas": 10000, "fcRepos": 50 + (k * 7) % 6,
             "bbMax": 68 + (k * 13) % 28, "bbMin": 15 + (k * 5) % 14, "bbFin": 45 + (k * 11) % 20,
             "stress": 24 + (k * 9) % 17, "sommeil": 375 + (k * 37) % 110, "sommeilScore": 62 + (k * 17) % 30,
             "profond": 70 + (k * 3) % 30, "paradoxal": 85 + (k * 7) % 25,
             "vfc": 46 + (k * 11) % 17, "vfcStatut": "BALANCED",
-            "intensite": (k * 23) % 45, "objectifIntensite": 150, "spo2": 95 + k % 3, "respiration": 13 + k % 3}
+            "intensite": (k * 23) % 45, "objectifIntensite": 150, "spo2": 95 + k % 3, "respiration": 13 + k % 3,
+            "coucher": "%02d:%02d" % ((23 + (k * 5) % 3) % 24, (k * 13) % 60), "lever": "07:%02d" % ((k * 7) % 45)}
     # Cycle coché et suivi dans Garmin Connect : carte et tuile « Cycle »
     cycle = {"date": jour(0), "jour": 12, "duree": 28, "regles": 5, "fertileDebut": 11, "fertileDuree": 6,
              "luteale": 17, "prochaine": 4, "grossesse": False}
     return {"_meta": dict(META, schema="garmin.v1"), "secret": "", "jours": jours,
             "choix": {"seances": True, "pesees": True, "forme": True, "cycle": True},
-            "ageForme": {"age": 24.5, "reel": 27, "atteignable": 22.0}, "cycle": cycle}
+            "ageForme": {"age": 24.5, "reel": 27, "atteignable": 22.0}, "cycle": cycle,
+            "records": {"1000": {"s": 262, "date": jour(-3), "nom": "Fractionné", "garminId": "9003"},
+                        "5000": {"s": 1418, "date": jour(-40), "nom": "5 km du canal", "garminId": "8800"},
+                        "10000": {"s": 2880, "date": jour(-9), "nom": "10 km du parc", "garminId": "9009"},
+                        "21098": {"s": 6512, "date": "2025-04-06", "nom": "Semi de printemps", "garminId": "7001"}},
+            "historique": True, "formeAn": True}
 
 
 def coros():

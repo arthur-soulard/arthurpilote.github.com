@@ -53,9 +53,14 @@ CHOIX = ("seances", "pesees", "forme", "cycle")
 CHOIX_DEFAUT = {"seances": True, "pesees": True, "forme": True, "cycle": False}
 DUREES_CLE = (30, 90, 180, 365)   # durees proposees par Garmin a la creation de la cle
 JOURS_GARDES = 400        # resumes de forme gardes (un peu plus d'un an)
-PREMIERS_JOURS = 30       # forme lue a la premiere synchronisation
+PREMIERS_JOURS = 30       # seances et pesees : « depuis » par defaut
 RECOUVREMENT = 7          # jours relus a chaque synchronisation (une seance synchronisee en retard)
 PAGES_MAX = 10            # 10 x 99 activites au plus par synchronisation
+JOURS_AN = 365            # forme lue a la premiere synchronisation (courbe sur un an)
+HISTOIRE_DEBUT = "2000-01-01"   # records : tout l'historique, lu une fois
+PAGES_HISTOIRE = 30       # 30 x 99 activites au plus pour cette lecture
+# Records de course : distances dont Garmin donne le meilleur temps (fastestSplit_<m>)
+DISTANCES_RECORD = (1000, 5000, 10000, 21098, 42195)
 
 
 class ErreurGarmin(Exception):
@@ -84,6 +89,9 @@ def default_data() -> dict:
         "jours":    {},          # "AAAA-MM-JJ" -> resume de forme
         "ageForme": None,        # age physique (fitness age) le plus recent
         "cycle":    None,        # cycle menstruel du jour de la derniere synchronisation
+        "records":  {},          # "5000" -> meilleur temps de course {s, date, nom, garminId}
+        "historique": False,     # tout l'historique des activites lu pour les records
+        "formeAn":  False,       # la forme de l'annee passee lue une fois
     }
 
 
@@ -278,12 +286,39 @@ def seance(a: dict) -> dict:
         s["kcal"] = kcal
     if a.get("isPR") is True:     # record personnel d'apres Garmin
         s["record"] = True
+    # Effet d'entrainement de Garmin (0 a 5) et son libelle (TEMPO, VO2MAX...)
+    for cle, nom in (("aerobicTrainingEffect", "effetAero"), ("anaerobicTrainingEffect", "effetAnaero")):
+        v = round(_nombre(a.get(cle)), 1)
+        if 0 < v <= 5:
+            s[nom] = v
+    label = a.get("trainingEffectLabel")
+    if isinstance(label, str) and re.match(r"[A-Z0-9_]{2,40}$", label):
+        s["effetType"] = label
     return s
 
 
-def _activites(jeton: str, debut: datetime.date, fin: datetime.date) -> list:
+def records(activites: list, avant: dict) -> dict:
+    """Les meilleurs temps de course sur DISTANCES_RECORD : ceux d'`avant`,
+    battus par une activite plus rapide."""
+    out = {k: v for k, v in (avant or {}).items() if isinstance(v, dict)}
+    for a in activites:
+        if not isinstance(a, dict) or sport_pilote((a.get("activityType") or {}).get("typeKey") or "") != "course":
+            continue
+        s = seance(a)
+        if not s:
+            continue
+        for d in DISTANCES_RECORD:
+            sec = round(_nombre(a.get(f"fastestSplit_{d}")))
+            # Moins de 2:30 au km : une erreur de GPS, pas un record
+            if sec < d * 0.15 or (str(d) in out and out[str(d)].get("s", 0) <= sec):
+                continue
+            out[str(d)] = {"s": sec, "date": s["date"], "nom": s["note"], "garminId": s["garminId"]}
+    return out
+
+
+def _activites(jeton: str, debut: datetime.date, fin: datetime.date, pages: int = PAGES_MAX) -> list:
     tout = []
-    for page in range(PAGES_MAX):
+    for page in range(pages):
         lot = _get(jeton, "/activitylist-service/activities/search/activities",
                    {"start": page * 99, "limit": 99, "startDate": debut.isoformat(),
                     "endDate": fin.isoformat()}) or []
@@ -345,9 +380,22 @@ def _entier(x):
     return round(n) if n else None
 
 
+def _heure_locale(ms):
+    """"HH:MM" d'un horodatage du sommeil, ou None. Garmin le donne en ms,
+    deja decale a l'heure locale (un nombre, pas une chaine comme dans la spec :
+    vu sur une vraie montre le 03/11/2026) : il se lit donc comme de l'UTC."""
+    n = _nombre(ms)
+    if n < 1e11:          # avant 1973 : pas un horodatage en ms
+        return None
+    try:
+        return datetime.datetime.fromtimestamp(n / 1000, datetime.timezone.utc).strftime("%H:%M")
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
 def _forme(jeton: str, debut: datetime.date, fin: datetime.date, erreurs: list) -> dict:
     """{jour: {pas, objectifPas, fcRepos, bbMax, bbMin, bbFin, stress,
-    intensite, sommeil, sommeilScore, profond, paradoxal, vfc, vfcStatut}}.
+    intensite, sommeil, sommeilScore, profond, paradoxal, coucher, lever, vfc, vfcStatut}}.
     Une source qui echoue n'empeche pas les autres (erreurs)."""
     jours = {}
 
@@ -401,6 +449,8 @@ def _forme(jeton: str, debut: datetime.date, fin: datetime.date, erreurs: list) 
                     garder(d, "paradoxal", _entier(_nombre(s.get("remSleepSeconds")) / 60))
                 score = ((s.get("sleepScores") or {}).get("overall") or {}).get("value")
                 garder(d, "sommeilScore", _entier(score))
+                garder(d, "coucher", _heure_locale(s.get("sleepStartTimestampLocal")))
+                garder(d, "lever", _heure_locale(s.get("sleepEndTimestampLocal")))
     except ErreurGarmin as e:
         if e.code == "auth":
             raise
@@ -480,6 +530,7 @@ def config() -> dict:
             "expire":     data.get("expire") or "",
             "jours":      jours,
             "ageForme":   data.get("ageForme") if isinstance(data.get("ageForme"), dict) else None,
+            "records":    data.get("records") if isinstance(data.get("records"), dict) else {},
             "cycle":      data.get("cycle") if isinstance(data.get("cycle"), dict) else None}
 
 
@@ -570,14 +621,21 @@ def synchroniser() -> dict:
         erreurs = []
         jeton = _obtenir_jeton(cle)
 
-        seances = []
+        seances, recs, histoire = [], None, False
         if choix["seances"]:
             try:
-                for a in _activites(jeton, debut, aujourdhui):
+                # Une fois, tout l'historique pour les records : les seances
+                # d'avant « depuis » n'entrent pas dans Sports pour autant
+                histoire = not data.get("historique")
+                lues = (_activites(jeton, datetime.date.fromisoformat(HISTOIRE_DEBUT), aujourdhui, PAGES_HISTOIRE)
+                        if histoire else _activites(jeton, debut, aujourdhui))
+                recs = records(lues, data.get("records") if isinstance(data.get("records"), dict) else {})
+                for a in lues:
                     s = seance(a) if isinstance(a, dict) else None
-                    if s and s["garminId"] not in vus and s["date"] >= depuis.isoformat():
+                    if s and s["garminId"] not in vus and s["date"] >= debut.isoformat():
                         seances.append(s)
             except ErreurGarmin as e:
+                histoire = False
                 if e.code == "auth":
                     raise
                 erreurs.append("Séances : " + e.message)
@@ -600,14 +658,21 @@ def synchroniser() -> dict:
         forme, age = {}, None
         if choix["forme"]:
             jours = data.get("jours") if isinstance(data.get("jours"), dict) else {}
-            debut_forme = aujourdhui - datetime.timedelta(days=PREMIERS_JOURS - 1)
-            if jours and derniere:
+            # Une fois l'annee passee (courbe sur un an), puis les derniers jours
+            debut_forme = aujourdhui - datetime.timedelta(days=JOURS_AN - 1)
+            if jours and derniere and data.get("formeAn"):
                 debut_forme = max(debut_forme, _jour(derniere, aujourdhui) - datetime.timedelta(days=2))
             forme = _forme(jeton, debut_forme, aujourdhui, erreurs)
             age = _age_forme(jeton, aujourdhui, erreurs)
         cycle = _cycle(jeton, aujourdhui, erreurs) if choix["cycle"] else None
 
         def changer(d):
+            if recs is not None:
+                d["records"] = recs
+            if histoire:
+                d["historique"] = True
+            if choix["forme"] and not erreurs:
+                d["formeAn"] = True
             if choix["forme"] and age:
                 d["ageForme"] = age
             if choix["cycle"]:

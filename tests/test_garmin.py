@@ -44,6 +44,11 @@ def _iso(n):
     return (AUJ - datetime.timedelta(days=n)).isoformat()
 
 
+def _ms(jour, heure):
+    d = datetime.datetime.fromisoformat(jour + "T" + heure).replace(tzinfo=datetime.timezone.utc)
+    return int(d.timestamp() * 1000)
+
+
 def _jwt():
     tete = base64.urlsafe_b64encode(b'{"alg":"none"}').decode().rstrip("=")
     corps = base64.urlsafe_b64encode(json.dumps({"exp": time.time() + 86400}).encode()).decode().rstrip("=")
@@ -110,7 +115,10 @@ class _Garmin(BaseHTTPRequestHandler):
         if p == "/sleep-service/sleep/dailySleepSummariesByDate":
             return self._repondre(200, json.dumps([
                 {"calendarDate": _iso(0), "sleepTimeSeconds": 26100, "deepSleepSeconds": 4800,
-                 "remSleepSeconds": 5400, "sleepScores": {"overall": {"value": 82, "qualifierKey": "GOOD"}}},
+                 "remSleepSeconds": 5400, "sleepScores": {"overall": {"value": 82, "qualifierKey": "GOOD"}},
+                 # des nombres en ms deja a l'heure locale (vu sur une vraie montre)
+                 "sleepStartTimestampLocal": _ms(_iso(1), "23:40"), "sleepEndTimestampLocal": _ms(_iso(0), "07:05"),
+                 "sleepStartTimestampGMT": _ms(_iso(1), "22:40")},
             ]).encode())
         if p.startswith("/fitnessage-service/fitnessage/v2/"):
             return self._repondre(200, json.dumps([
@@ -154,12 +162,15 @@ class TestGarmin(unittest.TestCase):
         _Garmin.cycle = None
         _Garmin.activites = [
             _activite(101, 2, "trail_running", 3725.4, 10520.7, 412.3, "Trail du dimanche",
-                      averageHR=151.6, calories=812, isPR=True),
+                      averageHR=151.6, calories=812, isPR=True, fastestSplit_1000=301.2,
+                      fastestSplit_5000=1610.4, fastestSplit_10000=3390.0, aerobicTrainingEffect=3.46,
+                      anaerobicTrainingEffect=1.2, trainingEffectLabel="TEMPO"),
             _activite(102, 1, "lap_swimming", 1800, 1500, poolLength=25),
             _activite(103, 1, "road_biking", 5400, 42195),
             _activite(104, 0, "strength_training", 2700),
             _activite(105, 0, "yoga", 3600),
-            _activite(106, 90, "running", 1800, 5000),        # avant « depuis » : jamais lue
+            # avant « depuis » : jamais dans Sports, mais son record compte
+            _activite(106, 90, "running", 1800, 5000, fastestSplit_1000=290.0, fastestSplit_5000=1500.0),
         ]
         garmin._jeton.update(cle="", valeur="", fin=0.0)
         for f in storage.get_user_dir().glob("*.json"):
@@ -334,6 +345,68 @@ class TestGarmin(unittest.TestCase):
         self.assertEqual(agenda.rappels({}, {}), [])               # alerte pas réglée
         garmin.deconnecter()
         self.assertEqual(agenda.rappels({"garmin-cle": "semaine"}, {}), [])
+
+    def test_records_sur_tout_l_historique(self):
+        self._connecter()
+        garmin.synchroniser()
+        rec = garmin.config()["records"]
+        self.assertEqual({k: (v["s"], v["garminId"]) for k, v in rec.items()},
+                         {"1000": (290, "106"), "5000": (1500, "106"), "10000": (3390, "101")})
+        self.assertEqual((rec["10000"]["date"], rec["10000"]["nom"]), (_iso(2), "Trail du dimanche"))
+        dates = [urllib.parse.parse_qs(urllib.parse.urlsplit(p).query)["startDate"][0]
+                 for _, p in _Garmin.requetes if "activitylist" in p]
+        self.assertEqual(dates, [garmin.HISTOIRE_DEBUT])
+        # Ensuite, seulement les derniers jours ; un temps plus lent ne remplace rien
+        _Garmin.activites.append(_activite(107, 0, "running", 1700, 5000, fastestSplit_5000=1490.6,
+                                           fastestSplit_1000=295.0))
+        _Garmin.activites.append(_activite(108, 0, "running", 60, 1000, fastestSplit_1000=100.0))  # GPS fou
+        _Garmin.activites.append(_activite(109, 0, "road_biking", 600, 5000, fastestSplit_5000=600.0))
+        _Garmin.requetes.clear()
+        garmin.synchroniser()
+        rec = garmin.config()["records"]
+        self.assertEqual((rec["5000"]["s"], rec["5000"]["garminId"], rec["1000"]["s"]), (1491, "107", 290))
+        dates = [urllib.parse.parse_qs(urllib.parse.urlsplit(p).query)["startDate"][0]
+                 for _, p in _Garmin.requetes if "activitylist" in p]
+        self.assertEqual(dates, [_iso(garmin.RECOUVREMENT)])
+
+    def test_effet_d_entrainement(self):
+        self._connecter()
+        par_id = {s["garminId"]: s for s in garmin.synchroniser()["seances"]}
+        self.assertEqual((par_id["101"]["effetAero"], par_id["101"]["effetAnaero"], par_id["101"]["effetType"]),
+                         (3.5, 1.2, "TEMPO"))
+        self.assertNotIn("effetAero", par_id["102"])
+
+    def test_coucher_et_lever(self):
+        self._connecter()
+        garmin.synchroniser()
+        j = garmin.config()["jours"][_iso(0)]
+        self.assertEqual((j["coucher"], j["lever"]), ("23:40", "07:05"))
+        self.assertIsNone(garmin._heure_locale("pas un nombre"))
+        self.assertIsNone(garmin._heure_locale(1234))
+
+    def test_forme_d_un_an_une_seule_fois(self):
+        self._connecter()
+        garmin.synchroniser()
+        resumes = [urllib.parse.parse_qs(urllib.parse.urlsplit(p).query)["startDate"][0]
+                   for _, p in _Garmin.requetes if "dailysummaries" in p]
+        self.assertEqual(resumes[0], _iso(garmin.JOURS_AN - 1))
+        _Garmin.requetes.clear()
+        garmin.synchroniser()
+        resumes = [urllib.parse.parse_qs(urllib.parse.urlsplit(p).query)["startDate"][0]
+                   for _, p in _Garmin.requetes if "dailysummaries" in p]
+        self.assertEqual(resumes, [_iso(2)])
+
+    def test_installation_d_avant_relit_un_an(self):
+        """Un garmin.json de la 4.4.52 (30 jours, sans formeAn) relit l'annee une fois."""
+        self._connecter()
+        garmin.synchroniser()
+        garmin._modifier(lambda d: (d.pop("formeAn"), d.pop("historique"), d.pop("records")))
+        _Garmin.requetes.clear()
+        garmin.synchroniser()
+        chemins = [p for _, p in _Garmin.requetes]
+        self.assertTrue(any("startDate=" + _iso(garmin.JOURS_AN - 1) in p for p in chemins if "dailysummaries" in p))
+        self.assertTrue(any("startDate=" + garmin.HISTOIRE_DEBUT in p for p in chemins if "activitylist" in p))
+        self.assertIn("5000", garmin.config()["records"])
 
     def test_sport_pilote(self):
         for t, s in [("running", "course"), ("treadmill_running", "course"), ("open_water_swimming", "natation"),

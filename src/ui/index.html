@@ -2011,6 +2011,13 @@ label.sv-check, label.sv-inline {
 .ga-chart { position: relative; height: 260px; }
 .ga-courbe-h { flex-wrap: wrap; gap: .6rem; }
 .ga-moy { font-size: 12px; color: var(--txt2); margin-left: auto; }
+.ga-mesures { flex-basis: 100%; }
+.ga-records { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ga-rec { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--brd); border-radius: 10px; min-width: 0; }
+.ga-rec-d { font-size: 12px; color: var(--txt2); }
+.ga-rec b { font-family: var(--serif); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.ga-rec small { font-size: 11.5px; color: var(--txt2); }
+.ga-rec-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--txt3) !important; }
 .ga-seances { display: flex; flex-direction: column; }
 .ga-seance { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--brd); font-size: 13px; }
 .ga-seance:first-child { border-top: 0; padding-top: 0; }
@@ -11782,7 +11789,7 @@ const NAV_MODULES = {
     desc: "Tes montres Garmin et Coros, ou toute autre par ses fichiers .fit : séances ajoutées à Sports, sommeil, VFC, pas.",
     pas:  "Connecte ta montre Garmin ou Coros, ou importe un fichier .fit : chaque onglet explique comment.",
     besoin: "Il te faut une montre, et son compte Garmin Connect ou Coros (ou ses fichiers .fit).",
-    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "mo-derniere"] },
+    tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "mo-derniere", "ga-records"] },
 };
 
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
@@ -19188,7 +19195,7 @@ function spOpenDay(iso) {
       <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
       <div style="flex:1;min-width:0">
         <div class="sp-sname">${escHtml(sp.label)}${s.time ? ` <span class="m-tag">${escHtml(s.time)}</span>` : ""}${s.garminId ? ` <span class="m-tag ga-tag" title="Venue de la montre Garmin"><i class="ph ph-watch"></i> Garmin</span>` : ""}${s.corosId ? ` <span class="m-tag ga-tag" title="Venue de la montre Coros"><i class="ph ph-watch"></i> Coros</span>` : ""}${s.fitId ? ` <span class="m-tag ga-tag" title="Importée d'un fichier .fit"><i class="ph ph-file-arrow-down"></i> ${escHtml(s.marque || ".fit")}</span>` : ""}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</div>
-        <div class="sp-smeta">${escHtml(spSummary(s) || "—")}${pace ? " · " + pace : ""}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}</div>
+        <div class="sp-smeta">${escHtml(spSummary(s) || "—")}${pace ? " · " + pace : ""}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}${typeof gaEffet === "function" && gaEffet(s) ? " · " + escHtml(gaEffet(s)) : ""}</div>
         ${s.note ? `<div class="sp-snote">${escHtml(s.note)}</div>` : ""}
       </div>
       <div class="m-acts">
@@ -19484,7 +19491,7 @@ async function spSaveSession() {
   if (spHasField(_spSport, "groups"))  s.groups  = _spGroups.slice();
   // Séance venue d'une montre (bloc Garmin, Coros, .fit) : elle le reste une fois modifiée
   const avant = _spEditingId ? spSessions().find(x => x.id === _spEditingId) : null;
-  if (avant) ["garminId", "corosId", "fitId", "marque", "fcMoy", "kcal", "record"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
+  if (avant) ["garminId", "corosId", "fitId", "marque", "fcMoy", "kcal", "record", "effetAero", "effetAnaero", "effetType"].forEach(k => { if (avant[k] != null) s[k] = avant[k]; });
 
   if (_spEditingId) {
     const i = spSessions().findIndex(x => x.id === _spEditingId);
@@ -25800,6 +25807,11 @@ const DASH_WIDGETS = [
     render() { return dashCoForme(); },
   },
   {
+    // 03/11/2026 : meilleurs temps de course (tout l'historique Garmin)
+    id: "ga-records", label: "Records de course", module: "Garmin", tab: "ga-forme",
+    render() { return dashGaRecords(); },
+  },
+  {
     // Notes de l'utilisateur, avec une date si besoin (S.uiPrefs.penseBete) :
     // toujours affichée une fois ajoutée, c'est d'elle qu'on écrit la première
     id: "pense-bete", label: "Pense-bête", module: "Pense-bête", tab: null,
@@ -28250,7 +28262,7 @@ async function agEssai() {
    séance supprimée dans Pilote ne revient pas.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const GA = { config: null, enCours: false, erreur: "", code: "", erreurs: [], formCle: false, mesure: "sommeil" };
+const GA = { config: null, enCours: false, erreur: "", code: "", erreurs: [], formCle: false, mesure: "sommeil", periode: 30 };
 let _gaBootstrapped = false;
 // Coros (bloc co* plus bas) : déclaré ici, Ma forme et les tuiles le lisent
 const CO = { config: null, enCours: false, erreur: "", code: "", erreurs: [], attente: false, erreurCnx: "", choixCnx: null };
@@ -28271,6 +28283,7 @@ const GA_RAPPEL_JOURS = 14;            // bandeau de Ma forme : la clé expire d
 // [clé de garmin.json, libellé, unité, valeur affichée, type de courbe]
 const GA_MESURES = [
   ["sommeil", "Sommeil",      "h",   v => (v / 60).toFixed(1).replace(".", ","), "bar"],
+  ["sommeilScore", "Score de sommeil", "", v => String(v),                         "line"],
   ["bbMax",   "Body Battery", "",    v => String(v),                                "line"],
   ["vfc",     "VFC",          "ms",  v => String(v),                                "line"],
   ["fcRepos", "FC au repos",  "bpm", v => String(v),                                "line"],
@@ -28281,6 +28294,14 @@ const GA_MESURES = [
   ["respiration", "Respiration", "/min", v => String(v),                            "line"],
 ];
 const GA_VFC = { BALANCED: "équilibrée", UNBALANCED: "déséquilibrée", LOW: "basse", POOR: "faible" };
+// Périodes de la courbe : [jours, bouton] ; à partir de 6 mois, un point par
+// semaine (26 et 52 semaines pleines)
+const GA_PERIODES = [[7, "7 jours"], [30, "1 mois"], [182, "6 mois"], [364, "1 an"]];
+// Records de course (garmin.json, records) : [mètres, libellé]
+const GA_RECORDS = [["1000", "1 km"], ["5000", "5 km"], ["10000", "10 km"], ["21098", "Semi-marathon"], ["42195", "Marathon"]];
+// trainingEffectLabel de Garmin (vus sur une vraie montre le 03/11/2026)
+const GA_EFFETS = { AEROBIC_BASE: "base aérobie", ANAEROBIC_CAPACITY: "capacité anaérobie",
+  LACTATE_THRESHOLD: "seuil lactique", RECOVERY: "récupération", SPEED: "vitesse", TEMPO: "tempo", VO2MAX: "VO2max" };
 
 function gaApi() { const a = window.pywebview && window.pywebview.api; return a && a.load_garmin ? a : null; }
 function gaConnecte() { return !!(GA.config && GA.config.connecte); }
@@ -28309,6 +28330,52 @@ function gaSerie(cle, n) {
     out.push({ jour: k, v: j[k] && j[k][cle] != null ? j[k][cle] : null });
   }
   return out;
+}
+
+/** Points de la courbe sur `n` jours : un par jour jusqu'à un mois, puis la
+    moyenne de chaque semaine (la dernière finit aujourd'hui) : [{jour, v}]. */
+function gaPoints(cle, n) {
+  const s = gaSerie(cle, n);
+  if (n <= 31) return s;
+  const out = [];
+  for (let fin = s.length; fin > 0; fin -= 7) {
+    const bout = s.slice(Math.max(0, fin - 7), fin), v = bout.map(x => x.v).filter(x => x != null);
+    out.unshift({ jour: bout[0].jour, v: v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null });
+  }
+  return out;
+}
+
+/** Score de sommeil : les paliers de Garmin. */
+function gaScoreSommeil(v) {
+  return v >= 90 ? "excellent" : v >= 80 ? "bon" : v >= 60 ? "passable" : "médiocre";
+}
+
+/** Heures moyennes de coucher et de lever sur `n` jours, et l'écart type du
+    coucher (sa régularité), ou null. Un coucher après minuit compte pour la veille. */
+function gaHoraires(n) {
+  const min = h => { const [a, b] = String(h).split(":").map(Number); return a * 60 + b; };
+  const c = gaSerie("coucher", n).map(x => x.v).filter(Boolean).map(h => { const m = min(h); return m < 720 ? m + 1440 : m; });
+  const l = gaSerie("lever", n).map(x => x.v).filter(Boolean).map(min);
+  if (!c.length || !l.length) return null;
+  const moy = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const mc = moy(c), ecart = Math.round(Math.sqrt(moy(c.map(x => (x - mc) ** 2))));
+  const hh = m => { m = Math.round(m) % 1440; return Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0"); };
+  return { coucher: hh(mc), lever: hh(moy(l)), ecart, nuits: c.length };
+}
+
+/** Un temps en secondes : « 23:41 » ou « 1:47:05 ». */
+function gaChrono(s) {
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.round(s % 60);
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0");
+}
+
+/** L'effet d'entraînement d'une séance, en texte court, ou "". */
+function gaEffet(s) {
+  const t = [];
+  if (s.effetType && GA_EFFETS[s.effetType]) t.push(GA_EFFETS[s.effetType]);
+  if (s.effetAero) t.push("aérobie " + String(s.effetAero).replace(".", ","));
+  if (s.effetAnaero) t.push("anaérobie " + String(s.effetAnaero).replace(".", ","));
+  return t.length ? "effet " + t.join(" · ") : "";
 }
 
 function gaDuree(min) {
@@ -28424,6 +28491,7 @@ async function gaAjouter(seances, pesees, src) {
       if (g.lieu && spHasField(g.sport, "lieu")) s.lieu = g.lieu;
       if (g.fcMoy) s.fcMoy = g.fcMoy;
       if (g.kcal) s.kcal = g.kcal;
+      ["effetAero", "effetAnaero", "effetType"].forEach(k => { if (g[k] != null) s[k] = g[k]; });
       if (g.record) { s.record = true; n.records++; }
       liste.push(s); pris.push(g[cle]); n.seances++;
     });
@@ -28655,7 +28723,9 @@ function gaRenderForme() {
     const [jP, p] = gaDernier("pas");
     const moyF = gaMoyenne("fcRepos", 30);
     const kpis = [
-      s ? gaKpi("Sommeil", gaDuree(s.sommeil), (s.sommeilScore != null ? "score " + s.sommeilScore + " · " : "") + gaNuit(jS), true) : "",
+      s ? gaKpi("Sommeil", gaDuree(s.sommeil), gaNuit(jS), true) : "",
+      s && s.sommeilScore != null ? gaKpi("Score de sommeil", String(s.sommeilScore), gaScoreSommeil(s.sommeilScore)
+        + (gaMoyenne("sommeilScore", 7) != null ? " · moyenne 7 j : " + gaMoyenne("sommeilScore", 7) : "")) : "",
       b ? gaKpi("Body Battery", String(b.bbMax), "au plus haut " + gaLeJour(jB) + (b.bbFin != null ? " · dernière valeur " + b.bbFin : "")) : "",
       v ? gaKpi("VFC de la nuit", v.vfc + " ms", (GA_VFC[v.vfcStatut] || "") + (GA_VFC[v.vfcStatut] ? " · " : "") + dashDateCourte(jV)) : "",
       f ? gaKpi("FC au repos", f.fcRepos + " bpm", (moyF ? "moyenne 30 j : " + moyF + " · " : "") + dashDateCourte(jF)) : "",
@@ -28667,7 +28737,10 @@ function gaRenderForme() {
     const age = GA.config && GA.config.ageForme;
     const im = gaIntensiteSemaine();
     const [jC, rc] = gaDernier("recup");
+    const hor = gaHoraires(30);
     const kpis2 = [
+      hor ? gaKpi("Coucher et lever", hor.coucher + " → " + hor.lever,
+                  "moyenne 30 j · coucher régulier à ± " + hor.ecart + " min") : "",
       im ? gaKpi("Minutes intenses", im.total + " min", "cette semaine" + (im.objectif ? " · objectif " + im.objectif + " min" : "")) : "",
       rc ? gaKpi("Récupération", rc.recup + " %", "d'après Coros · " + gaLeJour(jC)) : "",
       o ? gaKpi("SpO2", o.spo2 + " %", "moyenne du jour · " + dashDateCourte(jO)) : "",
@@ -28676,16 +28749,19 @@ function gaRenderForme() {
                   (age.reel ? "âge réel " + age.reel + " ans" : "") + (age.atteignable ? (age.reel ? " · " : "") + "atteignable " + String(age.atteignable).replace(".", ",") : "")) : "",
     ].join("");
     const m = GA_MESURES.find(x => x[0] === GA.mesure) || GA_MESURES[0];
-    const moy = gaMoyenne(m[0], 30);
+    const per = GA_PERIODES.find(x => x[0] === GA.periode) || GA_PERIODES[1];
+    const moy = gaMoyenne(m[0], per[0]);
     forme = `<div class="mkpis">${kpis}${kpis2}</div>
-      <div class="card"><div class="card-h ga-courbe-h"><span class="card-t">30 derniers jours</span>
-        <div class="sa-ranges">${GA_MESURES.map(x => `<button class="btn btn-sm btn-ghost${x[0] === m[0] ? " active" : ""}"
-          onclick="GA.mesure='${x[0]}';gaRenderForme()">${escHtml(x[1])}</button>`).join("")}</div>
-        <span class="ga-moy">${moy != null ? "moyenne : " + m[3](moy) + (m[2] ? " " + m[2] : "") : ""}</span></div>
+      <div class="card"><div class="card-h ga-courbe-h"><span class="card-t">${per[0] === 7 ? "7 derniers jours" : per[0] === 30 ? "30 derniers jours" : per[0] === 182 ? "6 derniers mois" : "La dernière année"}</span>
+        <div class="sa-ranges">${GA_PERIODES.map(x => `<button class="btn btn-sm btn-ghost${x[0] === per[0] ? " active" : ""}"
+          onclick="GA.periode=${x[0]};gaRenderForme()">${escHtml(x[1])}</button>`).join("")}</div>
+        <span class="ga-moy">${moy != null ? "moyenne : " + m[3](moy) + (m[2] ? " " + m[2] : "") + (per[0] > 31 ? " · un point par semaine" : "") : ""}</span>
+        <div class="sa-ranges ga-mesures">${GA_MESURES.map(x => `<button class="btn btn-sm btn-ghost${x[0] === m[0] ? " active" : ""}"
+          onclick="GA.mesure='${x[0]}';gaRenderForme()">${escHtml(x[1])}</button>`).join("")}</div></div>
         <div class="card-b"><div class="ga-chart"><canvas id="ga-chart"></canvas></div></div></div>`;
   }
 
-  box.innerHTML = alerte + alerteCo + rappel + forme + gaCycleHtml() + gaSeancesHtml();
+  box.innerHTML = alerte + alerteCo + rappel + forme + gaRecordsHtml() + gaCycleHtml() + gaSeancesHtml();
   gaRenderCourbe();
 }
 
@@ -28780,7 +28856,7 @@ function gaRenderCourbe() {
   if (_gaChart) { _gaChart.destroy(); _gaChart = null; }
   if (!cv || !window.Chart) return;
   const m = GA_MESURES.find(x => x[0] === GA.mesure) || GA_MESURES[0];
-  const serie = gaSerie(m[0], 30);
+  const serie = gaPoints(m[0], (GA_PERIODES.find(x => x[0] === GA.periode) || GA_PERIODES[1])[0]);
   const acc = saCssVar("--accent", "#e07a2f"), grid = saCssVar("--brd", "rgba(128,128,128,.2)"), txt = saCssVar("--txt2", "#888");
   _gaChart = new Chart(cv, {
     type: m[4],
@@ -28789,7 +28865,7 @@ function gaRenderCourbe() {
       datasets: [{ label: m[1] + (m[2] ? " (" + m[2] + ")" : ""),
         data: serie.map(x => x.v == null ? null : (m[0] === "sommeil" ? Math.round(x.v / 6) / 10 : x.v)),
         borderColor: acc, backgroundColor: m[4] === "bar" ? acc + "bb" : acc + "22",
-        borderWidth: 2, tension: .3, fill: m[4] !== "bar", pointRadius: 2, spanGaps: true }],
+        borderWidth: 2, tension: .3, fill: m[4] !== "bar", pointRadius: serie.length > 60 ? 0 : 2, spanGaps: true }],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -28800,6 +28876,22 @@ function gaRenderCourbe() {
       },
     },
   });
+}
+
+/** Les meilleurs temps de course lus dans tout l'historique Garmin. */
+function gaRecordsHtml() {
+  const r = (GA.config && GA.config.records) || {};
+  const l = GA_RECORDS.filter(([k]) => r[k] && r[k].s);
+  if (!l.length) return "";
+  return `<div class="card"><div class="card-h"><span class="card-t">Records de course</span>
+      <span class="ga-moy">meilleurs temps d'après Garmin, depuis ta première séance</span></div>
+    <div class="card-b"><div class="ga-records">${l.map(([k, nom]) => {
+      const x = r[k], allure = x.s / (Number(k) / 1000);
+      return `<div class="ga-rec"><span class="ga-rec-d">${escHtml(nom)}</span>
+        <b>${gaChrono(x.s)}</b>
+        <small>${k !== "1000" ? gaChrono(allure) + " /km · " : ""}${escHtml(dashDateCourte(x.date))}</small>
+        ${x.nom ? `<small class="ga-rec-n" title="${escHtml(x.nom)}">${escHtml(x.nom)}</small>` : ""}</div>`;
+    }).join("")}</div></div></div>`;
 }
 
 /** Les dernières séances venues des montres (elles vivent dans Sports). */
@@ -28815,7 +28907,7 @@ function gaSeancesHtml() {
       return `<div class="ga-seance">
         <div class="sp-sicon" style="background:${sp.color}22;color:${sp.color}">${sp.icon}</div>
         <div class="ga-seance-txt"><b>${escHtml(s.note || sp.label)}${s.record ? ` <span class="m-tag accent ga-tag" title="Record personnel d'après Garmin"><i class="ph ph-trophy"></i> Record</span>` : ""}</b>
-          <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""} · ${escHtml(moSource(s))}</small></div>
+          <small>${escHtml(spSummary(s) || "—")}${s.fcMoy ? " · " + s.fcMoy + " bpm" : ""}${gaEffet(s) ? " · " + escHtml(gaEffet(s)) : ""} · ${escHtml(moSource(s))}</small></div>
         <span class="ga-seance-d">${escHtml(dashDateCourte(s.date))}</span>
         <button class="m-iconbtn" title="Modifier" onclick="spOpenSession(${s.id}, null)"><i class="ph ph-pencil-simple"></i></button>
       </div>`; }).join("")}</div></div></div>`;
@@ -29210,6 +29302,18 @@ function dashCoForme() {
            sub: [s != null && rc != null ? "sommeil " + gaDuree(s) + " (" + gaNuit(jS) + ")" : "",
                  v != null && (rc != null || s != null) ? "VFC " + v + " ms" : ""].filter(Boolean).join(" · "),
            go: "Ma forme", viz: rc != null ? dashProgress(rc) : "" };
+}
+
+function dashGaRecords() {
+  const r = (GA.config && GA.config.records) || {};
+  const l = GA_RECORDS.filter(([k]) => r[k] && r[k].s);
+  if (!l.length) return null;
+  // En grand le 5 km (ou le premier qui existe), les autres dessous
+  const g = l.find(([k]) => k === "5000") || l[0];
+  return { lbl: "Record sur " + g[1], val: gaChrono(r[g[0]].s),
+           sub: l.filter(x => x !== g).map(([k, nom]) => nom.replace("Semi-marathon", "semi") + " " + gaChrono(r[k].s)).join(" · ")
+                || dashDateCourte(r[g[0]].date),
+           go: "Ma forme" };
 }
 
 /* ── Navigation ────────────────────────────────────────────────────────── */

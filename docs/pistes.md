@@ -72,7 +72,9 @@ Autres pistes :
   jusqu'au soir, mais Pilote garde la cotation choisie à l'import (Xetra, Paris :
   clôture de 17 h 30, dernier cours à 17 h 35). Écart mesuré le 12/10 au soir sur
   un vrai CTO : moins de 0,1 %. Francfort (`.F`) ne conviendrait pas non plus
-  (D5BL.F à 28,40 € pour 49,75 €).
+  (D5BL.F à 28,40 € pour 49,75 €). Écarté à nouveau le 30/10/2026 sous la forme
+  d'un choix de place par CTO (« Bourse officielle » ou « Horaires étendus
+  8 h - 22 h ») : on garde la cotation officielle.
 
 - **Épargne hors prêt (livrets et assurances vie calculés pour eux-mêmes)** :
   proposée le 13/10/2026 (section Épargne réutilisant `prLivretState` et
