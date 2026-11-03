@@ -8,8 +8,8 @@
       "nouveau": [
         "Montres : la section Garmin devient Montres, avec un onglet par montre. Ta montre Garmin y reste, rien ne change pour elle.",
         "Coros : clique sur Connecter dans Montres › Coros, connecte-toi sur la page de Coros, et Pilote lit ta montre. Il ne fait que lire : aucun entraînement n'est créé ni modifié sur ton compte. C'est à l'essai : si une séance manque, importe son fichier .fit.",
-        "Les séances de ta montre Coros arrivent dans Sports ; ton sommeil, ta VFC, ta fréquence cardiaque au repos, tes pas et ta récupération s'ajoutent à Ma forme.",
-        "Fichiers .fit : n'importe quelle montre (Coros, Suunto, Polar, Wahoo…). Exporte la séance depuis son app, choisis le fichier dans Montres › Fichiers .fit, vérifie la liste, puis ajoute-la à Sports. Plusieurs fichiers, ou un .zip, d'un coup.",
+        "Sports et Ma forme : les séances de ta montre Coros arrivent dans Sports ; ton sommeil, ta VFC, ta fréquence cardiaque au repos, tes pas et ta récupération s'ajoutent à Ma forme.",
+        "Autres montres : n'importe laquelle (Coros, Suunto, Polar, Wahoo…) par ses fichiers .fit. Exporte la séance depuis son app, choisis le fichier dans Montres › Fichiers .fit, vérifie la liste, puis ajoute-la à Sports. Plusieurs fichiers, ou un .zip, d'un coup.",
         "Trois tuiles d'accueil : Séance de la montre, Synchro des montres (en rouge s'il faut te reconnecter), Forme Coros."
       ],
       "ameliore": [
