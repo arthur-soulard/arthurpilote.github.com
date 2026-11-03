@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="verre">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2875,6 +2875,279 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
   .pp-prog span, label.pp-mod, .pp-mod-ico, .pp-mod-ok, .maj-chev, button.pp-first, .pp-first-go { transition: none; }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   REPÈRES (grille, durées, verre)
+   Trois règles reprises du guide d'interface d'Apple, sans sa police ni sa
+   couleur : l'identité reste le Carnet. Les espacements des composants
+   communs se prennent dans une grille de 4 et 8 px, les animations dans une
+   échelle de quatre durées, et le verre dépoli ne sert qu'aux surfaces
+   fixes et petites (fond des fenêtres, notifications).
+   Comme le Carnet, ce bloc surcharge sans réécrire les règles d'origine.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --dur-instant: 100ms;   /* retour au clic */
+  --dur-fast: 200ms;      /* survol, focus */
+  --dur-normal: 300ms;    /* fenêtre, changement d'onglet */
+  --ease: cubic-bezier(.16, 1, .3, 1);                   /* sortie douce */
+  --ease-spring: cubic-bezier(.175, .885, .32, 1.275);   /* léger dépassement */
+}
+
+/* — Grille — */
+.topbar { margin-bottom: var(--space-4); }
+.card { margin-bottom: var(--space-4); }
+.card-h, .dash-card-h { padding: var(--space-4) var(--space-5) var(--space-1); }
+.card-b, .dash-card-b { padding: var(--space-4) var(--space-5); }
+.mets, .mkpis, .dash-duo { gap: var(--space-4); }
+.mc { padding: var(--space-4) var(--space-5); }
+.mkpi { padding: var(--space-4) var(--space-5); }
+.home-card { padding: var(--space-4) var(--space-5); }
+.btn { padding: var(--space-2) var(--space-4); gap: var(--space-2); }
+.btn-sm { padding: var(--space-1) var(--space-3); gap: 6px; }
+.fg { margin-bottom: var(--space-3); }
+.fg-row { gap: var(--space-3); }
+.mact { gap: var(--space-2); margin-top: var(--space-6); }
+.modal { padding: var(--space-8) var(--space-8) var(--space-6); }
+.sidebar { padding: var(--space-4) var(--space-3); }
+td { padding-top: var(--space-3); padding-bottom: var(--space-3); }
+.toast-stack .toast { padding: var(--space-3) var(--space-4); }
+
+/* — Durées — */
+.btn {
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease-spring);
+}
+.btn:active { transform: scale(.96); transition-duration: var(--dur-instant); }
+.sb-item, .sb-sec-btn, .set-nav-btn, .rng button {
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease);
+}
+.home-card { transition: box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.home-card:hover { transform: translateY(-2px); }
+.home-cards.dash-editing .home-card:hover { transform: none; }
+.fg input, .fg select, .fg textarea { transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
+/* Un onglet qui s'ouvre glisse de 4 px en apparaissant */
+.pane.active { animation: repPane var(--dur-fast) var(--ease); }
+@keyframes repPane { from { opacity: 0; transform: translateY(4px); } }
+/* Une fenêtre arrive avec son fond, sans attendre */
+.ov.open { animation: repFond var(--dur-fast) var(--ease); }
+.ov.open > .modal { animation: repModale var(--dur-normal) var(--ease); }
+@keyframes repFond { from { opacity: 0; } }
+@keyframes repModale { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.toast-stack .toast { animation: toastIn var(--dur-normal) var(--ease-spring); }
+
+/* — Verre : fond des fenêtres et notifications — */
+@supports (backdrop-filter: blur(1px)) {
+  .ov { backdrop-filter: blur(8px) saturate(140%); }
+  .toast-stack .toast {
+    background: color-mix(in srgb, var(--bg2) 78%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ov { backdrop-filter: none; }
+  .toast-stack .toast { background: var(--bg2); backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pane.active, .ov.open, .ov.open > .modal, .toast-stack .toast { animation: none; }
+  .home-card:hover { transform: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STYLE « VERRE » (essai, branche design-reperes)
+   Inspiré du Liquid Glass d'Apple : un fond coloré et flou derrière tout,
+   des surfaces translucides avec un liseré de lumière, des pilules partout,
+   la police du système. Actif seulement avec <html class="verre"> : sans la
+   classe, le Carnet est intact.
+
+   Ménager la carte graphique (Intel UHD) : le fond est un dégradé déjà flou,
+   donc les cartes qui défilent dessus n'ont PAS besoin de backdrop-filter
+   (un dégradé flouté reste le même dégradé) : simple fond translucide. Le
+   vrai flou est réservé aux surfaces fixes : barre latérale, barre de titre,
+   fenêtres, notifications.
+   ══════════════════════════════════════════════════════════════════════════ */
+html.verre {
+  --font:  -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono:  var(--font);
+  --serif: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --bg:    #eceef3;
+  --bg2:   #fbfbfd;
+  --bg3:   rgba(118,118,128,0.10);
+  --bg4:   rgba(118,118,128,0.18);
+  --brd:   rgba(0,0,0,0.07);
+  --brd2:  rgba(0,0,0,0.11);
+  --brd3:  rgba(0,0,0,0.20);
+  --txt:   #1d1d1f;
+  --txt2:  #5f5f66;
+  --txt3:  #6e6e75;
+  --g: #1f7a3a; --g2: rgba(52,199,89,0.16);
+  --r: #c4161c; --r2: rgba(255,59,48,0.13);
+  --a: #a15c00; --a2: rgba(255,149,0,0.16);
+  --b: #0a5fd1; --b2: rgba(0,122,255,0.13);
+  --hover: rgba(118,118,128,0.10);
+  --rad: 12px; --radl: 22px; --radxl: 28px;
+  --sh:    0 1px 2px rgba(0,0,0,0.04), 0 10px 30px -12px rgba(30,30,60,0.18);
+  --sh-md: 0 2px 6px rgba(0,0,0,0.06), 0 24px 50px -18px rgba(30,30,60,0.30);
+  /* La matière du verre */
+  --verre:      rgba(255,255,255,0.58);
+  --verre-fort: rgba(250,250,253,0.78);
+  --verre-brd:  rgba(255,255,255,0.70);
+  --verre-lum:  inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -1px 0 rgba(255,255,255,0.25);
+  --verre-flou: blur(28px) saturate(180%);
+  --fond-1: color-mix(in srgb, var(--accent) 45%, #ffffff);
+  --fond-2: #9cc8ff;
+  --fond-3: #ffd6a8;
+}
+html.verre[data-theme="dark"] {
+  --bg:    #0d0d12;
+  --bg2:   #1c1c21;
+  --bg3:   rgba(118,118,128,0.20);
+  --bg4:   rgba(118,118,128,0.30);
+  --brd:   rgba(255,255,255,0.08);
+  --brd2:  rgba(255,255,255,0.13);
+  --brd3:  rgba(255,255,255,0.24);
+  --txt:   #f5f5f7;
+  --txt2:  #aeaeb5;
+  --txt3:  #98989f;
+  --g: #30d158; --g2: rgba(48,209,88,0.16);
+  --r: #ff6961; --r2: rgba(255,69,58,0.16);
+  --a: #ffb340; --a2: rgba(255,159,10,0.16);
+  --b: #4fa3ff; --b2: rgba(10,132,255,0.18);
+  --hover: rgba(255,255,255,0.07);
+  --sh:    0 1px 2px rgba(0,0,0,0.30), 0 12px 32px -12px rgba(0,0,0,0.60);
+  --sh-md: 0 2px 6px rgba(0,0,0,0.40), 0 26px 54px -18px rgba(0,0,0,0.75);
+  --verre:      rgba(44,44,52,0.52);
+  --verre-fort: rgba(36,36,42,0.80);
+  --verre-brd:  rgba(255,255,255,0.12);
+  --verre-lum:  inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(255,255,255,0.04);
+  --fond-1: color-mix(in srgb, var(--accent) 70%, #000000);
+  --fond-2: #17488a;
+  --fond-3: #5c3412;
+}
+
+/* — Le fond : trois taches de couleur floues, fixes, derrière tout — */
+html.verre body, html.verre[data-theme="dark"] body { background: var(--bg); }
+html.verre body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(42% 52% at 12% 18%, var(--fond-1), transparent 70%),
+    radial-gradient(40% 50% at 88% 12%, var(--fond-2), transparent 70%),
+    radial-gradient(48% 55% at 70% 92%, var(--fond-3), transparent 72%),
+    var(--bg);
+}
+
+/* — Les surfaces de verre — */
+html.verre :is(.card, .dash-card, .reco-card, .fin-header, .fin-kpi, .mkpi, .sp-goal, .sa-goal,
+               .pea-info, .mc, .home-card, .pa-cpt, .sa-cell) {
+  background: var(--verre);
+  border: 1px solid var(--verre-brd);
+  box-shadow: var(--verre-lum), var(--sh);
+  border-radius: var(--radl);
+}
+/* Une carte dans une carte : un cran plus clair, sans ombre portée */
+html.verre :is(.card, .fin-header) :is(.mkpi, .fin-kpi, .mc, .sa-cell) {
+  background: color-mix(in srgb, var(--verre) 70%, transparent); box-shadow: var(--verre-lum);
+}
+html.verre .home-card:hover { box-shadow: var(--verre-lum), var(--sh-md); }
+
+/* — Barre de titre : transparente sur le fond — */
+html.verre .titlebar {
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  backdrop-filter: var(--verre-flou); -webkit-backdrop-filter: var(--verre-flou);
+  border-bottom-color: transparent;
+}
+html.verre .titlebar-logo { border-radius: 8px; font-family: var(--font); font-style: normal; font-weight: 700; font-size: 13px; }
+html.verre .titlebar-title { font-family: var(--font); font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+
+/* — Barre latérale : un panneau de verre qui flotte — */
+html.verre .sidebar {
+  top: 46px; left: 10px; bottom: 10px; width: 200px;
+  background: var(--verre); border: 1px solid var(--verre-brd); border-radius: var(--radxl);
+  box-shadow: var(--verre-lum), var(--sh);
+  backdrop-filter: var(--verre-flou); -webkit-backdrop-filter: var(--verre-flou);
+}
+html.verre.os-mac .sidebar { top: 10px; }
+html.verre .sb-item, html.verre .sb-sec-btn { font-weight: 500; font-size: 13.5px; }
+html.verre .sb-item.active, html.verre .sb-sub .sb-item.active {
+  background: var(--verre-fort); box-shadow: var(--verre-lum), 0 2px 8px -2px rgba(0,0,0,.12);
+}
+html.verre .sb-grp { letter-spacing: .02em; text-transform: none; font-size: 12px; font-weight: 600; }
+html.verre .sb-bottom { border-top-color: var(--brd); }
+
+/* — Titres et grands chiffres : police du système, serrée — */
+html.verre :is(.card-t, .dash-card-t, .modal h2, .set-sec h3, .sp-goal-t, .sa-goal-name,
+               .fin-month-label, .m-nav-lbl, .pea-days) {
+  font-family: var(--serif); font-weight: 600; letter-spacing: -.015em;
+}
+html.verre .card-t, html.verre .dash-card-t { font-size: 17px; }
+html.verre :is(.mc-val, .mkpi-val, .fin-kpi-val, .fin-balance-val, .home-card-val, .sa-cell-val, .sp-cd) {
+  font-family: var(--serif); font-weight: 600; letter-spacing: -.025em;
+}
+html.verre .home-greet { font-family: var(--serif); font-weight: 700; letter-spacing: -.035em; }
+html.verre .home-greet em { font-style: normal; }
+html.verre .home-date { font-family: var(--font); font-style: normal; font-size: 17px; font-weight: 500; }
+
+/* — Boutons : pilules de verre ; le bouton principal garde l'accent, avec un reflet — */
+html.verre .btn {
+  background: var(--verre); border: 1px solid var(--verre-brd);
+  box-shadow: var(--verre-lum), 0 1px 3px rgba(0,0,0,.06);
+  font-weight: 500;
+}
+html.verre .btn:hover { background: var(--verre-fort); border-color: var(--verre-brd); }
+html.verre .btn-primary, html.verre .btn-primary:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 60%), var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, #fff); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+html.verre .btn-primary:hover { filter: brightness(1.06); }
+html.verre .refresh-grp, html.verre .spill, html.verre .cours-health {
+  background: var(--verre); border-color: var(--verre-brd); box-shadow: var(--verre-lum);
+}
+html.verre .refresh-grp .btn { background: transparent; box-shadow: none; border-top: 0; border-bottom: 0; border-right: 0; }
+
+/* — Contrôles segmentés (pastilles de période, onglets de réglages) — */
+html.verre .rng { background: var(--bg3); border: 0; }
+html.verre .rng button, html.verre .rng button:hover {
+  background: transparent; border-color: transparent; box-shadow: none; filter: none;
+}
+html.verre .rng button[aria-pressed="true"], html.verre .rng .btn-primary, html.verre .rng .btn-primary:hover {
+  background: var(--verre-fort); color: var(--txt); border-color: transparent;
+  box-shadow: var(--verre-lum), 0 2px 6px -1px rgba(0,0,0,.15);
+}
+html.verre .set-nav-btn.active { background: var(--verre-fort); box-shadow: var(--verre-lum), 0 2px 6px -2px rgba(0,0,0,.12); }
+
+/* — Champs : remplis, sans bordure, l'accent au focus — */
+html.verre :is(.fg input, .fg select, .fg textarea, .cinp, .fin-input-sm) {
+  background: var(--bg3); border-color: transparent; border-radius: var(--rad);
+}
+html.verre :is(.fg input, .fg select, .fg textarea, .cinp, .fin-input-sm):focus {
+  border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* — Tableaux : lignes fines, survol discret — */
+html.verre tbody tr:hover { background: var(--hover); }
+html.verre .badge { font-family: var(--font); }
+
+/* — Fenêtres et notifications : le vrai flou — */
+html.verre .ov { background: rgba(10,10,20,.16); }
+html.verre[data-theme="dark"] .ov { background: rgba(0,0,0,.35); }
+html.verre .modal {
+  background: var(--verre-fort); border: 1px solid var(--verre-brd); border-radius: var(--radxl);
+  box-shadow: var(--verre-lum), var(--sh-md);
+  backdrop-filter: var(--verre-flou); -webkit-backdrop-filter: var(--verre-flou);
+}
+html.verre .toast-stack .toast {
+  background: var(--verre-fort); border: 1px solid var(--verre-brd); border-radius: 18px;
+  box-shadow: var(--verre-lum), var(--sh-md);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  html.verre :is(.sidebar, .modal, .toast-stack .toast, .titlebar) { background: var(--bg2); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.verre :is(.sidebar, .modal, .toast-stack .toast, .titlebar) { background: var(--bg2); backdrop-filter: none; }
+}
+
 </style>
 </head>
 <body>
@@ -4788,6 +5061,15 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
             </div>
           </div>
           <div class="fg">
+            <label>Style</label>
+            <div style="display:flex;gap:8px;align-items:center" role="group" aria-label="Style">
+              <button type="button" class="btn btn-ghost btn-sm" data-design-btn="verre"><i class="ph ph-drop"></i> Verre</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-design-btn="carnet"><i class="ph ph-notebook"></i> Carnet</button>
+            </div>
+            <p class="set-lead" style="margin:8px 0 0">
+              Verre est le nouveau style de Pilote. Carnet, celui d'avant, reste disponible pour l'instant.</p>
+          </div>
+          <div class="fg">
             <label>Couleur d'accent</label>
             <div id="cfg-accent-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:4px"></div>
           </div>
@@ -5798,7 +6080,7 @@ if (EST_MAC) document.documentElement.classList.add("os-mac");
    Les graphiques sont dessinés dans un <canvas> : ils n'héritent pas du CSS.
    #8b8072 reste lisible sur le fond clair comme sur le fond sombre. */
 if (window.Chart) {
-  Chart.defaults.font.family = '"Onest", system-ui, sans-serif';
+  Chart.defaults.font.family = getComputedStyle(document.documentElement).getPropertyValue("--font").trim() || '"Onest", system-ui, sans-serif';
   Chart.defaults.color = "#8b8072";
   // Style commun : grille fine et chaude, pas de cadre, barres arrondies,
   // légendes en pastilles, infobulle sombre lisible sur les deux fonds.
@@ -12135,6 +12417,35 @@ function _wireThemeButtons() {
     b.classList.toggle("btn-primary", b.dataset.themeBtn === cur);
     b.onclick = () => setThemePref(b.dataset.themeBtn);
   });
+  applyDesign(S.uiPrefs && S.uiPrefs.design);
+  document.querySelectorAll("[data-design-btn]").forEach(b => {
+    b.onclick = () => setDesignPref(b.dataset.designBtn);
+  });
+}
+
+/* ─── Style : Verre (défaut) ou Carnet (celui d'avant, gardé le temps d'un
+   sondage, décidé avec Arthur le 03/11/2026 : docs/design-carnet.md) ───
+   Le Carnet est le style de base de la feuille ; Verre s'y ajoute avec la
+   classe « verre » sur <html>, posée dès le chargement. Propre à chaque
+   utilisateur (S.uiPrefs.design), appliqué sans relancer l'app. */
+function applyDesign(d) {
+  const verre = d !== "carnet";
+  document.documentElement.classList.toggle("verre", verre);
+  // Un <canvas> n'hérite pas du CSS : la police des graphiques suit le style
+  if (window.Chart) Chart.defaults.font.family =
+    getComputedStyle(document.documentElement).getPropertyValue("--font").trim() || '"Onest", system-ui, sans-serif';
+  if (typeof carnetRedrawCharts === "function") carnetRedrawCharts();
+  document.querySelectorAll("[data-design-btn]").forEach(b => {
+    const actif = b.dataset.designBtn === (verre ? "verre" : "carnet");
+    b.classList.toggle("btn-primary", actif);
+    b.setAttribute("aria-pressed", actif ? "true" : "false");
+  });
+}
+function setDesignPref(d) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.design = d === "carnet" ? "carnet" : "verre";
+  applyDesign(S.uiPrefs.design);
+  _enregistrerUiPrefs();
 }
 
 /** Chemin du dossier de données de l'utilisateur actif, celui qu'ouvre
@@ -29427,6 +29738,7 @@ function _appReady() {
       const accentKey = (S.uiPrefs && S.uiPrefs.accent) || ACCENT_DEFAULT;
       if (typeof applyAccent === "function") applyAccent(accentKey);
       if (typeof applyZoom === "function") applyZoom(S.uiPrefs && S.uiPrefs.zoom);
+      if (typeof applyDesign === "function") applyDesign(S.uiPrefs && S.uiPrefs.design);
     } catch(e) {}
     // Restaure le theme sauvegarde
     try {

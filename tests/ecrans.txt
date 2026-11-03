@@ -11,12 +11,15 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 03/11/2026 : 4.4.55, Ma forme (score de sommeil, coucher et lever, courbe sur
-# 6 mois, records de course, effet d'entrainement des seances), tuile Records de
-# course, puis la fiche des nouveautes. Pas de « ; » ni d'espace dans un appel js.
-ga-forme
-js:GA.periode=182,GA.mesure='sommeilScore',gaRenderForme()
-ga-forme 900
+# 03/11/2026 : 4.4.56, style Verre (defaut) en clair puis en sombre, le choix
+# Verre / Carnet des Parametres, le Carnet, puis la fiche des nouveautes.
+# Pas de « ; » ni d'espace dans un appel js.
 home
-sp-agenda
-js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.54',_majFicheApresMiseAJour()
+dash
+pos
+fin-month
+js:openSettings('general')
+js:closeOv('ov-config'),setThemePref('dark'),goTab('home')
+js:goTab('sp-agenda')
+js:setDesignPref('carnet'),goTab('home')
+js:setDesignPref('verre'),setThemePref('light'),document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.55',_majFicheApresMiseAJour()

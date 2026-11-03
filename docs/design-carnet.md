@@ -2,6 +2,41 @@
 
 Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
+## Style « Verre », par défaut depuis la 4.4.56 (03/11/2026)
+
+Demandé par Arthur : « un nouveau design comme Apple avec le Liquid Glass ».
+Validé sur captures (données de Camille), Carnet à gauche, Verre à droite.
+
+* **Deux styles, une feuille.** Le Carnet reste le style de base de toute la
+  feuille de style. Verre s'y ajoute par le bloc « STYLE VERRE », en fin de la
+  première feuille, actif seulement avec `<html class="verre">`. La classe est
+  posée dans la balise même (pas de clignotement au démarrage), puis
+  `applyDesign()` la retire si l'utilisateur a choisi le Carnet.
+* **Choix par utilisateur** : `S.uiPrefs.design` (`"verre"` ou `"carnet"`, absent
+  = Verre), Paramètres › Général › Style, appliqué sans relancer l'app
+  (`setDesignPref`). La police des graphiques suit (`Chart.defaults.font.family`
+  relu dans `--font`) et la courbe du PEA est redessinée.
+* **Choix provisoire** : Arthur sonde son entourage pendant au moins une semaine
+  (à partir du 03/11/2026) pour savoir quel style garder. Ensuite, soit on retire
+  le bloc Verre (retour au Carnet), soit on retire le choix et le Carnet devient
+  du code mort à nettoyer. Ne pas retirer le choix avant sa décision.
+* **Le verre** : un fond de trois taches floues fixes (`body::before` : l'accent,
+  un bleu, une pêche), des surfaces translucides (`--verre`, liseré clair
+  `--verre-lum`), de grands arrondis (22 et 28 px), la barre latérale en panneau
+  flottant (200 px, décalée de 10 px ; sur Mac, collée en haut), la police du
+  système (Segoe UI Variable sous Windows, SF Pro sur Mac). Les couleurs gain /
+  perte / alerte suivent celles d'Apple, foncées en clair pour le contraste.
+* **Carte graphique modeste (Intel UHD)** : les cartes qui défilent n'ont PAS de
+  `backdrop-filter`. Le fond étant déjà un dégradé flou, un fond translucide
+  suffit et le rendu est le même. Le vrai flou est réservé aux surfaces fixes :
+  barre de titre, barre latérale, fenêtres, notifications. Ne pas « améliorer »
+  en floutant les cartes.
+* **Repères communs aux deux styles** (bloc « REPÈRES », juste avant) : espacements
+  sur une grille de 4 et 8 px (`--space-*`), quatre durées (`--dur-*`), une courbe
+  douce (`--ease`) et un léger rebond (`--ease-spring`) pour ce qui répond à un
+  geste. Un onglet qui s'ouvre glisse de 4 px, une fenêtre arrive en 0,3 s. Tout
+  s'arrête sous `prefers-reduced-motion`.
+
 ## Identité visuelle « Carnet » (septembre 2026)
 
 Choisie par Arthur parmi trois maquettes (Net, Carnet, Cockpit) : un carnet de bord
