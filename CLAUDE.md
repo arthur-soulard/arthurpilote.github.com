@@ -10,7 +10,7 @@ notes et ce qu'il a coché, et lit ses autres agendas pour les afficher sans jam
 les modifier (`docs/modules/agenda.md`). Si la notification « Bilan de la semaine »
 est réglée, elle emporte aussi la page du bilan en PDF (valeur des comptes, dépenses,
 poids : décidé avec Arthur le 01/11/2026).
-Le module Garmin (03/11/2026, pas encore publié) lit la montre dans le compte Garmin
+Le module Garmin (4.4.52, 03/11/2026) lit la montre dans le compte Garmin
 Connect de l'utilisateur, avec sa clé API personnelle : il ne fait que lire
 (`docs/modules/garmin.md`).
 **Aussi sur Mac depuis la 4.4.8** (décidé le 11/10/2026, Mac à puce Apple) : une seule
@@ -22,7 +22,7 @@ Stack : Python + pywebview (fenêtre native avec UI HTML/CSS/JS ; 4.4.1 sous Win
 6.2.1 sur Mac), PyInstaller pour compiler en .exe et en Pilote.app, Inno Setup pour le
 Setup.exe, GitHub Actions pour build + release.
 
-**Version actuelle : 4.4.51**
+**Version actuelle : 4.4.52**
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote

@@ -29,5 +29,5 @@ ga-connexion
 sp-goals
 # 6. Bilan de la semaine (section Forme, plus bas dans la page).
 js:bilanOuvrir()
-# 7. Sports › Objectifs encore : trophée et texte sur la même ligne (retouche).
-sp-goals
+# 7. Paramètres › Mises à jour : version 4.4.52 et sa fiche (module Garmin).
+js:openSettings('maj')

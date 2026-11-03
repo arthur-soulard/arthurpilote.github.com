@@ -2,6 +2,24 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
   "versions": [
     {
+      "version": "4.4.52",
+      "date": "2026-11-03",
+      "titre": "Ta montre Garmin dans Pilote",
+      "nouveau": [
+        "Garmin : un nouveau module, proposé une fois à l'ouverture (décoché si tu n'en veux pas). Tu crées une clé sur Garmin Connect, tu la colles dans Garmin › Connexion, et Pilote lit ta montre. Il ne fait que lire : rien ne part vers ton compte Garmin.",
+        "Les séances de ta montre arrivent toutes seules dans Sports, avec leur fréquence cardiaque moyenne. Une séance déjà saisie à la main n'est pas ajoutée une seconde fois, et une séance que tu supprimes ne revient pas.",
+        "Records : une séance que Garmin marque comme record personnel porte un badge, et un objectif de performance du même sport te propose de le valider.",
+        "Les pesées de Garmin Connect vont dans Santé (une pesée déjà saisie ce jour-là est gardée).",
+        "Garmin › Ma forme : sommeil et son score, Body Battery, VFC, fréquence cardiaque au repos, pas, minutes intenses, SpO2, respiration et âge physique, avec une courbe sur 30 jours. Le cycle menstruel aussi, si tu le coches et le suis dans Garmin Connect.",
+        "Six tuiles d'accueil : Sommeil, Body Battery et VFC, Pas du jour, Minutes intenses, Cycle, Dernier record.",
+        "Le bilan de la semaine gagne une section Forme : sommeil moyen, pas, fréquence cardiaque au repos, minutes intenses et records.",
+        "La clé Garmin dure au plus un an : Pilote te prévient deux semaines avant, et ton iPhone peut sonner (Agenda › Notifications › Clé Garmin à renouveler)."
+      ],
+      "ameliore": [
+        "Pilote se synchronise avec Garmin au lancement, toutes les 2 heures tant qu'il reste ouvert, et quand tu cliques sur Synchroniser."
+      ]
+    },
+    {
       "version": "4.4.51",
       "date": "2026-11-02",
       "titre": "Pilote se prépare pour le Microsoft Store",

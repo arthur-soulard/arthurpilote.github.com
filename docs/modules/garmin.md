@@ -6,8 +6,8 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 La montre Garmin, lue dans le compte Garmin Connect de l'utilisateur. Demandé
 par Arthur le 03/11/2026 (« est-ce que ça pourrait être possible d'ajouter la
-connexion Garmin à Pilote ? »), codé le même jour pendant son absence, **pas
-encore publié**. Une section « Garmin » dans Vie perso, deux onglets :
+connexion Garmin à Pilote ? »), codé le même jour pendant son absence, essayé
+avec sa vraie clé, **publié en 4.4.52** (03/11/2026). Une section « Garmin » dans Vie perso, deux onglets :
 **Ma forme** (`ga-forme`) et **Connexion** (`ga-connexion`).
 
 API Python : `load_garmin()` → `{connecte, connecteLe, depuis, choix, derniere,
