@@ -2995,9 +2995,10 @@ html.verre {
   --verre-brd:  rgba(255,255,255,0.70);
   --verre-lum:  inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -1px 0 rgba(255,255,255,0.25);
   --verre-flou: blur(28px) saturate(180%);
-  --fond-1: color-mix(in srgb, var(--accent) 45%, #ffffff);
-  --fond-2: #9cc8ff;
-  --fond-3: #ffd6a8;
+  /* Le fond ne prend que l'accent de l'utilisateur, à trois intensités discrètes */
+  --fond-1: color-mix(in srgb, var(--accent) 34%, var(--bg));
+  --fond-2: color-mix(in srgb, var(--accent) 22%, var(--bg));
+  --fond-3: color-mix(in srgb, var(--accent) 13%, var(--bg));
 }
 html.verre[data-theme="dark"] {
   --bg:    #0d0d12;
@@ -3021,20 +3022,25 @@ html.verre[data-theme="dark"] {
   --verre-fort: rgba(36,36,42,0.80);
   --verre-brd:  rgba(255,255,255,0.12);
   --verre-lum:  inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(255,255,255,0.04);
-  --fond-1: color-mix(in srgb, var(--accent) 70%, #000000);
-  --fond-2: #17488a;
-  --fond-3: #5c3412;
+  --fond-1: color-mix(in srgb, var(--accent) 30%, var(--bg));
+  --fond-2: color-mix(in srgb, var(--accent) 19%, var(--bg));
+  --fond-3: color-mix(in srgb, var(--accent) 11%, var(--bg));
 }
 
-/* — Le fond : trois taches de couleur floues, fixes, derrière tout — */
+/* — Le fond : un voile de l'accent sur toute la fenêtre, et sept taches
+   douces réparties partout (aucune source qui domine), fixes, derrière tout — */
 html.verre body, html.verre[data-theme="dark"] body { background: var(--bg); }
 html.verre body::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(42% 52% at 12% 18%, var(--fond-1), transparent 70%),
-    radial-gradient(40% 50% at 88% 12%, var(--fond-2), transparent 70%),
-    radial-gradient(48% 55% at 70% 92%, var(--fond-3), transparent 72%),
-    var(--bg);
+    radial-gradient(34% 40% at 8% 12%,  var(--fond-1), transparent 72%),
+    radial-gradient(30% 36% at 46% 4%,  var(--fond-2), transparent 72%),
+    radial-gradient(32% 40% at 90% 18%, var(--fond-1), transparent 72%),
+    radial-gradient(36% 42% at 28% 56%, var(--fond-2), transparent 72%),
+    radial-gradient(34% 40% at 72% 58%, var(--fond-1), transparent 72%),
+    radial-gradient(36% 40% at 10% 96%, var(--fond-2), transparent 72%),
+    radial-gradient(38% 42% at 62% 100%, var(--fond-1), transparent 72%),
+    linear-gradient(160deg, var(--fond-3), var(--bg) 55%, var(--fond-3));
 }
 
 /* — Les surfaces de verre — */

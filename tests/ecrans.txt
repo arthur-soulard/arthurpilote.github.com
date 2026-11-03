@@ -11,15 +11,10 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 03/11/2026 : 4.4.56, style Verre (defaut) en clair puis en sombre, le choix
-# Verre / Carnet des Parametres, le Carnet, puis la fiche des nouveautes.
+# 03/11/2026 : 4.4.57, fond du style Verre a la couleur d'accent : accueil en
+# clair (prune), en clair (vert), en sombre (bleu), puis la fiche des nouveautes.
 # Pas de « ; » ni d'espace dans un appel js.
 home
-dash
-pos
-fin-month
-js:openSettings('general')
-js:closeOv('ov-config'),setThemePref('dark'),goTab('home')
-js:goTab('sp-agenda')
-js:setDesignPref('carnet'),goTab('home')
-js:setDesignPref('verre'),setThemePref('light'),document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.55',_majFicheApresMiseAJour()
+js:applyAccent('#059669'),goTab('dash')
+js:applyAccent('#2563eb'),setThemePref('dark'),goTab('home')
+js:applyAccent('#9c4a7a'),setThemePref('light'),document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.56',_majFicheApresMiseAJour()

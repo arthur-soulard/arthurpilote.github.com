@@ -20,8 +20,13 @@ Validé sur captures (données de Camille), Carnet à gauche, Verre à droite.
   (à partir du 03/11/2026) pour savoir quel style garder. Ensuite, soit on retire
   le bloc Verre (retour au Carnet), soit on retire le choix et le Carnet devient
   du code mort à nettoyer. Ne pas retirer le choix avant sa décision.
-* **Le verre** : un fond de trois taches floues fixes (`body::before` : l'accent,
-  un bleu, une pêche), des surfaces translucides (`--verre`, liseré clair
+* **Le verre** : un fond fixe (`body::before`) à la seule couleur d'accent de
+  l'utilisateur, mêlée au fond (`--fond-1..3`, 34/22/13 % en clair, 30/19/11 % en
+  sombre, plus doux à sa demande) : un voile en diagonale sur toute la fenêtre et sept taches douces
+  réparties partout, aucune qui domine. Choisi par Arthur en 4.4.57 après trois
+  essais : la 4.4.56 avait trois sources (l'accent, un bleu, une pêche), jugées
+  « bizarres » ; un fond presque uni a été refusé (« celui d'avant je préfère ») ;
+  couleurs renforcées à sa demande, puis un peu adoucies. Le texte reste lisible sur les cartes. Des surfaces translucides (`--verre`, liseré clair
   `--verre-lum`), de grands arrondis (22 et 28 px), la barre latérale en panneau
   flottant (200 px, décalée de 10 px ; sur Mac, collée en haut), la police du
   système (Segoe UI Variable sous Windows, SF Pro sur Mac). Les couleurs gain /
