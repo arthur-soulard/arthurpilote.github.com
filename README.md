@@ -17,7 +17,7 @@ serveur. Les cours sont actualisés automatiquement depuis Yahoo Finance.
 | Composant | Microsoft Edge WebView2, qui dessine la fenêtre. Déjà là sur Windows 11 et sur un Windows 10 à jour ; sinon, le programme d'installation l'ajoute | rien |
 | Internet | pour l'installation, les cours de bourse et les mises à jour. Sans connexion, Pilote s'ouvre et montre les derniers cours connus | pareil |
 
-Pilote n'a pas besoin de compte. Seuls trois modules, facultatifs, demandent quelque chose
+Pilote n'a pas besoin de compte. Seuls quatre modules, facultatifs, demandent quelque chose
 de plus :
 
 - **Actus** : un compte Gmail avec la validation en deux étapes activée (Pilote s'y
@@ -25,6 +25,8 @@ de plus :
 - **Agenda**, pour le voir et le faire sonner sur ton iPhone : un compte Apple avec la
   double authentification (l'onglet iCloud explique comment créer un mot de passe pour
   app). Sans iPhone, le calendrier marche quand même ;
+- **Garmin** : une montre Garmin et un compte Garmin Connect (Pilote lit ta montre avec une
+  clé API personnelle, que l'onglet Connexion t'aide à créer) ;
 - **Santé**, pour lire des captures de l'app FitDays : sur Windows, le français ou
   l'anglais parmi les langues de Windows (c'est le cas d'un Windows en français). La
   saisie à la main marche partout.
@@ -140,6 +142,10 @@ prêt se remplissent seuls), biens immobiliers et leur crédit, valeur nette et 
 
 **Santé** : pesées et mesures saisies à la main ou lues sur des captures de l'app FitDays.
 
+**Garmin** : ta montre lue dans ton compte Garmin Connect. Ses séances vont dans Sports, ses
+pesées dans Santé ; sommeil, Body Battery, VFC, fréquence cardiaque au repos et pas sur
+30 jours. Pilote ne fait que lire.
+
 **Actus** : la boîte Gmail qui reçoit tes newsletters, lue dans Pilote, avec un mot de passe
 d'application Google gardé chiffré par Windows, ou dans le Trousseau sur Mac.
 
@@ -171,6 +177,7 @@ compte, ni serveur, ni mesure d'audience. Il contacte seulement :
 | Gmail | si tu actives Actus | ton adresse et ton mot de passe d'application, pour lire ta boîte |
 | Expéditeurs des newsletters | à l'ouverture d'un mail, si tu affiches ses images | ton adresse IP et l'heure d'ouverture |
 | iCloud | si tu connectes l'Agenda | ton identifiant Apple et ton mot de passe pour app ; tes notes et ce que tu coches |
+| Garmin | si tu connectes Garmin | ta clé API personnelle, pour lire tes séances, tes pesées et ta forme du jour ; rien de Pilote n'y est envoyé |
 | Microsoft | à l'installation sur Windows, seulement si WebView2 manque | ton adresse IP, pour télécharger WebView2 |
 
 Sources des données : cours de Yahoo Finance ; compositions d'ETF d'iShares, d'Amundi et de
