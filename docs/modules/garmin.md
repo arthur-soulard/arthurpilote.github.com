@@ -164,14 +164,28 @@ nouveau ou une panne.
   connecté), le cycle coché, quelques séances avec `garminId` dont un record, un
   objectif de performance à valider, les six tuiles Garmin en tête.
 
-### À vérifier avec une vraie clé
+### Essai avec une vraie clé (03/11/2026)
 
-* Le format exact du jeton et les réponses réelles (seulement d'après la doc et
-  le client officiel).
-* Le poids (kg d'après la spec, grammes dans l'ancienne API).
-* Les noms réels des clés de `sleepScores` (`overall` supposé) et des statuts de
-  VFC (`BALANCED`, `UNBALANCED`, `LOW`, `POOR`).
-* Les limites de requêtes (non documentées) et les plages de dates refusées.
-* `isPR` (records) sur une vraie activité, la réponse de l'âge physique (liste
-  d'un élément supposée) et celle du cycle pour un compte qui ne le suit pas
-  (204 supposé).
+Sur un banc isolé (copie de la branche, données temporaires effacées après),
+avec la clé d'Arthur et sa montre, journal de la seule forme des réponses :
+
+* **Jeton** : JWT de 1 141 caractères en texte brut, 3 parties, `exp` à 24 h.
+  Conforme au client officiel.
+* **Activités** : `isPR`, `activityType.typeKey`, `duration` (s), `distance` (m),
+  `elevationGain`, `averageHR`, `calories` présents ; 8 séances lues
+  (randonnée, course), distances et durées cohérentes.
+* **Résumé du jour (v2)** : 30 jours ; `intensityMinutes.goal` présent ;
+  `respiration.avgValue` présent ; **`pulseOx` ne contient que l'altitude** sur
+  cette montre : pas de SpO2, la case n'apparaît pas (prévu).
+* **Sommeil** : `sleepScores.overall.value` présent (supposition juste) ;
+  les horodatages du sommeil sont des **nombres** (ms), pas des chaînes comme
+  dans la spec : Pilote ne les lit pas.
+* **VFC** : statut `BALANCED` vu.
+* **Âge physique** : la réponse est un **objet** `{"invalidReason": …}` (pas une
+  liste) quand Garmin n'en a pas : lu comme « pas de donnée », sans erreur.
+* Aucune erreur, aucune limite de requêtes rencontrée (5 appels, moins de 3 s).
+
+Reste à vérifier : **le poids** (la case Pesées était décochée : kg d'après la
+spec, grammes dans l'ancienne API, Pilote accepte les deux), un vrai record
+(`isPR` à `true`), les autres statuts de VFC, le cycle d'un compte qui le suit,
+et la réponse de Garmin à une clé expirée.
