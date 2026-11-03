@@ -14,6 +14,11 @@
 # 03/11/2026 : 4.4.53, fenêtre des nouveautés plus grande, titre en tête,
 # début des lignes en gras. Pas de « ; » ni d'espace dans un appel js (le test
 # sépare les écrans par « ; » et l'appel du défilement par une espace).
+# 03/11/2026 : 4.4.54, section Montres (Coros, fichiers .fit, trois tuiles).
+ga-forme
+co-connexion
+mo-fit
+# 4.4.53 (gardés tant qu'elle n'est pas vue sur Mac)
 # 1. Après la mise à jour, une seule version à lire : son titre en tête.
 js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.52',_majFicheApresMiseAJour()
 # 2. Plusieurs versions d'un coup (4.4.52 et 4.4.53) : une fiche par version, lignes en gras.
