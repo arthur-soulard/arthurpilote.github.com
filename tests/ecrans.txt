@@ -11,23 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 03/11/2026 : module Garmin (docs/modules/garmin.md). Données de Camille : la
-# forme des 30 derniers jours déjà lue (garmin.json, compte pas connecté) et
-# quelques séances venues de la montre. Pas de « ; » ni d'espace dans un appel
-# js (le test sépare les écrans par « ; » et l'appel du défilement par une espace).
-# Puis (même jour) : records, SpO2, respiration, âge physique, cycle, rappel
-# d'expiration de la clé, bilan de la semaine, trois tuiles de plus.
-# 1. Accueil : les six tuiles Garmin en tête.
-home
-# 2. Garmin › Ma forme : neuf chiffres du jour.
-ga-forme
-# 3. Garmin › Ma forme, plus bas : carte du cycle et séances de la montre (record).
-ga-forme 700
-# 4. Garmin › Connexion : la fiche, la durée de la clé et les quatre cases.
-ga-connexion
-# 5. Sports › Objectifs : le record de la montre propose « Valider ».
-sp-goals
-# 6. Bilan de la semaine (section Forme, plus bas dans la page).
-js:bilanOuvrir()
-# 7. Paramètres › Mises à jour : version 4.4.52 et sa fiche (module Garmin).
-js:openSettings('maj')
+# 03/11/2026 : 4.4.53, fenêtre des nouveautés plus grande, titre en tête,
+# début des lignes en gras. Pas de « ; » ni d'espace dans un appel js (le test
+# sépare les écrans par « ; » et l'appel du défilement par une espace).
+# 1. Après la mise à jour, une seule version à lire : son titre en tête.
+js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.52',_majFicheApresMiseAJour()
+# 2. Plusieurs versions d'un coup (4.4.52 et 4.4.53) : une fiche par version, lignes en gras.
+js:document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.51',_majFicheApresMiseAJour()
+# 3. Paramètres › Mises à jour : l'historique, lignes en gras.
+js:document.getElementById('ov-maj-vue')?.remove(),openSettings('maj')

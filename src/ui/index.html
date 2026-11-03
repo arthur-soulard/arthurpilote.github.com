@@ -2804,6 +2804,7 @@ label[for="pp-prenom"] { font-size: 13px; font-weight: 600; color: var(--txt); w
 .maj-grp ul { padding-left: 1.15rem; display: grid; gap: 5px; }
 .maj-grp li { font-size: 13px; line-height: 1.55; color: var(--txt); }
 .maj-grp li::marker { color: var(--txt3); }
+.maj-grp li b { font-weight: 650; color: var(--txt); }
 .maj-scroll { max-height: 46vh; overflow-y: auto; padding-right: 6px; }
 /* Bilan de la semaine : fenêtre du rapport, barre de réglages au-dessus de la page */
 .bilan-ov { position: fixed; inset: 36px 0 0; z-index: 9500; background: rgba(20, 16, 14, .55);
@@ -2818,8 +2819,19 @@ label.bilan-auto input[type="time"] { width: auto; padding: 3px 6px; font-size: 
 .bilan-sp { flex: 1; }
 #bilan-frame { width: 100%; max-width: 900px; flex: 1; background: #fffdf9; border: 0; border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
-.modal.maj-modal { max-width: 560px; }
+.modal.maj-modal { max-width: 760px; width: 94%; }
 .maj-modal h2 { margin-bottom: .9rem; }
+.maj-modal h2.maj-une { font-family: var(--serif); font-size: 27px; font-weight: 500; line-height: 1.2; margin-bottom: 1.1rem; }
+/* Fenêtres d'une mise à jour (avant, après) : lecture confortable */
+/* Aussi haut que l'écran le permet, sans passer sous la barre de titre */
+.maj-modal .maj-scroll { max-height: min(62vh, calc(100vh - 300px)); }
+#update-modal .upd-fiche .maj-scroll { max-height: min(60vh, calc(100vh - 430px)); }
+.maj-modal .maj-grp li, #update-modal .maj-grp li { font-size: 14.5px; line-height: 1.6; }
+.maj-modal .maj-grp ul, #update-modal .maj-grp ul { gap: 8px; }
+.maj-modal .maj-grp-t, #update-modal .maj-grp-t { font-size: 12.5px; }
+.maj-modal .maj-grp, #update-modal .maj-grp { margin-top: 1.1rem; }
+.maj-modal .maj-grp:first-child, #update-modal .maj-grp:first-child { margin-top: 0; }
+.maj-modal .maj-fiche-t, #update-modal .maj-fiche-t { font-size: 21px; }
 .maj-kick { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent-text); margin-bottom: .3rem; }
 .maj-installee { font-size: 13px; font-weight: 600; margin-right: 4px; }
 .maj-dispo { border: 1.5px solid var(--accent); border-radius: var(--radl); padding: .9rem 1rem; margin-bottom: .4rem; }
@@ -2839,11 +2851,13 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 .maj-item-v { flex: none; font-weight: 600; }
 .maj-item-t { flex: 1; min-width: 0; color: var(--txt2); }
 .maj-item-d { flex: none; color: var(--txt3); font-size: 12px; }
-#update-modal.avec-fiche { max-width: 540px; }
+#update-modal.avec-fiche { max-width: 760px; width: 94%; }
+#update-modal .upd-title.upd-kick { font-size: 13px; font-weight: 600; color: var(--accent-text); margin-bottom: .1rem; }
+#update-modal .upd-une { font-family: var(--serif); font-size: 27px; font-weight: 500; line-height: 1.2;
+  color: var(--txt); margin: .1rem 0 .4rem; }
 #update-modal .upd-fiche { text-align: left; background: var(--bg3); border-radius: var(--radl);
-  padding: .9rem 1rem; margin: -.4rem 0 1.3rem; }
-#update-modal .upd-fiche-t { font-size: 12px; color: var(--txt3); margin-bottom: .4rem; }
-#update-modal .upd-fiche .maj-scroll { max-height: 42vh; }
+  padding: 1.2rem 1.4rem; margin: -.4rem 0 1.3rem; }
+#update-modal .upd-fiche-t { font-size: 12.5px; color: var(--txt3); margin-bottom: .6rem; }
 #update-modal .upd-nofiche { font-size: 12px; color: var(--txt2); margin: -.6rem 0 1.3rem; }
 @media (prefers-reduced-motion: reduce) {
   .pp-step { animation: none; }
@@ -16533,6 +16547,16 @@ const MAJ_GROUPES = [
   ["corrige",  "Corrigé",  "wrench"],
 ];
 
+/** Une ligne de la fiche, avec l'essentiel en gras : le texte entre **…**
+    s'il y en a, sinon ce qui précède « : » en tête (« Garmin › Ma forme : »).
+    Une version d'avant la 4.4.53 affiche les ** tels quels dans la fenêtre
+    « Mise à jour disponible » : voir _lisez_moi de nouveautes.json. */
+function _majLigne(p) {
+  const h = escHtml(p);
+  if (/\*\*(.+?)\*\*/.test(h)) return h.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  return h.replace(/^([^.:!?;]{2,45}?)([\s  ]):\s/, "<b>$1</b>$2: ");
+}
+
 /** Fiche d'une ou plusieurs versions. opts.sansNumero : sans la ligne
     « Version x · date » ; opts.sansTitre : sans le titre non plus. */
 function _majFicheHtml(versions, opts) {
@@ -16544,7 +16568,7 @@ function _majFicheHtml(versions, opts) {
       ${MAJ_GROUPES.filter(([k]) => (v[k] || []).length).map(([k, lbl, ico]) => `
         <div class="maj-grp maj-${k}">
           <div class="maj-grp-t"><i class="ph ph-${ico}"></i> ${lbl}</div>
-          <ul>${v[k].map(p => `<li>${escHtml(p)}</li>`).join("")}</ul>
+          <ul>${v[k].map(p => `<li>${_majLigne(p)}</li>`).join("")}</ul>
         </div>`).join("")}
     </div>`).join("");
 }
@@ -16564,14 +16588,19 @@ async function _majFicheApresMiseAJour() {
   _enregistrerUiPrefs();
   if (!aLire.length || document.getElementById("ov-maj-vue")) return;
 
+  // Une seule version à lire : son titre en tête de la fenêtre
+  const une = aLire.length === 1 ? aLire[0].titre : "";
   const ov = document.createElement("div");
   ov.id = "ov-maj-vue";
   ov.className = "ov open";
   ov.innerHTML = `
     <div class="modal maj-modal" role="dialog" aria-modal="true" aria-labelledby="maj-vue-t">
-      <div class="maj-kick"><i class="ph ph-sparkle"></i> Mise à jour installée</div>
-      <h2 id="maj-vue-t">Quoi de neuf dans Pilote ${escHtml(h.version)}</h2>
-      <div class="maj-scroll">${_majFicheHtml(aLire, { sansNumero: aLire.length === 1 })}</div>
+      ${une
+        ? `<div class="maj-kick"><i class="ph ph-sparkle"></i> Mise à jour installée · Pilote ${escHtml(h.version)}</div>
+           <h2 id="maj-vue-t" class="maj-une">${escHtml(une)}</h2>`
+        : `<div class="maj-kick"><i class="ph ph-sparkle"></i> Mise à jour installée</div>
+           <h2 id="maj-vue-t">Quoi de neuf dans Pilote ${escHtml(h.version)}</h2>`}
+      <div class="maj-scroll">${_majFicheHtml(aLire, { sansNumero: aLire.length === 1, sansTitre: !!une })}</div>
       <div class="mact">
         <button class="btn btn-ghost" data-maj-histo><i class="ph ph-clock-counter-clockwise"></i> Historique des mises à jour</button>
         <button class="btn btn-primary" data-maj-ok>C'est noté</button>
@@ -16696,10 +16725,12 @@ async function _checkForUpdates() {
 
     // La fiche de la version proposée (de toutes, si plusieurs ont été sautées)
     const notes = (r.notes && r.notes.length) ? r.notes : null;
+    // Une seule version proposée : son titre en tête de la fenêtre
+    const une = notes && notes.length === 1 ? notes[0].titre : "";
     const fiche = notes
       ? `<div class="upd-fiche" id="upd-fiche">
            <div class="upd-fiche-t">Ce qui change</div>
-           <div class="maj-scroll">${_majFicheHtml(notes, { sansNumero: notes.length === 1 })}</div>
+           <div class="maj-scroll">${_majFicheHtml(notes, { sansNumero: notes.length === 1, sansTitre: !!une })}</div>
          </div>`
       : `<p class="upd-nofiche" id="upd-fiche">La fiche de cette version n'a pas pu être chargée.
            Elle sera dans Paramètres → Mises à jour une fois la version installée.</p>`;
@@ -16709,7 +16740,8 @@ async function _checkForUpdates() {
     overlay.innerHTML = `
       <div id="update-modal"${notes ? ' class="avec-fiche"' : ""}>
         <div class="upd-icon">🚀</div>
-        <div class="upd-title">Mise à jour disponible</div>
+        <div class="upd-title${une ? " upd-kick" : ""}">Mise à jour disponible</div>
+        ${une ? `<div class="upd-une">${escHtml(une)}</div>` : ""}
         <div class="upd-sub">Version ${escHtml(r.version)} est prête à installer</div>
         ${fiche}
         <div class="upd-btns">

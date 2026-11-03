@@ -1,6 +1,15 @@
 {
-  "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative).",
+  "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
+    {
+      "version": "4.4.53",
+      "date": "2026-11-03",
+      "titre": "Des nouveautés plus faciles à lire",
+      "ameliore": [
+        "Mises à jour : la fenêtre qui présente une nouvelle version est plus grande, avec un texte plus gros et plus aéré.",
+        "Le titre de la version s'affiche en tête de la fenêtre, et le début de chaque ligne est en gras pour repérer d'un coup d'œil ce qui change."
+      ]
+    },
     {
       "version": "4.4.52",
       "date": "2026-11-03",
