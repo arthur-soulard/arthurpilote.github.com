@@ -19638,7 +19638,7 @@ function spGoalCard(g) {
     const rec = !done && typeof gaRecordPour === "function" ? gaRecordPour(g) : null;
     body = `
       <div class="sp-goal-meta">Fixé le ${escHtml(spParseISO(g.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }))}</div>
-      ${rec ? `<div class="sp-goal-meta ga-rec"><i class="ph ph-trophy"></i> Record Garmin le ${escHtml(dashDateCourte(rec.date))}${rec.note ? " (" + escHtml(rec.note) + ")" : ""} : objectif atteint ?
+      ${rec ? `<div class="sp-goal-meta ga-rec"><i class="ph ph-trophy"></i> Record Garmin le ${escHtml(dashDateCourte(rec.date))}${rec.note ? " (" + escHtml(rec.note) + ")" : ""}&nbsp;: objectif atteint&#8239;?
         <button class="btn btn-ghost btn-sm" onclick="spToggleGoalDone(${g.id})">Valider</button></div>` : ""}
       ${done ? `<div class="sp-goal-meta" style="color:var(--g)">✓ Atteint le ${escHtml(spParseISO(g.doneAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }))}</div>` : ""}`;
   }
