@@ -667,6 +667,15 @@ body.has-shell #wish-update { display: none !important; }
   background: var(--bg2);
 }
 .pin-digit::placeholder { color: var(--txt3); }
+/* Écran de verrouillage (_checkPinLock) : opaque, il cache tout ce qui est derrière */
+.lock-ecran {
+  position: fixed; inset: 0; z-index: 99999; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+}
+.lock-ico {
+  width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 38px; background: var(--accent-soft); color: var(--accent-text);
+}
 /* Version compacte dans les Parametres */
 #cfg-pin-boxes .pin-digit {
   width: 38px; height: 48px;
@@ -727,7 +736,12 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
   padding: 2.2rem 2rem 1.8rem;
   max-width: 400px; width: 92%; text-align: center;
 }
-#update-modal .upd-icon  { font-size: 36px; margin-bottom: .6rem; }
+#update-modal .upd-icon  {
+  width: 60px; height: 60px; margin: 0 auto .8rem; border-radius: 50%;
+  display: grid; place-items: center; font-size: 32px;
+  background: var(--accent-soft); color: var(--accent-text);
+}
+#update-modal .upd-warn .ph { vertical-align: -0.15em; }
 #update-modal .upd-title { font-size: 17px; font-weight: 700; margin-bottom: .3rem; }
 #update-modal .upd-sub   { font-size: 12px; color: var(--txt2); font-family: var(--mono); margin-bottom: 1.4rem; }
 #update-modal .upd-btns  { display: flex; gap: 10px; justify-content: center; }
@@ -3030,8 +3044,7 @@ html.verre[data-theme="dark"] {
 /* — Le fond : un voile de l'accent sur toute la fenêtre, et sept taches
    douces réparties partout (aucune source qui domine), fixes, derrière tout — */
 html.verre body, html.verre[data-theme="dark"] body { background: var(--bg); }
-html.verre body::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+html.verre body::before, html.verre .lock-ecran {
   background:
     radial-gradient(34% 40% at 8% 12%,  var(--fond-1), transparent 72%),
     radial-gradient(30% 36% at 46% 4%,  var(--fond-2), transparent 72%),
@@ -3042,6 +3055,34 @@ html.verre body::before {
     radial-gradient(38% 42% at 62% 100%, var(--fond-1), transparent 72%),
     linear-gradient(160deg, var(--fond-3), var(--bg) 55%, var(--fond-3));
 }
+html.verre body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+/* — Écran de verrouillage, fenêtre de mise à jour : le même verre — */
+html.verre .lock-ico, html.verre #update-modal .upd-icon {
+  background: var(--verre-fort); border: 1px solid var(--verre-brd);
+  box-shadow: var(--verre-lum), var(--sh);
+}
+html.verre .lock-ecran .pin-digit {
+  background: var(--verre); border: 1px solid var(--verre-brd); border-radius: 18px;
+  box-shadow: var(--verre-lum), var(--sh);
+}
+html.verre .lock-ecran .pin-digit:focus {
+  background: var(--verre-fort); border-color: var(--accent); box-shadow: var(--verre-lum), 0 0 0 4px var(--accent-soft);
+}
+html.verre #update-overlay {
+  background: rgba(10,10,20,.16);
+  backdrop-filter: blur(8px) saturate(140%); -webkit-backdrop-filter: blur(8px) saturate(140%);
+}
+html.verre[data-theme="dark"] #update-overlay { background: rgba(0,0,0,.35); }
+html.verre #ov-report { backdrop-filter: blur(8px) saturate(140%); -webkit-backdrop-filter: blur(8px) saturate(140%); }
+html.verre #update-modal {
+  background: var(--verre-fort); border: 1px solid var(--verre-brd); border-radius: var(--radxl);
+  box-shadow: var(--verre-lum), var(--sh-md);
+  backdrop-filter: var(--verre-flou); -webkit-backdrop-filter: var(--verre-flou);
+}
+html.verre #update-modal .upd-une { font-family: var(--serif); font-weight: 700; letter-spacing: -.02em; }
+html.verre #update-modal .upd-fiche { background: var(--bg3); }
+html.verre #update-modal :is(.upd-sub, .upd-step) { font-family: var(--font); }
 
 /* — Les surfaces de verre — */
 html.verre :is(.card, .dash-card, .reco-card, .fin-header, .fin-kpi, .mkpi, .sp-goal, .sa-goal,
@@ -4464,7 +4505,7 @@ html.verre .toast-stack .toast {
 <!-- Modale : mes sports (ajoutes par l'utilisateur) -->
 <div class="ov" id="ov-sp-sports" onclick="if(event.target===this)closeOv('ov-sp-sports')">
   <div class="modal" style="max-width:560px">
-    <h2>🏅 Mes sports</h2>
+    <h2><i class="ph ph-medal"></i> Mes sports</h2>
     <p class="m-note" style="margin-top:-.4rem">
       En plus des sports livrés avec Pilote, tu peux créer les tiens et choisir
       exactement les informations à saisir pour chacun.
@@ -4733,7 +4774,7 @@ html.verre .toast-stack .toast {
 <!-- Modale : Gérer les catégories -->
 <div class="ov" id="ov-fin-cats" onclick="if(event.target===this)closeOv('ov-fin-cats')">
   <div class="modal" style="max-width:620px">
-    <h2>▦ Gérer les catégories</h2>
+    <h2><i class="ph ph-squares-four"></i> Gérer les catégories</h2>
 
     <div class="set-corps" id="corps-fin-cats">
     <div class="fg">
@@ -4833,7 +4874,7 @@ html.verre .toast-stack .toast {
 <!-- Modale : Gérer les sources de paiement -->
 <div class="ov" id="ov-fin-srcs" onclick="if(event.target===this)closeOv('ov-fin-srcs')">
   <div class="modal" style="max-width:460px">
-    <h2>⊳ Sources de paiement</h2>
+    <h2><i class="ph ph-credit-card"></i> Sources de paiement</h2>
 
     <div class="set-corps" id="corps-fin-srcs">
     <div id="fin-srcs-list" style="max-height:55vh;overflow-y:auto;padding-right:6px"></div>
@@ -5002,7 +5043,7 @@ html.verre .toast-stack .toast {
 
 <div class="ov" id="ov-config" onclick="if(event.target===this)closeOv('ov-config')">
   <div class="modal" style="max-width:800px">
-    <h2>⚙ Paramètres de Pilote</h2>
+    <h2><i class="ph ph-gear-six"></i> Paramètres de Pilote</h2>
 
     <div class="set-layout">
       <!-- Colonne de gauche : une entrée par domaine de l'app -->
@@ -11758,7 +11799,7 @@ ${divs.length ? divs.sort((a,b)=>a.date.localeCompare(b.date)).map(d=>`<tr><td>$
   ov.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px";
   ov.innerHTML = `
     <div style="width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#fff">
-      <div style="font-weight:700;font-size:14px">📄 Rapport annuel ${year}</div>
+      <div style="font-weight:700;font-size:14px"><i class="ph ph-file-text"></i> Rapport annuel ${year}</div>
       <div style="display:flex;gap:8px">
         <button id="rep-print" class="btn btn-primary btn-sm"><i class="ph ph-printer"></i> Imprimer / Sauvegarder en PDF</button>
         <button id="rep-close" class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.2)">Fermer</button>
@@ -11927,9 +11968,9 @@ async function _checkPinLock() {
     // chargement derrière l'écran de chargement
     _appReady();
     const ov = document.createElement("div");
-    ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem";
+    ov.className = "lock-ecran";
     ov.innerHTML = `
-      <div style="font-size:64px;line-height:1">🔒</div>
+      <div class="lock-ico"><i class="ph ph-lock-simple"></i></div>
       ${me ? `<div style="display:flex;align-items:center;gap:10px">
                 ${userAvatarHtml(me)}
                 <span style="font-size:20px;font-weight:700">${escHtml(me.label)}</span>
@@ -11950,7 +11991,7 @@ async function _checkPinLock() {
             ${others.map(u => `
               <button class="home-user" data-lock-user="${u.slug}">
                 ${userAvatarHtml(u)}<span>${escHtml(u.label)}</span>
-                ${u.hasPin ? '<span title="Prot\u00e9g\u00e9 par un code">\u{1F512}</span>' : ""}
+                ${u.hasPin ? '<i class="ph ph-lock-simple" title="Prot\u00e9g\u00e9 par un code"></i>' : ""}
               </button>`).join("")}
           </div>
         </div>` : ""}`;
@@ -14082,7 +14123,7 @@ function openTemplatePicker() {
     ov.className = "ov";
     ov.onclick = (e) => { if (e.target === ov) closeOv("ov-template"); };
     ov.innerHTML = `<div class="modal" style="max-width:600px">
-      <h2>📚 Modèles de règles</h2>
+      <h2><i class="ph ph-books"></i> Modèles de règles</h2>
       <div id="tpl-search-wrap" style="margin-bottom:.7rem">
         <input id="tpl-search" placeholder="Filtrer les modèles…" oninput="_filterTpl()"
           style="width:100%;background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--rad);padding:7px 11px;font-size:12px;font-family:var(--font);color:var(--txt)">
@@ -16877,7 +16918,7 @@ async function manualCheckUpdate() {
   status.textContent = "Vérification en cours…";
   try {
     if (!window.pywebview || !window.pywebview.api) {
-      status.textContent = "❌ pywebview indisponible";
+      status.textContent = "Vérification possible seulement dans l'application";
       return;
     }
     // Relance la vérif côté Python
@@ -16891,7 +16932,7 @@ async function manualCheckUpdate() {
       r = await window.pywebview.api.check_update();
       if (r && r.checked) break;
     }
-    if (!r) { status.textContent = "❌ pas de réponse"; return; }
+    if (!r) { status.textContent = "Pas de réponse : réessaie dans un moment"; return; }
     if (!r.checked) { status.textContent = "Pas de réponse à temps : réessaie dans un moment"; return; }
     if (r.store) {
       status.textContent = "Les mises à jour arrivent par le Microsoft Store";
@@ -16907,7 +16948,7 @@ async function manualCheckUpdate() {
       status.textContent = "✓ À jour";
     }
   } catch(e) {
-    status.textContent = "❌ Erreur : " + (e.message || e);
+    status.textContent = "Erreur : " + (e.message || e);
   }
 }
 
@@ -17153,7 +17194,7 @@ async function _checkForUpdates() {
     overlay.id = "update-overlay";
     overlay.innerHTML = `
       <div id="update-modal"${notes ? ' class="avec-fiche"' : ""}>
-        <div class="upd-icon">🚀</div>
+        <div class="upd-icon"><i class="ph ph-arrow-circle-up"></i></div>
         <div class="upd-title${une ? " upd-kick" : ""}">Mise à jour disponible</div>
         ${une ? `<div class="upd-une">${escHtml(une)}</div>` : ""}
         <div class="upd-sub">Version ${escHtml(r.version)} est prête à installer</div>
@@ -17167,7 +17208,7 @@ async function _checkForUpdates() {
           <div class="upd-step" id="upd-step">Démarrage…</div>
           <div class="upd-pct"  id="upd-pct">0%</div>
         </div>
-        <div class="upd-warn" id="upd-warn">⚠ L'application va se fermer, s'installer puis se rouvrir toute seule</div>
+        <div class="upd-warn" id="upd-warn"><i class="ph ph-info"></i> L'application va se fermer, s'installer puis se rouvrir toute seule</div>
         <div class="upd-error" id="upd-error" style="display:none;margin-top:1rem">
           <div style="background:var(--r2);color:var(--r);padding:.7rem .9rem;border-radius:var(--rad);font-size:12px;text-align:left;margin-bottom:.8rem" id="upd-error-msg"></div>
           <button class="btn btn-primary btn-sm" id="upd-retry">Réessayer</button>
@@ -17177,10 +17218,10 @@ async function _checkForUpdates() {
 
     const STEPS = {
       idle:        "Préparation…",
-      downloading: "⬇ Téléchargement en cours…",
-      installing:  "🔧 Installation en cours…",
-      launching:   "✅ Mise à jour téléchargée : l'application se ferme et va se rouvrir toute seule",
-      error:       "❌ Erreur",
+      downloading: "Téléchargement en cours…",
+      installing:  "Installation en cours…",
+      launching:   "Mise à jour téléchargée : l'application se ferme et va se rouvrir toute seule",
+      error:       "Erreur",
     };
 
     // Helpers ultra-robustes pour ne JAMAIS crasher silencieusement
@@ -17219,7 +17260,7 @@ async function _checkForUpdates() {
         } catch(e) {
           // L'app se ferme — c'est attendu pendant l'install
           clearInterval(_pollHandle); _pollHandle = null;
-          setStep("✅ Installation en cours : l'application va se rouvrir toute seule");
+          setStep("Installation en cours : l'application va se rouvrir toute seule");
         }
       }, 400);
     }

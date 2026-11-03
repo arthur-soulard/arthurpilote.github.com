@@ -39,12 +39,26 @@ _THEMES = {
 }
 _DEFAULT_ACCENT = "#9c4a7a"   # ACCENT_DEFAULT (index.html) / DEFAULT_COLOR (appicon.py)
 
+# Style « Verre » (4.4.56, par defaut) : memes jetons que html.verre dans
+# index.html. Le Carnet ci-dessus reste pour qui l'a choisi (uiPrefs.design).
+_THEMES_VERRE = {
+    "light": {"bg": "#eceef3", "txt": "#1d1d1f", "txt2": "#5f5f66", "brd": "rgba(0,0,0,0.11)",
+              "haut": "#f6f7fa", "bord": (206, 208, 214), "fond1": 34, "fond2": 22},
+    "dark":  {"bg": "#0d0d12", "txt": "#f5f5f7", "txt2": "#aeaeb5", "brd": "rgba(255,255,255,0.13)",
+              "haut": "#16161d", "bord": (44, 44, 52), "fond1": 30, "fond2": 19},
+}
 
-def background(theme: str) -> str:
-    return _THEMES.get(theme, _THEMES["light"])["bg"]
+
+def _jetons(theme: str, design: str = "verre") -> dict:
+    table = _THEMES if design == "carnet" else _THEMES_VERRE
+    return table.get(theme, table["light"])
 
 
-def arrondir_coins(hwnd: int, theme: str) -> bool:
+def background(theme: str, design: str = "verre") -> str:
+    return _jetons(theme, design)["bg"]
+
+
+def arrondir_coins(hwnd: int, theme: str, design: str = "verre") -> bool:
     """Coins arrondis par Windows 11 lui-meme (DWM) : lisses, ombre comprise,
     rayon fixe de 8 px. Une fenetre transparente avec border-radius en CSS
     passerait par la « couleur cle » de pywebview, qui laisse des franges.
@@ -54,7 +68,7 @@ def arrondir_coins(hwnd: int, theme: str) -> bool:
         dwm = ctypes.windll.dwmapi
         rond = ctypes.c_int(2)                                     # DWMWCP_ROUND
         ok = dwm.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(rond), 4) == 0  # DWMWA_WINDOW_CORNER_PREFERENCE
-        r, g, b = _THEMES.get(theme, _THEMES["light"])["bord"]
+        r, g, b = _jetons(theme, design)["bord"]
         couleur = ctypes.c_uint(r | (g << 8) | (b << 16))         # COLORREF : 0x00BBGGRR
         dwm.DwmSetWindowAttribute(hwnd, 34, ctypes.byref(couleur), 4)  # DWMWA_BORDER_COLOR
         return ok
@@ -70,8 +84,8 @@ def _font_uri(fonts_dir: Path, name: str) -> str:
         return ""
 
 
-def build_html(ui_dir: Path, accent: str, theme: str) -> str:
-    t = _THEMES.get(theme, _THEMES["light"])
+def build_html(ui_dir: Path, accent: str, theme: str, design: str = "verre") -> str:
+    t = _jetons(theme, design)
     # L'accent finit dans du CSS : seul un #rrggbb passe
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", accent or ""):
         accent = _DEFAULT_ACCENT
@@ -161,6 +175,7 @@ body {
   .halo { opacity: .7; }
   .piste i { animation-duration: 3s; animation-delay: 0s; }
 }
+%(verre)s
 </style></head>
 <body><div class="scene">
   <div class="logo" aria-hidden="true">
@@ -170,4 +185,27 @@ body {
   <div class="nom" aria-hidden="true"><span>P</span><span>i</span><span>l</span><span>o</span><span>t</span><span>e</span></div>
   <div class="piste" aria-hidden="true"><i></i></div>
   <div class="txt" role="status">Chargement de tes donn&eacute;es&hellip;</div>
-</div></body></html>""" % {"faces": faces, "accent": accent, **t}
+</div></body></html>""" % {"faces": faces, "accent": accent, "verre": _css_verre(t) if design != "carnet" else "", **t}
+
+
+def _css_verre(t: dict) -> str:
+    """Style Verre : fond a la couleur d'accent (comme le fond de l'app),
+    tuile avec un reflet de verre, nom et P dans la police du systeme."""
+    sys_font = '-apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif'
+    return """
+body {
+  font-family: %(f)s;
+  background:
+    radial-gradient(60%% 70%% at 18%% 20%%, color-mix(in srgb, var(--accent) %(f1)d%%, var(--bg)), transparent 72%%),
+    radial-gradient(60%% 70%% at 85%% 85%%, color-mix(in srgb, var(--accent) %(f2)d%%, var(--bg)), transparent 72%%),
+    radial-gradient(ellipse 78%% 70%% at 50%% 44%%, %(haut)s, var(--bg));
+}
+.tuile {
+  font-family: %(f)s; font-style: normal; font-weight: 700; font-size: 40px;
+  background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0) 55%%), var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 14px 30px -12px color-mix(in srgb, var(--accent) 80%%, transparent);
+}
+.onde { border-radius: 19px; }
+.nom { font-family: %(f)s; font-style: normal; font-weight: 700; font-size: 29px; letter-spacing: -.03em; }
+.txt { font-family: %(f)s; }
+""" % {"f": sys_font, "f1": t["fond1"], "f2": t["fond2"], "haut": t["haut"]}

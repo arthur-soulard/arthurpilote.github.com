@@ -36,6 +36,14 @@ Validé sur captures (données de Camille), Carnet à gauche, Verre à droite.
   suffit et le rendu est le même. Le vrai flou est réservé aux surfaces fixes :
   barre de titre, barre latérale, fenêtres, notifications. Ne pas « améliorer »
   en floutant les cartes.
+* **Écrans hors des pages, au même style (4.4.58)** : écran de lancement
+  (`splash.py`, voir `docs/demarrage-et-icone.md`), fenêtre de mise à jour et sa
+  progression (`#update-overlay`, `#update-modal` : verre, icône dans une pastille),
+  écran de verrouillage (`.lock-ecran` : le même fond que l'app, opaque, pour ne rien
+  laisser voir derrière ; cases du code en verre), fond flouté du rapport annuel. Les
+  emojis de ces écrans et des titres de fenêtres (🚀, ⬇, 🔧, ✅, ❌, ⚠, 🔒, 📄, ⚙, 🏅,
+  ▦, ⊳, 📚) sont devenus des icônes Phosphor, dans les deux styles. Le fond Verre est
+  écrit une fois pour `body::before` et `.lock-ecran`.
 * **Repères communs aux deux styles** (bloc « REPÈRES », juste avant) : espacements
   sur une grille de 4 et 8 px (`--space-*`), quatre durées (`--dur-*`), une courbe
   douce (`--ease`) et un léger rebond (`--ease-spring`) pour ce qui répond à un

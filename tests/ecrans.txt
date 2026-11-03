@@ -11,10 +11,10 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 03/11/2026 : 4.4.57, fond du style Verre a la couleur d'accent : accueil en
-# clair (prune), en clair (vert), en sombre (bleu), puis la fiche des nouveautes.
+# 03/11/2026 : 4.4.58, ecrans hors des pages au style Verre : Parametres
+# (titre avec icone), Parametres > Mises a jour, en sombre, puis la fiche.
 # Pas de « ; » ni d'espace dans un appel js.
-home
-js:applyAccent('#059669'),goTab('dash')
-js:applyAccent('#2563eb'),setThemePref('dark'),goTab('home')
-js:applyAccent('#9c4a7a'),setThemePref('light'),document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.56',_majFicheApresMiseAJour()
+js:openSettings('general')
+js:closeOv('ov-config'),openSettings('maj')
+js:closeOv('ov-config'),setThemePref('dark'),openSettings('maj')
+js:closeOv('ov-config'),setThemePref('light'),document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.57',_majFicheApresMiseAJour()

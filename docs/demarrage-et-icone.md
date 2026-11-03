@@ -19,6 +19,12 @@ logo « P » à la couleur d'accent et « Pilote », dans le thème de l'utilisa
   (effets d'animation de Windows coupés), tout s'affiche d'emblée et seule la barre
   glisse, plus lentement. Vérifié dans une vraie fenêtre pywebview (thèmes clair et
   sombre), pas encore dans l'exe compilé.
+* **Style Verre (4.4.58)** : l'écran suit le style de l'utilisateur actif
+  (`uiPrefs.design`, lu par `app.py` avec le thème et l'accent). Verre par défaut :
+  fond à la couleur d'accent, tuile avec un reflet de verre, « P » et « Pilote » droits
+  et gras dans la police du système (`_css_verre`, jetons `_THEMES_VERRE`). Carnet :
+  l'écran d'avant, inchangé (Newsreader en italique, fond papier). L'animation est la
+  même dans les deux.
 * **Coins arrondis** (03/10/2026, demande d'Arthur). Les coins sont
   arrondis par Windows 11 lui-même (`splash.arrondir_coins`, DWM :
   `DWMWA_WINDOW_CORNER_PREFERENCE` = arrondi, plus `DWMWA_BORDER_COLOR` = `--brd` rendu

@@ -74,7 +74,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.57"
+APP_VERSION = "4.4.58"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -1523,19 +1523,20 @@ def main() -> int:
     try:
         prefs = data.get("uiPrefs") or {}
         theme = "dark" if prefs.get("theme") == "dark" else "light"
+        design = "carnet" if prefs.get("design") == "carnet" else "verre"
         _splash_window = webview.create_window(
             APP_NAME,
-            html=splash.build_html(os.path.dirname(html_path), prefs.get("accent"), theme),
+            html=splash.build_html(os.path.dirname(html_path), prefs.get("accent"), theme, design),
             width=splash.SIZE[0], height=splash.SIZE[1],
             resizable=False, frameless=True,
-            background_color=splash.background(theme),
+            background_color=splash.background(theme, design),
         )
         _splash_window.events.shown += _paint_accent_icon
 
         def _arrondir_splash():
             # A cet instant la fenetre principale est encore cachee : la seule
             # fenetre visible de Pilote est l'ecran de chargement
-            splash.arrondir_coins(_hwnd_principale(), theme)
+            splash.arrondir_coins(_hwnd_principale(), theme, design)
         _splash_window.events.shown += _arrondir_splash
     except Exception as e:
         print(f"[app] ecran de chargement KO : {e}", flush=True)
