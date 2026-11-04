@@ -11,10 +11,9 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 03/11/2026 : 4.4.58, ecrans hors des pages au style Verre : Parametres
-# (titre avec icone), Parametres > Mises a jour, en sombre, puis la fiche.
-# Pas de « ; » ni d'espace dans un appel js.
-js:openSettings('general')
-js:closeOv('ov-config'),openSettings('maj')
-js:closeOv('ov-config'),setThemePref('dark'),openSettings('maj')
-js:closeOv('ov-config'),setThemePref('light'),document.getElementById('ov-maj-vue')?.remove(),_majHist=null,S.uiPrefs.nouveautesVues='4.4.57',_majFicheApresMiseAJour()
+# 04/11/2026 : 4.4.59, carte mise en avant (.mkpi.accent) au style Verre :
+# Sante, Sports, Patrimoine, puis Sante en sombre.
+sa-suivi
+sp-agenda
+pa-vue
+js:setThemePref('dark'),goTab('sa-suivi')

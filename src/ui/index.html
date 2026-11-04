@@ -3096,6 +3096,10 @@ html.verre :is(.card, .dash-card, .reco-card, .fin-header, .fin-kpi, .mkpi, .sp-
 html.verre :is(.card, .fin-header) :is(.mkpi, .fin-kpi, .mc, .sa-cell) {
   background: color-mix(in srgb, var(--verre) 70%, transparent); box-shadow: var(--verre-lum);
 }
+/* Le chiffre mis en avant garde son fond d'accent : son texte est clair */
+html.verre .mkpi.accent, html.verre :is(.card, .fin-header) .mkpi.accent {
+  background: var(--accent); border-color: var(--accent);
+}
 html.verre .home-card:hover { box-shadow: var(--verre-lum), var(--sh-md); }
 
 /* — Barre de titre : transparente sur le fond — */
