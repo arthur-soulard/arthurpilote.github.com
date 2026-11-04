@@ -3249,8 +3249,8 @@ html.verre .toast-stack .toast {
 
 <!-- METRICS -->
 <div class="mets">
-  <div class="mc"><div class="mc-accent" id="m-dep-acc" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Plus-value latente</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO" data-crypto="Valeur des cryptos">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
+  <div class="mc"><div class="mc-accent" id="m-dep-acc" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Plus-value latente</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
   <div class="mc" id="mc-pv" onclick="if(_estCto())ctoBasculerRendement()"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total<button class="cto-rdt-i cto-seul" onclick="event.stopPropagation();ctoInfoRendement()" title="Les deux calculs"><i class="ph ph-info"></i></button></div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div><div class="cto-rdt-mode cto-seul" id="m-pv-mode"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
   <div class="mc pas-crypto"><div class="mc-accent" style="background:var(--p)"></div><div class="mc-lbl">Dividendes reçus</div><div class="mc-val c-p" id="m-div">—</div><div class="mc-sub"></div></div>
@@ -18348,7 +18348,7 @@ let _finImp = null;
 
 // Nom de colonne (sans accents ni casse) -> champ
 const FIN_IMP_COLS = {
-  date:   /^(date|jour|day|date (de l')?operation|date operation|transaction date|booking date)$/,
+  date:   /^(date|jour|day|mois|month|date (de l')?operation|date operation|transaction date|booking date)$/,
   amount: /^(montant|amount|somme|valeur|value|prix|price|total)$/,
   debit:  /^(debit|depense|depenses|sortie|expense|outflow)$/,
   credit: /^(credit|revenu|revenus|entree|income|inflow)$/,
@@ -18361,7 +18361,7 @@ const FIN_IMP_COLS = {
 };
 
 function _finImpChamp(nom) {
-  const n = finNorm(nom).replace(/[_]/g, " ");
+  const n = finNorm(nom).replace(/[_]/g, " ").replace(/\s*\([^)]*\)$/, "");   // « Montant (€) »
   return Object.keys(FIN_IMP_COLS).find(k => FIN_IMP_COLS[k].test(n)) || null;
 }
 
@@ -18384,6 +18384,8 @@ function _finImpDate(v) {
   const s = String(v).trim();
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (m) return m[1] + "-" + m[2].padStart(2, "0") + "-" + m[3].padStart(2, "0");
+  m = s.match(/^(\d{4})-(\d{1,2})$/);                 // mois seul : le 1er du mois
+  if (m) return m[1] + "-" + m[2].padStart(2, "0") + "-01";
   m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
   if (m) {
     const y = m[3].length === 2 ? "20" + m[3] : m[3];

@@ -134,6 +134,8 @@ plutôt qu'un logiciel de bureau.
   de la carte Valeur est retirée (PEA et CTO), `ligneRevient` avec. Un CTO
   (pas de bandeau) garde « Investi net » dans cette première carte ; le latent y
   est déjà le mode « Lignes actuelles » de la carte Rendement.
+  En 4.4.61, à la demande d'Arthur, la carte Valeur repasse en premier et la
+  plus-value latente (ou « Investi net » d'un CTO) vient en deuxième.
 * **Historique, 4.4.6 à 4.4.59 : « Prix de revient des lignes », pas « Investi ».** La 3e ligne de la
   carte Valeur (PEA et CTO, `ligneRevient`) était le coût des lignes détenues, frais
   compris (somme des `computePos().inv`). Appelée « Investi » jusqu'en 4.4.5, elle

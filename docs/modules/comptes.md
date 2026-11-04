@@ -68,6 +68,10 @@ rien ne passe par Python avant l'enregistrement habituel (`finPersist`).
 * CSV : séparateur deviné (`;`, `,`, tabulation), colonnes reconnues par leur
   nom (`FIN_IMP_COLS` : date, montant ou débit/crédit, libellé, catégorie,
   sous-catégorie, type, source, note). Dates JJ/MM/AAAA, ISO ou horodatage.
+  Depuis la 4.4.61 : une colonne « Mois » sert de date, un mois seul
+  (AAAA-MM) est rangé au 1er, et une unité entre parenthèses est ignorée dans
+  un nom de colonne (« Montant (€) »). Avant, un tel fichier (export d'un
+  tableur de budget par mois) donnait « Aucune transaction reconnue ».
 * Sens : la colonne type, sinon le signe ; sans aucun négatif ni colonne
   crédit, tout est une dépense.
 * Catégorie, sous-catégorie et source retrouvées par leur nom, sinon créées.
