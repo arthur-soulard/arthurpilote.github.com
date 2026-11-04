@@ -466,6 +466,13 @@ Les comparaisons CAC 40 et S&P 500 étaient mensuelles.
   03/10/2026 ; les actions et les indices l'ont). On prend le cours en direct
   (`regularMarketPrice`) quand il date du même jour, sinon la courbe s'arrêtait la
   veille. Vérifié : dernier point identique à la carte « Valeur du PEA ».
+* **Point d'aujourd'hui aux cours en direct (4.4.60)** : l'historique est gardé
+  jusqu'à 1 h, les cours des cartes 60 s ; la courbe « Max » finissait quelques
+  centimes à côté de « Rendement total » (0,64 € le 04/11/2026). `buildTwrSeries`
+  prend `p.cours` pour la date du jour, et `perfSuivreCours` (appelée par
+  `renderMetrics` et `ctoRenderMetrics`) redessine la courbe quand ce dernier
+  point bouge. Les jours passés restent ceux de l'historique. Vérifié sur le banc :
+  même chiffre sur la carte et la courbe, PEA et CTO, et après un changement de cours.
 * Comparateur d'ETF (Simulateurs), plage « 15 ans » : `since` = 16 ans.
 * **Courbes de comparaison (CAC 40, S&P 500, ETF World), 4.3.16** : « et si
   chaque versement avait acheté l'indice ». `_buildBenchSeries` prend pour flux

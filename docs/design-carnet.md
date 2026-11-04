@@ -125,9 +125,17 @@ plutôt qu'un logiciel de bureau.
   Calculs revérifiés à la main sur les vraies données, tous justes ; seule la
   définition différait. La bonne est titres + espèces : c'est la valeur à laquelle
   se mesure le rendement (valeur − versements) et celle d'un PEA pour la banque.
-  Le détail titres / espèces / prix de revient reste sous le chiffre.
-* **« Prix de revient des lignes », pas « Investi » (4.4.6).** La 3e ligne de la
-  carte Valeur (PEA et CTO, `ligneRevient`) est le coût des lignes détenues, frais
+  Le détail titres / espèces reste sous le chiffre.
+* **Carte « Plus-value latente » (4.4.60, demande d'Arthur).** Sur le PEA, la
+  première carte n'est plus « Total versé », déjà dans le bandeau du haut (où il
+  a maintenant son propre gros chiffre, `#f-verse`), mais la plus-value latente :
+  titres − prix de revient des lignes, en % de ce prix de revient, en vert ou
+  rouge, « — » tant qu'un cours manque. La ligne « Prix de revient des lignes »
+  de la carte Valeur est retirée (PEA et CTO), `ligneRevient` avec. Un CTO
+  (pas de bandeau) garde « Investi net » dans cette première carte ; le latent y
+  est déjà le mode « Lignes actuelles » de la carte Rendement.
+* **Historique, 4.4.6 à 4.4.59 : « Prix de revient des lignes », pas « Investi ».** La 3e ligne de la
+  carte Valeur (PEA et CTO, `ligneRevient`) était le coût des lignes détenues, frais
   compris (somme des `computePos().inv`). Appelée « Investi » jusqu'en 4.4.5, elle
   a été lue comme l'argent versé, alors que l'écart avec le « Total déposé » est le
   réalisé des lignes vendues et les dividendes, réinvestis (vérifié au centime le 12/10/2026).

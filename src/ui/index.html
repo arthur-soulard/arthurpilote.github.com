@@ -3233,6 +3233,10 @@ html.verre .toast-stack .toast {
     <div class="pea-days" id="f-days"></div>
     <div class="pea-bank" id="pea-bank-line"></div>
   </div>
+  <div>
+    <div class="pea-days-lbl">Total versé</div>
+    <div class="pea-days" id="f-verse" style="min-width:0">—</div>
+  </div>
   <div class="pea-fill-section">
     <div class="pea-fill-lbl">
       <span>Plafond dépôt 150 000 EUR</span>
@@ -3245,7 +3249,7 @@ html.verre .toast-stack .toast {
 
 <!-- METRICS -->
 <div class="mets">
-  <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Total versé</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
+  <div class="mc"><div class="mc-accent" id="m-dep-acc" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Investi net">Plus-value latente</div><div class="mc-val c-b" id="m-dep">—</div><div class="mc-sub" id="m-dep-sub"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--b)"></div><div class="mc-lbl" data-cto="Valeur du CTO" data-crypto="Valeur des cryptos">Valeur du PEA</div><div class="mc-val c-b" id="m-val">—</div><div class="mc-sub" id="m-val-sub"></div></div>
   <div class="mc" id="mc-pv" onclick="if(_estCto())ctoBasculerRendement()"><div class="mc-accent" id="mc-pv-acc"></div><div class="mc-lbl">Rendement total<button class="cto-rdt-i cto-seul" onclick="event.stopPropagation();ctoInfoRendement()" title="Les deux calculs"><i class="ph ph-info"></i></button></div><div class="mc-val" id="m-pv">—</div><div class="mc-sub" id="m-pv-sub"></div><div class="cto-rdt-mode cto-seul" id="m-pv-mode"></div></div>
   <div class="mc"><div class="mc-accent" style="background:var(--a)"></div><div class="mc-lbl">Frais cumulés</div><div class="mc-val c-a" id="m-fees">—</div><div class="mc-sub"></div></div>
@@ -6825,21 +6829,6 @@ function computeCashBrut() {
    (jusqu'en 4.4.20, l'argent manquant comptait comme un gain). */
 function computeCash() { return Math.max(0, computeCashBrut()); }
 
-/* Ligne « Prix de revient des lignes » de la carte Valeur (PEA et CTO) : ce
-   qu'ont coûté les lignes détenues, frais compris, et leur plus-value latente
-   (null tant qu'un cours manque). Elle s'appelait « Investi » jusqu'en 4.4.5,
-   lu comme l'argent versé, alors que l'écart avec le total déposé est le
-   réalisé des lignes vendues et les
-   dividendes, réinvestis. Montant et latent insécables : la carte fait
-   147 px de large dans la fenêtre par défaut (1280 px), la ligne y passe
-   sur trois lignes sans couper « (+12,34 € latents) ». */
-function ligneRevient(inv, latent) {
-  const nb = t => `<span style="white-space:nowrap">${t}</span>`;
-  return `<span title="Ce qu'ont coûté les lignes détenues aujourd'hui, frais compris. Ce n'est pas le total déposé : le gain ou la perte des lignes déjà vendues et les dividendes ont été réinvestis.">`
-    + "Prix de revient des lignes : " + nb(eur(inv))
-    + (latent != null ? " " + nb("(" + eur(Math.round(latent * 100) / 100, true) + " latents)") : "") + "</span>";
-}
-
 function renderMetrics() {
   // CTO affiché : ses propres cartes (ctoRenderMetrics), rien vers l'accueil ni
   // vers window._peaPv, qui ne parlent que du PEA
@@ -6872,8 +6861,18 @@ function renderMetrics() {
   // P&L = valeur des lignes + solde especes - total des versements
   const pv  = (all && !(manque > 0)) ? Math.round((tv + cash - depSum) * 100) / 100 : null;
   const pvP = (pv != null && depSum > 0) ? (pv / depSum) * 100 : null;
-  document.getElementById("m-dep").textContent     = depSum>0 ? eur(depSum) : "—";
-  document.getElementById("m-dep-sub").textContent = "";
+  // Total versé : dans le bandeau du haut. La première carte montre la
+  // plus-value latente (4.4.60) : lignes détenues − ce qu'elles ont coûté,
+  // frais compris. Elle remplace la ligne « Prix de revient des lignes » de la
+  // carte Valeur (4.4.6 à 4.4.59). Rien tant qu'un cours manque.
+  const fVerse = document.getElementById("f-verse");
+  if (fVerse) fVerse.textContent = depSum>0 ? eur(depSum) : "—";
+  const lat  = (nc>0 && all) ? Math.round((tv - ti) * 100) / 100 : null;
+  const latEl = document.getElementById("m-dep");
+  latEl.textContent = lat!=null ? eur(lat,true) : "—";
+  latEl.className   = "mc-val " + (lat==null ? "" : lat>=0 ? "c-g" : "c-r");
+  document.getElementById("m-dep-sub").textContent = (lat!=null && ti>0) ? pct(lat / ti * 100) : "";
+  document.getElementById("m-dep-acc").style.background = lat==null ? "transparent" : lat>=0 ? "var(--g)" : "var(--r)";
   // Valeur du PEA = titres + espèces : la même que window._peaPv.total (tuile
   // « Valeur du PEA », module Patrimoine) et que la courbe « Évolution du
   // capital ». Jusqu'en 4.2.5 la carte n'affichait que les titres, d'où un écart
@@ -6881,8 +6880,7 @@ function renderMetrics() {
   // mesure le rendement : valeur − versements.
   document.getElementById("m-val").textContent  = nc>0 ? eur(Math.round((tv + cash) * 100) / 100) : "—";
   document.getElementById("m-val-sub").innerHTML =
-    (nc>0 ? "Titres : " + eur(tv) + (all ? "" : " (partiel : " + (S.positions.length - nc) + " cours manquant" + (S.positions.length - nc > 1 ? "s" : "") + ")") + "<br>" : "") + "Espèces : " + eur(cash)
-    + (nc>0 ? "<br>" + ligneRevient(ti, all ? tv - ti : null) : "");
+    (nc>0 ? "Titres : " + eur(tv) + (all ? "" : " (partiel : " + (S.positions.length - nc) + " cours manquant" + (S.positions.length - nc > 1 ? "s" : "") + ")") + "<br>" : "") + "Espèces : " + eur(cash);
   const pvEl = document.getElementById("m-pv");
   pvEl.textContent = pv!=null ? eur(pv,true) : "—";
   pvEl.className   = "mc-val " + (pv==null ? "" : pv>=0 ? "c-g" : "c-r");
@@ -6898,8 +6896,10 @@ function renderMetrics() {
   document.getElementById("m-div").textContent  = divRec>0 ? eur(divRec) : "—";
   // Les cours viennent de changer : la vue d'ensemble suit si elle est affichée
   const paneDash = document.getElementById("pane-dash");
-  if (paneDash && paneDash.classList.contains("active") && typeof dashRenderOverview === "function")
+  if (paneDash && paneDash.classList.contains("active") && typeof dashRenderOverview === "function") {
     dashRenderOverview();
+    perfSuivreCours();
+  }
 }
 
 /* ─── Positions ─── */
@@ -7333,6 +7333,12 @@ function buildTwrSeries(history) {
   const jourDivision = new Set(txs.filter(t => t.origine === "division" && t.type === "Achat")
     .map(t => t.asset + "|" + normDate(t.date)));
 
+  /* Point d'aujourd'hui aux cours en direct (p.cours, 60 s), ceux des cartes :
+     l'historique, gardé jusqu'à 1 h, donnait un dernier point de quelques
+     centimes à quelques euros différent de « Rendement total » (04/11/2026). */
+  const coursDirect = {};
+  S.positions.forEach(p => { if (p.cours != null) coursDirect[p.ticker] = p.cours; });
+
   /* Repasse sur toutes les transactions pour construire l'etat du portefeuille */
   let txIdx = 0;
   let ceIdx = 0;
@@ -7371,7 +7377,7 @@ function buildTwrSeries(history) {
       if (qty < 0.0001) continue;
       const sm = sortedMaps[ticker];
       if (!sm || jourDivision.has(ticker + "|" + date)) { valid = false; break; }
-      const price = priceAt(sm, date);
+      const price = (date === cutToday && coursDirect[ticker] != null) ? coursDirect[ticker] : priceAt(sm, date);
       if (price == null) { valid = false; break; }
       equity += qty * price;
     }
@@ -7842,6 +7848,18 @@ function _perfMontrerCompte() {
 /* ─────────────────────────────────────────────────────────────────────────
    DESSIN DU GRAPHIQUE
 ───────────────────────────────────────────────────────────────────────── */
+/* Les cours en direct viennent de changer (renderMetrics) : le point
+   d'aujourd'hui de la courbe suit la carte « Rendement total ». Redessinée
+   seulement si sa dernière valeur bouge. */
+function perfSuivreCours() {
+  if (!_perfFullSeries || !_perfHistory || !_ch.perf) return;
+  const s = buildTwrSeries(_perfHistory);
+  if (!s || s.length < 2) return;
+  if (s[s.length - 1].val === _perfFullSeries[_perfFullSeries.length - 1].val) return;
+  _perfFullSeries = s;
+  drawPerfChart();
+}
+
 function drawPerfChart() {
   if (!_perfHistory) return;
 
@@ -24570,12 +24588,17 @@ function ctoRenderMetrics() {
   const r = ctoResume(_compteActif);
   if (!r) return;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  // Première carte : « Investi net » sur un CTO (pas de bandeau du haut), la
+  // plus-value latente sur le PEA (renderMetrics) : couleurs remises ici
   set("m-dep", r.investiNet ? eur(r.investiNet) : "—");
   set("m-dep-sub", "achats − ventes − dividendes");
+  const dep = document.getElementById("m-dep");
+  if (dep) dep.className = "mc-val c-b";
+  const depAcc = document.getElementById("m-dep-acc");
+  if (depAcc) depAcc.style.background = "var(--b)";
   set("m-val", r.n ? eur(r.valeur != null ? r.valeur : r.titres) : "—");
   const sub = document.getElementById("m-val-sub");
-  if (sub) sub.innerHTML = r.n ? ligneRevient(r.investi, r.valeur != null ? r.titres - r.investi : null)
-    + (r.offert > 0 ? "<br>dont offert (Saveback, actions offertes) : " + eur(r.offert) : "") : "";
+  if (sub) sub.innerHTML = r.n && r.offert > 0 ? "dont offert (Saveback, actions offertes) : " + eur(r.offert) : "";
   const lignes = _cptPrefs().rendement === "lignes";
   const gain = lignes ? r.pvLignes : r.pv, gainPct = lignes ? r.pvLignesPct : r.pvPct;
   const pvEl = document.getElementById("m-pv");
@@ -24592,8 +24615,10 @@ function ctoRenderMetrics() {
   set("m-div", r.dividendes > 0 ? eur(r.dividendes) : "—");
   window._ctoPv[_compteActif] = r;
   const paneDash = document.getElementById("pane-dash");
-  if (paneDash && paneDash.classList.contains("active") && typeof dashRenderOverview === "function")
+  if (paneDash && paneDash.classList.contains("active") && typeof dashRenderOverview === "function") {
     dashRenderOverview();
+    perfSuivreCours();
+  }
   ctoRenderBarre();
 }
 

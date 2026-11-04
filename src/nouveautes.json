@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.60",
+      "date": "2026-11-04",
+      "titre": "Ta plus-value latente en grand",
+      "nouveau": [
+        "Vue d'ensemble du PEA : une carte « Plus-value latente », ce que gagnent ou perdent les lignes que tu détiens par rapport à ce qu'elles t'ont coûté, frais compris, en euros et en %."
+      ],
+      "ameliore": [
+        "Total versé : il passe dans le bandeau du haut, à côté de l'avantage fiscal, en gros chiffre.",
+        "Carte « Valeur » du PEA et des CTO : la ligne « Prix de revient des lignes » est retirée, il reste titres et espèces."
+      ],
+      "corrige": [
+        "Courbe « Évolution du capital » : son dernier point prend les cours en direct, comme les cartes. Sur « Max », elle affiche le même chiffre que « Rendement total », au lieu de quelques centimes d'écart."
+      ]
+    },
+    {
       "version": "4.4.59",
       "date": "2026-11-04",
       "titre": "Le chiffre mis en avant redevient lisible",

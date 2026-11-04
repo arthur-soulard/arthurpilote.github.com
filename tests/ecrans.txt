@@ -11,9 +11,8 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 04/11/2026 : 4.4.59, carte mise en avant (.mkpi.accent) au style Verre :
-# Sante, Sports, Patrimoine, puis Sante en sombre.
-sa-suivi
-sp-agenda
-pa-vue
-js:setThemePref('dark'),goTab('sa-suivi')
+# 04/11/2026 : 4.4.60, carte Plus-value latente et Total versé dans le
+# bandeau du PEA, cartes d'un CTO, puis la courbe (chiffre du point du jour).
+dash
+cto-dash
+dash 600
