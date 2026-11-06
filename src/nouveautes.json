@@ -2,6 +2,18 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.62",
+      "date": "2026-11-06",
+      "titre": "Effacer ses données, et une icône carrée sous Windows",
+      "nouveau": [
+        "Paramètres, Données : « Effacer toutes mes données » remplace « Réinitialiser les données PEA ». Il vide tout l'utilisateur actif (PEA, comptes-titres, comptes, sport, santé, prêt, patrimoine), garde son nom et son code PIN, et met une copie dans le dossier Donnees/corbeille."
+      ],
+      "ameliore": [
+        "Utilisateurs : « Supprimer » apparaît aussi pour le seul utilisateur. Pilote repart alors sur un utilisateur vierge « Moi », et l'ancien dossier part dans Donnees/corbeille.",
+        "Windows : l'icône de Pilote est un carré plein. Sur le Bureau, dans le menu Démarrer et la barre des tâches, on ne voit plus de fond bleu dans les coins arrondis."
+      ]
+    },
+    {
       "version": "4.4.61",
       "date": "2026-11-04",
       "titre": "La valeur d'abord, et les budgets par mois importés",

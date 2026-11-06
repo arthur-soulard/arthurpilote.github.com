@@ -5457,7 +5457,7 @@ html.verre .toast-stack .toast {
           <div class="fg">
             <label style="color:var(--r)">Zone sensible</label>
             <button type="button" class="btn btn-ghost btn-sm" style="color:var(--r);border-color:var(--r);font-size:11px"
-                    onclick="resetFromConfig()"><i class="ph ph-trash"></i> Réinitialiser les données PEA</button>
+                    onclick="effacerDonneesUtilisateur()"><i class="ph ph-trash"></i> Effacer toutes mes données</button>
           </div>
           <div id="cfg-version" style="font-size:10px;color:var(--txt3);font-family:var(--mono);margin-top:.9rem"></div>
         </div>
@@ -6604,16 +6604,6 @@ function resetDef(ask) {
   updateStatus();
 }
 
-/* Appele par le bouton "Reinitialiser les donnees PEA" des parametres */
-function resetFromConfig() {
-  if (!confirm("Réinitialiser toutes les données ? Positions, transactions, dépôts, dividendes — tout sera effacé. Cette action est irréversible.")) return;
-  closeOv("ov-config");
-  // Paramètres s'ouvre aussi depuis une section CTO : c'est le PEA qu'on vide,
-  // jamais le compte affiché (DAT-06)
-  if (_estCto() && typeof _cptBasculer === "function") _cptBasculer("pea");
-  _peaVideVoulu = true;   // vider le PEA est ici la demande : la défense s'efface
-  resetDef(false);
-}
 
 
 /* ─── Helpers ─── */
@@ -11624,8 +11614,8 @@ async function openUserModal(slug) {
   document.getElementById("user-modal-title").textContent = u ? "Modifier l'utilisateur" : "Nouvel utilisateur";
   document.getElementById("user-f-label").value = u ? u.label : "";
   document.getElementById("user-f-emoji").value = _userPickEmoji;
-  document.getElementById("user-f-del").style.display =
-    (u && state.users.length > 1) ? "" : "none";
+  // Aussi pour le seul utilisateur : Pilote repart alors sur un « Moi » vierge
+  document.getElementById("user-f-del").style.display = u ? "" : "none";
   _userRenderPickers();
   openOvTop("ov-user");
   setTimeout(() => document.getElementById("user-f-label").focus(), 60);
@@ -11662,8 +11652,12 @@ async function deleteUserFromModal() {
   if (!_userEditingSlug) return;
   const api = (window.pywebview && window.pywebview.api) || null;
   if (!api) return;
-  if (!confirm("Retirer cet utilisateur de la liste ?\n\nSes donn\u00e9es restent sur le disque "
-             + "(dossier Donnees/users/) et peuvent \u00eatre r\u00e9cup\u00e9r\u00e9es \u00e0 la main.")) return;
+  const dernier = !USERS_STATE || USERS_STATE.users.length <= 1;
+  if (!confirm(dernier
+      ? "C'est le seul utilisateur : Pilote repartira de z\u00e9ro avec un utilisateur vierge \u00ab Moi \u00bb.\n\n"
+        + "Ses donn\u00e9es partent dans le dossier Donnees/corbeille/ et peuvent \u00eatre r\u00e9cup\u00e9r\u00e9es \u00e0 la main."
+      : "Retirer cet utilisateur de la liste ?\n\nSes donn\u00e9es restent sur le disque "
+        + "(dossier Donnees/users/) et peuvent \u00eatre r\u00e9cup\u00e9r\u00e9es \u00e0 la main.")) return;
   const wasActive = USERS_STATE && USERS_STATE.active === _userEditingSlug;
   if (wasActive) await _gelerEnregistrements();   // même raison que switchUser
   const r = await api.delete_user(_userEditingSlug);
@@ -11677,6 +11671,30 @@ async function deleteUserFromModal() {
   await _loadUsers(true);
   renderHomeUsers(); renderUsersList(); _renderUserPill();
   showToastModern("Utilisateur retir\u00e9", "ok");
+}
+
+/* Bouton « Effacer toutes mes données » des Paramètres (06/11/2026) : remplace
+   « Réinitialiser les données PEA », hérité de l'époque où Pilote n'était que le
+   PEA. Vide tout l'utilisateur actif (PEA, CTO, comptes, sport, santé, prêt…) ;
+   son dossier part dans Donnees/corbeille/, il garde son nom et son PIN. */
+async function effacerDonneesUtilisateur() {
+  const api = (window.pywebview && window.pywebview.api) || null;
+  if (!api) { showToastModern("Pilote ne répond pas : ferme-le et relance-le.", "err"); return; }
+  const state = await _loadUsers(true);
+  if (!state) return;
+  const u = state.users.find(x => x.slug === state.active);
+  const nom = u ? u.label : "cet utilisateur";
+  if (!confirm("Effacer toutes les données de « " + nom + " » ?\n\n"
+             + "PEA, comptes-titres, comptes, sport, santé, prêt, patrimoine : tout repart de zéro. "
+             + "Le nom et le code PIN sont gardés.\n\n"
+             + "Une copie part dans le dossier Donnees/corbeille/ et peut être récupérée à la main.")) return;
+  await _gelerEnregistrements();   // rien ne doit réécrire les anciennes données
+  const r = await api.wipe_user_data(state.active);
+  if (!r || !r.ok) {
+    _degelerEnregistrements();
+    showToastModern("Échec : " + ((r && r.error) || "?"), "err"); return;
+  }
+  location.reload();
 }
 
 /* ── Liste dans les Parametres ── */

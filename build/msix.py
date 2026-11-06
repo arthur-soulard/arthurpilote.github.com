@@ -78,7 +78,7 @@ def main() -> None:
     images.mkdir()
     # icon.ico (256 px, la plus grande taille, ouverte par defaut) : icon_512.png
     # n'est pas dans le depot (.gitignore)
-    with Image.open(RACINE / "assets" / "icon.ico") as icone:
+    with Image.open(RACINE / "assets" / "icon_win.ico") as icone:
         icone = icone.convert("RGBA")
         for nom, cote in LOGOS.items():
             icone.resize((cote, cote), Image.LANCZOS).save(images / nom)

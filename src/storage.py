@@ -371,6 +371,20 @@ def save_users_state(state: dict) -> None:
 PIN_FILE = "pin.hash"
 
 
+def mettre_a_la_corbeille(slug: str) -> Path:
+    """Deplace tout le dossier de l'utilisateur dans Donnees/corbeille/<slug>-<date>/.
+    Rien n'est detruit : il se recupere en le remettant a sa place (06/11/2026,
+    boutons « Effacer toutes les donnees » et « Supprimer » du dernier utilisateur)."""
+    src = _users_root() / slug
+    corbeille = get_app_dir() / "corbeille"
+    corbeille.mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    dst = corbeille / f"{slug}-{ts}"
+    if src.exists():
+        shutil.move(str(src), str(dst))
+    return dst
+
+
 def user_pin_path(slug: str = None) -> Path:
     """Hash du PIN d'un utilisateur (un fichier dans SON dossier)."""
     return get_user_dir(slug) / PIN_FILE

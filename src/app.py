@@ -74,7 +74,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.61"
+APP_VERSION = "4.4.62"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -1023,13 +1023,40 @@ class Api:
         try:
             state = storage.get_users_state()
             if len(state["users"]) <= 1:
-                return {"ok": False, "error": "Impossible de supprimer le dernier utilisateur"}
+                # Le dernier : son dossier part a la corbeille et Pilote repart
+                # sur un utilisateur vierge « Moi » (il en faut toujours un)
+                corbeille = storage.mettre_a_la_corbeille(slug)
+                neuf = storage.slugify("Moi", [])
+                storage.get_user_dir(neuf)
+                state = {"active": neuf, "users": [{"slug": neuf, "label": "Moi",
+                                                    "emoji": "", "color": ""}]}
+                storage.save_users_state(state)
+                return {"ok": True, "active": neuf, "state": state, "folder": str(corbeille)}
             state["users"] = [u for u in state["users"] if u["slug"] != slug]
             if state["active"] == slug:
                 state["active"] = state["users"][0]["slug"]
             storage.save_users_state(state)
             return {"ok": True, "active": state["active"], "state": state,
                     "folder": str(storage.get_app_dir() / storage.USERS_DIRNAME / slug)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def wipe_user_data(self, slug: str) -> dict:
+        """Efface toutes les donnees de l'utilisateur (PEA, comptes, sport, sante,
+        pret...) : son dossier part a la corbeille, un dossier vide le remplace.
+        Il garde son nom et son code PIN."""
+        try:
+            state = storage.get_users_state()
+            if not any(u["slug"] == slug for u in state["users"]):
+                return {"ok": False, "error": "utilisateur introuvable"}
+            pin = None
+            if storage.user_has_pin(slug):
+                pin = (storage._users_root() / slug / storage.PIN_FILE).read_bytes()
+            corbeille = storage.mettre_a_la_corbeille(slug)
+            d = storage.get_user_dir(slug)
+            if pin:
+                (d / storage.PIN_FILE).write_bytes(pin)
+            return {"ok": True, "folder": str(corbeille)}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

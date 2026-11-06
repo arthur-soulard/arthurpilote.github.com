@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define AppName       "Pilote"
-#define AppVersion    "4.4.61"
+#define AppVersion    "4.4.62"
 #define AppPublisher  "Arthur"
 #define AppExeName    "Pilote.exe"
 
@@ -21,7 +21,7 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist
 OutputBaseFilename=Pilote_Setup
-SetupIconFile=..\assets\icon.ico
+SetupIconFile=..\assets\icon_win.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}
 Compression=lzma2/ultra64
@@ -60,7 +60,8 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 ; les bibliotheques et l'UI vivent dans _internal\ a cote de lui
 Source: "..\dist\Pilote\Pilote.exe";    DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\Pilote\_internal\*";   DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\assets\icon.ico";           DestDir: "{app}"; Flags: ignoreversion
+; Icone carree de Windows, installee sous le nom icon.ico que visent les raccourcis
+Source: "..\assets\icon_win.ico";       DestDir: "{app}"; DestName: "icon.ico"; Flags: ignoreversion
 ; Licences des composants embarques (LEG-03)
 Source: "..\THIRD-PARTY-NOTICES.txt";  DestDir: "{app}"; Flags: ignoreversion
 

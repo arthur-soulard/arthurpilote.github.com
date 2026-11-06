@@ -84,20 +84,21 @@ def _find_bold_font(size: int):
     return ImageFont.load_default()
 
 
-def _render_tile(target_size: int, base: tuple, dark: tuple):
+def _render_tile(target_size: int, base: tuple, dark: tuple, square: bool = False):
     from PIL import Image, ImageDraw
     SS = 4
     size = target_size * SS
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
-    radius = int(size * 0.18)
+    # Carre plein sous Windows (ico_for), coins arrondis sur Mac (png_for)
+    radius = 0 if square else int(size * 0.18)
     d.rounded_rectangle((0, 0, size - 1, size - 1), radius=radius, fill=base)
 
     if target_size > 32:
         inset = max(2, size // 64)
         d.rounded_rectangle((inset, inset, size - 1 - inset, size - 1 - inset),
-                            radius=radius - inset, outline=dark,
+                            radius=max(0, radius - inset), outline=dark,
                             width=max(2, size // 96))
 
     p_ratio = 0.62 if target_size >= 64 else 0.72
@@ -150,12 +151,13 @@ def ico_for(color: str) -> Optional[Path]:
     Retourne None si Pillow n'est pas disponible.
     """
     color = _norm_color(color)
-    path = icons_dir() / ("pilote_" + color[1:] + ".ico")
+    # "carre_" : nouveau nom, pour ne pas reprendre les .ico arrondis deja en cache
+    path = icons_dir() / ("pilote_carre_" + color[1:] + ".ico")
     if path.exists() and path.stat().st_size > 0:
         return path
     try:
         base = _rgb(color)
-        imgs = {s: _render_tile(s, base, _darken(base)) for s in _ICON_SIZES}
+        imgs = {s: _render_tile(s, base, _darken(base), square=True) for s in _ICON_SIZES}
         _build_ico(imgs, path)
         return path
     except Exception as e:

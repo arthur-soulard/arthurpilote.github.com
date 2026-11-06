@@ -38,7 +38,7 @@ def _fiche_version():
     chemin.write_text(texte, encoding="utf-8")
     return str(chemin)
 ASSETS   = ROOT / "assets"
-ICON     = ASSETS / "icon.ico"
+ICON     = ASSETS / "icon_win.ico"   # carre plein ; icon.ico (arrondie) reste pour le Mac
 
 
 block_cipher = None

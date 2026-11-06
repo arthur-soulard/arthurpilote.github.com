@@ -39,14 +39,18 @@ def find_bold_font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def render_tile(target_size: int) -> Image.Image:
-    """Rend l'icone a la taille cible avec supersampling 4x + LANCZOS."""
+def render_tile(target_size: int, square: bool = False) -> Image.Image:
+    """Rend l'icone a la taille cible avec supersampling 4x + LANCZOS.
+
+    square=True : carre plein, sans coins transparents (icone Windows : sur le
+    Bureau, les coins arrondis laissaient voir le fond d'ecran, 06/11/2026).
+    """
     SS = 4
     size = target_size * SS
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
-    radius = int(size * 0.18)
+    radius = 0 if square else int(size * 0.18)
     d.rounded_rectangle((0, 0, size - 1, size - 1), radius=radius, fill=ORANGE)
 
     # Lisere interne uniquement aux grandes tailles (sinon ca brouille en petit)
@@ -54,7 +58,7 @@ def render_tile(target_size: int) -> Image.Image:
         inset = max(2, size // 64)
         d.rounded_rectangle(
             (inset, inset, size - 1 - inset, size - 1 - inset),
-            radius=radius - inset,
+            radius=max(0, radius - inset),
             outline=ORANGE_DARK,
             width=max(2, size // 96),
         )
@@ -125,6 +129,12 @@ def main():
     build_ico_with_png_streams(images_by_size, out_ico)
     print(f"[icon] Cree {out_ico} avec {len(sizes)} tailles : {sizes}")
     print(f"[icon] Taille fichier : {out_ico.stat().st_size} octets")
+
+    # Windows (exe, Setup, raccourcis) : la meme icone en carre plein.
+    # icon.ico garde ses coins arrondis : l'app Mac la convertit en .icns.
+    out_win = HERE / "icon_win.ico"
+    build_ico_with_png_streams({s: render_tile(s, square=True) for s in sizes}, out_win)
+    print(f"[icon] Cree {out_win} (carre plein, Windows)")
 
     # Apercu PNG haute def
     big_preview = render_tile(512)

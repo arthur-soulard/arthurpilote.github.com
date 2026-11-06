@@ -11,8 +11,7 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 04/11/2026 : 4.4.61, carte Valeur avant la plus-value latente (PEA), puis
-# avant « Investi net » (CTO), et Mes comptes (import, sans écran propre).
-dash
-cto-dash
-fin-month
+# 06/11/2026 : 4.4.62, Parametres > Donnees (bouton « Effacer toutes mes donnees »)
+# et fiche d'un utilisateur (bouton Supprimer, meme pour le seul).
+js:openSettings('donnees')
+js:_loadUsers(true).then(s=>openUserModal(s.active))
