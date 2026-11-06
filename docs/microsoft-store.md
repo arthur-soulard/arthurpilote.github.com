@@ -16,7 +16,9 @@ paquet MSIX, lui, est re-signé par le Store : aucun certificat à acheter.
 `build/msix.py` le fabrique à partir de `dist/Pilote/` (après PyInstaller) :
 copie de l'app, `build/AppxManifest.xml` rempli (identité, éditeur,
 version de `src/app.py` au format `4.4.50.0`), logos tirés de
-`assets/icon.ico` (`icon_512.png` n'est pas dans le dépôt : premier test en
+`assets/icon_win.ico`, carrée pleine depuis la 4.4.62 :
+Windows pose l'icône sur une plaque à la couleur du système, bleue dans les coins
+arrondis de `icon.ico`, que le Mac garde (`icon_512.png` n'est pas dans le dépôt : premier test en
 échec le 02/11/2026), puis `makeappx pack` du Windows SDK.
 
 ```
