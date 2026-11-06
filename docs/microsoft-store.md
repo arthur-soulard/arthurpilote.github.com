@@ -85,3 +85,5 @@ puis désinstalle et vérifie que les données sont restées.
 * Ensuite : Arthur installe depuis le lien du Store et fait le tour des
   fonctions, puis on passe la visibilité à « détectable ». À chaque nouvelle
   version, nouvelle soumission avec le nouveau `Pilote.msix`.
+* État vérifié le 06/11/2026 : fiche **détectable** dans le Store (recherche et
+  navigation), public, tous les pays ; soumission n° 4 publiée avec la v4.4.62.0.
