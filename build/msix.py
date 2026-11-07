@@ -51,9 +51,11 @@ def makeappx() -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    # Identite du paquet reservee dans Partner Center : ne jamais la changer
+    # (le Store ne reconnaitrait plus les installations existantes)
     ap.add_argument("--identite", default="ARSOL.Pilote")
     ap.add_argument("--editeur", default="CN=EA040BB3-FE8B-4FEE-9E20-3D788F376B39")
-    ap.add_argument("--nom-editeur", default="ARSOL")
+    ap.add_argument("--nom-editeur", default="Pilote Appli")   # nom public, change le 07/11/2026
     args = ap.parse_args()
 
     if not (DIST / "Pilote.exe").is_file():

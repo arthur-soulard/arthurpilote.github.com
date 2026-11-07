@@ -70,8 +70,11 @@ puis désinstalle et vérifie que les données sont restées.
 ## Partner Center (02/11/2026)
 
 * Compte de particulier, app « Pilote » réservée : ID Store `9NLZ93TP5HD3`,
-  identité `ARSOL.Pilote`, éditeur affiché `ARSOL` (valeurs par défaut de
-  `build/msix.py`).
+  identité `ARSOL.Pilote` (réservée, à ne jamais changer), éditeur affiché
+  « Pilote Appli » depuis le 07/11/2026 (« ARSOL » avant ; « Pilote » était déjà
+  pris chez Microsoft). Valeurs par défaut de `build/msix.py`.
+* Compte Microsoft de connexion : `pilote.appli@gmail.com` (alias principal,
+  07/11/2026), même adresse en contact du vendeur.
 * `Pilote.msix` est joint à chaque release (`release.yml`), à déposer à la
   main dans Partner Center (28 Mo).
 * Politique de confidentialité : https://arthur-soulard.github.io/pilote/confidentialite.html
