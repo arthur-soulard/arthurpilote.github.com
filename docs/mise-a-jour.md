@@ -63,6 +63,16 @@ Points critiques :
 * `start_update()` côté Python est non-bloquant (lance un thread)
 * Ne pas réduire le délai de 5 secondes du batch
 
+### Version sortie sans fichier pour ce système (4.4.63, 09/11/2026)
+
+La release v4.4.62 est sortie sans `Pilote_Mac.zip` : le job `mac` de
+`release.yml` a été annulé sans qu'aucun Mac de GitHub lui soit attribué. Les Mac
+restaient en 4.4.61 et Paramètres affichait « À jour (dernière : v4.4.62) ».
+Depuis, `_fetch` pose `enAttente` (version plus récente, aucun fichier
+téléchargeable) et l'écran dit que la version n'est pas encore prête. Le remède
+reste de relancer le job `mac` du run (« Re-run failed jobs ») : il joint le zip
+à la release existante, sans nouvelle version.
+
 ## Fiche des nouveautés (4.3.37)
 
 Demandée par Arthur le 11/10/2026 : savoir ce qui change **avant** d'installer, le

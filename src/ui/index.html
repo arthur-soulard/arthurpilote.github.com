@@ -16982,6 +16982,8 @@ async function manualCheckUpdate() {
       status.textContent = `✓ Mise à jour disponible : v${r.version}`;
       closeOv("ov-config");
       setTimeout(_checkForUpdates, 200);
+    } else if (r.enAttente) {
+      status.textContent = `La v${r.version} est sortie mais pas encore prête pour cet ordinateur : réessaie plus tard`;
     } else if (r.version) {
       status.textContent = `✓ À jour (dernière : v${r.version})`;
     } else {

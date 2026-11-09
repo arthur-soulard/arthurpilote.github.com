@@ -224,8 +224,11 @@ def _fetch(current: str) -> None:
 
         # Sans installeur telechargeable, proposer la mise a jour ne menerait
         # qu'a un echec au moment d'installer : on attend le prochain lancement.
-        has_update = (bool(latest) and bool(download_url)
-                      and _parse_ver(latest) > _parse_ver(current))
+        plus_recente = bool(latest) and _parse_ver(latest) > _parse_ver(current)
+        has_update = plus_recente and bool(download_url)
+        # Version sortie mais sans fichier pour ce systeme (ex. 4.4.62, publiee
+        # sans Pilote_Mac.zip) : l'ecran ne doit pas dire « A jour »
+        en_attente = plus_recente and not download_url
 
         # La fiche ne bloque rien : sans elle, la mise a jour reste proposee
         notes = _notes_distantes(latest, current) if has_update else None
@@ -235,6 +238,7 @@ def _fetch(current: str) -> None:
                 "checked": True,
                 "erreur": None,
                 "hasUpdate": has_update,
+                "enAttente": en_attente,
                 "version": latest,
                 "url": html_url,
                 "downloadUrl": download_url,

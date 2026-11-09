@@ -2,6 +2,14 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.63",
+      "date": "2026-11-09",
+      "titre": "Un message juste quand la mise à jour n'est pas prête",
+      "corrige": [
+        "Paramètres, Mises à jour : quand une nouvelle version est sortie mais pas encore prête pour ton ordinateur, Pilote le dit au lieu d'afficher « À jour ». C'était le cas de la 4.4.62 sur Mac, qui arrive avec cette version."
+      ]
+    },
+    {
       "version": "4.4.62",
       "date": "2026-11-06",
       "titre": "Effacer ses données, et une icône carrée sous Windows",
