@@ -17,8 +17,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent
 
-ORANGE       = (217, 119,   6)
-ORANGE_DARK  = (180,  83,   9)
+# Prune, l'accent par defaut de Pilote (ACCENT_DEFAULT, appicon.DEFAULT_COLOR),
+# assombrie comme appicon._darken (x 0,78) pour le liseré. Orange jusqu'au
+# 09/11/2026 : l'exe, le Setup et le Store ont pris la couleur de l'app.
+PRUNE        = (156,  74, 122)
+PRUNE_DARK   = (122,  58,  95)
 WHITE        = (255, 255, 255)
 
 
@@ -51,7 +54,7 @@ def render_tile(target_size: int, square: bool = False) -> Image.Image:
     d = ImageDraw.Draw(img)
 
     radius = 0 if square else int(size * 0.18)
-    d.rounded_rectangle((0, 0, size - 1, size - 1), radius=radius, fill=ORANGE)
+    d.rounded_rectangle((0, 0, size - 1, size - 1), radius=radius, fill=PRUNE)
 
     # Lisere interne uniquement aux grandes tailles (sinon ca brouille en petit)
     if target_size > 32:
@@ -59,7 +62,7 @@ def render_tile(target_size: int, square: bool = False) -> Image.Image:
         d.rounded_rectangle(
             (inset, inset, size - 1 - inset, size - 1 - inset),
             radius=max(0, radius - inset),
-            outline=ORANGE_DARK,
+            outline=PRUNE_DARK,
             width=max(2, size // 96),
         )
 
