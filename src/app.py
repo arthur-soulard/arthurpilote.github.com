@@ -62,6 +62,7 @@ import cto
 import releves
 import patrimoine
 import sante
+import balances
 import actus
 import agenda
 import garmin
@@ -374,6 +375,35 @@ class Api:
                 return {"ok": False, "cancelled": True}
             paths = list(result) if isinstance(result, (list, tuple)) else [result]
             return {"ok": True, "paths": paths}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def sante_pick_export(self) -> dict:
+        """Export officiel d'une balance (CSV, zip, export.xml d'Apple Sante) :
+        rend l'apercu des pesees, rien n'est enregistre (docs/modules/sante.md,
+        « Exports des balances »)."""
+        try:
+            win = webview.windows[0]
+            result = win.create_file_dialog(
+                _dialogue("OPEN"),
+                allow_multiple=False,
+                file_types=("Export de balance (*.csv;*.zip;*.xml;*.txt)", "All files (*.*)"),
+            )
+            if not result:
+                return {"ok": False, "cancelled": True}
+            path = result[0] if isinstance(result, (list, tuple)) else result
+            res = balances.lire_export(path)
+            res["path"] = path
+            return res
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def sante_lire_export(self, path: str, ordre: str = None) -> dict:
+        """Relecture du meme export, dates lues jour/mois ou mois/jour."""
+        try:
+            res = balances.lire_export(path, ordre)
+            res["path"] = path
+            return res
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

@@ -230,3 +230,41 @@ Quand Windows n'a aucune langue de reconnaissance de texte (`no_engine` dans
 `sante.py`) au lieu de « Le moteur OCR n'a pas répondu ». Pillow n'ouvre plus que les
 formats d'images utiles (`_FORMATS_IMAGE` : PNG, JPEG, WEBP, BMP, GIF) : les failles
 connues de Pillow tenaient à d'autres formats.
+
+## Exports des balances (09/11/2026, prochaine version)
+
+Liste de la prochaine mise à jour : « Balances de plusieurs marques, exports
+officiels d'abord, captures ensuite ». Bouton **Importer un export** (onglets
+Suivi et Historique, bouton « Export » de la tuile « Ajouter une pesée ») :
+`Api.sante_pick_export` → `balances.lire_export` → aperçu (`saExportApercu`) →
+« Ajouter N pesées » (`source: "export"`, `marque`). Rien n'est enregistré avant.
+
+**Recherche du 09/11/2026 : aucune marque ne publie le format exact de son
+export.** Ce qui a été recoupé (sites d'aide des marques, forums Garmin, wiki
+openScale, billets d'utilisateurs) :
+
+| Marque | Comment l'avoir | Ce qu'on en sait |
+|---|---|---|
+| Withings | app › profil › « Exporter toutes mes données » (mail) | zip de CSV, dont `weight.csv` : poids, masse grasse, masse osseuse, masse musculaire, hydratation **en kg**, commentaires ; unités du compte (kg ou lb) |
+| Zepp Life / Mi Fit | demande d'export du compte Xiaomi | `BODY_*.csv` : `timestamp,weight,height,bmi,fatRate,bodyWaterRate,boneMass,metabolism,muscleRate,visceralFat,impedance` (wiki openScale) |
+| Eufy | EufyLife › Moi › Données › « Export All Data » (2.2.60+, mail) | `Time,WEIGHT (kg),BMI,BODY FAT %…`, date et heure dans une colonne |
+| Renpho | app › réglages, export CSV par mail | CSV, colonnes non documentées |
+| Apple Santé | app Santé › profil › « Exporter toutes les données » | `export.zip` › `export.xml`, `Record` `HKQuantityTypeIdentifierBodyMass` (kg ou lb), `BodyFatPercentage` (fraction de 1), `BodyMassIndex`, `LeanBodyMass` ; toute balance qui écrit dans Santé passe par là |
+
+D'où un lecteur **par nom de colonne**, pas par marque (`_COLONNES` : synonymes
+français, anglais, quelques allemands ; unité tirée du nom). Conversions : livres
+→ kg ; masse grasse et hydratation en kg → % du poids (le taux lu l'emporte s'il
+est là) ; fraction de 1 → % ; secondes depuis 1970 → date locale. Dates « a/b/aaaa » :
+jour/mois sauf si une date du fichier ne se lit qu'en mois/jour ; sinon
+`dateAmbigue`, et l'aperçu propose une case « Le mois vient d'abord »
+(`Api.sante_lire_export(path, "mj")`). Une valeur hors des bornes de `METRICS` est
+laissée de côté, jamais corrigée. Une pesée par jour (la plus complète, puis la
+plus matinale) ; un jour qui a déjà une pesée dans Santé la garde.
+**Écarté exprès** : `muscleRate` de Zepp Life (taux ou kg ? les deux tiennent
+dans les bornes). Les tailles sont bornées (300 Mo, export.xml lu au fil de l'eau).
+
+**Pas vérifié sur un vrai export** (aucun dans le dépôt, et aucun d'Arthur) : les
+tests (`tests/test_balances.py`) reproduisent les en-têtes ci-dessus avec des
+pesées fictives. Au premier vrai fichier d'une marque, vérifier l'aperçu et noter
+ici ce qui a été lu. **Captures d'autres apps que FitDays : pas faites**, il faut
+de vraies captures par marque pour régler l'OCR comme pour FitDays.

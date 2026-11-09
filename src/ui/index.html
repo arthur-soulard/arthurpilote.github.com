@@ -4136,6 +4136,7 @@ html.verre .toast-stack .toast {
     <div class="m-spacer"></div>
     <label class="sa-cmp" for="sa-cmp">Comparer avec
       <select id="sa-cmp" onchange="saSetCompare(this.value)"></select></label>
+    <button class="btn btn-ghost" onclick="saImportExport()" title="Fichier exporté par l'app de ta balance (Withings, Zepp Life, Eufy, Renpho…) ou par Apple Santé"><i class="ph ph-file-arrow-down"></i> Importer un export</button>
     <button class="btn btn-primary" onclick="saImportScreens()"><i class="ph ph-camera"></i> Envoyer les captures</button>
     <button class="btn btn-ghost"   onclick="saOpenMesure(null)"><i class="ph ph-plus"></i> Pesée</button>
   </div>
@@ -4171,6 +4172,7 @@ html.verre .toast-stack .toast {
   <div class="m-head">
     <span class="m-nav-lbl">Historique des pesées</span>
     <div class="m-spacer"></div>
+    <button class="btn btn-ghost" onclick="saImportExport()" title="Fichier exporté par l'app de ta balance (Withings, Zepp Life, Eufy, Renpho…) ou par Apple Santé"><i class="ph ph-file-arrow-down"></i> Importer un export</button>
     <button class="btn btn-primary" onclick="saImportScreens()"><i class="ph ph-camera"></i> Envoyer les captures</button>
     <button class="btn btn-ghost"   onclick="saOpenMesure(null)"><i class="ph ph-plus"></i> Pesée</button>
   </div>
@@ -22634,6 +22636,99 @@ function saRenderHist() {
   }).join("");
 }
 
+/* ── Import de l'export officiel d'une balance (balances.py) ─────────────
+   Withings, Zepp Life / Mi Fit, Eufy, Renpho… ou Apple Santé : Python lit le
+   fichier et rend un aperçu, rien n'est enregistré avant « Ajouter ». Un jour
+   qui a déjà une pesée la garde (comme l'import Garmin). */
+let _saExport = null;
+
+async function saImportExport() {
+  if (!window.pywebview || !pywebview.api || !pywebview.api.sante_pick_export) return;
+  let r;
+  try { r = await pywebview.api.sante_pick_export(); }
+  catch (e) { showToastModern("Erreur : " + e, "err"); return; }
+  if (!r || r.cancelled) return;
+  if (!r.ok) { showToastModern(r.error || "Export illisible", "err"); return; }
+  _saExport = r;
+  saExportApercu();
+}
+
+function _saExportNouvelles() {
+  const jours = new Set(saMesures().map(m => m.date));
+  return (_saExport.mesures || []).filter(m => !jours.has(m.date));
+}
+
+function saExportApercu() {
+  const r = _saExport;
+  const neuves = _saExportNouvelles();
+  const deja = r.mesures.length - neuves.length;
+  const fmt = d => new Date(d + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const colonnes = Object.entries(r.colonnes || {}).map(([nom, cle]) => {
+    const info = (SA_METRICS || []).find(m => m.id === cle.replace(/_kg$/, ""));
+    return escHtml(nom) + (info ? " → " + escHtml(info.label) : "");
+  }).join(" · ");
+  const echantillon = neuves.slice(-6).reverse();
+  const champ = (m, k) => m[k] == null ? "—" : saNombre(m[k], 1);
+  let ov = document.getElementById("ov-sa-export");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "ov-sa-export";
+    ov.className = "ov";
+    ov.addEventListener("click", e => { if (e.target === ov) closeOv("ov-sa-export"); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<div class="modal" style="max-width:560px" role="dialog" aria-modal="true">
+    <h2>Importer un export${r.marque ? " · " + escHtml(r.marque) : ""}</h2>
+    <p class="m-note" style="margin:0 0 10px">${escHtml(r.fichier || "")}</p>
+    <p style="font-size:13px;margin:0 0 8px"><b>${r.mesures.length} pesée${r.mesures.length > 1 ? "s" : ""}</b>
+      du ${fmt(r.debut)} au ${fmt(r.fin)}${deja ? ` · ${deja} jour${deja > 1 ? "s" : ""} déjà dans Santé, gardé${deja > 1 ? "s" : ""} tel${deja > 1 ? "s" : ""} quel${deja > 1 ? "s" : ""}` : ""}${r.ignorees ? ` · ${r.ignorees} ligne${r.ignorees > 1 ? "s" : ""} illisible${r.ignorees > 1 ? "s" : ""} laissée${r.ignorees > 1 ? "s" : ""} de côté` : ""}.</p>
+    <p class="m-note" style="margin:0 0 10px">Colonnes reconnues : ${colonnes || "—"}</p>
+    ${r.dateAmbigue ? `<div class="m-note" style="margin:0 0 10px;color:var(--a)"><i class="ph ph-warning"></i>
+      Les dates du fichier peuvent se lire jour/mois ou mois/jour.
+      <label class="sv-check" style="margin-top:6px"><input type="checkbox" id="sa-exp-mj" ${_saExport.ordre === "mj" ? "checked" : ""}
+        onchange="saExportRelire(this.checked)"><span>Le mois vient d'abord (format américain : 12/31/2025)</span></label></div>` : ""}
+    ${echantillon.length ? `<div class="tw"><table><thead><tr><th>Date</th><th>Poids</th><th>Graisse</th><th>Muscle</th><th>Eau</th></tr></thead><tbody>
+      ${echantillon.map(m => `<tr><td>${fmt(m.date)}${m.time ? " " + escHtml(m.time) : ""}</td><td>${champ(m, "poids")} kg</td>
+        <td>${champ(m, "graisse")}</td><td>${champ(m, "masse_musculaire")}</td><td>${champ(m, "eau")}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="m-note" style="margin:6px 0 0">Les ${echantillon.length} plus récentes. Vérifie qu'elles ressemblent à ce que montre l'app de ta balance.</p>`
+      : `<p class="m-empty">Rien de nouveau : chaque jour du fichier a déjà sa pesée.</p>`}
+    <div class="mact"><button type="button" class="btn btn-ghost" onclick="closeOv('ov-sa-export')">Annuler</button>
+      <button type="button" class="btn btn-primary" ${neuves.length ? "" : "disabled"} onclick="saExportAjouter()">
+        Ajouter ${neuves.length} pesée${neuves.length > 1 ? "s" : ""}</button></div></div>`;
+  ov.classList.add("open");
+}
+
+async function saExportRelire(moisDabord) {
+  if (!_saExport) return;
+  const r = await pywebview.api.sante_lire_export(_saExport.path, moisDabord ? "mj" : "jm");
+  if (!r || !r.ok) { showToastModern((r && r.error) || "Relecture impossible", "err"); return; }
+  r.ordre = moisDabord ? "mj" : "jm";
+  r.dateAmbigue = true;
+  _saExport = r;
+  saExportApercu();
+}
+
+async function saExportAjouter() {
+  if (!_saExport || !SA) return;
+  const neuves = _saExportNouvelles();
+  const avant = SA.mesures.slice();
+  const nid = Object.assign({}, SA._nid || {});
+  neuves.forEach(e => {
+    const m = { id: saNextId("mesure"), date: e.date, time: e.time || "", source: "export", note: "" };
+    if (_saExport.marque) m.marque = _saExport.marque;
+    (SA_METRICS || []).forEach(info => { if (e[info.id] != null) m[info.id] = e[info.id]; });
+    SA.mesures.push(m);
+  });
+  if (await saSave()) {
+    closeOv("ov-sa-export");
+    showToastModern(neuves.length + " pesée" + (neuves.length > 1 ? "s ajoutées" : " ajoutée"), "ok");
+    _saExport = null;
+    saRenderAll();
+    if (typeof dashRender === "function") dashRender();
+  } else { SA.mesures = avant; SA._nid = nid; }
+}
+
 /* ── Import des captures FitDays ───────────────────────────────────────── */
 
 async function saImportScreens() {
@@ -27610,6 +27705,7 @@ function dashBoutonsPesee() {
   return `<div class="dash-tile-btns">
     <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();saImportScreens()"><i class="ph ph-camera"></i> Captures</button>
     <button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();saOpenMesure(null)"><i class="ph ph-pencil-simple"></i> À la main</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();saImportExport()" title="Export de l'app de ta balance ou d'Apple Santé"><i class="ph ph-file-arrow-down"></i> Export</button>
   </div>`;
 }
 
