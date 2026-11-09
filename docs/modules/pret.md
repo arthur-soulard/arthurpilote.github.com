@@ -167,3 +167,13 @@ modification, un décochage, une suppression ou le bouton Retour se voient parto
   **entier** (`_peaPv.total`), parts du prêt comprises ; la « valeur du portefeuille »
   du prêt n'est ajoutée nulle part. Ne jamais créer de compte « placements du prêt » :
   PEA, AV et Livret A sont déjà comptés par leurs propres lignes.
+
+## Plus proposé aux nouveaux utilisateurs (09/11/2026, prochaine version)
+
+Liste de la prochaine mise à jour (07/11/2026) : les Premiers pas ne proposent
+plus Prêt, et Paramètres › Modules ne le montre qu'à qui l'a affiché au moins une
+fois depuis (`_modulesProposes()`, `S.uiPrefs.pretConnu`, posé au démarrage dès que
+Prêt est visible). Chez ceux qui l'ont, rien ne change, même s'ils le décochent
+ensuite. Un utilisateur qui l'avait déjà masqué avant cette version ne le voit
+plus proposé (son `pret.json` reste sur le disque). L'utilisateur Exemple, lui, a
+Prêt : ce sont les données de Camille telles quelles.

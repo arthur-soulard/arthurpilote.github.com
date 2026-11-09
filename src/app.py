@@ -1171,6 +1171,19 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def rapport_probleme(self) -> dict:
+        """Ce que « Signaler un probleme » met dans le mail : version, systeme,
+        et les derniers plantages sans aucune donnee (storage.resume_crash_log).
+        Rien ne part d'ici : la page le montre, la messagerie l'envoie."""
+        try:
+            import platform
+            systeme = ("macOS " + platform.mac_ver()[0]) if sys.platform == "darwin" \
+                else ("Windows " + platform.release() + " (" + platform.version() + ")")
+            return {"ok": True, "version": APP_VERSION, "systeme": systeme,
+                    "journal": storage.resume_crash_log()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "version": APP_VERSION, "systeme": "", "journal": ""}
+
     def app_info(self) -> dict:
         try:
             active = storage.get_active_user()

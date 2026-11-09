@@ -185,6 +185,21 @@ class Exemple(unittest.TestCase):
         self.assertEqual([u["label"] for u in q["state"]["users"]], ["Moi"])
 
 
+class SignalerProbleme(unittest.TestCase):
+    def test_journal_sans_donnees(self):
+        texte = ("\n=== CRASH ===\n2026-11-01T10:00:00.123456\nTraceback (most recent call last):\n"
+                 '  File "C:\\Users\\Camille\\Pilote\\app.py", line 12, in main\n'
+                 "    montant = 1234.5\n"
+                 '  File "/Users/camille/pea.py", line 99, in calc\n'
+                 "    raise KeyError('EPA:WPEA 1234')\n"
+                 "KeyError: 'EPA:WPEA 1234'\n")
+        r = storage.resume_crash_log(texte)
+        self.assertEqual(r, "2026-11-01T10:00:00\n  app.py:12 main\n  pea.py:99 calc\n  KeyError")
+        for interdit in ("1234", "WPEA", "Camille", "camille", "montant"):
+            self.assertNotIn(interdit, r)
+        self.assertEqual(storage.resume_crash_log(""), "")
+
+
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)
 

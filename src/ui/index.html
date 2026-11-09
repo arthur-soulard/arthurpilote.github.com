@@ -2552,6 +2552,8 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .dash-nl-vide { padding: 10px 0; font-size: 12.5px; color: var(--txt2); }
 .dash-obj-aide { margin: 10px 0 0; font-size: 12px; color: var(--txt2); }
 /* Fenêtre « Une idée pour Pilote ? » (bouton de l'accueil) */
+.sug-journal { max-height: 140px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; font-size: 11px;
+  background: var(--bg2); border: 1px solid var(--brd); border-radius: var(--rad); white-space: pre-wrap; color: var(--txt2); }
 .sug-txt { margin: 0 0 14px; font-size: 13px; color: var(--txt2); }
 .sug-adr {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -5492,6 +5494,11 @@ html.verre .toast-stack .toast {
             <button type="button" class="btn btn-ghost btn-sm" style="color:var(--r);border-color:var(--r);font-size:11px"
                     onclick="effacerDonneesUtilisateur()"><i class="ph ph-trash"></i> Effacer toutes mes données</button>
           </div>
+          <div class="fg">
+            <label>Un souci&#8239;?</label>
+            <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px"
+                    onclick="homeSuggestion(true)"><i class="ph ph-bug"></i> Signaler un problème</button>
+          </div>
           <div id="cfg-version" style="font-size:10px;color:var(--txt3);font-family:var(--mono);margin-top:.9rem"></div>
         </div>
 
@@ -5700,12 +5707,19 @@ html.verre .toast-stack .toast {
      l'utilisateur, ou Gmail dans le navigateur, sur l'adresse de l'auteur -->
 <div class="ov" id="ov-suggestion" onclick="if(event.target===this)closeOv('ov-suggestion')">
   <div class="modal" style="max-width:480px">
-    <h2>Une idée pour Pilote ?</h2>
-    <p class="sug-txt">Une amélioration à proposer, un bug à signaler : écris à l'auteur de Pilote.</p>
+    <h2 id="sug-titre">Une idée pour Pilote ?</h2>
+    <p class="sug-txt" id="sug-txt">Une amélioration à proposer : écris à l'auteur de Pilote.</p>
     <div class="sug-adr">
       <span id="sug-adresse"></span>
       <button type="button" class="m-iconbtn" onclick="homeSuggestionCopier()" title="Copier l'adresse"><i class="ph ph-copy"></i></button>
     </div>
+    <!-- Signaler un problème : ce qui sera mis dans le mail, montré avant -->
+    <div id="sug-probleme" hidden>
+      <p class="sug-txt" style="margin-top:10px">Le mail contiendra la version de Pilote, ton système et,
+        s'il y en a, les derniers plantages : seulement les noms des fonctions en cause, aucune de tes données.</p>
+      <pre id="sug-journal" class="sug-journal"></pre>
+    </div>
+    <p class="sug-txt" id="sug-bascule" style="margin-top:10px"></p>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-suggestion')">Fermer</button>
       <div style="flex:1"></div>
@@ -12245,6 +12259,20 @@ const NAV_MODULES = {
     tab: "ga-connexion", tuiles: ["ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "mo-derniere", "ga-records"] },
 };
 
+/* Prêt : plus proposé aux nouveaux utilisateurs (liste de la prochaine mise
+   à jour, 07/11/2026), gardé chez ceux qui l'ont. S.uiPrefs.pretConnu : Prêt
+   affiché au moins une fois depuis ce changement ; il reste alors dans
+   Paramètres → Modules, même décoché. */
+function _modulesProposes() {
+  const vis = _modulesVisibles();
+  if (vis.has("sec-pret") && S.uiPrefs && !S.uiPrefs.pretConnu) {
+    S.uiPrefs.pretConnu = true;
+    _enregistrerUiPrefs();
+  }
+  const garder = vis.has("sec-pret") || !!(S.uiPrefs && S.uiPrefs.pretConnu);
+  return NAV_SECTIONS.filter(s => s.id !== "sec-pret" || garder);
+}
+
 /** Sections dont au moins un onglet est affiché dans la barre latérale. */
 function _modulesVisibles() {
   const hid = (S.uiPrefs && S.uiPrefs.hiddenSidebar) || [];
@@ -12426,7 +12454,7 @@ async function _showWelcomeIfFirstRun() {
         <h2 class="pp-h">Qu'est-ce que tu veux suivre&#8239;?</h2>
         <p class="pp-lead">Coche les modules à afficher. Les autres seront masqués, pas
           supprimés : Paramètres → Modules les remet quand tu veux.</p>
-        <div class="pp-mods">${NAV_SECTIONS.map(s => _modCarteHtml(s, false)).join("")}</div>
+        <div class="pp-mods">${NAV_SECTIONS.filter(s => s.id !== "sec-pret").map(s => _modCarteHtml(s, false)).join("")}</div>
         <div class="pp-acts">
           <button class="btn btn-ghost" data-pp-go="1"><i class="ph ph-arrow-left"></i> Retour</button>
           <span class="pp-sp"></span>
@@ -12816,7 +12844,7 @@ function cfgRenderModules() {
   const box = document.getElementById("cfg-modules");
   if (!box) return;
   const vis = _modulesVisibles();
-  box.innerHTML = NAV_SECTIONS.map(s => _modCarteHtml(s, vis.has(s.id))).join("");
+  box.innerHTML = _modulesProposes().map(s => _modCarteHtml(s, vis.has(s.id))).join("");
   box.querySelectorAll("input").forEach(i => { i.onchange = () => cfgModule(i.value, i.checked); });
 }
 
@@ -22106,12 +22134,40 @@ function homeDisplayName() {
 /* ── Suggérer une amélioration (4.4.10) : écrire à l'auteur de Pilote ──────
    Rien ne part de Pilote : le bouton ouvre la messagerie de l'utilisateur
    (lien mailto:), ou Gmail dans le navigateur pour qui n'en a pas, avec
-   l'objet et la version déjà remplis. */
-const SUGGESTION_ADRESSE = "arthur.economie@gmail.com";
+   l'objet et la version déjà remplis.
+   Deux adresses (boîte de Pilote, plus l'adresse perso d'Arthur) : les idées,
+   et « Signaler un problème », qui ajoute le système et les derniers plantages
+   sans aucune donnée (Api.rapport_probleme, storage.resume_crash_log). */
+const SUGGESTION_ADRESSE = "pilote.appli+idee@gmail.com";
+const PROBLEME_ADRESSE = "pilote.appli+probleme@gmail.com";
+let _sugProbleme = false;
+let _sugRapport = null;
 
-function homeSuggestion() {
-  document.getElementById("sug-adresse").textContent = SUGGESTION_ADRESSE;
-  document.getElementById("ov-suggestion").classList.add("open");
+async function homeSuggestion(probleme) {
+  _sugProbleme = !!probleme;
+  const $ = id => document.getElementById(id);
+  $("sug-titre").textContent = _sugProbleme ? "Signaler un problème" : "Une idée pour Pilote ?";
+  $("sug-txt").textContent = _sugProbleme
+    ? "Quelque chose ne marche pas ? Décris ce que tu faisais et ce qui s'est passé."
+    : "Une amélioration à proposer : écris à l'auteur de Pilote.";
+  $("sug-adresse").textContent = _sugProbleme ? PROBLEME_ADRESSE : SUGGESTION_ADRESSE;
+  $("sug-probleme").hidden = !_sugProbleme;
+  $("sug-bascule").innerHTML = _sugProbleme
+    ? `Plutôt une idée&#8239;? <button type="button" class="btn btn-ghost btn-sm" onclick="homeSuggestion(false)">Proposer une idée</button>`
+    : `Un problème&#8239;? <button type="button" class="btn btn-ghost btn-sm" onclick="homeSuggestion(true)">Signaler un problème</button>`;
+  openOvTop("ov-suggestion");   // aussi par-dessus les Paramètres
+  if (_sugProbleme) {
+    $("sug-journal").textContent = "…";
+    _sugRapport = null;
+    try { _sugRapport = await pywebview.api.rapport_probleme(); } catch (e) {}
+    $("sug-journal").textContent = _sugTexteRapport();
+  }
+}
+
+function _sugTexteRapport() {
+  const r = _sugRapport || {};
+  return "Pilote " + (r.version || "?") + " · " + (r.systeme || (EST_MAC ? "Mac" : "Windows"))
+    + "\n\nDerniers plantages :\n" + (r.journal || "aucun");
 }
 
 async function homeSuggestionEcrire(gmail) {
@@ -22120,12 +22176,16 @@ async function homeSuggestionEcrire(gmail) {
     const info = await pywebview.api.app_info();
     if (info && info.version) version = " " + info.version;
   } catch (e) {}
-  const objet = "Suggestion pour Pilote";
-  const corps = "\r\n\r\n\r\n--\r\nPilote" + version + (EST_MAC ? " sur Mac" : " sur Windows");
+  const adresse = _sugProbleme ? PROBLEME_ADRESSE : SUGGESTION_ADRESSE;
+  const objet = _sugProbleme ? "Problème dans Pilote" : "Suggestion pour Pilote";
+  const corps = _sugProbleme
+    ? "Ce que je faisais :\r\n\r\nCe qui s'est passé :\r\n\r\n\r\n--\r\n"
+      + _sugTexteRapport().replace(/\n/g, "\r\n")
+    : "\r\n\r\n\r\n--\r\nPilote" + version + (EST_MAC ? " sur Mac" : " sur Windows");
   const url = gmail
-    ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(SUGGESTION_ADRESSE)
+    ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(adresse)
       + "&su=" + encodeURIComponent(objet) + "&body=" + encodeURIComponent(corps)
-    : "mailto:" + SUGGESTION_ADRESSE + "?subject=" + encodeURIComponent(objet)
+    : "mailto:" + adresse + "?subject=" + encodeURIComponent(objet)
       + "&body=" + encodeURIComponent(corps);
   const api = window.pywebview && pywebview.api;
   if (api && api.open_url) api.open_url(url);
@@ -22134,7 +22194,7 @@ async function homeSuggestionEcrire(gmail) {
 }
 
 async function homeSuggestionCopier() {
-  try { await navigator.clipboard.writeText(SUGGESTION_ADRESSE); showToastModern("Adresse copiée", "ok"); }
+  try { await navigator.clipboard.writeText(_sugProbleme ? PROBLEME_ADRESSE : SUGGESTION_ADRESSE); showToastModern("Adresse copiée", "ok"); }
   catch (e) { showToastModern("Copie impossible : sélectionne l'adresse à la main", "warn"); }
 }
 
@@ -30042,6 +30102,7 @@ function _appReady() {
     try { if (typeof _checkPinLock === "function") await _checkPinLock(); } catch(e) {}
     renderAll();
     try { _renderBandeauExemple(); } catch(e) {}
+    try { _modulesProposes(); } catch(e) {}   // retient S.uiPrefs.pretConnu
     if (typeof installShellEnhancements === "function") installShellEnhancements();
     // Premier lancement : l'assistant des premiers pas ; sinon, juste après
     // une mise à jour, la fiche de ses nouveautés (une fois)

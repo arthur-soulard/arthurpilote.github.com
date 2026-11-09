@@ -664,6 +664,34 @@ def get_log_path() -> Path:
     return get_app_dir() / "crash.log"
 
 
+def resume_crash_log(texte: str = None, nb: int = 3) -> str:
+    """Les `nb` derniers plantages de crash.log, pour « Signaler un probleme » :
+    seulement la date, les fonctions traversees (fichier, ligne, nom) et le
+    TYPE de l'erreur. Ni les lignes de code, ni le message de l'erreur, ni les
+    chemins complets : un message peut contenir un ticker, un montant ou le
+    nom du compte Windows, et ce texte part dans un mail."""
+    if texte is None:
+        try:
+            texte = get_log_path().read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            return ""
+    blocs = [b for b in texte.split("=== CRASH ===") if b.strip()][-nb:]
+    sortie = []
+    for b in blocs:
+        lignes = [l for l in b.strip().splitlines() if l.strip()]
+        if not lignes:
+            continue
+        res = [lignes[0].strip()[:19]]                    # date ISO
+        for l in lignes[1:]:
+            m = re.match(r'\s*File "(.+)", line (\d+), in (\S+)', l)
+            if m:
+                res.append("  %s:%s %s" % (re.split(r"[\\/]", m.group(1))[-1], m.group(2), m.group(3)[:60]))
+        m = re.match(r"([A-Za-z_][\w.]*)(:|$)", lignes[-1].strip())
+        res.append("  " + (m.group(1) if m else "erreur"))
+        sortie.append("\n".join(res[:1] + res[1:][-8:]))
+    return "\n".join(sortie)
+
+
 # ─── Donnees par defaut (pour un nouvel utilisateur) ──────────────────────────
 
 def default_data() -> dict:

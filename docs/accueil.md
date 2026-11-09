@@ -50,7 +50,8 @@ bandeau reste à 109 px et la dernière tuile à 680 px avec ses vraies tuiles.
 Mesuré : jusqu'à un prénom de dix lettres (« Bonsoir Christophe ») rien ne
 bouge ; au-delà (« Maximilien »), les boutons passent sur deux lignes
 (bandeau de 145 px), comme dans une fenêtre étroite. Elle ouvre `ov-suggestion` : l'adresse d'Arthur
-(`SUGGESTION_ADRESSE`, arthur.economie@gmail.com) avec un bouton Copier,
+(`SUGGESTION_ADRESSE`, pilote.appli+idee@gmail.com depuis le 09/11/2026 :
+la boîte de Pilote, plus l'adresse perso d'Arthur) avec un bouton Copier,
 « Ouvrir ma messagerie » (lien `mailto:`) et « Écrire avec Gmail » (page de
 rédaction de Gmail dans le navigateur), objet « Suggestion pour Pilote » et
 version de Pilote déjà remplis, par `Api.open_url`. Rien ne part de Pilote :
@@ -432,3 +433,18 @@ n'est recalculé à part :
 * **Achats programmés** (4.4.40, module Bourse) : `plans-attente` (nombre
   d'échéances à valider, PEA et CTO, mène au compte de la plus ancienne) et
   `plans-prochains` (prochain achat programmé). Les deux disparaissent sans plan.
+
+## Signaler un problème (09/11/2026, prochaine version)
+
+La même fenêtre `ov-suggestion` a un second mode (`homeSuggestion(true)`), ouvert
+par « Signaler un problème » sous l'idée, et dans Paramètres › Données &
+application (« Un souci ? »). Adresse `PROBLEME_ADRESSE`,
+pilote.appli+probleme@gmail.com. Le mail est prérempli avec « Ce que je
+faisais / Ce qui s'est passé », la version, le système (`Api.rapport_probleme`)
+et les trois derniers plantages de `crash.log` réduits par
+`storage.resume_crash_log` : date, fichier:ligne et fonction de chaque étape,
+type de l'erreur. **Ni le message de l'erreur, ni les lignes de code, ni les
+chemins** : ils peuvent contenir un ticker, un montant ou le nom du compte
+Windows (consigne d'Arthur : aucun chiffre). Le texte est montré dans la fenêtre
+avant l'envoi, et c'est la messagerie de l'utilisateur qui envoie. Test :
+`tests/test_donnees.py`, `SignalerProbleme`.
