@@ -460,9 +460,22 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e), "backups": []}
 
-    def sauvegarde_restore(self, path: str) -> dict:
+    def sauvegarde_restore(self, path: str, mdp: str = None) -> dict:
         try:
-            return sauvegarde.restore_from(path)
+            return sauvegarde.restore_from(path, mdp or None)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # Archives chiffrees par mot de passe (docs/sauvegarde-usb.md, « Chiffrement »)
+    def sauvegarde_mot_de_passe(self, mdp: str) -> dict:
+        try:
+            return sauvegarde.definir_mot_de_passe(mdp)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def sauvegarde_retirer_chiffrement(self) -> dict:
+        try:
+            return sauvegarde.retirer_chiffrement()
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

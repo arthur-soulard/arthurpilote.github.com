@@ -5359,14 +5359,21 @@ html.verre .toast-stack .toast {
 
         <div class="set-sec" data-sec="sauvegarde">
           <h3>Sauvegarde</h3>
-          <p class="set-lead">Une archive <code>.zip</code> de tout le dossier Données :
+          <p class="set-lead">Une archive de tout le dossier Données :
             tous les utilisateurs, tous les modules. De quoi remonter l'installation
-            entière si l'ordinateur tombe en panne. Rien n'est chiffré.</p>
+            entière si l'ordinateur tombe en panne. Avec un mot de passe (ci-dessous),
+            elle est chiffrée : illisible sur la clé ou sur le compte en ligne sans lui.</p>
           <p class="set-lead">Destination&nbsp;: une clé USB, ou un dossier synchronisé en ligne.
             Avec Google Drive pour ordinateur, choisis un dossier dans <code>Mon&nbsp;Drive</code>&nbsp;:
             chaque archive y part toute seule. Pour récupérer tes données sur un autre
             ordinateur, installe Pilote et Google Drive, choisis le même dossier, puis
-            «&nbsp;Restaurer&nbsp;». L'archive est alors lisible sur ton compte Google.</p>
+            «&nbsp;Restaurer&nbsp;». Sans mot de passe, l'archive est lisible sur ton compte Google.</p>
+
+          <div class="fg">
+            <label>Chiffrement</label>
+            <div id="sv-chiffre" class="sv-dest">…</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px" id="sv-chiffre-acts"></div>
+          </div>
 
           <div class="fg">
             <label>Destination</label>
@@ -13299,6 +13306,8 @@ async function svRefresh() {
   const ejecter = document.getElementById("sv-ejecter");
   if (ejecter) ejecter.checked = !!cfg.ejecter;
 
+  svRenderChiffre(cfg);
+
   // Dernière sauvegarde
   const last = document.getElementById("sv-last");
   if (last) {
@@ -13310,6 +13319,88 @@ async function svRefresh() {
   }
 
   svLoadList();
+}
+
+/* Chiffrement des archives (sauvegarde.definir_mot_de_passe, chiffrement.py).
+   Le mot de passe n'est jamais gardé : seule une clé qui en est tirée, confiée
+   à Windows (DPAPI) ou au Trousseau du Mac. */
+function svRenderChiffre(cfg) {
+  const box = document.getElementById("sv-chiffre");
+  const acts = document.getElementById("sv-chiffre-acts");
+  if (!box || !acts) return;
+  if (cfg.chiffrer) {
+    box.innerHTML = `<span class="sv-ok"><i class="ph ph-lock-simple"></i> Archives chiffrées par ton mot de passe</span>`
+      + `<br><span class="sv-none">Sur cet ordinateur, Pilote s'en souvient pour les sauvegardes automatiques. `
+      + `Sur un autre, il te sera demandé pour restaurer. Mot de passe oublié = archives perdues.</span>`;
+    acts.innerHTML = `<button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" onclick="svDefinirMotDePasse(true)">
+        <i class="ph ph-key"></i> Changer le mot de passe</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" onclick="svRetirerChiffrement()">
+        <i class="ph ph-lock-simple-open"></i> Ne plus chiffrer</button>`;
+  } else {
+    box.innerHTML = `<span class="sv-warn"><i class="ph ph-lock-simple-open"></i> Archives en clair</span>`
+      + `<br><span class="sv-none">Qui a la clé USB, ou accès au dossier en ligne, peut lire tes données.</span>`;
+    acts.innerHTML = `<button type="button" class="btn btn-primary btn-sm" style="font-size:11px" onclick="svDefinirMotDePasse(false)">
+        <i class="ph ph-lock-simple"></i> Chiffrer avec un mot de passe</button>`;
+  }
+}
+
+function svDemanderNouveauMdp(changer) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "ov";
+    ov.innerHTML = `<div class="modal" style="max-width:440px" role="dialog" aria-modal="true">
+      <h2>${changer ? "Changer le mot de passe" : "Chiffrer les sauvegardes"}</h2>
+      <p style="color:var(--txt2);font-size:13px;margin:0 0 10px">Choisis un mot de passe d'au moins 8 caractères,
+        que tu n'oublieras pas : une phrase de quelques mots convient bien.</p>
+      <p style="color:var(--r);font-size:13px;margin:0 0 12px"><b>Mot de passe oublié = sauvegardes perdues.</b>
+        Personne, pas même Pilote, ne peut les ouvrir sans lui. Note-le en lieu sûr.</p>
+      ${changer ? `<p style="color:var(--txt2);font-size:12px;margin:0 0 10px">Les archives déjà faites gardent l'ancien mot de passe.</p>` : ""}
+      <div class="fg"><label for="sv-mdp1">Mot de passe</label><input id="sv-mdp1" type="password" autocomplete="new-password"></div>
+      <div class="fg"><label for="sv-mdp2">Une seconde fois</label><input id="sv-mdp2" type="password" autocomplete="new-password"></div>
+      <label class="sv-check"><input type="checkbox" id="sv-mdp-ok"><span>J'ai noté mon mot de passe en lieu sûr</span></label>
+      <p id="sv-mdp-err" style="color:var(--r);font-size:12px;min-height:1.2em;margin:8px 0 0"></p>
+      <div class="mact"><button type="button" class="btn btn-ghost" data-r="0">Annuler</button>
+        <button type="button" class="btn btn-primary" data-r="1">${changer ? "Changer" : "Chiffrer"}</button></div></div>`;
+    document.body.appendChild(ov);
+    const [m1, m2, ok, err] = ["#sv-mdp1", "#sv-mdp2", "#sv-mdp-ok", "#sv-mdp-err"].map(q => ov.querySelector(q));
+    const fin = v => { ov.classList.remove("open"); setTimeout(() => ov.remove(), 0); resolve(v); };
+    const valider = () => {
+      if (m1.value.length < 8) { err.textContent = "Au moins 8 caractères."; m1.focus(); return; }
+      if (m1.value !== m2.value) { err.textContent = "Les deux saisies ne sont pas identiques."; m2.focus(); return; }
+      if (!ok.checked) { err.textContent = "Coche la case : sans ce mot de passe, les archives sont perdues."; return; }
+      fin(m1.value);
+    };
+    ov.querySelector('[data-r="1"]').onclick = valider;
+    ov.querySelector('[data-r="0"]').onclick = () => fin(null);
+    ov.addEventListener("keydown", e => {
+      if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type === "password") { e.preventDefault(); valider(); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fin(null); }
+    });
+    ov.style.zIndex = 9700;
+    ov.classList.add("open");
+    setTimeout(() => m1.focus(), 40);
+  });
+}
+
+async function svDefinirMotDePasse(changer) {
+  if (!window.pywebview || !pywebview.api || !pywebview.api.sauvegarde_mot_de_passe) return;
+  const mdp = await svDemanderNouveauMdp(changer);
+  if (mdp === null) return;
+  showToastModern("Préparation de la clé…", "ok");
+  const st = await pywebview.api.sauvegarde_mot_de_passe(mdp);
+  if (st && st.ok) {
+    showToastModern(changer ? "Mot de passe changé" : "Les prochaines archives seront chiffrées", "ok");
+    SV_STATE = st; svRefresh(); svRenderUsbState();
+  } else showToastModern((st && st.error) || "Chiffrement impossible", "err");
+}
+
+async function svRetirerChiffrement() {
+  if (!window.pywebview || !pywebview.api || !pywebview.api.sauvegarde_retirer_chiffrement) return;
+  if (!confirm("Ne plus chiffrer les sauvegardes ?\n\nLes prochaines archives seront lisibles par qui a la clé "
+             + "ou accès au dossier en ligne. Les archives déjà chiffrées gardent leur mot de passe.")) return;
+  const st = await pywebview.api.sauvegarde_retirer_chiffrement();
+  if (st && st.ok) { showToastModern("Sauvegardes de nouveau en clair", "warn"); SV_STATE = st; svRefresh(); }
+  else showToastModern((st && st.error) || "Échec", "err");
 }
 
 async function svLoadList() {
@@ -13324,7 +13415,9 @@ async function svLoadList() {
   }
   el.innerHTML = res.backups.map(b => `
     <div class="sv-row">
-      <span class="sv-row-name">${escHtml(svWhen(b.date))}</span>
+      <span class="sv-row-name"><i class="ph ${b.chiffre ? "ph-lock-simple" : "ph-lock-simple-open"}"
+        title="${b.chiffre ? (b.cleConnue ? "Chiffrée par ton mot de passe actuel" : "Chiffrée par un autre mot de passe")
+                           : "En clair"}"></i> ${escHtml(svWhen(b.date))}${b.name.indexOf("televersement") >= 0 ? " · Téléverser" : ""}</span>
       <span class="sv-row-size">${svBytes(b.size)}</span>
       <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px"
               data-path="${escHtml(b.path)}" data-when="${escHtml(svWhen(b.date))}"
@@ -13422,7 +13515,15 @@ async function svRestore(path, when) {
   // Une écriture en attente passerait sinon PAR-DESSUS les fichiers restaurés
   await _gelerEnregistrements();
   try {
-    const res = await pywebview.api.sauvegarde_restore(path);
+    let res = await pywebview.api.sauvegarde_restore(path);
+    // Archive chiffrée par un autre mot de passe (ou un autre ordinateur) :
+    // on le demande, jusqu'à ce qu'il soit bon ou qu'on annule
+    while (res && !res.ok && res.reason === "mot_de_passe") {
+      const mdp = await demander("Mot de passe de l'archive", "",
+        {type: "password", ok: "Restaurer", texte: res.error + "\n\nC'est celui choisi au moment de la sauvegarde."});
+      if (mdp === null) { _degelerEnregistrements(); return; }
+      res = await pywebview.api.sauvegarde_restore(path, mdp);
+    }
     if (res && res.ok) {
       alert("Restauration terminée : " + res.files + " fichiers.\n\n"
           + (res.safety ? "État précédent conservé ici :\n" + res.safety + "\n\n" : "")
@@ -22837,7 +22938,10 @@ async function svPushToUsb(root) {
   if (btn) { btn.disabled = false; btn.innerHTML = label0; }
 
   if (res && res.ok) {
-    showToastModern(`Copié sur ${res.drive} · ${res.files} fichiers`, "ok");
+    showToastModern(`Copié sur ${res.drive} · ${res.files} fichiers` + (res.chiffre ? " · chiffré" : ""), "ok");
+    if (res.ancienMiroir) {
+      showToastModern("Ta clé garde une ancienne copie en clair (dossier Donnees) : supprime-la à la main si tu veux.", "warn");
+    }
     if (res.failedCount) {
       showToastModern(`${res.failedCount} fichier(s) non copié(s)`, "warn");
     }

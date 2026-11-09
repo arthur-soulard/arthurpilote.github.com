@@ -16,7 +16,11 @@ La lettre d'une cle USB change (E:, F:, G:...). On memorise donc le
 NUMERO DE SERIE du volume, et on retrouve la cle quelle que soit la lettre
 que Windows lui donne au prochain branchement.
 
-Rien n'est chiffre : le zip est aussi lisible que les JSON d'origine.
+Chiffrement (09/11/2026) : avec un mot de passe choisi dans Parametres, les
+archives deviennent des fichiers .pilote chiffres (chiffrement.py) et le
+bouton Televerser n'ecrit plus de copie en clair sur la cle. Sans mot de
+passe, rien ne change : un .zip lisible, comme avant. Les anciennes archives
+.zip se restaurent toujours.
 """
 from __future__ import annotations
 
@@ -32,10 +36,18 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import storage
+import chiffrement
 
 
 CONFIG_FILE = "sauvegarde.json"
 ARCHIVE_PREFIX = "Pilote_"
+EXT_ZIP = ".zip"
+EXT_CHIFFRE = ".pilote"          # archive chiffree (chiffrement.py)
+TELEVERSEMENT = "Pilote_televersement" + EXT_CHIFFRE   # bouton Televerser, chiffre
+
+
+def _est_archive(nom: str) -> bool:
+    return nom.startswith(ARCHIVE_PREFIX) and nom.endswith((EXT_ZIP, EXT_CHIFFRE))
 
 # Dossiers du dossier Donnees qu'on ne sauvegarde pas : regenerables.
 EXCLUDED_DIRS = {"icones"}
@@ -69,6 +81,13 @@ def default_config() -> dict:
         "avecBackups":    True,     # inclure les backups_* quotidiens des modules
         "alerteJours":    7,        # alerte de l'accueil apres N jours ; 0 : jamais
         "ejecter":        False,    # ejecter la cle une fois la copie finie
+        # Chiffrement par mot de passe (chiffrement.py). La cle derivee, jamais
+        # le mot de passe, gardee par Windows (DPAPI) ou le Trousseau du Mac
+        "chiffrer":       False,
+        "cleChiffree":    "",       # « dpapi:… » / « trousseau:… »
+        "sel":            "",       # hex, sel du mot de passe actuel
+        "iterations":     chiffrement.ITERATIONS,
+        "empreinte":      "",       # reconnait les archives du mot de passe actuel
         # Dernier resultat
         "lastBackupAt":   "",
         "lastBackupPath": "",
@@ -455,15 +474,65 @@ def _iter_files(app_dir: Path, avec_backups: bool = True):
                    and (avec_backups or not d.startswith("backups"))]
         for name in files:
             if (name.endswith((".tmp", ".part")) or name.startswith(".sauvegarde_")
-                    or (name.startswith(ARCHIVE_PREFIX) and name.endswith(".zip"))):
+                    or _est_archive(name)):
                 continue
             full = Path(root) / name
             yield full, str(rel_root / name) if str(rel_root) != "." else name
 
 
-def _archive_name() -> str:
+def _archive_name(chiffre: bool = False) -> str:
     stamp = datetime.datetime.now().strftime("%Y-%m-%d_%Hh%M")
-    return f"{ARCHIVE_PREFIX}{stamp}.zip"
+    return f"{ARCHIVE_PREFIX}{stamp}{EXT_CHIFFRE if chiffre else EXT_ZIP}"
+
+
+class CleIllisible(Exception):
+    """Le chiffrement est demande mais la cle gardee sur le PC ne se relit
+    pas : on n'ecrit RIEN plutot qu'une archive en clair."""
+
+
+def _cle(cfg: dict) -> Optional[bytes]:
+    """Cle des archives, ou None si le chiffrement n'est pas active."""
+    if not cfg.get("chiffrer"):
+        return None
+    try:
+        cle = chiffrement.relire_cle(cfg.get("cleChiffree") or "")
+        if len(cle) != 64:
+            raise ValueError("taille")
+        return cle
+    except Exception as e:
+        raise CleIllisible("Mot de passe des sauvegardes à ressaisir (Paramètres › Sauvegarde) : "
+                           f"la clé gardée sur cet ordinateur est illisible ({e}).")
+
+
+def _ecrire_zip(fichier, app_dir: Path, avec_backups: bool, reason: str) -> int:
+    count = 0
+    with zipfile.ZipFile(fichier, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        for full, arc in _iter_files(app_dir, avec_backups):
+            try:
+                z.write(full, arcname=str(Path("Donnees") / arc))
+                count += 1
+            except Exception as e:
+                print(f"[sauvegarde] fichier ignore {full}: {e}", flush=True)
+        z.writestr("Donnees/_sauvegarde.txt", _manifest(count, reason))
+    return count
+
+
+def _ecrire_archive(tmp_target: Path, app_dir: Path, cfg: dict, cle: Optional[bytes],
+                    reason: str) -> int:
+    """Ecrit l'archive dans tmp_target : un zip, ou, avec une cle, le zip
+    chiffre. Le zip en clair passe alors par un fichier temporaire du PC
+    (efface a la fermeture), jamais par la destination : une cle retiree en
+    route ne doit pas garder une copie lisible."""
+    avec = bool(cfg.get("avecBackups", True))
+    if cle is None:
+        return _ecrire_zip(tmp_target, app_dir, avec, reason)
+    with tempfile.TemporaryFile() as clair:
+        count = _ecrire_zip(clair, app_dir, avec, reason)
+        clair.seek(0)
+        with open(tmp_target, "wb") as out:
+            chiffrement.chiffrer_flux(clair, out, cle, bytes.fromhex(cfg["sel"]),
+                                      int(cfg.get("iterations") or chiffrement.ITERATIONS))
+    return count
 
 
 def run_backup(reason: str = "manuel") -> dict:
@@ -484,21 +553,22 @@ def run_backup(reason: str = "manuel") -> dict:
     except Exception as e:
         return {"ok": False, "reason": "error", "error": f"Dossier inaccessible : {e}"}
 
-    target = out_dir / _archive_name()
+    try:
+        cle = _cle(cfg)
+    except CleIllisible as e:
+        cfg["lastStatus"] = "error"
+        cfg["lastError"]  = str(e)
+        save_config(cfg)
+        return {"ok": False, "reason": "cle", "error": str(e)}
+
+    target = out_dir / _archive_name(cle is not None)
     # On ecrit d'abord a cote, puis on renomme : une cle debranchee en plein
     # milieu ne laisse pas une archive tronquee portant un nom valide.
     tmp_target = out_dir / (target.name + ".part")
 
     count = 0
     try:
-        with zipfile.ZipFile(tmp_target, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-            for full, arc in _iter_files(app_dir, bool(cfg.get("avecBackups", True))):
-                try:
-                    z.write(full, arcname=str(Path("Donnees") / arc))
-                    count += 1
-                except Exception as e:
-                    print(f"[sauvegarde] fichier ignore {full}: {e}", flush=True)
-            z.writestr("Donnees/_sauvegarde.txt", _manifest(count, reason))
+        count = _ecrire_archive(tmp_target, app_dir, cfg, cle, reason)
         os.replace(tmp_target, target)
     except Exception as e:
         for leftover in (tmp_target,):
@@ -522,7 +592,7 @@ def run_backup(reason: str = "manuel") -> dict:
     cfg["lastError"]      = ""
     save_config(cfg)
 
-    res = {"ok": True, "path": str(target), "files": count,
+    res = {"ok": True, "path": str(target), "files": count, "chiffre": cle is not None,
            "size": size, "removed": removed, "reason": reason}
     if cfg.get("ejecter"):
         cle = _cle_de(str(out_dir))
@@ -543,7 +613,8 @@ def _manifest(count: int, reason: str) -> str:
                                        for u in users.get("users", [])),
         "",
         "Pour restaurer : Pilote > Parametres > Sauvegarde > Restaurer,",
-        "ou decompresser ce zip par-dessus le dossier Donnees, app fermee.",
+        "ou (archive .zip non chiffree) decompresser ce zip par-dessus le",
+        "dossier Donnees, app fermee.",
     ]
     return "\n".join(lignes)
 
@@ -553,7 +624,10 @@ def _rotate(out_dir: Path, keep: int) -> int:
     if keep <= 0:
         return 0
     try:
-        archives = sorted(out_dir.glob(f"{ARCHIVE_PREFIX}*.zip"))
+        # Par nom, donc par date, .zip et .pilote melanges ; jamais le
+        # fichier du bouton Televerser
+        archives = sorted(p for p in out_dir.glob(f"{ARCHIVE_PREFIX}*")
+                          if _est_archive(p.name) and p.name != TELEVERSEMENT)
     except Exception:
         return 0
     removed = 0
@@ -686,6 +760,12 @@ def push_to_usb(root: str = None) -> dict:
 
     app_dir = storage.get_app_dir()
     nom = chosen["letter"] or chosen["label"]      # Mac : pas de lettre
+    try:
+        cle = _cle(cfg)
+    except CleIllisible as e:
+        return {"ok": False, "reason": "cle", "error": str(e)}
+    if cle is not None:
+        return _televerser_chiffre(chosen, nom, cfg, cle, app_dir)
     dest = Path(chosen["root"]) / _dossier_cle(cfg) / "Donnees"
     try:
         dest.mkdir(parents=True, exist_ok=True)
@@ -731,6 +811,40 @@ def push_to_usb(root: str = None) -> dict:
     return res
 
 
+def _televerser_chiffre(chosen: dict, nom: str, cfg: dict, cle: bytes, app_dir: Path) -> dict:
+    """Bouton Televerser avec le chiffrement actif : une seule archive chiffree
+    <cle>/<dossier>/Pilote_televersement.pilote, remplacee a chaque envoi, au
+    lieu des fichiers en clair. Une ancienne copie en clair (Donnees/) n'est
+    jamais effacee par Pilote : l'UI le signale (ancienMiroir)."""
+    dossier = Path(chosen["root"]) / _dossier_cle(cfg)
+    target = dossier / TELEVERSEMENT
+    partiel = dossier / (TELEVERSEMENT + ".part")
+    try:
+        dossier.mkdir(parents=True, exist_ok=True)
+        count = _ecrire_archive(partiel, app_dir, cfg, cle, "téléversement")
+        os.replace(partiel, target)
+    except Exception as e:
+        try:
+            partiel.unlink()
+        except Exception:
+            pass
+        return {"ok": False, "reason": "error", "error": f"Écriture impossible sur {nom} : {e}"}
+    cfg = load_config()
+    cfg["lastPushAt"]   = datetime.datetime.now().isoformat(timespec="seconds")
+    cfg["lastPushPath"] = str(target)
+    try:
+        save_config(cfg)
+    except Exception:
+        pass
+    res = {"ok": True, "path": str(target), "files": count, "size": target.stat().st_size,
+           "drive": nom, "label": chosen["label"], "chiffre": True,
+           "ancienMiroir": (dossier / "Donnees").is_dir(),
+           "failed": [], "failedCount": 0}
+    if cfg.get("ejecter"):
+        res["ejection"] = ejecter(chosen["root"])
+    return res
+
+
 def usb_state() -> dict:
     """Etat rapide pour l'accueil : y a-t-il une cle, et de quand date l'envoi ?
     Seules les cles autorisees sont comptees ; « autres » : les autres cles."""
@@ -759,13 +873,20 @@ def list_backups() -> dict:
                 "backups": []}
     out = []
     try:
-        for p in sorted(Path(dest["path"]).glob(f"{ARCHIVE_PREFIX}*.zip"), reverse=True):
+        cfg = load_config()
+        for p in sorted((x for x in Path(dest["path"]).glob(f"{ARCHIVE_PREFIX}*")
+                         if _est_archive(x.name)), reverse=True):
             try:
                 st = p.stat()
+                ent = chiffrement.lire_entete(p) if p.name.endswith(EXT_CHIFFRE) else {}
                 out.append({
                     "name": p.name,
                     "path": str(p),
                     "size": st.st_size,
+                    "chiffre": bool(ent),
+                    # Faite avec le mot de passe actuel : restaurable sans le taper
+                    "cleConnue": bool(ent) and bool(cfg.get("chiffrer"))
+                                 and ent.get("empreinte") == cfg.get("empreinte"),
                     "date": datetime.datetime.fromtimestamp(st.st_mtime)
                                     .isoformat(timespec="seconds"),
                 })
@@ -854,6 +975,50 @@ def appliquer_reglages(patch: dict) -> dict:
     return status()
 
 
+# ─── Mot de passe des archives ───────────────────────────────────────────────
+
+MDP_MIN = 8
+
+
+def definir_mot_de_passe(mdp: str) -> dict:
+    """Active le chiffrement (ou change de mot de passe). Les archives deja
+    faites gardent leur ancien mot de passe (ou restent en clair)."""
+    mdp = mdp or ""
+    if len(mdp) < MDP_MIN:
+        return {"ok": False, "error": f"Au moins {MDP_MIN} caractères."}
+    sel = chiffrement.nouveau_sel()
+    iterations = chiffrement.ITERATIONS
+    cle = chiffrement.deriver(mdp, sel, iterations)
+    secret = chiffrement.garder_cle(cle)
+    if chiffrement.relire_cle(secret) != cle:
+        return {"ok": False, "error": "La clé n'a pas pu être gardée sur cet ordinateur."}
+    cfg = load_config()
+    ancien = cfg.get("cleChiffree") or ""
+    cfg.update({"chiffrer": True, "cleChiffree": secret, "sel": sel.hex(),
+                "iterations": iterations, "empreinte": chiffrement.empreinte(cle)})
+    save_config(cfg)
+    if ancien and ancien != secret:
+        try:
+            chiffrement.oublier_cle(ancien)
+        except Exception:
+            pass
+    return status()
+
+
+def retirer_chiffrement() -> dict:
+    """Les prochaines archives seront de nouveau des .zip lisibles."""
+    cfg = load_config()
+    ancien = cfg.get("cleChiffree") or ""
+    cfg.update({"chiffrer": False, "cleChiffree": "", "sel": "", "empreinte": ""})
+    save_config(cfg)
+    if ancien:
+        try:
+            chiffrement.oublier_cle(ancien)
+        except Exception:
+            pass
+    return status()
+
+
 # ─── Restauration ─────────────────────────────────────────────────────────────
 
 def _fusionner_users(contenu: bytes, cible: Path) -> None:
@@ -873,7 +1038,7 @@ def _fusionner_users(contenu: bytes, cible: Path) -> None:
     storage.save_users_state(archive)
 
 
-def restore_from(zip_path: str) -> dict:
+def restore_from(zip_path: str, mdp: str = None) -> dict:
     """
     Restaure une archive par-dessus le dossier Donnees.
 
@@ -891,8 +1056,56 @@ def restore_from(zip_path: str) -> dict:
     if not src.exists():
         return {"ok": False, "error": "Archive introuvable."}
 
+    # Archive chiffree : dechiffree (et verifiee) dans un temporaire du PC
+    # avant tout le reste. Sans mot de passe, celle du mot de passe actuel se
+    # dechiffre avec la cle gardee ; une autre demande le sien (reason).
+    source = src
+    clair = None
+    entete = chiffrement.lire_entete(src)
+    if entete:
+        cfg = load_config()
+        cle = None
+        if mdp:
+            try:
+                cle = chiffrement.deriver(mdp, bytes.fromhex(entete["sel"]), int(entete["iter"]))
+            except Exception:
+                return {"ok": False, "error": "En-tête de l'archive illisible."}
+        elif cfg.get("chiffrer") and entete.get("empreinte") == cfg.get("empreinte"):
+            try:
+                cle = _cle(cfg)
+            except CleIllisible:
+                cle = None
+        if cle is None:
+            return {"ok": False, "reason": "mot_de_passe",
+                    "error": "Cette archive est chiffrée : tape son mot de passe."}
+        clair = tempfile.TemporaryFile()
+        try:
+            chiffrement.dechiffrer_flux(src, clair, cle)
+        except chiffrement.MotDePasseIncorrect:
+            clair.close()
+            return {"ok": False, "reason": "mot_de_passe",
+                    "error": "Mot de passe incorrect (ou archive abîmée)."}
+        except Exception as e:
+            clair.close()
+            return {"ok": False, "error": f"Archive illisible : {e}"}
+        source = clair
     try:
-        with zipfile.ZipFile(src) as z:
+        return _restaurer(source, clair)
+    finally:
+        if clair is not None:
+            clair.close()
+
+
+def _restaurer(source, clair) -> dict:
+    """Suite de restore_from : source est le chemin du zip, ou le fichier
+    temporaire dechiffre (clair, remis au debut avant chaque lecture)."""
+    def ouvrir():
+        if clair is not None:
+            clair.seek(0)
+        return zipfile.ZipFile(source)
+
+    try:
+        with ouvrir() as z:
             bad = z.testzip()
             if bad:
                 return {"ok": False, "error": f"Archive corrompue ({bad})."}
@@ -926,7 +1139,7 @@ def restore_from(zip_path: str) -> dict:
 
     written = 0
     try:
-        with zipfile.ZipFile(src) as z:
+        with ouvrir() as z:
             for member in members:
                 if member.endswith("/"):
                     continue
@@ -973,6 +1186,8 @@ def status() -> dict:
     drives = list_removable_drives()
     for d in drives:     # « Mes cles autorisees » : la cle y figure-t-elle ?
         d["autorisee"] = _dans_liste(d, cfg.get("clesAutorisees") or [])
+    cfg = dict(cfg)
+    cfg.pop("cleChiffree", None)       # inutile a la page
     return {
         "ok": True,
         "config":      cfg,

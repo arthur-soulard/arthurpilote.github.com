@@ -176,5 +176,110 @@ class RacineDuLecteurDrive(DossierCommeDrive):
             self.assertTrue(sauvegarde.set_destination(str(mon / "Pilote"))["ok"])
 
 
+class Chiffrement(unittest.TestCase):
+    """Archives chiffrées par mot de passe (chiffrement.py). PBKDF2 réduit à
+    1 000 tours pour la vitesse du test ; le format et le reste sont réels."""
+
+    setUp = DossierCommeDrive.setUp
+    MDP = "cheval correct"
+
+    def _activer(self):
+        p = mock.patch.object(sauvegarde.chiffrement, "ITERATIONS", 1000)
+        p.start()
+        self.addCleanup(p.stop)
+        sauvegarde.set_destination(str(self.drive))
+        return sauvegarde.definir_mot_de_passe(self.MDP)
+
+    def test_mot_de_passe_trop_court(self):
+        self.assertFalse(sauvegarde.definir_mot_de_passe("court")["ok"])
+        self.assertFalse(sauvegarde.load_config()["chiffrer"])
+
+    def test_archive_illisible_sans_mot_de_passe(self):
+        st = self._activer()
+        self.assertTrue(st["ok"])
+        self.assertNotIn("cleChiffree", st["config"])           # jamais envoyée à la page
+        res = sauvegarde.run_backup()
+        self.assertTrue(res["ok"] and res["chiffre"], res)
+        chemin = Path(res["path"])
+        self.assertTrue(chemin.name.endswith(".pilote"))
+        brut = chemin.read_bytes()
+        self.assertNotIn(b"positions", brut)
+        self.assertNotIn(b"camille", brut)                       # ni les noms de fichiers
+        self.assertFalse(zipfile.is_zipfile(str(chemin)))
+        self.assertFalse(list(self.drive.glob("*.zip")) + list(self.drive.glob("*.part")))
+        b = sauvegarde.list_backups()["backups"][0]
+        self.assertTrue(b["chiffre"] and b["cleConnue"])
+
+    def test_restauration_meme_pc_puis_pc_neuf(self):
+        self._activer()
+        archive = sauvegarde.run_backup()["path"]
+        pea = _DONNEES / "users" / "camille" / "pea_data.json"
+        _ecrire(pea, '{"positions": []}')
+        res = sauvegarde.restore_from(archive)                   # clé gardée : sans le taper
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(pea.read_text(encoding="utf-8"), '{"positions": [1, 2]}')
+
+        # PC neuf : rien dans sauvegarde.json, le mot de passe est demandé
+        shutil.rmtree(_DONNEES)
+        _DONNEES.mkdir(parents=True)
+        sauvegarde.set_destination(str(self.drive))
+        securite = len(list(_TMP.glob("installation/Pilote_avant-restauration_*")))
+        self.assertEqual(sauvegarde.restore_from(archive)["reason"], "mot_de_passe")
+        faux = sauvegarde.restore_from(archive, "mauvais mot de passe")
+        self.assertEqual(faux["reason"], "mot_de_passe")
+        self.assertFalse(pea.exists())                           # rien d'écrit
+        self.assertEqual(len(list(_TMP.glob("installation/Pilote_avant-restauration_*"))), securite)
+        res = sauvegarde.restore_from(archive, self.MDP)
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(pea.read_text(encoding="utf-8"), '{"positions": [1, 2]}')
+
+    def test_ancienne_archive_en_clair_toujours_restaurable(self):
+        sauvegarde.set_destination(str(self.drive))
+        ancienne = sauvegarde.run_backup()["path"]
+        self.assertTrue(ancienne.endswith(".zip"))
+        self._activer()
+        _ecrire(_DONNEES / "users" / "camille" / "sante.json", '{"pesees": []}')
+        self.assertTrue(sauvegarde.restore_from(ancienne)["ok"])
+        self.assertEqual((_DONNEES / "users" / "camille" / "sante.json").read_text(encoding="utf-8"),
+                         '{"pesees": [60]}')
+        b = {x["name"]: x for x in sauvegarde.list_backups()["backups"]}
+        self.assertFalse(b[Path(ancienne).name]["chiffre"])
+
+    def test_cle_illisible_rien_en_clair(self):
+        self._activer()
+        cfg = sauvegarde.load_config()
+        cfg["cleChiffree"] = "dpapi:AAAA"
+        sauvegarde.save_config(cfg)
+        res = sauvegarde.run_backup()
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["reason"], "cle")
+        self.assertFalse(list(self.drive.iterdir()))
+
+    def test_rotation_melangee_et_retrait(self):
+        self._activer()
+        sauvegarde.appliquer_reglages({"keep": 2})
+        _ecrire(self.drive / "Pilote_2026-01-01_10h00.zip", "ancienne")
+        _ecrire(self.drive / "Pilote_2026-01-02_10h00.pilote", "ancienne")
+        self.assertTrue(sauvegarde.run_backup()["ok"])
+        noms = sorted(p.name for p in self.drive.iterdir())
+        self.assertEqual(len(noms), 2)
+        self.assertEqual(noms[0], "Pilote_2026-01-02_10h00.pilote")
+        sauvegarde.retirer_chiffrement()
+        self.assertTrue(sauvegarde.run_backup()["path"].endswith(".zip"))
+
+    def test_televerser_chiffre(self):
+        self._activer()
+        cle = _TMP / "CLE"
+        cle.mkdir()
+        fausse = [{"root": str(cle), "letter": "E:", "label": "CLE", "serial": "1234", "free": 1, "total": 2}]
+        with mock.patch.object(sauvegarde, "list_removable_drives", return_value=fausse):
+            res = sauvegarde.push_to_usb()
+        self.assertTrue(res["ok"] and res["chiffre"], res)
+        self.assertFalse(res["ancienMiroir"])
+        self.assertTrue((cle / "Pilote" / "Pilote_televersement.pilote").exists())
+        self.assertFalse((cle / "Pilote" / "Donnees").exists())
+        self.assertTrue(sauvegarde.restore_from(res["path"])["ok"])
+
+
 if __name__ == "__main__":
     unittest.main()

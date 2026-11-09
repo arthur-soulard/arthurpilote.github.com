@@ -43,7 +43,8 @@ Sa config vit donc dans `Donnees/sauvegarde.json`, à côté de `users.json`.
   jusqu'à la 4.4.35), fonctions `sv*`.
   `setGoSection()` déclenche `svRefresh()` seulement à l'ouverture de cette
   section — elle interroge le disque.
-* Rien n'est chiffré : le zip est aussi lisible que les JSON d'origine.
+* Sans mot de passe, rien n'est chiffré : le zip est aussi lisible que les JSON
+  d'origine. Avec un mot de passe : voir « Chiffrement par mot de passe » plus bas.
 
 ## Les quatre réglages de la clé (12/10/2026, Windows et Mac)
 
@@ -150,9 +151,8 @@ les envoie.
   dans Paramètres › Sauvegarde » au lieu de « branche ta clé USB », et la tuile
   « dans un dossier ». La ligne des clés branchées reste (bouton Téléverser).
 * Le rappel de l'Agenda s'appelle « Pas de sauvegarde depuis N jours ».
-* Les archives restent **non chiffrées** : sur Drive, elles sont lisibles sur le
-  compte Google. Écrit dans le texte de la section. Chiffrer demanderait une
-  bibliothèque de plus (zip AES) : pas décidé.
+* Sans mot de passe, les archives sont lisibles sur le compte Google. Depuis
+  le 09/11/2026, elles se chiffrent par mot de passe (section suivante).
 * `tests/test_sauvegarde.py` : dossier ordinaire jouant Drive. Destination sans
   numéro, archive automatique une fois par jour, dossier absent (rien d'écrit),
   rotation, restauration sur une installation neuve (aucun réglage, même
@@ -178,3 +178,48 @@ mène donc la racine à `Mon Drive\Sauvegardes Pilote` et refuse tout autre doss
 du lecteur hors de `Mon Drive` (`.shortcut-targets-by-id`, Autres ordinateurs).
 Une destination `G:\` déjà enregistrée reste en échec jusqu'à un nouveau choix
 (la fiche de la 4.4.46 le dit).
+
+## Chiffrement par mot de passe (09/11/2026, prochaine version)
+
+Plan de lancement du 07/11 : une clé USB perdue ou un compte Google ouvert ne
+doivent plus donner les données. Paramètres › Sauvegarde › **Chiffrement**.
+
+* **Bibliothèque standard seulement** (`src/chiffrement.py`) : PBKDF2-HMAC-SHA256
+  (600 000 tours, sel de 16 octets) tire 64 octets du mot de passe ; 32 chiffrent
+  par un flux SHAKE-256 (SHA-3) propre à chaque archive (nonce de 16 octets,
+  compteur par bloc de 1 Mio), 32 signent par HMAC-SHA256 l'en-tête et tout le
+  chiffré. Le HMAC est vérifié avant qu'un octet déchiffré serve : mauvais mot de
+  passe et archive abîmée sont refusés pareil. Une dépendance zip AES (pyzipper)
+  aurait permis d'ouvrir l'archive avec 7-Zip, sans Pilote ; écartée pour ne rien
+  installer (consigne : demander à Arthur avant toute dépendance). Mesuré sur le
+  PC d'Arthur : 1,1 s pour tirer la clé, 0,3 s pour 12 Mo.
+* Archive chiffrée = `Pilote_<date>.pilote` (format en tête de `chiffrement.py`),
+  rien de lisible dedans, pas même les noms de fichiers. Le zip en clair est fait
+  dans un temporaire du PC (`tempfile.TemporaryFile`, effacé à la fermeture),
+  jamais dans la destination. Les `.zip` d'avant restent listés, tournent avec les
+  `.pilote` (`_rotate`, par nom donc par date) et se restaurent comme avant.
+* **Le mot de passe n'est gardé nulle part** : seule la clé tirée, confiée à
+  Windows (DPAPI, `actus._chiffrer`) ou au Trousseau du Mac (service « Pilote
+  Sauvegarde », compte fixe par installation : la sauvegarde n'est pas propre à un
+  utilisateur), dans `sauvegarde.json` (`cleChiffree`, jamais envoyée à la page par
+  `status()`), avec `sel`, `iterations` et `empreinte` (HMAC de la clé, tronqué,
+  qui reconnaît les archives du mot de passe actuel sans rien en dire).
+* Sauvegardes automatiques : la clé gardée suffit. **Clé illisible** (autre compte
+  Windows, `sauvegarde.json` copié ailleurs) : la sauvegarde échoue avec « Mot de
+  passe des sauvegardes à ressaisir », `reason: "cle"`. **Jamais de repli en clair.**
+* Restaurer : une archive du mot de passe actuel se déchiffre sans rien taper ;
+  une autre (PC neuf, ancien mot de passe) rend `reason: "mot_de_passe"` et la page
+  le demande (`demander`, champ masqué) jusqu'à ce qu'il soit bon ou annulé.
+  Déchiffrée dans un temporaire du PC avant toute écriture (archive de sécurité
+  comprise).
+* **Téléverser** (accueil) avec le chiffrement : plus de miroir en clair, une
+  seule archive `<clé>/<dossier>/Pilote_televersement.pilote`, remplacée à chaque
+  envoi. Une ancienne copie en clair (`Donnees/`) n'est pas effacée (règle du
+  miroir) : un message le signale (`ancienMiroir`).
+* Changer de mot de passe : nouveau sel, nouvelle clé ; les archives déjà faites
+  gardent l'ancien. « Ne plus chiffrer » : les suivantes redeviennent des `.zip`.
+* L'écran le dit deux fois : « Mot de passe oublié = sauvegardes perdues », avec
+  une case « J'ai noté mon mot de passe en lieu sûr » à cocher.
+* Tests : `tests/test_sauvegarde.py`, classe `Chiffrement` (rien de lisible, même
+  PC sans mot de passe, PC neuf avec, mauvais mot de passe sans écriture, ancien
+  `.zip`, clé illisible sans rien d'écrit, rotation mélangée, Téléverser chiffré).
