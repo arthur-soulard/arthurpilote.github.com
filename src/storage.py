@@ -385,6 +385,86 @@ def mettre_a_la_corbeille(slug: str) -> Path:
     return dst
 
 
+# ─── Explorer avec des donnees d'exemple (docs/utilisateurs-et-pin.md) ────
+# Un utilisateur a part, marque « exemple » dans users.json, ou sont ecrites
+# les donnees fictives de Camille (donnees_exemple.py). Jamais celui qui
+# explore : ses fichiers ne sont ni lus ni ecrits, on change seulement
+# d'utilisateur actif, comme avec la pastille.
+
+def utilisateur_exemple(state: dict = None) -> Optional[dict]:
+    state = state or get_users_state()
+    return next((u for u in state["users"] if u.get("exemple")), None)
+
+
+def ouvrir_exemple(version: str = None) -> dict:
+    """Cree l'utilisateur Exemple s'il n'existe pas, et en fait l'actif.
+    Retient qui explorait (« retour ») pour l'y ramener."""
+    import donnees_exemple
+    state = get_users_state()
+    ex = utilisateur_exemple(state)
+    actif = state["active"]
+    if ex is None:
+        # slugify ecarte aussi les dossiers deja sur le disque : le dossier
+        # est neuf, aucune donnee existante ne peut etre ecrasee
+        slug = slugify("exemple", [u["slug"] for u in state["users"]])
+        dossier = get_user_dir(slug)
+        prefs = {}
+        try:
+            with open(get_user_dir(actif) / DATA_FILE, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            prefs = {"ui": d.get("ui"), "theme": (d.get("uiPrefs") or {}).get("theme"),
+                     "accent": (d.get("uiPrefs") or {}).get("accent")}
+        except Exception:
+            pass
+        donnees_exemple.ecrire_utilisateur(str(dossier), version, prefs)
+        (dossier / donnees_exemple.TEMOIN).write_text(
+            "Donnees fictives du bouton « Explorer avec des donnees d'exemple ».\n",
+            encoding="utf-8")
+        ex = {"slug": slug, "label": "Exemple", "emoji": "", "color": "", "exemple": True}
+        state["users"].append(ex)
+    if actif != ex["slug"]:
+        ex["retour"] = actif
+    state["active"] = ex["slug"]
+    save_users_state(state)
+    return {"slug": ex["slug"], "state": state}
+
+
+def quitter_exemple(effacer: bool = False) -> dict:
+    """Revient a l'utilisateur qui explorait. effacer : retire aussi
+    l'utilisateur Exemple et son dossier (seulement s'il porte le temoin)."""
+    import donnees_exemple
+    state = get_users_state()
+    ex = utilisateur_exemple(state)
+    if ex is None:
+        return {"active": state["active"], "state": state, "efface": False}
+    autres = [u for u in state["users"] if not u.get("exemple")]
+    retour = ex.get("retour")
+    if not any(u["slug"] == retour for u in autres):
+        retour = autres[0]["slug"] if autres else None
+    if retour is None:
+        # L'exemple etait seul (les autres supprimes entre-temps) : un « Moi »
+        # vierge, comme apres la suppression du dernier utilisateur
+        retour = slugify("Moi", [u["slug"] for u in state["users"]])
+        get_user_dir(retour)
+        state["users"].append({"slug": retour, "label": "Moi", "emoji": "", "color": ""})
+    if state["active"] == ex["slug"]:
+        state["active"] = retour
+    efface = False
+    if effacer:
+        state["users"] = [u for u in state["users"] if u is not ex]
+    save_users_state(state)
+    if effacer:
+        dossier = _users_root() / ex["slug"]
+        if (dossier / donnees_exemple.TEMOIN).exists():
+            shutil.rmtree(dossier, ignore_errors=True)
+            efface = not dossier.exists()
+        else:
+            # Sans temoin, rien ne prouve que ce sont des donnees fictives
+            mettre_a_la_corbeille(ex["slug"])
+            efface = True
+    return {"active": state["active"], "state": state, "efface": efface}
+
+
 def user_pin_path(slug: str = None) -> Path:
     """Hash du PIN d'un utilisateur (un fichier dans SON dossier)."""
     return get_user_dir(slug) / PIN_FILE

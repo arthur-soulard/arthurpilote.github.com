@@ -2797,6 +2797,20 @@ button.pp-first:focus-visible { outline: 2px solid var(--accent); outline-offset
   transition: color .15s, transform .15s; }
 button.pp-first:hover .pp-first-go { color: var(--accent-text); transform: translate(2px, -2px); }
 .pp-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); margin-top: 1rem; }
+/* Explorer avec des données d'exemple : encart des Premiers pas et bandeau */
+.pp-exemple { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 1rem; padding: 12px 14px;
+  border: 1px dashed var(--brd2); border-radius: var(--rad); background: var(--bg2); }
+.pp-exemple > .ph { font-size: 22px; color: var(--accent); flex-shrink: 0; }
+.pp-exemple-txt { flex: 1; min-width: 0; font-size: 12.5px; color: var(--txt2); line-height: 1.45; }
+.pp-exemple-txt b { display: block; color: var(--txt); font-size: 13px; }
+.ex-bandeau { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem;
+  padding: 10px 14px; border-radius: var(--rad); background: var(--accent-soft);
+  border: 1px solid var(--accent); color: var(--txt); font-size: 12.5px; }
+.ex-bandeau[hidden] { display: none; }
+.ex-bandeau > .ph { font-size: 20px; color: var(--accent-text); }
+.ex-bandeau-txt { flex: 1; min-width: 220px; line-height: 1.4; }
+.ex-bandeau-txt b { color: var(--accent-text); }
+.ex-bandeau .btn { white-space: nowrap; }
 /* Prénom d'un nouvel utilisateur (étape 1) et ce qu'il faut avoir pour un module (étape 3) */
 .pp-prenom { display: flex; align-items: center; gap: 12px; margin-bottom: .9rem; }
 label[for="pp-prenom"] { font-size: 13px; font-weight: 600; color: var(--txt); white-space: nowrap; }
@@ -3204,6 +3218,10 @@ html.verre .toast-stack .toast {
 <body>
 <div class="wrap">
 <div class="errbox" id="errbox"></div>
+
+<!-- BANDEAU « Données d'exemple » : visible seulement sur l'utilisateur
+     Exemple (_renderBandeauExemple, docs/utilisateurs-et-pin.md) -->
+<div class="ex-bandeau" id="ex-bandeau" hidden></div>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -5181,6 +5199,14 @@ html.verre .toast-stack .toast {
           <div id="cfg-users-list" style="display:flex;flex-direction:column;gap:6px"></div>
           <button type="button" class="btn btn-ghost btn-sm" onclick="openUserModal(null)"
                   style="margin-top:10px;font-size:11px"><i class="ph ph-plus"></i> Nouvel utilisateur</button>
+          <div class="fg" style="margin-top:1.2rem">
+            <label>Découvrir Pilote</label>
+            <p class="m-note" style="margin:0 0 8px">Ouvre un utilisateur à part, « Exemple », rempli avec les
+              données d'un profil fictif : chaque module déjà servi. Tes données ne sont ni lues ni modifiées,
+              un bandeau te ramène à ton profil d'un clic.</p>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="explorerExemple()"
+                    style="font-size:11px"><i class="ph ph-flask"></i> Explorer avec des données d'exemple</button>
+          </div>
         </div>
 
         <!-- ──── MODULES ET MASQUÉ ──── -->
@@ -11585,6 +11611,56 @@ async function switchUser(slug) {
   }
 }
 
+/* ── Explorer avec des données d'exemple ──
+   Un utilisateur à part, « Exemple », rempli avec les données fictives de
+   Camille (src/donnees_exemple.py) : celui qui explore n'est ni lu ni écrit,
+   on change seulement d'utilisateur actif, comme switchUser. D'où le même gel
+   des écritures avant de basculer. Détail : docs/utilisateurs-et-pin.md. */
+async function explorerExemple() {
+  const api = window.pywebview && window.pywebview.api;
+  if (!(api && api.explorer_exemple)) { showToastModern("Pilote ne répond pas : ferme-le et relance-le.", "err"); return; }
+  await _gelerEnregistrements();
+  const r = await api.explorer_exemple();
+  if (r && r.ok) location.reload();
+  else {
+    _degelerEnregistrements();
+    showToastModern("Impossible d'ouvrir l'exemple : " + ((r && r.error) || "?"), "err");
+  }
+}
+
+async function quitterExemple(effacer) {
+  const api = window.pywebview && window.pywebview.api;
+  if (!(api && api.quitter_exemple)) return;
+  await _gelerEnregistrements();
+  const r = await api.quitter_exemple(!!effacer);
+  if (r && r.ok) location.reload();
+  else {
+    _degelerEnregistrements();
+    showToastModern("Retour impossible : " + ((r && r.error) || "?"), "err");
+  }
+}
+
+/* Bandeau en haut de chaque écran tant que l'utilisateur actif est l'exemple */
+async function _renderBandeauExemple() {
+  const box = document.getElementById("ex-bandeau");
+  if (!box) return;
+  const state = await _loadUsers();
+  const u = state && state.users.find(x => x.slug === state.active);
+  const ex = !!(u && u.exemple);
+  document.body.classList.toggle("mode-exemple", ex);
+  if (!ex) { box.hidden = true; box.innerHTML = ""; return; }
+  const retour = state.users.find(x => x.slug === u.retour) || state.users.find(x => !x.exemple);
+  box.innerHTML = `<i class="ph ph-flask"></i>
+    <span class="ex-bandeau-txt"><b>Données d'exemple.</b> Tu explores Pilote avec Camille, un profil
+      fictif : tes propres données ne sont ni lues ni modifiées.</span>
+    <button type="button" class="btn btn-primary btn-sm" onclick="quitterExemple(false)">
+      <i class="ph ph-arrow-u-up-left"></i> ${retour ? "Revenir à " + escHtml(retour.label) : "Revenir à mon profil"}</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="quitterExemple(true)"
+      title="Revient à ton profil et efface l'exemple (données fictives, recréées au prochain clic sur Explorer)">
+      <i class="ph ph-trash"></i> Effacer l'exemple</button>`;
+  box.hidden = false;
+}
+
 /* ── Modale creation / edition ── */
 
 function _userRenderPickers() {
@@ -11711,6 +11787,7 @@ async function renderUsersList() {
       ${userAvatarHtml(u, "home-user-av")}
       <span style="flex:1;font-size:12px;font-weight:${active ? 700 : 500}">${escHtml(u.label)}
         ${active ? '<span class="m-tag">actif</span>' : ""}
+        ${u.exemple ? '<span class="m-tag" title="Donn\u00e9es fictives">exemple</span>' : ""}
         ${u.hasPin ? '<span class="m-tag" title="Prot\u00e9g\u00e9 par un code PIN">\u{1F512} PIN</span>' : ""}</span>
       ${active ? "" : `<button type="button" class="btn btn-ghost btn-sm" onclick="switchUser('${u.slug}')"
                         style="font-size:10px;padding:3px 8px">Basculer</button>`}
@@ -12357,6 +12434,13 @@ async function _showWelcomeIfFirstRun() {
         <p class="pp-lead">Un premier geste par module. Clique sur l'un d'eux pour y aller
           tout de suite, ou commence par l'accueil.</p>
         <div class="pp-firsts" id="pp-firsts"></div>
+        <div class="pp-exemple">
+          <i class="ph ph-flask"></i>
+          <span class="pp-exemple-txt"><b>Envie de voir avant de saisir&#8239;?</b>
+            Explore Pilote rempli avec les données d'un profil fictif. Tes données restent à part,
+            et un bandeau te ramène ici d'un clic.</span>
+          <button type="button" class="btn btn-ghost btn-sm" data-pp-exemple>Explorer avec des données d'exemple</button>
+        </div>
         <p class="pp-note"><i class="ph ph-gear-six"></i> Thème, couleur d'accent et code PIN :
           Paramètres, en bas de la barre de gauche.</p>
         <div class="pp-acts">
@@ -12391,7 +12475,7 @@ async function _showWelcomeIfFirstRun() {
     const prenom = champPrenom ? champPrenom.value.trim() : "";
     const api = window.pywebview && pywebview.api;
     if (!prenom || !me || !(api && api.update_user)) return;
-    api.update_user(me.slug, prenom, null, null).then(async r => {
+    return api.update_user(me.slug, prenom, null, null).then(async r => {
       if (!r || !r.ok) { showToastModern("Prénom non enregistré : Paramètres → Utilisateurs permet de le saisir.", "warn"); return; }
       await _loadUsers(true);
       _renderUserPill();
@@ -12435,13 +12519,20 @@ async function _showWelcomeIfFirstRun() {
     S.uiPrefs.montresProposees = true;                       // Montres compris
     if (hist && hist.version) S.uiPrefs.nouveautesVues = hist.version;
     _enregistrerUiPrefs();
-    nommer();
+    const nomme = nommer();
     ov.remove();
     _reconstruireSidebar();
     if (typeof dashRender === "function") dashRender();
     if (tab) { goTab(tab); _setActiveSidebar(tab); }
+    return nomme;   // explorerExemple attend que users.json ait le prénom
   }
   ov.querySelector("[data-pp-fin]").onclick = () => terminer(null);
+  // Les choix de l'assistant sont d'abord gardés pour SON utilisateur (il ne
+  // le reverra pas en revenant), puis bascule sur l'utilisateur Exemple
+  ov.querySelector("[data-pp-exemple]").onclick = async () => {
+    try { await terminer(null); } catch (e) {}
+    explorerExemple();
+  };
 
   // Plus de bouton « Importer un fichier » ici (27/10/2026, demande d'Arthur) :
   // un nouvel utilisateur le prenait pour l'import d'un relevé, alors qu'il
@@ -29846,6 +29937,7 @@ function _appReady() {
     // Verrou PIN si configure
     try { if (typeof _checkPinLock === "function") await _checkPinLock(); } catch(e) {}
     renderAll();
+    try { _renderBandeauExemple(); } catch(e) {}
     if (typeof installShellEnhancements === "function") installShellEnhancements();
     // Premier lancement : l'assistant des premiers pas ; sinon, juste après
     // une mise à jour, la fiche de ses nouveautés (une fois)

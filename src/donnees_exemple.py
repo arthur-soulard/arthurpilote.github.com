@@ -1,0 +1,414 @@
+"""Données d'exemple pour les captures d'écran du test Mac (build-mac.yml,
+job « ecrans-mac »).
+
+Tout est FICTIF : le dépôt est public, rien ne vient des données d'un vrai
+utilisateur. Les dates sont relatives au jour du test, pour qu'un « prochain
+dividende » ou un « versement prévu » le restent quel que soit le jour.
+
+Un utilisateur « Camille » qui a servi chaque module : PEA, un CTO, Mes
+comptes, Prêt, Sports, Santé, Patrimoine et un pense-bête, avec toutes les
+tuiles de l'accueil allumées. Les clés absentes sont complétées par les
+valeurs par défaut de chaque module au chargement (jsonstore, storage).
+
+Servent aussi au bouton « Explorer avec des données d'exemple » de l'app
+(Api.explorer_exemple, docs/utilisateurs-et-pin.md) : d'où leur place dans
+src/, livrées avec l'exe. tests/donnees_exemple.py reste la commande du test.
+
+Usage : python3 tests/donnees_exemple.py <dossier Donnees>
+"""
+import datetime as dt
+import json
+import os
+import sys
+
+AUJ = dt.date.today()
+
+
+def jour(n):
+    """La date d'aujourd'hui + n jours (n négatif : dans le passé)."""
+    return (AUJ + dt.timedelta(days=n)).isoformat()
+
+
+def mois(n, j=1):
+    """Le j-ième jour du mois décalé de n mois (borné à la fin du mois)."""
+    a, m = AUJ.year, AUJ.month + n
+    while m < 1:
+        m += 12
+        a -= 1
+    while m > 12:
+        m -= 12
+        a += 1
+    fin = (dt.date(a + (m == 12), m % 12 + 1, 1) - dt.timedelta(days=1)).day
+    return dt.date(a, m, min(j, fin)).isoformat()
+
+
+def passe(iso):
+    return iso <= AUJ.isoformat()
+
+
+META = {"version": 1, "createdAt": jour(-560), "lastSavedAt": AUJ.isoformat() + "T08:00:00"}
+
+
+# ── PEA ────────────────────────────────────────────────────────────────────
+
+def pea():
+    depots, txs, recus = [], [], []
+    depots.append({"id": 1, "date": mois(-18, 4), "amount": 1000, "note": "Ouverture"})
+    for n in range(-18, 1):
+        if passe(mois(n, 5)):
+            depots.append({"id": len(depots) + 1, "date": mois(n, 5), "amount": 250, "note": ""})
+        if passe(mois(n, 6)):
+            # Un ordre par mois sur le MSCI World, et le S&P 500 tous les trois mois
+            txs.append({"date": mois(n, 6), "asset": "EPA:WPEA", "type": "Achat",
+                        "cours": round(5.6 + 0.09 * (n + 18), 3), "qty": 25, "frais": 0 if n % 2 else 0.5})
+            if n % 3 == 0:
+                txs.append({"date": mois(n, 6), "asset": "EPA:ESE", "type": "Achat",
+                            "cours": round(25.5 + 0.25 * (n + 18), 3), "qty": 3, "frais": 0.5})
+    txs += [
+        {"date": mois(-15, 12), "asset": "EPA:TTE", "type": "Achat", "cours": 58.2, "qty": 4, "frais": 1.2},
+        {"date": mois(-12, 18), "asset": "EPA:AIR", "type": "Achat", "cours": 161.4, "qty": 1, "frais": 0.8},
+        {"date": mois(-6, 18), "asset": "EPA:AIR", "type": "Achat", "cours": 176.9, "qty": 1, "frais": 0.9},
+    ]
+    txs.sort(key=lambda t: t["date"])
+    for i, t in enumerate(txs, 1):
+        t["id"] = i
+    # TotalEnergies verse un acompte chaque trimestre
+    for n in (-12, -9, -6, -3):
+        if passe(mois(n, 3)):
+            recus.append({"id": len(recus) + 1, "date": mois(n, 3), "ticker": "EPA:TTE", "qty": 4,
+                          "ppa": 0.79, "montant": 3.16, "note": ""})
+    recus.append({"id": len(recus) + 1, "date": mois(-6, 22), "ticker": "EPA:AIR", "qty": 1,
+                  "ppa": 2.0, "montant": 2.0, "note": ""})
+
+    notes = [
+        {"id": 1, "texte": "Renouveler la carte d'identité", "date": jour(4), "faite": False},
+        {"id": 2, "texte": "Appeler la banque pour le prêt et demander l'échéancier définitif", "date": jour(0), "faite": False},
+        {"id": 3, "texte": "Payer la cotisation du club", "date": jour(-2), "faite": False},
+        {"id": 4, "texte": "Idée cadeau pour Léa", "date": "", "faite": False},
+        {"id": 5, "texte": "Réserver le train des vacances", "date": jour(35), "faite": False},
+    ]
+    # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
+    # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
+    tuiles = ["mo-derniere", "co-forme", "ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "ga-records", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+              "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
+              "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
+              "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
+              "pea-versement", "pea-frais", "sante-rappel", "sport", "sport-goal", "sante-goal",
+              "patrimoine", "cto:c1", "pea-valeur", "prochain-achat", "pret", "actus", "patri-rappel", "usb"]
+    return {
+        "_meta": dict(META, app="Suivi PEA", schema="pea_data.v1"),
+        "config": {"prenom": "Camille", "banque": "Banque Exemple", "ouverture": mois(-30, 15)},
+        "positions": [
+            {"id": 1, "ticker": "EPA:WPEA", "name": "iShares MSCI World Swap PEA", "type": "etf",
+             "sector": "etf", "cours": 7.2, "dividende": 0, "exdiv": None},
+            {"id": 2, "ticker": "EPA:ESE", "name": "BNP Paribas Easy S&P 500", "type": "etf",
+             "sector": "etf", "cours": 30.0, "dividende": 0, "exdiv": None},
+            {"id": 3, "ticker": "EPA:TTE", "name": "TotalEnergies", "type": "action",
+             "sector": "energie", "cours": 57.0, "dividende": 3.2, "exdiv": None},
+            {"id": 4, "ticker": "EPA:AIR", "name": "Airbus", "type": "action",
+             "sector": "industrie", "cours": 190.0, "dividende": 2.0, "exdiv": None},
+        ],
+        "transactions": txs,
+        "depots": depots,
+        "depotsPrevus": [{"id": 1, "date": jour(20), "amount": 250, "note": "Virement du mois"}],
+        "divReceived": recus,
+        "divFuture": [{"id": 1, "date": jour(12), "ticker": "EPA:TTE", "qty": 4, "ppa": 0.79,
+                       "montant": 3.16, "note": ""}],
+        "wishlist": [
+            {"id": 1, "ticker": "EPA:MC", "name": "LVMH", "stars": 4, "list": "pea", "wtype": "action", "sector": "luxe"},
+            {"id": 2, "ticker": "EPA:OR", "name": "L'Oréal", "stars": 3, "list": "pea", "wtype": "action", "sector": "luxe"},
+            {"id": 3, "ticker": "EPA:SU", "name": "Schneider Electric", "stars": 4, "list": "pea", "wtype": "action", "sector": "industrie"},
+        ],
+        "strategies": [],
+        "closedPositions": [],
+        "_nid": {"pos": 5, "tx": len(txs) + 1, "wish": 4, "dep": len(depots) + 1, "div": len(recus) + 1,
+                 "divf": 2, "rule": 1, "depp": 2},
+        "ui": {"theme": "light", "windowMaximized": True, "lastTab": "home"},
+        "uiPrefs": {
+            "premiersPas": True,
+            "nouveautesVues": "999.0.0",      # pas de fiche des nouveautés par-dessus l'écran
+            # ni de fenêtre « Nouveau module » : tous déjà proposés, tous affichés
+            "modulesConnus": ["sec-pea", "sec-cto", "sec-crypto", "sec-comptes", "sec-pret", "sec-sport",
+                              "sec-patri", "sec-sante", "sec-garmin", "sec-actus", "sec-agenda"],
+            "montresProposees": True,         # section Montres déjà proposée (4.4.54)
+            "dash": [{"id": t, "on": True} for t in tuiles],
+            "dashPeaRange": "MAX",
+            "penseBete": notes,
+            "dashObjectif": {"montant": 40000, "date": mois(26, 31)},
+        },
+    }
+
+
+# ── CTO ────────────────────────────────────────────────────────────────────
+
+def cto():
+    txs = []
+    for n in range(-8, 1):
+        if passe(mois(n, 2)):
+            cours = round(96 + 1.3 * (n + 8), 2)
+            txs.append({"date": mois(n, 2), "asset": "AMS:IWDA", "type": "Achat", "cours": cours,
+                        "qty": round(50 / cours, 6), "frais": 0, "origine": "plan"})
+    txs += [{"date": mois(-7, 14), "asset": "ETR:SAP", "type": "Achat", "cours": 228.5, "qty": 2, "frais": 1},
+            {"date": mois(-3, 9), "asset": "ETR:SAP", "type": "Achat", "cours": 241.0, "qty": 1, "frais": 1}]
+    txs.sort(key=lambda t: t["date"])
+    for i, t in enumerate(txs, 1):
+        t["id"] = i
+    compte = {
+        "id": "c1", "nom": "CTO Exemple", "courtier": "trade-republic",
+        "tarif": {"paliers": [{"max": None, "fixe": 1, "pct": 0}], "min": 0, "max": 0, "gratuit": 0, "plan": 0},
+        "cree": mois(-8, 1),
+        "positions": [
+            {"id": 1, "ticker": "AMS:IWDA", "name": "iShares Core MSCI World", "type": "etf",
+             "sector": "etf", "cours": 105.0, "dividende": 0, "exdiv": None},
+            {"id": 2, "ticker": "ETR:SAP", "name": "SAP", "type": "action",
+             "sector": "tech", "cours": 235.0, "dividende": 0, "exdiv": None},
+        ],
+        "transactions": txs, "divReceived": [], "divFuture": [], "wishlist": [],
+        "closedPositions": [], "strategies": [], "prefs": {"plans": {}},
+        "_nid": {"pos": 3, "tx": len(txs) + 1, "wish": 1, "dep": 1, "div": 1, "divf": 1, "rule": 1},
+    }
+    # Portefeuille crypto (section Crypto, 4.4.43) : un compte marqué « crypto »
+    ktx = [{"date": mois(n, 5), "asset": "BTC-EUR", "type": "Achat", "cours": round(52000 + 2500 * (n + 6), 2),
+            "qty": round(50 / (52000 + 2500 * (n + 6)), 8), "frais": 0, "origine": "plan"}
+           for n in range(-6, 1) if passe(mois(n, 5))]
+    ktx.append({"date": mois(-4, 18), "asset": "ETH-EUR", "type": "Achat", "cours": 2300.0, "qty": 0.05, "frais": 1})
+    ktx.sort(key=lambda t: t["date"])
+    for i, t in enumerate(ktx, 1):
+        t["id"] = i
+    crypto = {
+        "id": "c2", "nom": "Crypto", "crypto": True, "courtier": "trade-republic",
+        "tarif": {"paliers": [{"max": None, "fixe": 1, "pct": 0}], "min": 0, "max": 0, "gratuit": 0, "plan": 0},
+        "cree": mois(-6, 1),
+        "positions": [
+            {"id": 1, "ticker": "BTC-EUR", "name": "Bitcoin", "type": "crypto", "sector": None,
+             "cours": 65000.0, "dividende": 0, "exdiv": None},
+            {"id": 2, "ticker": "ETH-EUR", "name": "Ethereum", "type": "crypto", "sector": None,
+             "cours": 2100.0, "dividende": 0, "exdiv": None},
+        ],
+        "transactions": ktx, "divReceived": [], "divFuture": [], "wishlist": [],
+        "closedPositions": [], "strategies": [], "prefs": {},
+        "_nid": {"pos": 3, "tx": len(ktx) + 1, "wish": 1, "dep": 1, "div": 1, "divf": 1, "rule": 1},
+    }
+    return {"_meta": dict(META, schema="cto.v1"), "comptes": [compte, crypto], "actif": "", "_nid": {"compte": 3}}
+
+
+# ── Mes comptes ────────────────────────────────────────────────────────────
+
+def finances():
+    # Catégories et sources par défaut du module (complétées au chargement) :
+    # 1 Alimentation, 2 Logement, 3 Transports, 5 Loisirs, 11 Salaire
+    modeles = [(1, 1, "Courses", 46.80, "expense", 1), (2, 1, "Loyer", 420, "expense", 2),
+               (3, 1, "Carburant", 38.50, "expense", 4), (1, 2, "Restaurant", 24.00, "expense", 9),
+               (5, 1, "Cinéma", 11.50, "expense", 12), (1, 1, "Courses", 52.30, "expense", 15),
+               (11, 1, "Job étudiant", 640, "income", 1), (1, 1, "Courses", 31.90, "expense", 22)]
+    txs = []
+    for n in (-1, 0):
+        for cat, sub, lib, montant, typ, j in modeles:
+            d = mois(n, j)
+            if passe(d):
+                txs.append({"id": len(txs) + 1, "date": d, "amount": montant, "label": lib, "type": typ,
+                            "categoryId": cat, "subcategoryId": sub, "sourceId": 1, "note": "",
+                            "createdAt": d + "T12:00:00.000Z"})
+    return {"_meta": dict(META, schema="finances.v1"), "transactions": txs, "recurrences": [],
+            "_nid": {"tx": len(txs) + 1, "cat": 16, "sub": 100, "src": 8, "rec": 1}}
+
+
+# ── Sports ─────────────────────────────────────────────────────────────────
+
+def sports():
+    seances = []
+    for k in range(70, -1, -1):
+        d = AUJ - dt.timedelta(days=k)
+        jsem = d.weekday()
+        s = None
+        if jsem == 1:
+            s = {"sport": "course", "duration": 45, "distance": 8.2, "elevation": 60, "time": "18:30"}
+        elif jsem == 3:
+            s = {"sport": "muscu", "duration": 55, "distance": 0, "elevation": 0, "time": "19:00"}
+        elif jsem == 5:
+            s = {"sport": "velo", "duration": 95, "distance": 38, "elevation": 320, "time": "09:30"}
+        elif jsem == 6 and k % 14 < 7:
+            s = {"sport": "natation", "duration": 40, "distance": 1500, "elevation": 0, "time": "11:00", "lieu": "25"}
+        if s:
+            s = dict(s, id=len(seances) + 1, date=d.isoformat(), note="")
+            if k < 21 and s["sport"] in ("course", "velo"):
+                # Venues de la montre (module Garmin) : « Séances de la montre »
+                s.update(garminId=str(9000 + k), fcMoy=148 if s["sport"] == "course" else 136,
+                         note="Footing" if s["sport"] == "course" else "Sortie vélo",
+                         effetAero=round(2.4 + (k % 5) * 0.4, 1), effetAnaero=round((k % 4) * 0.6, 1),
+                         effetType="TEMPO" if k % 3 == 0 else "AEROBIC_BASE")
+                if s["sport"] == "course" and not any(x.get("record") for x in seances):
+                    s.update(record=True, distance=10.0, duration=48, note="10 km du parc")
+            seances.append(s)
+    # Importée d'un fichier .fit (section Montres) : badge « Suunto »
+    seances.append({"id": len(seances) + 1, "date": jour(-2), "time": "10:15", "sport": "rando", "duration": 185,
+                    "distance": 14.2, "elevation": 640, "note": "Crêtes du Mont Aiguille", "fitId": "a1b2c3d4e5f60718",
+                    "marque": "Suunto", "fcMoy": 121, "kcal": 1150})
+    return {"_meta": dict(META, schema="sports.v1"), "sessions": seances, "customSports": [], "routines": [],
+            "goals": [{"id": 1, "kind": "event", "title": "Semi-marathon de la ville", "sport": "course",
+                       "date": jour(24), "note": "21 km", "status": "active", "createdAt": jour(-60), "doneAt": None},
+                      # Un record de la montre depuis : l'objectif propose « Valider »
+                      {"id": 2, "kind": "perf", "title": "10 km en moins de 50 min", "sport": "course",
+                       "date": "", "note": "", "status": "active", "createdAt": jour(-40), "doneAt": None}],
+            "_nid": {"session": len(seances) + 1, "routine": 1, "goal": 3}}
+
+
+# ── Santé ──────────────────────────────────────────────────────────────────
+
+def sante():
+    # Une pesée tous les 5 jours, la dernière à la fin du mois dernier : la
+    # tuile « Pesée du mois » a ainsi quelque chose à rappeler
+    fin = dt.date(AUJ.year, AUJ.month, 1) - dt.timedelta(days=1)
+    mesures = []
+    for i in range(12):
+        d = fin - dt.timedelta(days=5 * (11 - i))
+        poids = round(74.8 - 0.22 * i, 1)
+        mesures.append({"id": "mesure%d" % (i + 1), "date": d.isoformat(), "time": "07:45", "source": "manuel",
+                        "note": "", "poids": poids, "imc": round(poids / 1.78 ** 2, 1),
+                        "graisse": round(19.6 - 0.13 * i, 1), "masse_musculaire": round(55.0 + 0.05 * i, 1),
+                        "eau": round(57.0 + 0.1 * i, 1)})
+    return {"_meta": dict(META, schema="sante.v1"), "mesures": mesures,
+            "goals": [{"id": "goal1", "status": "active", "createdAt": mesures[0]["date"], "metric": "poids",
+                       "target": 71, "start": None, "date": jour(90), "note": ""}],
+            "_nid": {"mesure": len(mesures) + 1, "goal": 2}}
+
+
+# ── Prêt ───────────────────────────────────────────────────────────────────
+
+def pret():
+    return {
+        "_meta": dict(META, schema="pret.v1"),
+        "pret": {"nom": "Prêt étudiant", "montant": 20000, "date_deblocage": mois(-6, 10),
+                 "date_premier_remboursement": mois(30, 10), "duree_remboursement": 60, "mensualite": 340.5},
+        "versements": [{"id": "v1", "date": mois(-6, 10), "montant": 20000}],
+        "remboursements": [],
+        "av": {"contrats": [{"id": "av1", "label": "Assurance vie", "frais_versement": 0.5,
+                             "taux_annuels": [{"annee": AUJ.year - 1, "taux": 3.2}],
+                             "depots": [{"id": "d1", "date": mois(-5, 15), "montant": 8000, "note": ""}]}]},
+        "liv": {"label": "Livret A", "taux_history": [{"id": "t1", "date": mois(-12), "taux": 2.4}],
+                "mouvements": [{"id": "m1", "date": mois(-6, 12), "type": "depot", "montant": 9000, "note": ""}]},
+    }
+
+
+# ── Patrimoine ─────────────────────────────────────────────────────────────
+
+def patrimoine():
+    comptes = [
+        ("cpt_pea", "PEA", "pea", "pea"), ("cpt_pret", "Prêt étudiant", "dette", "pret"),
+        ("compte1", "Livret A", "livret", ""), ("compte2", "Assurance vie", "av", ""),
+        ("compte3", "Compte courant", "courant", ""), ("compte4", "CTO Exemple", "cto", "cto:c1"),
+        ("compte5", "Studio Lyon", "immo", ""), ("compte6", "Crédit · Studio Lyon", "dette", ""),
+        ("compte7", "Crypto", "crypto", "cto:c2"),
+    ]
+    releves = []
+    for n in range(-12, 1):
+        k = n + 12
+        valeurs = {
+            "cpt_pea": 1000 + 430 * k, "cpt_pret": 20000 if n >= -6 else 0,
+            "compte1": 3000 + 60 * k + (9000 if n >= -6 else 0),
+            "compte2": (8000 + 25 * (n + 5)) if n >= -5 else 0, "compte3": 900 + (70 * k) % 400,
+            "compte4": (60 + 150 * (n + 8)) if n >= -8 else 0,
+            # Bien immobilier (4.4.18) : acheté il y a trois mois, avec son crédit
+            "compte5": 95000 if n >= -3 else 0, "compte6": (72000 - 310 * (n + 3)) if n >= -3 else 0,
+        }
+        for cid, v in valeurs.items():
+            if v:
+                releves.append({"id": "releve%d" % (len(releves) + 1), "compteId": cid,
+                                "date": mois(n), "montant": float(v)})
+    comptes = [{"id": c, "label": l, "type": t, "auto": a, "icon": "", "color": "",
+                "archived": False, "note": ""} for c, l, t, a in comptes]
+    next(c for c in comptes if c["id"] == "compte6")["bien"] = "compte5"   # le crédit du studio
+    return {"_meta": dict(META, schema="patrimoine.v1"), "comptes": comptes,
+            "releves": releves, "_seeded": True, "_nid": {"compte": 8, "releve": len(releves) + 1}}
+
+
+def agenda():
+    """Agenda pas connecte a iCloud (aucun echange reseau dans le test) : les
+    notes seules, pour les tuiles Aujourd'hui, Cette semaine et Prochaines notes."""
+    return {"_meta": dict(META, schema="agenda.v1"), "notes": [
+        {"id": "n1", "titre": "Rendez-vous chez le dentiste", "date": jour(0), "heure": "23:30", "duree": 30, "texte": ""},
+        {"id": "n2", "titre": "Rendre les livres à la médiathèque", "date": jour(2), "heure": "", "duree": 0, "texte": ""},
+        {"id": "n3", "titre": "Dîner chez Léa", "date": jour(5), "heure": "20:00", "duree": 120, "texte": ""},
+    ]}
+
+
+def garmin():
+    """Compte Garmin pas connecte (aucun echange reseau dans le test) : la forme
+    de l'annee passee deja lue (courbe sur un an), les records de course, pour
+    l'onglet Ma forme et ses tuiles."""
+    jours = {}
+    for k in range(365):
+        jours[jour(-k)] = {
+            "pas": 6200 + (k * 1931) % 6500, "objectifPas": 10000, "fcRepos": 50 + (k * 7) % 6,
+            "bbMax": 68 + (k * 13) % 28, "bbMin": 15 + (k * 5) % 14, "bbFin": 45 + (k * 11) % 20,
+            "stress": 24 + (k * 9) % 17, "sommeil": 375 + (k * 37) % 110, "sommeilScore": 62 + (k * 17) % 30,
+            "profond": 70 + (k * 3) % 30, "paradoxal": 85 + (k * 7) % 25,
+            "vfc": 46 + (k * 11) % 17, "vfcStatut": "BALANCED",
+            "intensite": (k * 23) % 45, "objectifIntensite": 150, "spo2": 95 + k % 3, "respiration": 13 + k % 3,
+            "coucher": "%02d:%02d" % ((23 + (k * 5) % 3) % 24, (k * 13) % 60), "lever": "07:%02d" % ((k * 7) % 45)}
+    # Cycle coché et suivi dans Garmin Connect : carte et tuile « Cycle »
+    cycle = {"date": jour(0), "jour": 12, "duree": 28, "regles": 5, "fertileDebut": 11, "fertileDuree": 6,
+             "luteale": 17, "prochaine": 4, "grossesse": False}
+    return {"_meta": dict(META, schema="garmin.v1"), "secret": "", "jours": jours,
+            "choix": {"seances": True, "pesees": True, "forme": True, "cycle": True},
+            "ageForme": {"age": 24.5, "reel": 27, "atteignable": 22.0}, "cycle": cycle,
+            "records": {"1000": {"s": 262, "date": jour(-3), "nom": "Fractionné", "garminId": "9003"},
+                        "5000": {"s": 1418, "date": jour(-40), "nom": "5 km du canal", "garminId": "8800"},
+                        "10000": {"s": 2880, "date": jour(-9), "nom": "10 km du parc", "garminId": "9009"},
+                        "21098": {"s": 6512, "date": "2025-04-06", "nom": "Semi de printemps", "garminId": "7001"}},
+            "historique": True, "formeAn": True}
+
+
+def coros():
+    """Compte Coros pas connecte : la recuperation, la VFC et le sommeil de
+    14 jours deja lus (tuile « Forme Coros », Ma forme)."""
+    jours = {jour(-k): {"recup": 72 + (k * 7) % 25, "vfc": 52 + (k * 5) % 12, "sommeil": 400 + (k * 29) % 90}
+             for k in range(14)}
+    return {"_meta": dict(META, schema="coros.v1"), "secret": "", "client": {}, "jours": jours,
+            "choix": {"seances": True, "forme": True}, "vus": [], "apercu": {}}
+
+
+FICHIERS = {"pea_data.json": pea, "cto.json": cto, "finances.json": finances,
+            "sports.json": sports, "sante.json": sante, "pret.json": pret,
+            "patrimoine.json": patrimoine, "agenda.json": agenda,
+            "garmin.json": garmin, "coros.json": coros}
+
+# Fichier témoin posé dans le dossier de l'utilisateur Exemple de l'app : seul
+# un dossier qui le porte peut être effacé d'un clic (Api.quitter_exemple)
+TEMOIN = "exemple-pilote.txt"
+
+
+def ecrire_utilisateur(dossier_utilisateur, version=None, prefs=None):
+    """Écrit les fichiers de Camille dans le dossier d'UN utilisateur.
+
+    version : numéro de l'app (la fiche des nouveautés de cette version est
+    tenue pour lue). prefs : {ui, theme, accent} de l'utilisateur qui explore,
+    pour garder son thème et sa fenêtre."""
+    os.makedirs(dossier_utilisateur, exist_ok=True)
+    for nom, fabrique in FICHIERS.items():
+        contenu = fabrique()
+        if nom == "pea_data.json" and (version or prefs):
+            prefs = prefs or {}
+            if version:
+                contenu["uiPrefs"]["nouveautesVues"] = version
+            if isinstance(prefs.get("ui"), dict):
+                contenu["ui"] = dict(prefs["ui"], lastTab="home")
+            for cle in ("theme", "accent"):
+                if prefs.get(cle):
+                    contenu["uiPrefs"][cle] = prefs[cle]
+        with open(os.path.join(dossier_utilisateur, nom), "w", encoding="utf-8") as f:
+            json.dump(contenu, f, ensure_ascii=False, indent=1)
+    return len(FICHIERS)
+
+
+def ecrire(dossier):
+    utilisateur = os.path.join(dossier, "users", "demo")
+    n = ecrire_utilisateur(utilisateur)
+    with open(os.path.join(dossier, "users.json"), "w", encoding="utf-8") as f:
+        json.dump({"active": "demo", "users": [
+            {"slug": "demo", "label": "Camille", "emoji": "", "color": ""}]}, f, ensure_ascii=False, indent=1)
+    print("donnees d'exemple ecrites dans %s (%d fichiers)" % (dossier, n + 1))
+
+
+if __name__ == "__main__":
+    ecrire(sys.argv[1])

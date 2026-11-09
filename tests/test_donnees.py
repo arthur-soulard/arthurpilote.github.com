@@ -115,6 +115,76 @@ class Modules(unittest.TestCase):
             finances.save_data({"transactions": []})
 
 
+class Exemple(unittest.TestCase):
+    """Bouton « Explorer avec des données d'exemple » : jamais les fichiers de
+    celui qui explore (storage.ouvrir_exemple / quitter_exemple)."""
+
+    def setUp(self):
+        shutil.rmtree(_TMP, ignore_errors=True)
+        _TMP.mkdir(parents=True)
+        storage.save_users_state({"active": "moi", "users": [
+            {"slug": "moi", "label": "Moi", "emoji": "", "color": ""}]})
+        self.pea = _TMP / "users" / "moi" / "pea_data.json"
+        _ecrire(self.pea, json.dumps({"config": {"prenom": "Moi"}, "positions": [{"id": 1}],
+                                      "ui": {"theme": "dark"}, "uiPrefs": {"theme": "dark"}}))
+        self.avant = self.pea.read_bytes()
+
+    def _dossiers(self):
+        return sorted(d.name for d in (_TMP / "users").iterdir())
+
+    def test_aller_retour_sans_toucher_l_utilisateur(self):
+        r = storage.ouvrir_exemple("9.9.9")
+        st = storage.get_users_state()
+        self.assertEqual(st["active"], r["slug"])
+        ex = storage.utilisateur_exemple(st)
+        self.assertEqual(ex["retour"], "moi")
+        d = _TMP / "users" / r["slug"]
+        self.assertTrue((d / "exemple-pilote.txt").exists())
+        pea = json.loads((d / "pea_data.json").read_text(encoding="utf-8"))
+        self.assertEqual(pea["config"]["prenom"], "Camille")
+        self.assertEqual(pea["uiPrefs"]["theme"], "dark")              # thème de celui qui explore
+        self.assertEqual(pea["uiPrefs"]["nouveautesVues"], "9.9.9")
+        storage.ouvrir_exemple("9.9.9")                                 # un seul utilisateur Exemple
+        self.assertEqual(sum(1 for u in storage.get_users_state()["users"] if u.get("exemple")), 1)
+        q = storage.quitter_exemple(False)
+        self.assertEqual(q["active"], "moi")
+        self.assertTrue(d.exists())
+        self.assertEqual(self.pea.read_bytes(), self.avant)
+
+    def test_effacer(self):
+        slug = storage.ouvrir_exemple()["slug"]
+        q = storage.quitter_exemple(True)
+        self.assertTrue(q["efface"])
+        self.assertEqual(q["active"], "moi")
+        self.assertIsNone(storage.utilisateur_exemple())
+        self.assertFalse((_TMP / "users" / slug).exists())
+        self.assertEqual(self._dossiers(), ["moi"])
+        self.assertEqual(self.pea.read_bytes(), self.avant)
+
+    def test_dossier_existant_jamais_ecrase(self):
+        # Un ancien utilisateur « Exemple » supprimé garde son dossier
+        _ecrire(_TMP / "users" / "exemple" / "pea_data.json", '{"vrai": 1}')
+        slug = storage.ouvrir_exemple()["slug"]
+        self.assertNotEqual(slug, "exemple")
+        storage.quitter_exemple(True)
+        self.assertEqual((_TMP / "users" / "exemple" / "pea_data.json").read_text(encoding="utf-8"), '{"vrai": 1}')
+
+    def test_sans_temoin_corbeille(self):
+        slug = storage.ouvrir_exemple()["slug"]
+        (_TMP / "users" / slug / "exemple-pilote.txt").unlink()
+        storage.quitter_exemple(True)
+        self.assertFalse((_TMP / "users" / slug).exists())
+        self.assertTrue(list((_TMP / "corbeille").glob(slug + "-*")))
+
+    def test_exemple_seul_repart_sur_moi(self):
+        storage.ouvrir_exemple()
+        st = storage.get_users_state()
+        st["users"] = [u for u in st["users"] if u.get("exemple")]
+        storage.save_users_state(st)
+        q = storage.quitter_exemple(True)
+        self.assertEqual([u["label"] for u in q["state"]["users"]], ["Moi"])
+
+
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)
 

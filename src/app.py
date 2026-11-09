@@ -1071,6 +1071,22 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    # Explorer avec des donnees d'exemple : un utilisateur a part, jamais
+    # celui qui explore (storage.ouvrir_exemple, docs/utilisateurs-et-pin.md)
+    def explorer_exemple(self) -> dict:
+        try:
+            r = storage.ouvrir_exemple(APP_VERSION)
+            return {"ok": True, "slug": r["slug"]}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def quitter_exemple(self, effacer: bool = False) -> dict:
+        try:
+            r = storage.quitter_exemple(bool(effacer))
+            return {"ok": True, "active": r["active"], "efface": r["efface"]}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # ─── Icone de l'app a la couleur du theme ──────────────────────
 
     def set_app_icon_color(self, color: str) -> dict:

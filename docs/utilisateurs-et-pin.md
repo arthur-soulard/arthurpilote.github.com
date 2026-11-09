@@ -55,3 +55,45 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 * Un `users.json` illisible est gardé à côté (`users.illisible-<date>.json`) et la liste est
   refaite à partir des dossiers.
 * Les routes `/pin/*` n'acceptent qu'un utilisateur de `users.json`.
+
+## Explorer avec des données d'exemple (09/11/2026, prochaine version)
+
+Pour découvrir Pilote sans rien saisir (lancement grand public). Le bouton est à
+l'étape 3 des Premiers pas (encart « Envie de voir avant de saisir ? ») et dans
+Paramètres › Utilisateurs (« Découvrir Pilote »).
+
+* **Un utilisateur à part**, jamais celui qui explore : `storage.ouvrir_exemple()`
+  crée un utilisateur « Exemple » marqué `"exemple": true` dans `users.json`, dans un
+  dossier **neuf** (`slugify` écarte les dossiers déjà sur le disque, un ancien
+  dossier `exemple` n'est donc jamais réécrit), y écrit les données fictives de
+  Camille, puis en fait l'utilisateur actif. Les fichiers de celui qui explore ne
+  sont ni lus ni écrits, sauf `ui`, `uiPrefs.theme` et `uiPrefs.accent` de son
+  `pea_data.json`, **lus** pour que l'exemple garde son thème et sa fenêtre.
+* Le jeu de données est `src/donnees_exemple.py` (déplacé de `tests/` pour être
+  livré avec l'exe ; `tests/donnees_exemple.py` n'est plus qu'un lanceur, la
+  commande du test Mac ne change pas). Dates relatives au jour de création.
+  La fiche des nouveautés de la version installée est tenue pour lue.
+* `"retour"` retient qui explorait. **Bandeau** en haut de chaque écran tant que
+  l'actif est l'exemple (`#ex-bandeau`, `_renderBandeauExemple()` appelée dans
+  `boot()`) : « Revenir à <nom> » (`quitter_exemple(false)`) et « Effacer
+  l'exemple » (`quitter_exemple(true)` : retour, puis l'utilisateur et son dossier
+  supprimés). Pas de confirmation : ce sont des données fictives, recréées au
+  prochain clic.
+* Effacer ne supprime définitivement le dossier que s'il porte le témoin
+  `exemple-pilote.txt` écrit à la création ; sinon il part à la corbeille, comme
+  un utilisateur effacé.
+* Bascule comme `switchUser` : `_gelerEnregistrements()` avant, `_degelerEnregistrements()`
+  si le pont répond une erreur, puis `location.reload()`. `_hydrationDone` n'est pas
+  touché : la page se recharge et relit l'utilisateur actif comme au démarrage.
+* Le code PIN n'est pas contourné : l'exemple n'en a pas, mais revenir à un
+  utilisateur protégé recharge la page, qui redemande son code.
+* Depuis les Premiers pas, les choix de l'assistant (modules, prénom) sont d'abord
+  enregistrés pour l'utilisateur qui découvre (`terminer`, qui attend l'écriture
+  du prénom dans `users.json` avant la bascule : deux écritures du même fichier
+  en parallèle en perdaient une).
+* **Pas de tuile d'accueil** : la règle « toute fonctionnalité vient avec ses
+  tuiles » ne s'applique pas à un mode de découverte, qui n'a rien à suivre. Le
+  bandeau tient ce rôle. L'exemple, lui, a toutes ses tuiles allumées.
+* Tests : `tests/test_donnees.py`, classe `Exemple` (aller-retour sans toucher un
+  octet du `pea_data.json` de l'utilisateur, un seul exemple, effacer, ancien
+  dossier `exemple` intact, sans témoin → corbeille, exemple resté seul → « Moi »).
