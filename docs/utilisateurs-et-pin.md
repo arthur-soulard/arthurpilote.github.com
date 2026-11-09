@@ -56,6 +56,15 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
   refaite à partir des dossiers.
 * Les routes `/pin/*` n'acceptent qu'un utilisateur de `users.json`.
 
+## Revue du 09/11/2026
+
+* `/pin/set` vérifiait l'ancien code sans frein : par cette route, les 10 000 codes
+  s'essayaient à la chaîne. L'ancien code passe désormais par le même délai (0,25 s)
+  et le même blocage (60 s après 10 échecs, compteur partagé avec `/pin/check`) ;
+  la page affiche « Trop d'essais » sur un 429. Test : `tests/test_serveur.py`.
+* Reste assumé : le code part dans l'adresse de la requête (GET local, jamais
+  journalisé : `log_message` ne fait rien).
+
 ## Explorer avec des données d'exemple (09/11/2026, prochaine version)
 
 Pour découvrir Pilote sans rien saisir (lancement grand public). Le bouton est à

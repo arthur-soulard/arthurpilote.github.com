@@ -1591,6 +1591,19 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             pin = (params.get("pin", [""])[0] or "").strip()
             old = (params.get("old", [""])[0] or "").strip()
             who = (params.get("user", [""])[0] or "").strip() or None
+            # L'ancien code est un essai comme un autre : meme delai et meme
+            # blocage que /pin/check. Sans ca, cette route laissait essayer les
+            # 10 000 codes a la chaine (revue du 09/11/2026)
+            if pin_required(who):
+                st = pin_attempt_state(who)
+                if st["lockedFor"] > 0:
+                    return self._json(429, {"ok": False, "error": "Trop d'essais : réessaie dans une minute.",
+                                            "lockedFor": st["lockedFor"]})
+                time.sleep(PIN_DELAY_SEC)
+                bon = pin_check(old, who)
+                _pin_register(who, bon)
+                if not bon:
+                    return self._json(403, {"ok": False, "error": "Code actuel incorrect.", "needOld": True})
             try:
                 pin_set(pin, who, old)
                 return self._json(200, {"ok": True, "required": pin_required(who)})

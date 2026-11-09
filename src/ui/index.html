@@ -12072,6 +12072,7 @@ async function _setPinServer(pin, slug, oldPin) {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
       if (d.needOld) showToastModern("Code actuel incorrect", "err");
+      else if (r.status === 429) showToastModern(d.error || "Trop d'essais : réessaie dans une minute.", "err");
       return false;
     }
     return !!d.ok;
