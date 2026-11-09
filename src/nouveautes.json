@@ -2,6 +2,24 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.64",
+      "date": "2026-11-09",
+      "titre": "Sauvegardes chiffrées, données d'exemple et balances de toutes marques",
+      "nouveau": [
+        "Sauvegarde : un mot de passe chiffre tes archives (clé USB et Téléverser). Sans lui, rien n'est lisible, même pas les noms des fichiers. Il n'est gardé nulle part : mot de passe oublié = sauvegardes perdues. Les anciennes archives .zip se restaurent toujours.",
+        "Explorer avec des données d'exemple : un utilisateur « Exemple » à part, rempli de données fictives, pour découvrir Pilote sans toucher aux tiennes. Un bandeau permet de revenir ou de l'effacer.",
+        "Santé : « Importer un export » lit le fichier exporté par l'app de ta balance (Withings, Zepp Life, Eufy, Renpho…) ou par Apple Santé. Tu vois les pesées avant de les ajouter.",
+        "Signaler un problème : prépare un mail avec la version, le système et les derniers plantages, sans aucune de tes données. Tu le relis avant que ta messagerie l'envoie."
+      ],
+      "ameliore": [
+        "Icône de Pilote en prune, la couleur d'accent par défaut, au lieu de l'orange.",
+        "Prêt n'est plus proposé aux nouveaux utilisateurs. Si tu l'utilises déjà, rien ne change."
+      ],
+      "corrige": [
+        "Code PIN : le changer depuis Paramètres demandait l'ancien code sans limite d'essais. Il est maintenant freiné et bloqué comme à l'écran de verrouillage."
+      ]
+    },
+    {
       "version": "4.4.63",
       "date": "2026-11-09",
       "titre": "Un message juste quand la mise à jour n'est pas prête",
