@@ -22690,7 +22690,7 @@ function saExportApercu() {
         onchange="saExportRelire(this.checked)"><span>Le mois vient d'abord (format américain : 12/31/2025)</span></label></div>` : ""}
     ${echantillon.length ? `<div class="tw"><table><thead><tr><th>Date</th><th>Poids</th><th>Graisse</th><th>Muscle</th><th>Eau</th></tr></thead><tbody>
       ${echantillon.map(m => `<tr><td>${fmt(m.date)}${m.time ? " " + escHtml(m.time) : ""}</td><td>${champ(m, "poids")} kg</td>
-        <td>${champ(m, "graisse")}</td><td>${champ(m, "masse_musculaire")}</td><td>${champ(m, "eau")}</td></tr>`).join("")}
+        <td>${champ(m, "graisse")}${m.graisse == null ? "" : " %"}</td><td>${champ(m, "masse_musculaire")}${m.masse_musculaire == null ? "" : " kg"}</td><td>${champ(m, "eau")}${m.eau == null ? "" : " %"}</td></tr>`).join("")}
       </tbody></table></div>
       <p class="m-note" style="margin:6px 0 0">Les ${echantillon.length} plus récentes. Vérifie qu'elles ressemblent à ce que montre l'app de ta balance.</p>`
       : `<p class="m-empty">Rien de nouveau : chaque jour du fichier a déjà sa pesée.</p>`}

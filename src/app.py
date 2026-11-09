@@ -1207,8 +1207,17 @@ class Api:
         Rien ne part d'ici : la page le montre, la messagerie l'envoie."""
         try:
             import platform
-            systeme = ("macOS " + platform.mac_ver()[0]) if sys.platform == "darwin" \
-                else ("Windows " + platform.release() + " (" + platform.version() + ")")
+            if sys.platform == "darwin":
+                systeme = "macOS " + platform.mac_ver()[0]
+            else:
+                # platform.release() dit « 10 » sous Windows 11 (vu le 09/11/2026) :
+                # c'est le numero de build qui les distingue (22000 et plus = 11)
+                version = platform.version()
+                try:
+                    nom = "11" if int(version.split(".")[-1]) >= 22000 else platform.release()
+                except ValueError:
+                    nom = platform.release()
+                systeme = "Windows %s (%s)" % (nom, version)
             return {"ok": True, "version": APP_VERSION, "systeme": systeme,
                     "journal": storage.resume_crash_log()}
         except Exception as e:
