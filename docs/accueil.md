@@ -448,3 +448,12 @@ chemins** : ils peuvent contenir un ticker, un montant ou le nom du compte
 Windows (consigne d'Arthur : aucun chiffre). Le texte est montré dans la fenêtre
 avant l'envoi, et c'est la messagerie de l'utilisateur qui envoie. Test :
 `tests/test_donnees.py`, `SignalerProbleme`.
+
+**C'est l'utilisateur qui décrit le problème (10/11/2026, remarque d'Arthur :
+« c'est à l'utilisateur de mettre ce qu'il voit »).** La fenêtre s'ouvre sur
+une zone « Ce que tu vois » (`#sug-vu`, curseur dedans) ; les infos techniques
+sont pliées en dessous (`details.sug-tech`), toujours jointes et visibles d'un
+clic. Le texte tapé ouvre le mail, suivi du rapport après « -- » ; zone vide :
+l'ancien modèle « Ce que je faisais / Ce qui s'est passé ». La zone se vide
+après « Ouvrir ma messagerie » ou « Écrire avec Gmail », et garde le texte si
+l'on referme sans envoyer.

@@ -11,5 +11,5 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 10/11/2026 : 4.4.65, fenetre Signaler un probleme (bouton Fermer dans la fenetre).
+# 10/11/2026 : fenetre Signaler un probleme (zone « Ce que tu vois », infos techniques pliees).
 js:homeSuggestion(true)

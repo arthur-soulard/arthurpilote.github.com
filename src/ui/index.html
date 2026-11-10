@@ -2555,6 +2555,12 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .sug-journal { max-height: 140px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; font-size: 11px;
   background: var(--bg2); border: 1px solid var(--brd); border-radius: var(--rad); white-space: pre-wrap; color: var(--txt2); }
 .sug-txt { margin: 0 0 14px; font-size: 13px; color: var(--txt2); }
+.sug-tech { margin-top: 10px; }
+.sug-tech > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--txt2); }
+.sug-tech > summary::-webkit-details-marker { display: none; }
+.sug-tech > summary i { transition: transform var(--dur-fast) var(--ease); }
+.sug-tech[open] > summary i { transform: rotate(90deg); }
 .sug-adr {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   background: var(--bg3); border: 1px solid var(--brd); border-radius: 10px;
@@ -5715,11 +5721,20 @@ html.verre .toast-stack .toast {
       <span id="sug-adresse"></span>
       <button type="button" class="m-iconbtn" onclick="homeSuggestionCopier()" title="Copier l'adresse"><i class="ph ph-copy"></i></button>
     </div>
-    <!-- Signaler un problème : ce qui sera mis dans le mail, montré avant -->
+    <!-- Signaler un problème : l'utilisateur décrit ce qu'il voit ; les infos
+         techniques jointes au mail restent pliées en dessous, montrées avant -->
     <div id="sug-probleme" hidden>
-      <p class="sug-txt" style="margin-top:10px">Le mail contiendra la version de Pilote, ton système et,
-        s'il y en a, les derniers plantages : seulement les noms des fonctions en cause, aucune de tes données.</p>
-      <pre id="sug-journal" class="sug-journal"></pre>
+      <div class="fg" style="margin-top:12px">
+        <label for="sug-vu">Ce que tu vois</label>
+        <textarea id="sug-vu" rows="5"
+                  placeholder="Ce que tu faisais, ce qui s'est passé, et ce que tu attendais à la place."></textarea>
+      </div>
+      <details class="sug-tech">
+        <summary><i class="ph ph-caret-right"></i> Infos techniques jointes au mail</summary>
+        <p class="sug-txt" style="margin:6px 0 0">La version de Pilote, ton système et, s'il y en a, les derniers
+          plantages : seulement les noms des fonctions en cause, aucune de tes données.</p>
+        <pre id="sug-journal" class="sug-journal"></pre>
+      </details>
     </div>
     <p class="sug-txt" id="sug-bascule" style="margin-top:10px"></p>
     <div class="mact">
@@ -22151,7 +22166,7 @@ async function homeSuggestion(probleme) {
   const $ = id => document.getElementById(id);
   $("sug-titre").textContent = _sugProbleme ? "Signaler un problème" : "Une idée pour Pilote ?";
   $("sug-txt").textContent = _sugProbleme
-    ? "Quelque chose ne marche pas ? Décris ce que tu faisais et ce qui s'est passé."
+    ? "Quelque chose ne marche pas ? Écris ce que tu vois : ton texte ouvre un mail, que tu relis avant de l'envoyer."
     : "Une amélioration à proposer : écris à l'auteur de Pilote.";
   $("sug-adresse").textContent = _sugProbleme ? PROBLEME_ADRESSE : SUGGESTION_ADRESSE;
   $("sug-probleme").hidden = !_sugProbleme;
@@ -22160,6 +22175,7 @@ async function homeSuggestion(probleme) {
     : `Un problème&#8239;? <button type="button" class="btn btn-ghost btn-sm" onclick="homeSuggestion(true)">Signaler un problème</button>`;
   openOvTop("ov-suggestion");   // aussi par-dessus les Paramètres
   if (_sugProbleme) {
+    $("sug-vu").focus();   // le texte tapé reste si on referme sans envoyer
     $("sug-journal").textContent = "…";
     _sugRapport = null;
     try { _sugRapport = await pywebview.api.rapport_probleme(); } catch (e) {}
@@ -22181,9 +22197,10 @@ async function homeSuggestionEcrire(gmail) {
   } catch (e) {}
   const adresse = _sugProbleme ? PROBLEME_ADRESSE : SUGGESTION_ADRESSE;
   const objet = _sugProbleme ? "Problème dans Pilote" : "Suggestion pour Pilote";
+  const vu = _sugProbleme ? document.getElementById("sug-vu").value.trim() : "";
   const corps = _sugProbleme
-    ? "Ce que je faisais :\r\n\r\nCe qui s'est passé :\r\n\r\n\r\n--\r\n"
-      + _sugTexteRapport().replace(/\n/g, "\r\n")
+    ? (vu ? vu.replace(/\r?\n/g, "\r\n") : "Ce que je faisais :\r\n\r\nCe qui s'est passé :")
+      + "\r\n\r\n\r\n--\r\n" + _sugTexteRapport().replace(/\n/g, "\r\n")
     : "\r\n\r\n\r\n--\r\nPilote" + version + (EST_MAC ? " sur Mac" : " sur Windows");
   const url = gmail
     ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(adresse)
@@ -22193,6 +22210,7 @@ async function homeSuggestionEcrire(gmail) {
   const api = window.pywebview && pywebview.api;
   if (api && api.open_url) api.open_url(url);
   else window.open(url, "_blank", "noopener");
+  if (_sugProbleme) document.getElementById("sug-vu").value = "";
   closeOv("ov-suggestion");
 }
 
