@@ -23,7 +23,7 @@ import urllib.parse
 from datetime import datetime
 from pathlib import Path
 
-RELEASES_API = "https://api.github.com/repos/arthur-soulard/arthurpilote.github.com/releases/latest"
+RELEASES_API = "https://api.github.com/repos/pilote-appli/pilote/releases/latest"
 
 # Solution de secours quand l'API refuse de repondre. Sans jeton, elle accepte
 # 60 requetes par heure et par adresse IP ; une adresse partagee (box, reseau
@@ -32,7 +32,7 @@ RELEASES_API = "https://api.github.com/repos/arthur-soulard/arthurpilote.github.
 # suite, l'app se croyait a jour. La page publique n'est pas soumise a ce quota :
 # /releases/latest redirige vers /releases/tag/vX.Y.Z, et l'installeur a une URL
 # fixe (meme nom que dans release.yml et OutputBaseFilename de installer.iss).
-RELEASES_PAGE = "https://github.com/arthur-soulard/arthurpilote.github.com/releases"
+RELEASES_PAGE = "https://github.com/pilote-appli/pilote/releases"
 SETUP_ASSET   = "Pilote_Setup.exe"
 # Mac : l'app zippee, jointe a la meme release par release.yml (job mac). Pas
 # d'installeur : Pilote remplace lui-meme son Pilote.app (_installer_mac).
@@ -45,7 +45,7 @@ _UA = "Suivi-PEA-Updater/2"
 # l'installer. raw.githubusercontent.com n'a pas le quota de l'API, et le tag
 # est connu par les deux chemins de _fetch (API ou page publique).
 NOTES_FILE = "nouveautes.json"
-NOTES_URL  = ("https://raw.githubusercontent.com/arthur-soulard/arthurpilote.github.com/"
+NOTES_URL  = ("https://raw.githubusercontent.com/pilote-appli/pilote/"
               "{tag}/src/" + NOTES_FILE)
 _NOTES_MAX = 512 * 1024   # octets lus au plus : la fiche n'est que du texte
 

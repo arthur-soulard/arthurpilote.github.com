@@ -28,8 +28,11 @@ Setup.exe, GitHub Actions pour build + release.
 (l'app s'appelait « Suivi PEA » jusqu'à la 4.1.0, le dossier du dépôt jusqu'à la 4.1.1)
 
 Dépôt : `C:\Users\Arthur\Desktop\Pilote` — branche `main`, remote
-`github.com/arthur-soulard/arthurpilote.github.com` (le nom du dépôt est historique,
-il ne suit pas le nom de l'app).
+`github.com/pilote-appli/pilote` (organisation GitHub de Pilote, depuis le 10/11/2026 ;
+avant : `arthur-soulard/arthurpilote.github.com`, que GitHub redirige vers la nouvelle
+adresse : ne JAMAIS recréer un dépôt de ce nom sur le compte perso, la redirection en
+dépend pour les Pilote installés). Site public (support, FAQ, contact, confidentialité) :
+https://pilote-appli.github.io, dépôt `pilote-appli/pilote-appli.github.io`.
 
 ## Structure
 
@@ -488,5 +491,5 @@ n'existent plus.
 ## Déploiement
 
 * Téléchargement du Setup.exe :
-  https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest
+  https://github.com/pilote-appli/pilote/releases/latest
 * Les mises à jour suivantes sont automatiques depuis l'app

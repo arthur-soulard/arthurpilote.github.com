@@ -17,7 +17,7 @@ import re
 import sys
 import urllib.request
 
-DEPOT = "https://api.github.com/repos/arthur-soulard/arthurpilote.github.com"
+DEPOT = "https://api.github.com/repos/pilote-appli/pilote"
 
 
 def api(chemin):

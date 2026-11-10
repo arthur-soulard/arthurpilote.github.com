@@ -249,7 +249,7 @@ jobs:
           rm -rf /Applications/Pilote.app
           sleep 2
           echo "::notice title=Gatekeeper::$(spctl --status 2>&1)"
-          curl -fL https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
+          curl -fL https://github.com/pilote-appli/pilote/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
           CODE=$?
           PING="aucun port apres 60 s"
           for i in $(seq 1 60); do

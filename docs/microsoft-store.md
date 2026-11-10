@@ -77,8 +77,13 @@ puis désinstalle et vérifie que les données sont restées.
   07/11/2026), même adresse en contact du vendeur.
 * `Pilote.msix` est joint à chaque release (`release.yml`), à déposer à la
   main dans Partner Center (28 Mo).
-* Politique de confidentialité : https://arthur-soulard.github.io/pilote/confidentialite.html
-  (dépôt du site, `pilote/confidentialite.html`).
+* Politique de confidentialité : https://pilote-appli.github.io/confidentialite.html
+  depuis le 10/11/2026 (dépôt `pilote-appli/pilote-appli.github.io`), avec le site
+  `https://pilote-appli.github.io` et le support `https://pilote-appli.github.io/support.html`.
+  À reporter dans Partner Center (Properties : site, support, confidentialité ; Store
+  listing : « Developed by » Pilote, copyright « © 2026 Pilote ») avec la prochaine
+  soumission. Avant : `arthur-soulard.github.io/pilote/confidentialite.html` (laissée
+  en place pour les fiches déjà publiées).
 * Première soumission (v4.4.51) envoyée le 02/11/2026 : gratuite, **lien
   direct seulement** (pas dans les recherches), 3 ans et plus (IARC),
   catégorie Finances personnelles › Banque + investissements, 7 captures

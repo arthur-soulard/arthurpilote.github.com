@@ -5,7 +5,7 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 ## Système d'auto-update (tout est en place, ne pas casser)
 
 * `updater.py` interroge
-  `https://api.github.com/repos/arthur-soulard/arthurpilote.github.com/releases/latest`
+  `https://api.github.com/repos/pilote-appli/pilote/releases/latest`
 * Il retient le premier asset dont le nom finit par `Setup.exe`
 * Si nouvelle version → modal dans l'UI avec barre de progression
 * Téléchargement chunké avec progression réelle (fallback 25 Mo si Content-Length absent)

@@ -48,7 +48,7 @@ de plus :
 La copier, la coller, puis Entrée :
 
 ```bash
-curl -fL https://github.com/arthur-soulard/arthurpilote.github.com/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
+curl -fL https://github.com/pilote-appli/pilote/releases/latest/download/Pilote_Mac.zip -o /tmp/Pilote_Mac.zip && ditto -x -k /tmp/Pilote_Mac.zip /Applications && open /Applications/Pilote.app
 ```
 
 Elle télécharge Pilote, le range dans Applications et l'ouvre. Aucun réglage à faire :

@@ -13,7 +13,7 @@ import os
 import sys
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEPOT = "https://github.com/arthur-soulard/arthurpilote.github.com"
+DEPOT = "https://github.com/pilote-appli/pilote"
 
 INSTALLATION = """\
 ## Installer Pilote
