@@ -2,6 +2,18 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.66",
+      "date": "2026-11-10",
+      "titre": "Pilote a son site, et Signaler un problème te laisse la parole",
+      "nouveau": [
+        "Pilote a son site : https://pilote-appli.github.io, avec l'aide, les questions fréquentes, les adresses de contact et la politique de confidentialité."
+      ],
+      "ameliore": [
+        "Signaler un problème : la fenêtre s'ouvre sur « Ce que tu vois », pour décrire le souci avec tes mots. La version, le système et les derniers plantages sont toujours joints, pliés en dessous.",
+        "Mises à jour : Pilote les cherche à la nouvelle adresse de son code, github.com/pilote-appli/pilote. Rien ne change pour toi."
+      ]
+    },
+    {
       "version": "4.4.65",
       "date": "2026-11-10",
       "titre": "La fenêtre Signaler un problème en entier",

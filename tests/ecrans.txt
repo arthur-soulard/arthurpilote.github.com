@@ -11,5 +11,6 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 10/11/2026 : fenetre Signaler un probleme (zone « Ce que tu vois », infos techniques pliees).
+# 10/11/2026 (4.4.66) : fenetre Signaler un probleme (zone « Ce que tu vois », infos techniques pliees) ; fiche des nouveautes.
 js:homeSuggestion(true)
+js:openSettings('maj')
