@@ -11,11 +11,5 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 09/11/2026 : 4.4.64, Sauvegarde (chiffrement), Utilisateurs (Explorer avec des
-# donnees d'exemple), Donnees (Un souci ?), fenetre Signaler un probleme, Sante Suivi
-# (Importer un export).
-js:openSettings('sauvegarde')
-js:openSettings('users')
-js:openSettings('donnees')
+# 10/11/2026 : 4.4.65, fenetre Signaler un probleme (bouton Fermer dans la fenetre).
 js:homeSuggestion(true)
-sa-suivi
