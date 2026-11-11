@@ -2,7 +2,7 @@
 
 Application Windows et Mac de suivi personnel : bourse (PEA, comptes-titres et crypto), budget,
 sport, patrimoine, santé et newsletters réunis dans une seule app, sans compte ni
-serveur. Les cours sont actualisés automatiquement depuis Yahoo Finance.
+serveur. Pilote va chercher les cours de tes titres sur Internet et les actualise automatiquement.
 
 ▶ [Vidéo de présentation](https://drive.google.com/file/d/1jA8N2ddIVyI6T9nbTnmhDlv6lp5w70gn/view?usp=drive_link)
 
@@ -172,7 +172,7 @@ compte, ni serveur, ni mesure d'audience. Il contacte seulement :
 
 | Site | Quand | Ce qui part |
 |---|---|---|
-| Yahoo Finance | au lancement, puis toutes les 3 min ; recherche d'un titre | la liste de tes titres (tickers), jamais les quantités ni les montants, et ton adresse IP |
+| Service de cours de bourse | au lancement, puis toutes les 3 min ; recherche d'un titre | la liste de tes titres (tickers), jamais les quantités ni les montants, et ton adresse IP |
 | GitHub | au lancement, et pour une mise à jour | ton adresse IP et la version installée |
 | justETF, Euronext, iShares, Amundi | quand un ETF détenu n'a pas encore de composition connue, ou sur « Mettre à jour les données » | l'identifiant public de l'ETF (ISIN) |
 | Gmail | si tu actives Actus | ton adresse et ton mot de passe d'application, pour lire ta boîte |
@@ -181,7 +181,7 @@ compte, ni serveur, ni mesure d'audience. Il contacte seulement :
 | Garmin | si tu connectes Garmin | ta clé API personnelle, pour lire tes séances, tes pesées et ta forme du jour ; rien de Pilote n'y est envoyé |
 | Microsoft | à l'installation sur Windows, seulement si WebView2 manque | ton adresse IP, pour télécharger WebView2 |
 
-Sources des données : cours de Yahoo Finance ; compositions d'ETF d'iShares, d'Amundi et de
+Sources des données : cours relevés sur Internet ; compositions d'ETF d'iShares, d'Amundi et de
 justETF. Ce sont des sources non officielles, utilisées sans garantie.
 
 Pilote calcule à partir de tes saisies et de tes règles. Il ne donne pas de conseil en
