@@ -11,7 +11,7 @@ titre « Mes modules » et une entrée par module, puis un trait et les réglage
 
 | Section    | Contenu                                                            |
 |------------|--------------------------------------------------------------------|
-| general    | thème, couleur d'accent, icône de l'app, code PIN de l'utilisateur  |
+| general    | thème, style, Pilou (afficher / masquer, 4.4.67), couleur d'accent, taille du texte, icône de l'app, code PIN |
 | users      | liste des utilisateurs, création / édition                          |
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | nav        | « Modules » : modules à cocher                                      |

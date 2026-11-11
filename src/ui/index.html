@@ -1178,6 +1178,29 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
    « Semaine Du 12 Oct. » (UX-10) */
 .m-nav-lbl::first-letter { text-transform: uppercase; }
 .m-empty { text-align: center; padding: 34px 20px; color: var(--txt2); font-size: 12px; }
+
+/* ── Pilou, la mascotte (11/11/2026) : ourson à l'accent, lunettes d'aviateur
+   sur les yeux. Dessiné par pilouSvg() ; masqué partout par html.sans-pilou
+   (Paramètres → Général → Pilou). Écrans vides, accueil, Premiers pas. ── */
+.pilou svg { display: block; width: 100%; height: auto; }
+.pilou-vide { display: block; width: 84px; margin: 0 auto 10px; }
+.pilou-accueil { display: inline-block; width: 1.05em; vertical-align: -.12em; margin-right: .18em; }
+.pilou-pp { display: inline-block; width: 1.5em; vertical-align: -.3em; margin-right: .25em; }
+html.sans-pilou .pilou { display: none; }
+.pl-b { fill: var(--accent); }
+.pl-d { fill: color-mix(in oklab, var(--accent) 70%, #1b0f18); }
+.pl-l { fill: color-mix(in oklab, var(--accent) 20%, #fff8f2); }
+.pl-k { fill: #2a1822; }
+.pl-trait { fill: none; stroke: #2a1822; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+.pl-joue { fill: #ff8fa8; opacity: .45; }
+.pl-verre { fill: color-mix(in oklab, var(--accent) 25%, #e4f2fb); fill-opacity: .38; stroke: #c79a55; stroke-width: 4.5; }
+.pl-cuir { fill: none; stroke: color-mix(in oklab, var(--accent) 55%, #2a1822); stroke-width: 8; stroke-linecap: round; }
+.pl-z { fill: var(--txt2); font: italic 500 22px var(--serif); }
+.pilou .pl-yeux { animation: pl-cligne 5s infinite; transform-box: fill-box; transform-origin: center; }
+.pilou .pl-salut { animation: pl-salue 1.6s ease-in-out 3; transform-box: fill-box; transform-origin: 30% 90%; }
+@keyframes pl-cligne { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes pl-salue { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg); } }
+@media (prefers-reduced-motion: reduce) { .pilou .pl-yeux, .pilou .pl-salut { animation: none; } }
 .m-note {
   background: var(--a2); border-left: 3px solid var(--accent);
   padding: 11px 14px; border-radius: var(--rad);
@@ -3381,7 +3404,7 @@ html.verre .toast-stack .toast {
       <!-- « Une idée ? » : bulle à côté du prénom (13/10/2026, demande d'Arthur,
            plus en avant que l'ancien lien sous les boutons). Hors de #home-greet,
            réécrit à chaque rendu : la bulle n'apparaît qu'une fois au lancement -->
-      <div class="home-greet"><span id="home-greet">Bonjour</span><button type="button" class="home-idee"
+      <div class="home-greet"><span class="pilou pilou-accueil" id="home-pilou" aria-hidden="true"></span><span id="home-greet">Bonjour</span><button type="button" class="home-idee"
               onclick="homeSuggestion()" onanimationend="this.classList.add('vue')"
               title="Proposer une amélioration à l'auteur de Pilote"><i class="ph ph-lightbulb"></i>Une idée ?</button></div>
       <div class="home-date"  id="home-date"></div>
@@ -5151,6 +5174,15 @@ html.verre .toast-stack .toast {
             </div>
             <p class="set-lead" style="margin:8px 0 0">
               Verre est le nouveau style de Pilote. Carnet, celui d'avant, reste disponible pour l'instant.</p>
+          </div>
+          <div class="fg">
+            <label>Pilou, la mascotte</label>
+            <div style="display:flex;gap:8px;align-items:center" role="group" aria-label="Pilou">
+              <button type="button" class="btn btn-ghost btn-sm" data-pilou-btn="on"><i class="ph ph-eye"></i> Afficher</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-pilou-btn="off"><i class="ph ph-eye-slash"></i> Masquer</button>
+            </div>
+            <p class="set-lead" style="margin:8px 0 0">
+              L'ourson de l'accueil et des écrans encore vides.</p>
           </div>
           <div class="fg">
             <label>Couleur d'accent</label>
@@ -7008,7 +7040,7 @@ function renderPositions() {
   document.getElementById("pos-th-div").style.display = avecDiv ? "" : "none";
   // Aucune ligne : une phrase et les deux façons de commencer (UX-13)
   if (!eps.length) {
-    body.innerHTML = `<tr><td colspan="12"><div class="m-empty">Aucune ligne pour l'instant. Ajoute ton premier achat, ou importe un relevé de ta banque.
+    body.innerHTML = `<tr><td colspan="12"><div class="m-empty">${pilouVide("content")}Aucune ligne pour l'instant. Ajoute ton premier achat, ou importe un relevé de ta banque.
       <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button type="button" class="btn btn-primary btn-sm" onclick="openAddPos()"><i class="ph ph-plus"></i> Premier achat</button>
         <button type="button" class="btn btn-ghost btn-sm" onclick="ctoOuvrirImport()"><i class="ph ph-file-arrow-down"></i> Importer un relevé</button>
@@ -12440,7 +12472,7 @@ async function _showWelcomeIfFirstRun() {
 
       <section class="pp-step" data-pp="1">
         <div class="pp-kick">Premiers pas · 1 sur 3</div>
-        <h2 class="pp-h" id="pp-t1">${welcomeTitle}</h2>
+        <h2 class="pp-h" id="pp-t1"><span class="pilou pilou-pp" aria-hidden="true">${pilouSvg("salut")}</span>${welcomeTitle}</h2>
         <p class="pp-lead">Pilote rassemble tes suivis personnels (bourse, budget, prêt,
           sport, santé…) dans une seule application, qui tourne entièrement sur ton ordinateur.</p>
         ${prenomSection}
@@ -12652,6 +12684,10 @@ function _wireThemeButtons() {
   document.querySelectorAll("[data-design-btn]").forEach(b => {
     b.onclick = () => setDesignPref(b.dataset.designBtn);
   });
+  applyPilou(S.uiPrefs && S.uiPrefs.pilou);
+  document.querySelectorAll("[data-pilou-btn]").forEach(b => {
+    b.onclick = () => setPilouPref(b.dataset.pilouBtn === "on");
+  });
 }
 
 /* ─── Style : Verre (défaut) ou Carnet (celui d'avant, gardé le temps d'un
@@ -12676,6 +12712,74 @@ function setDesignPref(d) {
   S.uiPrefs = S.uiPrefs || {};
   S.uiPrefs.design = d === "carnet" ? "carnet" : "verre";
   applyDesign(S.uiPrefs.design);
+  _enregistrerUiPrefs();
+}
+
+/* ─── Pilou, la mascotte (11/11/2026, décidé avec Arthur) ───
+   Ourson à la couleur d'accent, lunettes d'aviateur sur les yeux, sans écharpe
+   ni nom écrit. Visible par défaut, propre à chaque utilisateur
+   (S.uiPrefs.pilou === false le masque, classe « sans-pilou » sur <html>).
+   Humeurs : content, salut, joyeux, pensif, endormi. */
+function pilouSvg(humeur) {
+  const salut = humeur === "salut";
+  const h = salut ? "content" : humeur;
+  let yeux, bouche, extra = "";
+  if (h === "joyeux") {
+    yeux = '<path class="pl-trait" style="stroke-width:4" d="M68 97 q8 -10 16 0 M116 97 q8 -10 16 0"/>';
+    bouche = '<path class="pl-k" d="M88 121 q12 16 24 0 Z"/><ellipse cx="100" cy="127" rx="5" ry="3" fill="#e56a86"/>';
+  } else if (h === "pensif") {
+    yeux = '<g class="pl-yeux"><circle class="pl-k" cx="78" cy="92" r="6.5"/><circle class="pl-k" cx="126" cy="92" r="6.5"/>'
+         + '<circle cx="80" cy="89" r="2.2" fill="#fff"/><circle cx="128" cy="89" r="2.2" fill="#fff"/></g>';
+    bouche = '<path class="pl-trait" d="M92 123 q4 -3 8 0 q4 3 8 0"/>';
+  } else if (h === "endormi") {
+    yeux = '<path class="pl-trait" d="M68 94 q8 7 16 0 M116 94 q8 7 16 0"/>';
+    bouche = '<ellipse class="pl-k" cx="100" cy="123" rx="3.5" ry="4"/>';
+    extra = '<text class="pl-z" x="160" y="52">z</text><text class="pl-z" x="174" y="34" style="font-size:16px">z</text>';
+  } else {
+    yeux = '<g class="pl-yeux"><circle class="pl-k" cx="76" cy="94" r="6.5"/><circle class="pl-k" cx="124" cy="94" r="6.5"/>'
+         + '<circle cx="78.2" cy="91.8" r="2.2" fill="#fff"/><circle cx="126.2" cy="91.8" r="2.2" fill="#fff"/></g>';
+    bouche = '<path class="pl-trait" d="M100 115 v4 M100 119 q-6 6 -11 1 M100 119 q6 6 11 1"/>';
+  }
+  return '<svg viewBox="0 0 200 212" focusable="false">'
+    // oreilles, corps assis, pieds, bras
+    + '<circle class="pl-b" cx="56" cy="54" r="24"/><circle class="pl-l" cx="56" cy="56" r="12"/>'
+    + '<circle class="pl-b" cx="144" cy="54" r="24"/><circle class="pl-l" cx="144" cy="56" r="12"/>'
+    + '<ellipse class="pl-b" cx="100" cy="174" rx="52" ry="34"/><ellipse class="pl-l" cx="100" cy="179" rx="30" ry="22"/>'
+    + '<ellipse class="pl-d" cx="70" cy="200" rx="19" ry="10"/><ellipse class="pl-d" cx="130" cy="200" rx="19" ry="10"/>'
+    + '<ellipse class="pl-l" cx="70" cy="200" rx="8" ry="5"/><ellipse class="pl-l" cx="130" cy="200" rx="8" ry="5"/>'
+    + '<ellipse class="pl-d" cx="54" cy="172" rx="13" ry="21" transform="rotate(18 54 172)"/>'
+    + (salut
+      ? '<g class="pl-salut"><ellipse class="pl-d" cx="160" cy="138" rx="13" ry="22" transform="rotate(38 160 138)"/></g>'
+      : '<ellipse class="pl-d" cx="146" cy="172" rx="13" ry="21" transform="rotate(-18 146 172)"/>')
+    // tête et visage
+    + '<ellipse class="pl-b" cx="100" cy="98" rx="64" ry="56"/>'
+    + '<ellipse class="pl-l" cx="100" cy="116" rx="25" ry="19"/>'
+    + '<ellipse class="pl-joue" cx="63" cy="114" rx="9" ry="6"/><ellipse class="pl-joue" cx="137" cy="114" rx="9" ry="6"/>'
+    + yeux + '<path class="pl-k" d="M90 105 Q100 99 110 105 Q107 113 100 114 Q93 113 90 105Z"/>' + bouche + extra
+    // lunettes d'aviateur sur les yeux (verres transparents : l'humeur se voit)
+    + '<path class="pl-cuir" d="M37 89 Q48 92 59 93 M141 93 Q152 92 163 89"/>'
+    + '<path d="M93 92 q7 -5 14 0" fill="none" stroke="#c79a55" stroke-width="4.5" stroke-linecap="round"/>'
+    + '<circle class="pl-verre" cx="76" cy="94" r="17"/><circle class="pl-verre" cx="124" cy="94" r="17"/>'
+    + '<path d="M65 87 q4 -6 11 -6 M113 87 q4 -6 11 -6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>'
+    + '</svg>';
+}
+/** Pilou au-dessus du texte d'un écran vide (.m-empty) */
+function pilouVide(humeur) {
+  return '<span class="pilou pilou-vide" aria-hidden="true">' + pilouSvg(humeur || "endormi") + '</span>';
+}
+function applyPilou(on) {
+  const visible = on !== false;
+  document.documentElement.classList.toggle("sans-pilou", !visible);
+  document.querySelectorAll("[data-pilou-btn]").forEach(b => {
+    const actif = (b.dataset.pilouBtn === "on") === visible;
+    b.classList.toggle("btn-primary", actif);
+    b.setAttribute("aria-pressed", actif ? "true" : "false");
+  });
+}
+function setPilouPref(on) {
+  S.uiPrefs = S.uiPrefs || {};
+  S.uiPrefs.pilou = !!on;
+  applyPilou(S.uiPrefs.pilou);
   _enregistrerUiPrefs();
 }
 
@@ -18250,7 +18354,7 @@ function finRenderTxList() {
   finRenderSelBar();
 
   if (!txs.length) {
-    list.innerHTML = `<div class="fin-empty">Aucune transaction.</div>`;
+    list.innerHTML = `<div class="fin-empty">${pilouVide("endormi")}Aucune transaction.</div>`;
     return;
   }
 
@@ -20444,7 +20548,7 @@ function spRenderGoals() {
 
   document.getElementById("sp-goals-list").innerHTML = active.length
     ? active.map(spGoalCard).join("")
-    : `<div class="m-empty">Aucun objectif en cours. Clique sur « + Objectif » pour t'en fixer un.</div>`;
+    : `<div class="m-empty">${pilouVide("pensif")}Aucun objectif en cours. Clique sur « + Objectif » pour t'en fixer un.</div>`;
 
   document.getElementById("sp-goals-done-list").innerHTML = rest.length
     ? rest.map(spGoalCard).join("")
@@ -22135,6 +22239,9 @@ function homeRenderGreeting() {
   if (!el) return;
   const nom = homeDisplayName();
   el.innerHTML = escHtml(homeGreeting()) + (nom ? " <em>" + escHtml(nom) + "</em>" : "");
+  // Pilou salue à côté du prénom (dessiné une fois : le salut ne se rejoue pas)
+  const pl = document.getElementById("home-pilou");
+  if (pl && !pl.firstChild) pl.innerHTML = pilouSvg("salut");
 }
 
 /** Nom affiche : celui de l'utilisateur actif, sinon le prenom saisi dans le PEA.
@@ -22478,7 +22585,7 @@ function saRenderKpis() {
   const last = saLast(), prev = saRef();
   saRenderCompare();
   if (!last) {
-    box.innerHTML = `<div class="m-empty" style="grid-column:1/-1">
+    box.innerHTML = `<div class="m-empty" style="grid-column:1/-1">${pilouVide("endormi")}
       Aucune pesée. Ajoute la première à la main, ou depuis des captures de l'app FitDays.</div>`;
     return;
   }
@@ -22982,7 +23089,7 @@ function saRenderGoals() {
   if (!box) return;
   const gs = saGoals();
   if (!gs.length) {
-    box.innerHTML = `<div class="m-empty">Aucun objectif.
+    box.innerHTML = `<div class="m-empty">${pilouVide("pensif")}Aucun objectif.
       Par exemple : atteindre 75 kg, ou descendre à 18 % de masse grasse.</div>`;
     return;
   }
@@ -23404,7 +23511,7 @@ function paRenderKpis() {
   const box = document.getElementById("pa-kpis");
   if (!box) return;
   if (!_paNet || !paReleves().length) {
-    box.innerHTML = `<div class="m-empty" style="grid-column:1/-1">
+    box.innerHTML = `<div class="m-empty" style="grid-column:1/-1">${pilouVide("endormi")}
       Aucun relevé. Commence par « Relevé du mois » : tu ne le feras qu'une fois par mois.</div>`;
     return;
   }
@@ -24826,7 +24933,7 @@ function peRender() {
     </div>`).join("");
   const liste = document.getElementById("pe-liste");
   if (!plans.length) {
-    liste.innerHTML = `<div class="m-empty">Aucun achat programmé. Ajoute ton premier plan : Pilote te préviendra le jour de l'achat pour que tu saisisses le cours payé.</div>`;
+    liste.innerHTML = `<div class="m-empty">${pilouVide("pensif")}Aucun achat programmé. Ajoute ton premier plan : Pilote te préviendra le jour de l'achat pour que tu saisisses le cours payé.</div>`;
   } else {
     const total = plans.reduce((s, p) => s + p.montant * ({ hebdo: 52, "2sem": 26, mois: 12, trim: 4 }[p.rythme] || 12) / 12, 0);
     liste.innerHTML = `<div class="tw"><table><thead><tr><th>Actif</th><th>Montant</th><th>Rythme</th><th>Parts prévues</th><th>Prochain achat</th><th></th></tr></thead><tbody>
@@ -30207,6 +30314,7 @@ function _appReady() {
       if (typeof applyAccent === "function") applyAccent(accentKey);
       if (typeof applyZoom === "function") applyZoom(S.uiPrefs && S.uiPrefs.zoom);
       if (typeof applyDesign === "function") applyDesign(S.uiPrefs && S.uiPrefs.design);
+      if (typeof applyPilou === "function") applyPilou(S.uiPrefs && S.uiPrefs.pilou);
     } catch(e) {}
     // Restaure le theme sauvegarde
     try {

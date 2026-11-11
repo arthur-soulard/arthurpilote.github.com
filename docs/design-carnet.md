@@ -2,6 +2,32 @@
 
 Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont les six choses à ne jamais casser).
 
+## Pilou, la mascotte (4.4.67, 11/11/2026)
+
+Choisi avec Arthur : un **ourson** (« c'est affectueux »), à la couleur d'accent,
+**lunettes d'aviateur sur les yeux** (verres teintés transparents : l'humeur se
+voit au travers). Essayés puis écartés par Arthur : l'écharpe d'aviateur, les
+lunettes relevées sur le front, « Pilou » écrit sur le ventre. Planche des
+essais (trois styles, quatre humeurs) : artifact privé d'Arthur.
+
+* **Dessin** : `pilouSvg(humeur)` dans index.html (à côté d'`applyDesign`), SVG
+  fait main dont les couleurs sont des classes `pl-*` tirées de `--accent` par
+  `color-mix()` : il suit l'accent et les deux thèmes sans être redessiné.
+  Humeurs : `content`, `salut` (bras qui fait trois signes), `joyeux`, `pensif`,
+  `endormi` (deux « z »). Les yeux clignent ; rien ne bouge avec
+  `prefers-reduced-motion`.
+* **Où il est** (choix d'Arthur) : à côté de « Bonjour » sur l'Accueil
+  (`.pilou-accueil`, 1,05 em : n'agrandit pas la salutation), dans le titre de
+  l'étape 1 des Premiers pas (`.pilou-pp`, même hauteur de ligne : l'étape tient
+  toujours à 1366 × 720), et au-dessus du texte des écrans vides de premier
+  usage (`pilouVide(humeur)`, 84 px) : Positions, Santé (suivi, objectifs),
+  Patrimoine, Mes comptes (transactions), objectifs de Sports, achats
+  programmés. Pas dans les petits vides (« — », lignes d'un tableau, jour sans séance).
+* **Réglage** : Paramètres → Général → « Pilou, la mascotte », Afficher /
+  Masquer, par utilisateur (`S.uiPrefs.pilou`, absent = visible). Masquer pose
+  `html.sans-pilou`, qui cache tout `.pilou` : rien n'est redessiné.
+* Pas de tuile d'accueil : ce n'est pas une donnée à suivre.
+
 ## Style « Verre », par défaut depuis la 4.4.56 (03/11/2026)
 
 Demandé par Arthur : « un nouveau design comme Apple avec le Liquid Glass ».

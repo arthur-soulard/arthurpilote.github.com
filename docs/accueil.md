@@ -14,7 +14,9 @@ premiers pas et le titre du code PIN (« cet utilisateur »).
 Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 60px)`),
 écrite par `homeRenderGreeting()` avec le prénom dans un `<em>` (italique, couleur
 d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arrive.
-Puis la date en italique. Juste après le prénom, la bulle **« Une idée ? »**
+Pilou (la mascotte, 4.4.67, `docs/design-carnet.md`) salue juste avant
+« Bonjour », à la hauteur du texte (`#home-pilou`, dessiné une fois par
+`homeRenderGreeting()`). Puis la date en italique. Juste après le prénom, la bulle **« Une idée ? »**
 (voir plus bas). **À droite de la salutation** (4.3.19), l'un sous l'autre :
 les utilisateurs (`#home-users`, cliquables pour basculer + « Nouvel utilisateur »),
 les boutons Modifier les tuiles / Paramètres / Téléverser vers clé USB (« Mettre

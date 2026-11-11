@@ -2,6 +2,15 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.67",
+      "date": "2026-11-11",
+      "titre": "Voici Pilou",
+      "nouveau": [
+        "Pilou, l'ourson de Pilote : il te salue à côté de ton prénom sur l'Accueil et dans les Premiers pas, et il attend dans les écrans encore vides (Positions, Santé, Patrimoine, Mes comptes, objectifs de Sports, achats programmés). Il prend ta couleur d'accent.",
+        "Tu préfères une app sans mascotte : Paramètres → Général → Pilou, la mascotte → Masquer."
+      ]
+    },
+    {
       "version": "4.4.66",
       "date": "2026-11-10",
       "titre": "Pilote a son site, et Signaler un problème te laisse la parole",
