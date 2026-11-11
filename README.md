@@ -1,7 +1,7 @@
 # Pilote
 
 Application Windows et Mac de suivi personnel : bourse (PEA, comptes-titres et crypto), budget,
-prêt, sport, patrimoine, santé et newsletters réunis dans une seule app, sans compte ni
+sport, patrimoine, santé et newsletters réunis dans une seule app, sans compte ni
 serveur. Les cours sont actualisés automatiquement depuis Yahoo Finance.
 
 ▶ [Vidéo de présentation](https://drive.google.com/file/d/1jA8N2ddIVyI6T9nbTnmhDlv6lp5w70gn/view?usp=drive_link)
