@@ -75,7 +75,7 @@ Paramètres › Utilisateurs (« Découvrir Pilote »).
   crée un utilisateur « Exemple » marqué `"exemple": true` dans `users.json`, dans un
   dossier **neuf** (`slugify` écarte les dossiers déjà sur le disque, un ancien
   dossier `exemple` n'est donc jamais réécrit), y écrit les données fictives de
-  Camille, puis en fait l'utilisateur actif. Les fichiers de celui qui explore ne
+  Brice, puis en fait l'utilisateur actif. Les fichiers de celui qui explore ne
   sont ni lus ni écrits, sauf `ui`, `uiPrefs.theme` et `uiPrefs.accent` de son
   `pea_data.json`, **lus** pour que l'exemple garde son thème et sa fenêtre.
 * Le jeu de données est `src/donnees_exemple.py` (déplacé de `tests/` pour être

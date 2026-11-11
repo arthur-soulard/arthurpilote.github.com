@@ -5,7 +5,7 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 ## Style « Verre », par défaut depuis la 4.4.56 (03/11/2026)
 
 Demandé par Arthur : « un nouveau design comme Apple avec le Liquid Glass ».
-Validé sur captures (données de Camille), Carnet à gauche, Verre à droite.
+Validé sur captures (données de Brice), Carnet à gauche, Verre à droite.
 
 * **Deux styles, une feuille.** Le Carnet reste le style de base de toute la
   feuille de style. Verre s'y ajoute par le bloc « STYLE VERRE », en fin de la

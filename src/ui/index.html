@@ -11651,7 +11651,7 @@ async function switchUser(slug) {
 
 /* ── Explorer avec des données d'exemple ──
    Un utilisateur à part, « Exemple », rempli avec les données fictives de
-   Camille (src/donnees_exemple.py) : celui qui explore n'est ni lu ni écrit,
+   Brice (src/donnees_exemple.py) : celui qui explore n'est ni lu ni écrit,
    on change seulement d'utilisateur actif, comme switchUser. D'où le même gel
    des écritures avant de basculer. Détail : docs/utilisateurs-et-pin.md. */
 async function explorerExemple() {
@@ -11689,7 +11689,7 @@ async function _renderBandeauExemple() {
   if (!ex) { box.hidden = true; box.innerHTML = ""; return; }
   const retour = state.users.find(x => x.slug === u.retour) || state.users.find(x => !x.exemple);
   box.innerHTML = `<i class="ph ph-flask"></i>
-    <span class="ex-bandeau-txt"><b>Données d'exemple.</b> Tu explores Pilote avec Camille, un profil
+    <span class="ex-bandeau-txt"><b>Données d'exemple.</b> Tu explores Pilote avec Brice, un profil
       fictif : tes propres données ne sont ni lues ni modifiées.</span>
     <button type="button" class="btn btn-primary btn-sm" onclick="quitterExemple(false)">
       <i class="ph ph-arrow-u-up-left"></i> ${retour ? "Revenir à " + escHtml(retour.label) : "Revenir à mon profil"}</button>

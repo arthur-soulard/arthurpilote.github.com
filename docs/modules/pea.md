@@ -238,7 +238,7 @@ boutons de la ligne (modifier, supprimer) n'ouvre rien ; un glisser non plus.
 * **Boutons** : « Voir dans Transactions » (onglet Transactions du compte, filtre
   sur le ticker), « Modifier la ligne » (`editPos`).
 * Vaut pour un CTO (le compte affiché est dans `S`). Vérifié le 30/10/2026 sur
-  le banc (données de Camille) : PEA et CTO, clair et sombre, clic et Entrée,
+  le banc (données de Brice) : PEA et CTO, clair et sombre, clic et Entrée,
   chiffres identiques au tableau, aucune erreur en console.
 
 ## Positions et Wishlist : formats des nombres (4.3.17)

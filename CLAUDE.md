@@ -79,7 +79,7 @@ Pilote/
 ├── assets/             # icon.ico + make_icon.py (générateur d'icône)
 ├── docs/               # Fiches détaillées par module (voir « Documentation détaillée »)
 ├── .github/workflows/  # release.yml (publication), build-windows.yml et build-mac.yml (tests de la branche mac)
-├── tests/              # donnees_exemple.py (Camille), lire_tests.py, ecrans.txt, verifier_release.py, test_*.py
+├── tests/              # donnees_exemple.py (Brice), lire_tests.py, ecrans.txt, verifier_release.py, test_*.py
 ├── THIRD-PARTY-NOTICES.txt # licences des composants embarques (dans l'exe, l'app Mac et le Setup)
 └── requirements.txt    # pywebview, pyinstaller, win10toast + setuptools<81, pillow, pypdf, pyobjc-framework-Vision (Mac)
 ```
@@ -421,7 +421,7 @@ Corollaires à ne pas défaire :
 Le dépôt est **public**. Jamais un montant, une ligne de portefeuille, un nom de
 contrat, une mesure de santé ou un relevé d'Arthur dans un fichier, un commentaire
 ou un message de commit : écrire « vérifié sur un vrai relevé, au centime », ou
-prendre les données fictives de Camille (`tests/donnees_exemple.py`). Des montants
+prendre les données fictives de Brice (`tests/donnees_exemple.py`). Des montants
 réels étaient écrits dans `docs/` jusqu'à la 4.4.20 (audit du 20/10/2026) : retirés
 des fichiers, puis de tout l'historique git le 21/10/2026 (réécrit et poussé en force,
 tags compris). Les numéros de commit d'avant cette date, cités dans d'anciennes notes,

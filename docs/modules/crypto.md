@@ -149,7 +149,7 @@ SOL, DOGE importés au banc avec leur cours) et le modèle d'exemple de Delta
 * Ligne du Patrimoine : `auto: "cto:<id>"` comme un CTO, de type `crypto`
   (« Cryptomonnaies », type qui existait déjà).
 
-## Vérifié au banc (31/10/2026, données de Camille)
+## Vérifié au banc (31/10/2026, données de Brice)
 
 Création, ajout d'un Bitcoin à la main (0,01 à 60 000 € + 1 € : valeur et
 plus-value justes au cours du jour), courbe, import d'un export mêlant crypto et

@@ -86,7 +86,7 @@ class Coinbase(unittest.TestCase):
     def test_export_avec_lignes_de_titre(self):
         r = lire([
             ["Transactions"],
-            ["User", "Camille", "xxx"],
+            ["User", "Brice", "xxx"],
             ["ID", "Timestamp", "Transaction Type", "Asset", "Quantity Transacted", "Price Currency",
              "Price at Transaction", "Subtotal", "Total (inclusive of fees and/or spread)", "Fees and/or Spread", "Notes"],
             ["a1", "2024-01-05 10:00:00 UTC", "Buy", "BTC", "0.002", "EUR", "€50,000.00", "€100.00", "€101.49", "€1.49",
@@ -152,7 +152,7 @@ class Bitpanda(unittest.TestCase):
                   "Asset", "Asset market price", "Asset market price currency", "Asset class", "Product ID", "Fee",
                   "Fee asset", "Spread", "Spread Currency", "Tax Fiat"]
         r = lire([
-            ["Disclaimer: All data is without guarantee"], ["Camille"], entete,
+            ["Disclaimer: All data is without guarantee"], ["Brice"], entete,
             ["b1", "2024-01-05T10:00:00+01:00", "buy", "outgoing", "100.00", "EUR", "0.002", "BTC", "50000", "EUR",
              "Cryptocurrency", "1", "0", "BTC", "-", "-", "0"],
             ["b2", "2024-01-05T11:00:00+01:00", "buy", "outgoing", "50.00", "EUR", "0.25", "AAPL", "200", "EUR",

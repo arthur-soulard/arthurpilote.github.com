@@ -34,7 +34,7 @@ if sys.platform != "win32":
     actus._chiffrer = lambda mdp, *a: "b64:" + base64.b64encode(mdp.encode()).decode()
     actus._oublier = lambda *a: None
 
-ID, MDP = "camille@icloud.com", "abcdefghijklmnop"
+ID, MDP = "brice@icloud.com", "abcdefghijklmnop"
 
 
 class _ICloud(BaseHTTPRequestHandler):
