@@ -387,7 +387,7 @@ les achats du PEA atterrissaient dans le CTO, et inversement.
 * **Vérifié** sur le vrai export mélangé : l'ancien lecteur et le nouveau
   lisent les mêmes 127 opérations, identiques champ par champ ; 5 étaient des
   achats du PEA qui partaient dans le compte ouvert ; s'y ajoutent les 6
-  versements du PEA. Sur le banc (données de Camille) : 122 opérations au
+  versements du PEA. Sur le banc (données de Brice) : 122 opérations au
   CTO, puis 11 au PEA par le bouton, chaque titre du PEA sur sa cotation
   parisienne « vérifiée », taxe de 0,4 % comptée dans les frais, aucun
   doublon au second import. Les exports sans PEA (ceux d'Arthur, les 6 de

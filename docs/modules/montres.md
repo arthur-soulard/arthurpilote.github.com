@@ -151,7 +151,7 @@ Module « Montres » dans `DASH_WIDGETS`, prêtes quand Garmin et Coros sont lus
   (découverte, enregistrement, PKCE vérifié, rotation du jeton) et le
   protocole MCP (JSON et SSE). Les noms d'outils et de champs y sont des
   **suppositions**.
-* Banc navigateur du 03/11/2026 (données de Camille) : import d'un .fit,
+* Banc navigateur du 03/11/2026 (données de Brice) : import d'un .fit,
   réimport grisé, fichier abîmé signalé, écrans Coros (sans connexion et
   connecté, simulé), Ma forme avec la récupération, tuiles, aucune erreur en
   console. Le bouton « Connecter » n'a pas été cliqué (il aurait enregistré

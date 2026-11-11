@@ -5,7 +5,7 @@ Tout est FICTIF : le dépôt est public, rien ne vient des données d'un vrai
 utilisateur. Les dates sont relatives au jour du test, pour qu'un « prochain
 dividende » ou un « versement prévu » le restent quel que soit le jour.
 
-Un utilisateur « Camille » qui a servi chaque module : PEA, un CTO, Mes
+Un utilisateur « Brice » qui a servi chaque module : PEA, un CTO, Mes
 comptes, Prêt, Sports, Santé, Patrimoine et un pense-bête, avec toutes les
 tuiles de l'accueil allumées. Les clés absentes sont complétées par les
 valeurs par défaut de chaque module au chargement (jsonstore, storage).
@@ -97,7 +97,7 @@ def pea():
               "patrimoine", "cto:c1", "pea-valeur", "prochain-achat", "pret", "actus", "patri-rappel", "usb"]
     return {
         "_meta": dict(META, app="Suivi PEA", schema="pea_data.v1"),
-        "config": {"prenom": "Camille", "banque": "Banque Exemple", "ouverture": mois(-30, 15)},
+        "config": {"prenom": "Brice", "banque": "Banque Exemple", "ouverture": mois(-30, 15)},
         "positions": [
             {"id": 1, "ticker": "EPA:WPEA", "name": "iShares MSCI World Swap PEA", "type": "etf",
              "sector": "etf", "cours": 7.2, "dividende": 0, "exdiv": None},
@@ -379,7 +379,7 @@ TEMOIN = "exemple-pilote.txt"
 
 
 def ecrire_utilisateur(dossier_utilisateur, version=None, prefs=None):
-    """Écrit les fichiers de Camille dans le dossier d'UN utilisateur.
+    """Écrit les fichiers de Brice dans le dossier d'UN utilisateur.
 
     version : numéro de l'app (la fiche des nouveautés de cette version est
     tenue pour lue). prefs : {ui, theme, accent} de l'utilisateur qui explore,
@@ -406,7 +406,7 @@ def ecrire(dossier):
     n = ecrire_utilisateur(utilisateur)
     with open(os.path.join(dossier, "users.json"), "w", encoding="utf-8") as f:
         json.dump({"active": "demo", "users": [
-            {"slug": "demo", "label": "Camille", "emoji": "", "color": ""}]}, f, ensure_ascii=False, indent=1)
+            {"slug": "demo", "label": "Brice", "emoji": "", "color": ""}]}, f, ensure_ascii=False, indent=1)
     print("donnees d'exemple ecrites dans %s (%d fichiers)" % (dossier, n + 1))
 
 

@@ -26,9 +26,9 @@ class PinFreine(unittest.TestCase):
         self.addCleanup(setattr, storage, "get_app_dir", self._get_app_dir)
         shutil.rmtree(_TMP, ignore_errors=True)
         _TMP.mkdir(parents=True)
-        storage.save_users_state({"active": "camille", "users": [
-            {"slug": "camille", "label": "Camille", "emoji": "", "color": ""}]})
-        server.pin_set("1234", "camille")
+        storage.save_users_state({"active": "brice", "users": [
+            {"slug": "brice", "label": "Brice", "emoji": "", "color": ""}]})
+        server.pin_set("1234", "brice")
         self._delai = server.PIN_DELAY_SEC
         server.PIN_DELAY_SEC = 0
         self.addCleanup(setattr, server, "PIN_DELAY_SEC", self._delai)
@@ -55,17 +55,17 @@ class PinFreine(unittest.TestCase):
             self.assertEqual(st, 403)
         st, d = self._get("/pin/set?pin=0000&old=1234")      # même le bon : bloqué
         self.assertEqual(st, 429)
-        self.assertTrue(server.pin_check("1234", "camille"))  # code inchangé
+        self.assertTrue(server.pin_check("1234", "brice"))  # code inchangé
 
     def test_bon_ancien_code_change(self):
         st, d = self._get("/pin/set?pin=5678&old=1234")
         self.assertEqual(st, 200, d)
-        self.assertTrue(server.pin_check("5678", "camille"))
+        self.assertTrue(server.pin_check("5678", "brice"))
 
     def test_sans_jeton_refuse(self):
         st, _ = self._get("/pin/set?pin=0000&old=1234", jeton=False)
         self.assertNotEqual(st, 200)
-        self.assertTrue(server.pin_check("1234", "camille"))
+        self.assertTrue(server.pin_check("1234", "brice"))
 
 
 def tearDownModule():

@@ -141,7 +141,7 @@ class Exemple(unittest.TestCase):
         d = _TMP / "users" / r["slug"]
         self.assertTrue((d / "exemple-pilote.txt").exists())
         pea = json.loads((d / "pea_data.json").read_text(encoding="utf-8"))
-        self.assertEqual(pea["config"]["prenom"], "Camille")
+        self.assertEqual(pea["config"]["prenom"], "Brice")
         self.assertEqual(pea["uiPrefs"]["theme"], "dark")              # thème de celui qui explore
         self.assertEqual(pea["uiPrefs"]["nouveautesVues"], "9.9.9")
         storage.ouvrir_exemple("9.9.9")                                 # un seul utilisateur Exemple
@@ -188,14 +188,14 @@ class Exemple(unittest.TestCase):
 class SignalerProbleme(unittest.TestCase):
     def test_journal_sans_donnees(self):
         texte = ("\n=== CRASH ===\n2026-11-01T10:00:00.123456\nTraceback (most recent call last):\n"
-                 '  File "C:\\Users\\Camille\\Pilote\\app.py", line 12, in main\n'
+                 '  File "C:\\Users\\Brice\\Pilote\\app.py", line 12, in main\n'
                  "    montant = 1234.5\n"
-                 '  File "/Users/camille/pea.py", line 99, in calc\n'
+                 '  File "/Users/brice/pea.py", line 99, in calc\n'
                  "    raise KeyError('EPA:WPEA 1234')\n"
                  "KeyError: 'EPA:WPEA 1234'\n")
         r = storage.resume_crash_log(texte)
         self.assertEqual(r, "2026-11-01T10:00:00\n  app.py:12 main\n  pea.py:99 calc\n  KeyError")
-        for interdit in ("1234", "WPEA", "Camille", "camille", "montant"):
+        for interdit in ("1234", "WPEA", "Brice", "brice", "montant"):
             self.assertNotIn(interdit, r)
         self.assertEqual(storage.resume_crash_log(""), "")
 

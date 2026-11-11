@@ -45,9 +45,9 @@ class DossierCommeDrive(unittest.TestCase):
         _DONNEES.mkdir(parents=True)
         self.drive = _TMP / "Mon Drive" / "Pilote"
         _ecrire(_DONNEES / "users.json", json.dumps(
-            {"active": "camille", "users": [{"slug": "camille", "label": "Camille"}]}))
-        _ecrire(_DONNEES / "users" / "camille" / "pea_data.json", '{"positions": [1, 2]}')
-        _ecrire(_DONNEES / "users" / "camille" / "sante.json", '{"pesees": [60]}')
+            {"active": "brice", "users": [{"slug": "brice", "label": "Brice"}]}))
+        _ecrire(_DONNEES / "users" / "brice" / "pea_data.json", '{"positions": [1, 2]}')
+        _ecrire(_DONNEES / "users" / "brice" / "sante.json", '{"pesees": [60]}')
 
     def test_destination_par_chemin(self):
         st = sauvegarde.set_destination(str(self.drive))
@@ -94,7 +94,7 @@ class DossierCommeDrive(unittest.TestCase):
         sauvegarde.set_destination(str(self.drive))
         archive = sauvegarde.run_backup()["path"]
         with zipfile.ZipFile(archive) as z:
-            self.assertIn("Donnees/users/camille/pea_data.json", z.namelist())
+            self.assertIn("Donnees/users/brice/pea_data.json", z.namelist())
 
         # L'ordi a planté : installation neuve, rien dedans
         shutil.rmtree(_DONNEES)
@@ -106,12 +106,12 @@ class DossierCommeDrive(unittest.TestCase):
 
         res = sauvegarde.restore_from(liste["backups"][0]["path"])
         self.assertTrue(res["ok"], res)
-        self.assertEqual((_DONNEES / "users" / "camille" / "pea_data.json").read_text(encoding="utf-8"),
+        self.assertEqual((_DONNEES / "users" / "brice" / "pea_data.json").read_text(encoding="utf-8"),
                          '{"positions": [1, 2]}')
-        self.assertEqual((_DONNEES / "users" / "camille" / "sante.json").read_text(encoding="utf-8"),
+        self.assertEqual((_DONNEES / "users" / "brice" / "sante.json").read_text(encoding="utf-8"),
                          '{"pesees": [60]}')
         users = json.loads((_DONNEES / "users.json").read_text(encoding="utf-8"))
-        self.assertEqual([u["slug"] for u in users["users"]], ["camille"])
+        self.assertEqual([u["slug"] for u in users["users"]], ["brice"])
         # La destination de la nouvelle installation reste celle choisie
         self.assertEqual(sauvegarde.load_config()["destination"], str(self.drive))
 
@@ -204,7 +204,7 @@ class Chiffrement(unittest.TestCase):
         self.assertTrue(chemin.name.endswith(".pilote"))
         brut = chemin.read_bytes()
         self.assertNotIn(b"positions", brut)
-        self.assertNotIn(b"camille", brut)                       # ni les noms de fichiers
+        self.assertNotIn(b"brice", brut)                       # ni les noms de fichiers
         self.assertFalse(zipfile.is_zipfile(str(chemin)))
         self.assertFalse(list(self.drive.glob("*.zip")) + list(self.drive.glob("*.part")))
         b = sauvegarde.list_backups()["backups"][0]
@@ -213,7 +213,7 @@ class Chiffrement(unittest.TestCase):
     def test_restauration_meme_pc_puis_pc_neuf(self):
         self._activer()
         archive = sauvegarde.run_backup()["path"]
-        pea = _DONNEES / "users" / "camille" / "pea_data.json"
+        pea = _DONNEES / "users" / "brice" / "pea_data.json"
         _ecrire(pea, '{"positions": []}')
         res = sauvegarde.restore_from(archive)                   # clé gardée : sans le taper
         self.assertTrue(res["ok"], res)
@@ -238,9 +238,9 @@ class Chiffrement(unittest.TestCase):
         ancienne = sauvegarde.run_backup()["path"]
         self.assertTrue(ancienne.endswith(".zip"))
         self._activer()
-        _ecrire(_DONNEES / "users" / "camille" / "sante.json", '{"pesees": []}')
+        _ecrire(_DONNEES / "users" / "brice" / "sante.json", '{"pesees": []}')
         self.assertTrue(sauvegarde.restore_from(ancienne)["ok"])
-        self.assertEqual((_DONNEES / "users" / "camille" / "sante.json").read_text(encoding="utf-8"),
+        self.assertEqual((_DONNEES / "users" / "brice" / "sante.json").read_text(encoding="utf-8"),
                          '{"pesees": [60]}')
         b = {x["name"]: x for x in sauvegarde.list_backups()["backups"]}
         self.assertFalse(b[Path(ancienne).name]["chiffre"])

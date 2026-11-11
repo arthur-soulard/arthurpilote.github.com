@@ -1,4 +1,4 @@
-"""Donnees d'exemple (Camille) pour le test des builds : le jeu lui-meme vit
+"""Donnees d'exemple (Brice) pour le test des builds : le jeu lui-meme vit
 dans src/donnees_exemple.py, livre avec l'app pour le bouton « Explorer avec
 des donnees d'exemple ».
 

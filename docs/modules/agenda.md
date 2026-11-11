@@ -332,7 +332,7 @@ agendas (événement sur deux jours, durée, annulé, hors période, objectif
 envoyé par Pilote présent, notes de Pilote sautées), heure UTC ramenée à
 celle du PC.
 Le 22/10/2026, l'écran a aussi tourné sur le banc navigateur (données de
-Camille, même faux iCloud) : 36 séances envoyées, une séance ajoutée partie
+Brice, même faux iCloud) : 36 séances envoyées, une séance ajoutée partie
 toute seule 3 s plus tard.
 
 **Essayé contre le vrai iCloud le 22/10/2026** (banc, copie des données

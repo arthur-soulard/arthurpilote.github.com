@@ -145,7 +145,7 @@ Règle d'Arthur : une fonctionnalité doit être vérifiée sur Mac **et** Windo
 avant d'être dite finie. Or le premier job démarre sur un utilisateur vierge :
 sa capture ne montre que les Premiers pas, jamais la fonctionnalité.
 
-* **`tests/donnees_exemple.py`** écrit un utilisateur « Camille » entièrement
+* **`tests/donnees_exemple.py`** écrit un utilisateur « Brice » entièrement
   **fictif** (le dépôt est public) : PEA, un CTO, Mes comptes, Prêt, Sports,
   Santé, Patrimoine, pense-bête, toutes les tuiles allumées. Dates relatives au
   jour du test (un « prochain dividende » le reste). `nouveautesVues: 999.0.0`

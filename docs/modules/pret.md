@@ -176,4 +176,4 @@ fois depuis (`_modulesProposes()`, `S.uiPrefs.pretConnu`, posé au démarrage d�
 Prêt est visible). Chez ceux qui l'ont, rien ne change, même s'ils le décochent
 ensuite. Un utilisateur qui l'avait déjà masqué avant cette version ne le voit
 plus proposé (son `pret.json` reste sur le disque). L'utilisateur Exemple, lui, a
-Prêt : ce sont les données de Camille telles quelles.
+Prêt : ce sont les données de Brice telles quelles.

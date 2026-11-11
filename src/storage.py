@@ -387,7 +387,7 @@ def mettre_a_la_corbeille(slug: str) -> Path:
 
 # ─── Explorer avec des donnees d'exemple (docs/utilisateurs-et-pin.md) ────
 # Un utilisateur a part, marque « exemple » dans users.json, ou sont ecrites
-# les donnees fictives de Camille (donnees_exemple.py). Jamais celui qui
+# les donnees fictives de Brice (donnees_exemple.py). Jamais celui qui
 # explore : ses fichiers ne sont ni lus ni ecrits, on change seulement
 # d'utilisateur actif, comme avec la pastille.
 

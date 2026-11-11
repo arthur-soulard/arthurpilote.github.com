@@ -203,7 +203,7 @@ nouveau ou une panne.
   respiration, âge physique, vus, relecture partielle, source en panne, âge
   physique absent, clé expirée, cases, cycle suivi ou non, date d'expiration,
   rappel dans l'Agenda, réseau coupé).
-* Données de Camille : `garmin.json` avec 30 jours de forme (compte pas
+* Données de Brice : `garmin.json` avec 30 jours de forme (compte pas
   connecté), le cycle coché, quelques séances avec `garminId` dont un record, un
   objectif de performance à valider, les six tuiles Garmin en tête.
 

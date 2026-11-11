@@ -87,7 +87,7 @@ puis désinstalle et vérifie que les données sont restées.
 * Première soumission (v4.4.51) envoyée le 02/11/2026 : gratuite, **lien
   direct seulement** (pas dans les recherches), 3 ans et plus (IARC),
   catégorie Finances personnelles › Banque + investissements, 7 captures
-  1366 × 768 au nom de **Brice** (pas Camille dans ce qui est public, demande
+  1366 × 768 au nom de **Brice** (le profil fictif des données d'exemple, demande
   d'Arthur), publication **manuelle** (« Publier maintenant » après la
   certification). Justification de `runFullTrust` limitée à 500 caractères.
 * Ensuite : Arthur installe depuis le lien du Store et fait le tour des
