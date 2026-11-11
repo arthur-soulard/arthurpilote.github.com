@@ -3241,7 +3241,7 @@ html.verre .toast-stack .toast {
   <div class="topbar-right">
     <div class="refresh-grp">
       <span class="refresh-lbl" id="stext">Dernière actualisation —</span>
-      <button class="btn btn-ghost btn-sm" onclick="manualRefresh()" title="Actualiser les cours Yahoo Finance (Ctrl+R)"><i class="ph ph-arrows-clockwise"></i> Actualiser</button>
+      <button class="btn btn-ghost btn-sm" onclick="manualRefresh()" title="Actualiser les cours (Ctrl+R)"><i class="ph ph-arrows-clockwise"></i> Actualiser</button>
     </div>
     <button class="btn btn-ghost btn-sm" id="btn-undo" onclick="undoLast()" disabled title="Annuler la dernière action"><i class="ph ph-arrow-u-up-left"></i> Retour</button>
     <button class="btn btn-ghost btn-sm" onclick="openCours()"><i class="ph ph-pencil-simple"></i> Cours manuels</button>
@@ -3537,7 +3537,7 @@ html.verre .toast-stack .toast {
       </div>
     </div>
     <div class="card-b" id="expo-resume"></div>
-    <p style="font-size:11px;color:var(--txt3);margin:0;padding:0 16px 12px">Compositions : iShares, Amundi et justETF ; cours : Yahoo Finance. Sources non officielles, sans garantie.</p>
+    <p style="font-size:11px;color:var(--txt3);margin:0;padding:0 16px 12px">Compositions : iShares, Amundi et justETF ; cours relevés sur Internet. Sources non officielles, sans garantie.</p>
   </div>
   <div class="expo-duo">
     <div class="card" id="card-expo-geo">
@@ -7303,7 +7303,7 @@ function showCacheLabel(ts) {
   const el = document.getElementById("twr-cache-lbl");
   if (!el) return;
   el.textContent = ts ? "Données de " + ts + " (copie locale)"
-                      : "Yahoo injoignable · derniers cours connus";
+                      : "Cours injoignables · derniers cours connus";
   el.style.display = "block";
 }
 function hideCacheLabel() {
@@ -8252,7 +8252,7 @@ async function renderPerf() {
   const loadEl  = document.getElementById("perf-loading");
   const loadTxt = document.getElementById("perf-loading-txt");
   if (loadEl)  loadEl.style.display  = "block";
-  if (loadTxt) loadTxt.textContent   = "Chargement de l'historique Yahoo Finance…";
+  if (loadTxt) loadTxt.textContent   = "Chargement de l'historique…";
 
   const gen = _cptGen;
   const history = await loadPerfHistory();
@@ -8265,7 +8265,7 @@ async function renderPerf() {
   if (!history) {
     document.getElementById("perf-nodata").style.display = "block";
     document.getElementById("perf-nodata").textContent =
-      "Historique Yahoo indisponible. Vérifie ta connexion à internet, puis clique sur Actualiser.";
+      "Historique indisponible. Vérifie ta connexion à internet, puis clique sur Actualiser.";
   } else {
     document.getElementById("perf-nodata").style.display = "none";
     setPerfRange(_perfRange);
@@ -9664,7 +9664,7 @@ function _fmtTer(pct) {
 function _renderTer(w) {
   const t = _wishTer(w);
   if (!t) return '<span style="color:var(--txt3);font-size:11px" title="Frais inconnus&nbsp;: saisis-les avec le crayon">—</span>';
-  if (t.src === "yahoo") return `<span title="Valeur Yahoo Finance, à vérifier. Saisis les frais avec le crayon pour la remplacer." style="font-size:11px;font-family:var(--mono);color:var(--txt2)">${_fmtTer(t.pct)} <span style="font-size:9.5px;color:var(--txt3)">Yahoo</span></span>`;
+  if (t.src === "yahoo") return `<span title="Valeur trouvée sur Internet, à vérifier. Saisis les frais avec le crayon pour la remplacer." style="font-size:11px;font-family:var(--mono);color:var(--txt2)">${_fmtTer(t.pct)} <span style="font-size:9.5px;color:var(--txt3)">en ligne</span></span>`;
   return `<span style="font-size:11px;font-family:var(--mono);font-weight:600">${_fmtTer(t.pct)}</span>`;
 }
 
@@ -9721,7 +9721,7 @@ function renderWishlist() {
   });
   const t = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   const wu = document.getElementById("wish-update");
-  if (wu) wu.textContent = Object.keys(_wsVar).length > 0 ? "Yahoo Finance · " + t : "En attente…";
+  if (wu) wu.textContent = Object.keys(_wsVar).length > 0 ? "Cours · " + t : "En attente…";
 }
 
 /* ─── Dépôts ─── */
@@ -9960,7 +9960,7 @@ async function applyCoursData() {
       _wsVar = { ..._wsVar, ...variations };
       const t = new Date().toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
       const el = document.getElementById("wish-update");
-      if (el) el.textContent = "Yahoo \u00B7 " + t;
+      if (el) el.textContent = "Cours \u00B7 " + t;
     }
 
     const t = new Date().toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
@@ -10270,7 +10270,7 @@ function renderReco() {
   }).join("")}</div>`;
 
   const el = document.getElementById("reco-update");
-  if (el) el.textContent = "Yahoo Finance · " + new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  if (el) el.textContent = "Cours · " + new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
 }
 
 function stopCoursRefresh() {
@@ -10453,7 +10453,7 @@ async function runEtfCompare() {
     .filter(Boolean);
   if (tickers.length === 0) return;
   const status = document.getElementById("sim-cmp-status");
-  status.textContent = "Chargement de l'historique Yahoo…";
+  status.textContent = "Chargement de l'historique…";
   // On force du DAILY sur la plage choisie (max evite les donnees mensuelles
   // de Yahoo pour les longues periodes — sauf 15y ou on prend tout).
   const cfg = CMP_RANGES.find(r => r.key === _cmpRange) || CMP_RANGES[0];
@@ -10471,7 +10471,7 @@ async function _fetchCmpHist(tickers, yhRange, status) {
     const url = `http://127.0.0.1:${_PEA_PORT}/history?tickers=` + encodeURIComponent(tickers.join(",")) + "&range=" + encodeURIComponent(yhRange) + since + "&t=" + Date.now();
     const r = await fetch(url, {cache: "no-store"});
     const d = await r.json();
-    if (!d.ok) { if(status) status.innerHTML = '<span style="color:var(--r)">Erreur Yahoo</span>'; return; }
+    if (!d.ok) { if(status) status.innerHTML = '<span style="color:var(--r)">Historique indisponible</span>'; return; }
     _cmpHist = d.history || {};
     _cmpHistRange = yhRange;
   } catch(e) {
@@ -10997,7 +10997,7 @@ function _wireTickerSearch(opts) {
           <div style="font-size:10px;color:var(--txt2);font-family:var(--mono);margin-top:2px">${escHtml(parts.join(" · "))}</div>
         </div>`;
     });
-    if (loading) rows.push('<div style="padding:6px 10px;font-size:10px;color:var(--txt3);font-style:italic">Recherche Yahoo…</div>');
+    if (loading) rows.push('<div style="padding:6px 10px;font-size:10px;color:var(--txt3);font-style:italic">Recherche en ligne…</div>');
     sug.innerHTML = rows.join("");
     sug.querySelectorAll(".sg-item").forEach(item => {
       item.onmouseenter = () => item.style.background = "var(--bg3)";
@@ -11446,8 +11446,8 @@ function openAddWish(list, type) {
 function _wishTerHint(ticker) {
   const k = ticker && _wsKey[ticker];
   document.getElementById("w-ter-hint").textContent = (k && k.expenseRatio != null)
-    ? "Laissé vide, Pilote affiche la valeur de Yahoo Finance (" + _fmtTer(k.expenseRatio * 100) + "), à vérifier."
-    : "Sur la fiche de l'ETF, sous « frais courants ». Laissé vide, Pilote affiche la valeur de Yahoo Finance quand elle existe.";
+    ? "Laissé vide, Pilote affiche la valeur trouvée sur Internet (" + _fmtTer(k.expenseRatio * 100) + "), à vérifier."
+    : "Sur la fiche de l'ETF, sous « frais courants ». Laissé vide, Pilote affiche la valeur trouvée sur Internet quand elle existe.";
 }
 /* Frais saisis, en % : null si vide, undefined si invalide (deja signale) */
 function _wishTerInput() {
@@ -12446,7 +12446,7 @@ async function _showWelcomeIfFirstRun() {
         ${prenomSection}
         ${identitySection}
         <ul class="pp-points">
-          <li title="Pilote ne demande sur internet que les cours de tes titres (à Yahoo Finance, sans les quantités ni les montants) et les mises à jour (à GitHub)."><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
+          <li title="Pilote ne demande sur internet que les cours de tes titres (sans les quantités ni les montants) et les mises à jour (à GitHub)."><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
             ${dossier ? `Sans compte ni serveur. Tes données sont ici, sauvegardées chaque jour&nbsp;:
             <span class="dossier-chemin"><span>${escHtml(dossier)}</span>
               <button type="button" onclick="openDataFolder()"><i class="ph ph-folder-open"></i> Ouvrir</button></span>`
@@ -16916,9 +16916,9 @@ applyCoursData = async function(opts) {
     _setCoursHealth("ok", "Dernière actualisation " + t);
     if (manual) showToastModern("Cours actualisés à " + t, "ok");
   } catch(e) {
-    _setCoursHealth("err", _coursEtat === "perime" ? "Yahoo injoignable · derniers cours connus"
+    _setCoursHealth("err", _coursEtat === "perime" ? "Cours injoignables · derniers cours connus"
                                                    : "Actualisation impossible");
-    if (manual) showToastModern("Yahoo injoignable", "err");
+    if (manual) showToastModern("Cours injoignables", "err");
     // Une notification par panne, pas une toutes les 3 min
     if (window.pywebview && window.pywebview.api && !_yahooDownSignale) {
       _yahooDownSignale = true;
@@ -16926,7 +16926,7 @@ applyCoursData = async function(opts) {
       if (prefs.yahooDown) {
         window.pywebview.api.notify(
           "Pilote",
-          "Yahoo Finance injoignable — cours en cache utilisés.",
+          "Cours injoignables — derniers cours connus utilisés.",
           "yahooDown"
         );
       }
@@ -21751,7 +21751,7 @@ function prPeaModal(id) {
     defTicker = (s[s.length - 1].ticker || "").toUpperCase();
   }
   prOpenForm(a ? "Modifier l'achat" : "Nouvel achat PEA", `
-    <div class="fg"><label>Ticker Yahoo Finance</label>
+    <div class="fg"><label>Ticker</label>
       <input type="text" name="ticker" value="${escHtml(a ? (a.ticker || "").toUpperCase() : defTicker)}"
              placeholder="WPEA.PA, CW8.PA, ESE.PA…" style="text-transform:uppercase" required autocomplete="off"></div>
     ${prFg("Date d'achat", "date", "date", a ? a.date : prToday(), "required")}
@@ -21760,7 +21760,7 @@ function prPeaModal(id) {
       ${prFg("Quantité (parts)", "quantite", "number", a ? a.quantite : "", 'step="0.0001" min="0" required')}
     </div>
     ${prFg("Cours d'achat unitaire (€)", "cours_achat", "number", a ? a.cours_achat : "", 'step="0.0001" min="0" required')}
-    <div class="m-note" style="margin-bottom:0">Notation Yahoo Finance avec le suffixe de place. Les « : » sont convertis en « . » automatiquement.</div>`,
+    <div class="m-note" style="margin-bottom:0">Ticker avec le suffixe de place (WPEA.PA pour Paris). Les « : » sont convertis en « . » automatiquement.</div>`,
     data => {
       const ticker = (data.ticker || "").trim().toUpperCase().replace(/[:;\s]/g, ".");
       const montant = prN(data.montant), quantite = prN(data.quantite), cours = prN(data.cours_achat);
