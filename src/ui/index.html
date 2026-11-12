@@ -11758,12 +11758,15 @@ async function explorerExemple() {
   }
 }
 
-async function quitterExemple(effacer) {
+/* Quitter l'exemple l'efface toujours : sinon « Exemple » restait dans la
+   liste des utilisateurs, à côté du sien. Données fictives, recréées au
+   prochain clic sur Explorer. */
+async function quitterExemple() {
   const api = window.pywebview && window.pywebview.api;
   if (!(api && api.quitter_exemple)) return;
   if (typeof _visiteEcrire === "function") _visiteEcrire(null);   // visite avec Pilou finie
   await _gelerEnregistrements();
-  const r = await api.quitter_exemple(!!effacer);
+  const r = await api.quitter_exemple(true);
   if (r && r.ok) location.reload();
   else {
     _degelerEnregistrements();
@@ -11784,11 +11787,9 @@ async function _renderBandeauExemple() {
   box.innerHTML = `<i class="ph ph-flask"></i>
     <span class="ex-bandeau-txt"><b>Données d'exemple.</b> Tu explores Pilote avec Brice, un profil
       fictif : tes propres données ne sont ni lues ni modifiées.</span>
-    <button type="button" class="btn btn-primary btn-sm" onclick="quitterExemple(false)">
-      <i class="ph ph-arrow-u-up-left"></i> ${retour ? "Revenir à " + escHtml(retour.label) : "Revenir à mon profil"}</button>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="quitterExemple(true)"
+    <button type="button" class="btn btn-primary btn-sm" onclick="quitterExemple()"
       title="Revient à ton profil et efface l'exemple (données fictives, recréées au prochain clic sur Explorer)">
-      <i class="ph ph-trash"></i> Effacer l'exemple</button>`;
+      <i class="ph ph-arrow-u-up-left"></i> ${retour ? "Revenir à " + escHtml(retour.label) : "Revenir à mon profil"}</button>`;
   box.hidden = false;
 }
 
@@ -30562,7 +30563,7 @@ async function _visiteMontrer() {
     const quoi = b.dataset.vis;
     if (quoi === "suite") aller(1);
     else if (quoi === "prec") aller(-1);
-    else if (quoi === "retour") { _visiteEcrire(null); _visiteNettoyer(); quitterExemple(false); }
+    else if (quoi === "retour") { _visiteEcrire(null); _visiteNettoyer(); quitterExemple(); }
     else { _visiteEcrire(null); _visiteNettoyer(); goTab("home"); _setActiveSidebar("home"); }   // passer, rester
   }; });
   const suivant = box.querySelector('[data-vis="suite"], [data-vis="retour"]');

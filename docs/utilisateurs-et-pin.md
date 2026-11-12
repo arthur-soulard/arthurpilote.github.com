@@ -84,10 +84,13 @@ Paramètres › Utilisateurs (« Découvrir Pilote »).
   La fiche des nouveautés de la version installée est tenue pour lue.
 * `"retour"` retient qui explorait. **Bandeau** en haut de chaque écran tant que
   l'actif est l'exemple (`#ex-bandeau`, `_renderBandeauExemple()` appelée dans
-  `boot()`) : « Revenir à <nom> » (`quitter_exemple(false)`) et « Effacer
-  l'exemple » (`quitter_exemple(true)` : retour, puis l'utilisateur et son dossier
-  supprimés). Pas de confirmation : ce sont des données fictives, recréées au
-  prochain clic.
+  `boot()`) : « Revenir à <nom> » (`quitter_exemple(true)` : retour, puis
+  l'utilisateur et son dossier supprimés). Pas de confirmation : ce sont des
+  données fictives, recréées au prochain clic. Jusqu'à la 4.4.68, « Revenir »
+  gardait l'exemple (un second bouton « Effacer l'exemple » l'effaçait) : il
+  restait dans la liste des utilisateurs, à côté de celui d'Arthur, qui l'a
+  signalé le 12/11/2026. La fin de la visite avec Pilou l'efface aussi.
+  `storage.quitter_exemple(False)` existe toujours, l'interface ne l'appelle plus.
 * Effacer ne supprime définitivement le dossier que s'il porte le témoin
   `exemple-pilote.txt` écrit à la création ; sinon il part à la corbeille, comme
   un utilisateur effacé.
