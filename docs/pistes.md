@@ -45,6 +45,12 @@ Autres pistes :
   d'une section, 4.4.33) : retirée en 4.4.34, « si on veut masqué c'est pas pour le
   voir ici ». Ce qui est caché se retrouve dans Paramètres, Masqués, et nulle part ailleurs.
 
+- **Pilou dans la barre latérale** (12/11/2026, idée d'Arthur, maquettes seulement) :
+  sa tête dépassant en haut de la section ouverte, regardant vers le bas, avec ou
+  sans pattes accrochées au bord (et avant, en icône, au bout de la ligne ou perché).
+  Écartée par Arthur sur captures : « ça rend pas bien en fait ». Pilou reste à
+  l'accueil, dans les Premiers pas, la visite, les astuces et les écrans vides.
+
 - **Version mobile / PWA** : écartée par Arthur en 4.1.4 pour la sécurité des données.
   Les JSON sont en clair et le PIN ne chiffre rien ; exposer le serveur local, même
   derrière un VPN, sortait les données du PC. Si la question revient, le prérequis

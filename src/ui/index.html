@@ -1184,8 +1184,9 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
    (Paramètres → Général → Pilou). Écrans vides, accueil, Premiers pas. ── */
 .pilou svg { display: block; width: 100%; height: auto; }
 .pilou-vide { display: block; width: 84px; margin: 0 auto 10px; }
-.pilou-accueil { display: inline-block; width: 1.05em; vertical-align: -.12em; margin-right: .18em; }
-.pilou-pp { display: inline-block; width: 1.5em; vertical-align: -.3em; margin-right: .25em; }
+/* Accueil : plus grand que le texte (demande d'Arthur, 12/11/2026), marges
+   négatives pour ne pas grossir le bandeau (108 px mesuré à 1366 × 720) */
+.pilou-accueil { display: inline-block; width: 1.5em; vertical-align: -.28em; margin: -.32em 0 -.18em .2em; }
 html.sans-pilou .pilou { display: none; }
 .pl-b { fill: var(--accent); }
 .pl-d { fill: color-mix(in oklab, var(--accent) 70%, #1b0f18); }
@@ -2046,6 +2047,8 @@ label.sv-check, label.sv-inline {
 /* ── Garmin (garmin.py) ─────────────────────────────────────────────────── */
 .ga-maj { font-size: 12px; color: var(--txt3); }
 .ga-chart { position: relative; height: 260px; }
+.mkpi.ga-kpi-clic { cursor: pointer; transition: border-color .15s; }
+.mkpi.ga-kpi-clic:not(.accent):hover { border-color: var(--accent); }
 .ga-courbe-h { flex-wrap: wrap; gap: .6rem; }
 .ga-moy { font-size: 12px; color: var(--txt2); margin-left: auto; }
 .ga-mesures { flex-basis: 100%; }
@@ -2363,24 +2366,34 @@ thead th, .wish-table thead th {
   grid-column: 2; grid-row: 3; margin-top: 2px;
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 18px;
 }
-/* « Une idée ? » : bulle de pensée à côté du prénom (13/10/2026). La place
+/* « Une idée, un problème ? » : bulle que dit Pilou, après le prénom
+   (12/11/2026 ; bulle de pensée du prénom du 13/10/2026 jusque-là). La place
    vient des boutons Exporter et Importer retirés en 4.4.12 : à 1366 × 720,
    la colonne des boutons garde de quoi tenir sur une ligne (bandeau de 109 px) */
 .home-idee {
   all: unset; box-sizing: border-box; cursor: pointer; position: relative;
   display: inline-flex; align-items: center; gap: 6px;
-  vertical-align: top; margin: -2px 0 0 24px; padding: 6px 14px 6px 11px; border-radius: 999px;
+  /* Sur deux lignes : sur une seule, « Bonsoir Arthur » faisait passer les
+     boutons de droite à la ligne à 1366 × 720 (mesuré, 12/11/2026) */
+  vertical-align: top; margin: 0 0 0 14px; padding: 7px 14px; border-radius: 16px 16px 16px 5px;
   font-family: var(--font); font-style: normal; font-size: 13.5px; font-weight: 500;
-  letter-spacing: 0; line-height: 1.2; white-space: nowrap;
+  letter-spacing: 0; line-height: 1.25; white-space: nowrap; text-align: left;
   color: var(--accent-text); background: var(--accent-soft);
   transform-origin: 0 100%; animation: home-idee-pop .45s cubic-bezier(.34, 1.56, .64, 1) .5s backwards;
   transition: background .15s, color .15s;
 }
-/* Les deux petits ronds qui la relient au prénom */
-.home-idee::before, .home-idee::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
-.home-idee::before { width: 9px; height: 9px; left: -11px; bottom: -8px; }
-.home-idee::after  { width: 5px; height: 5px; left: -18px; bottom: -15px; }
-.home-idee .ph { font-size: 16px; }
+/* Bulle de parole : une pointe vers la bouche de Pilou, à sa gauche */
+.home-idee::before {
+  content: ""; position: absolute; left: -7px; bottom: 6px; width: 14px; height: 12px;
+  background: inherit; clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+/* Pilou masqué (Paramètres) : retour à la bulle de pensée qui sort du prénom */
+html.sans-pilou .home-idee { margin-left: 24px; border-radius: 16px; }
+html.sans-pilou .home-idee::before, html.sans-pilou .home-idee::after {
+  content: ""; position: absolute; border-radius: 50%; background: inherit; clip-path: none;
+}
+html.sans-pilou .home-idee::before { width: 9px; height: 9px; left: -11px; bottom: -8px; }
+html.sans-pilou .home-idee::after  { width: 5px; height: 5px; left: -18px; bottom: -15px; }
 /* En sombre, fond moins teinté que --accent-soft (22 %) : texte à 4,7:1 au
    lieu de 4,3 (mesuré sur l'accent #c026d3) */
 html[data-theme="dark"] .home-idee { background: color-mix(in srgb, var(--accent) 14%, transparent); }
@@ -2578,6 +2591,18 @@ label.dash-cmp { margin-bottom: 8px; font-size: 11.5px; flex-wrap: wrap; row-gap
 .sug-journal { max-height: 140px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; font-size: 11px;
   background: var(--bg2); border: 1px solid var(--brd); border-radius: var(--rad); white-space: pre-wrap; color: var(--txt2); }
 .sug-txt { margin: 0 0 14px; font-size: 13px; color: var(--txt2); }
+/* Les deux choix ouverts depuis la bulle de Pilou */
+.sug-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 4px 0 6px; }
+.sug-choix button {
+  all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+  padding: 16px; border: 1px solid var(--brd); border-radius: 14px; background: var(--bg2);
+  transition: border-color .15s, background .15s;
+}
+.sug-choix button:hover { border-color: var(--accent); background: var(--accent-soft); }
+.sug-choix button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sug-choix .ph { font-size: 24px; color: var(--accent-text); margin-bottom: 4px; }
+.sug-choix b { font-size: 14.5px; font-weight: 600; color: var(--txt); }
+.sug-choix span { font-size: 12.5px; color: var(--txt2); line-height: 1.35; }
 .sug-tech { margin-top: 10px; }
 .sug-tech > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
   font-size: 12.5px; color: var(--txt2); }
@@ -2780,12 +2805,54 @@ label.cto-imp-col select { font: inherit; font-size: 12px; padding: 4px 6px; bac
 .pp-kick { font-size: 12px; color: var(--txt3); margin-bottom: .3rem; }
 .modal h2.pp-h { font-size: 30px; line-height: 1.15; margin-bottom: .55rem; }
 .pp-h em { font-style: italic; color: var(--accent-text); }
+/* Pilou qui parle (12/11/2026) : Premiers pas, visite, astuces. Il est à
+   gauche, sa bulle à droite avec une pointe vers lui (.pp-bulle::before) */
+.pp-pl { display: flex; gap: 18px; align-items: flex-end; margin: .3rem 0 1rem; }
+.pp-pl > .pilou { flex: none; width: 96px; }
+.pp-bulle { position: relative; flex: 1; min-width: 0; background: var(--accent-soft); color: var(--txt);
+  border-radius: 20px 20px 20px 6px; padding: 15px 20px; margin-bottom: 26px; }
+.pp-bulle::before { content: ""; position: absolute; left: -10px; bottom: 0; width: 16px; height: 16px;
+  background: inherit; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
+html.sans-pilou .pp-bulle { margin-bottom: 0; }
+html.sans-pilou .pp-bulle::before { display: none; }
+.modal .pp-bulle h2.pp-h { font-size: 19px; line-height: 1.42; margin: 0; }
+.pp-bulle small { display: block; font-size: 13px; color: var(--txt2); margin-top: 6px; line-height: 1.5; }
+.pp-bulle input { display: block; box-sizing: border-box; width: 100%; margin-top: 12px; font: 15px var(--font);
+  color: var(--txt); background: var(--bg2); border: 1px solid var(--brd); border-radius: 12px; padding: 10px 14px; outline: none; }
+.pp-bulle input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.pp-bulle-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 .7rem; }
+.pp-chips > span { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px;
+  background: var(--bg3); font-size: 12.5px; color: var(--txt2); }
+.pp-chips .ph { color: var(--accent-text); font-size: 15px; }
+.pp-dossier { font-size: 12px; color: var(--txt2); margin: 0 0 .8rem; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+/* Carte flottante de Pilou en bas à droite : visite guidée et astuces */
+.pl-flot { position: fixed; right: 28px; bottom: 28px; z-index: 9400; display: flex; align-items: flex-end; gap: 12px;
+  width: 470px; max-width: calc(100vw - 56px); animation: plEntre .22s ease-out; }
+/* Sans fondu : une animation bloquée (fenêtre en arrière-plan) laissait la
+   bulle à opacité 0, invisible (vu sur la capture 8, 12/11/2026) */
+@keyframes plEntre { from { transform: translateY(8px); } }
+/* Fin de la visite : au centre de l'appli (demande d'Arthur) */
+.pl-flot.pl-centre { right: auto; bottom: auto; left: 50%; top: 50%; width: 520px;
+  transform: translate(-50%, -50%); animation: none; }
+.pl-flot.pl-centre > .pilou { width: 120px; }
+.pl-voile { position: fixed; inset: 0; z-index: 9390; background: rgba(40, 16, 34, .38); }
+.pl-flot.pl-centre .pp-bulle { font-size: 15.5px; padding: 18px 22px 14px; }
+.pl-flot.pl-centre .pl-flot-t { font-size: 22px; }
+.pl-flot > .pilou { width: 88px; flex: none; }
+.pl-flot .pp-bulle { font-size: 14.5px; line-height: 1.5; margin-bottom: 22px; background: var(--bg2);
+  border: 1px solid var(--brd); box-shadow: 0 12px 40px rgba(40, 16, 34, .25); padding: 14px 18px 12px; }
+.pl-flot .pp-bulle::before { background: var(--bg2); }
+.pl-flot-kick { font-size: 12px; color: var(--txt3); margin-bottom: 3px; }
+.pl-flot-t { font-family: var(--serif); font-size: 18px; line-height: 1.3; margin-bottom: 4px; color: var(--txt); }
+.pl-flot-acts { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.pl-flot-acts .sp { flex: 1; }
+.pl-flot-x { all: unset; cursor: pointer; position: absolute; top: 9px; right: 11px; color: var(--txt3); font-size: 16px; }
+.pl-flot-x:hover { color: var(--txt); }
+/* Ce dont Pilou parle pendant la visite */
+.vis-cible { outline: 3px solid var(--accent); outline-offset: 6px; border-radius: 18px; }
+@media (prefers-reduced-motion: reduce) { .pl-flot { animation: none; } }
 .pp-lead { color: var(--txt2); font-size: 13.5px; line-height: 1.6; margin-bottom: 1rem; max-width: 64ch; }
-.pp-points { list-style: none; display: grid; gap: 9px; margin-bottom: 1rem; }
-.pp-points li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.55; color: var(--txt2); }
-.pp-points li b { color: var(--txt); font-weight: 600; }
-.pp-points li > .ph { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
-  background: var(--accent-soft); color: var(--accent-text); font-size: 17px; }
 .pp-who { display: flex; align-items: center; gap: 10px; background: var(--bg3); border-radius: 99px;
   padding: 6px 16px 6px 8px; font-size: 12px; color: var(--txt2); margin-bottom: .9rem; }
 .pp-recup { background: var(--g2); border-radius: var(--radl); padding: .75rem 1rem; margin-bottom: .9rem; }
@@ -2813,27 +2880,8 @@ label.pp-mod:has(input:checked) .pp-mod-ico { background: var(--accent); color: 
   border: 1.5px solid var(--brd3); display: grid; place-items: center; font-size: 12px; color: transparent;
   transition: background .15s, border-color .15s, color .15s, transform .15s; }
 label.pp-mod:has(input:checked) .pp-mod-ok { background: var(--accent); border-color: var(--accent); color: #fff; transform: scale(1.08); }
-.pp-firsts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-@media (max-width: 640px) { .pp-firsts { grid-template-columns: 1fr; } }
-button.pp-first { position: relative; display: flex; align-items: flex-start; gap: 11px; text-align: left;
-  padding: 10px 34px 10px 10px; border-radius: var(--radl); background: var(--bg3);
-  border: 1.5px solid transparent; color: inherit; transition: border-color .15s; }
-button.pp-first:hover { border-color: var(--accent); }
-button.pp-first:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.pp-first .pp-mod-ico { background: var(--accent-soft); color: var(--accent-text); }
-.pp-first-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;
-  font-size: 12.5px; line-height: 1.45; color: var(--txt2); }
-.pp-first-txt b { font-size: 13.5px; font-weight: 600; color: var(--txt); }
-.pp-first-go { position: absolute; top: 12px; right: 12px; color: var(--txt3); font-size: 15px;
-  transition: color .15s, transform .15s; }
-button.pp-first:hover .pp-first-go { color: var(--accent-text); transform: translate(2px, -2px); }
 .pp-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt2); margin-top: 1rem; }
-/* Explorer avec des données d'exemple : encart des Premiers pas et bandeau */
-.pp-exemple { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 1rem; padding: 12px 14px;
-  border: 1px dashed var(--brd2); border-radius: var(--rad); background: var(--bg2); }
-.pp-exemple > .ph { font-size: 22px; color: var(--accent); flex-shrink: 0; }
-.pp-exemple-txt { flex: 1; min-width: 0; font-size: 12.5px; color: var(--txt2); line-height: 1.45; }
-.pp-exemple-txt b { display: block; color: var(--txt); font-size: 13px; }
+/* Explorer avec des données d'exemple : bandeau */
 .ex-bandeau { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem;
   padding: 10px 14px; border-radius: var(--rad); background: var(--accent-soft);
   border: 1px solid var(--accent); color: var(--txt); font-size: 12.5px; }
@@ -2842,12 +2890,6 @@ button.pp-first:hover .pp-first-go { color: var(--accent-text); transform: trans
 .ex-bandeau-txt { flex: 1; min-width: 220px; line-height: 1.4; }
 .ex-bandeau-txt b { color: var(--accent-text); }
 .ex-bandeau .btn { white-space: nowrap; }
-/* Prénom d'un nouvel utilisateur (étape 1) et ce qu'il faut avoir pour un module (étape 3) */
-.pp-prenom { display: flex; align-items: center; gap: 12px; margin-bottom: .9rem; }
-label[for="pp-prenom"] { font-size: 13px; font-weight: 600; color: var(--txt); white-space: nowrap; }
-.pp-prenom input { flex: 1; max-width: 340px; }
-.pp-besoin { display: flex; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--txt3); }
-.pp-besoin .ph { flex: none; margin-top: 2px; }
 /* Chemin du dossier des données, en clair (Premiers pas, Paramètres → Données) :
    un clic sur le chemin le sélectionne, « Ouvrir » ouvre le dossier. Une seule
    ligne : l'étape 1 des Premiers pas tient à 1366 × 720 (643 px sur 646 avec un
@@ -2859,7 +2901,6 @@ label[for="pp-prenom"] { font-size: 13px; font-weight: 600; color: var(--txt); w
   font-size: 12px; color: var(--accent-text); }
 .dossier-chemin > button:hover { text-decoration: underline; }
 .dossier-chemin > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-.pp-points .dossier-chemin { margin-top: 3px; }
 
 /* ── Fiche des nouveautés : avant la mise à jour, après, et l'historique ── */
 .maj-fiche + .maj-fiche { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--brd); }
@@ -2931,7 +2972,7 @@ details.maj-item[open] .maj-chev { transform: rotate(90deg); }
 #update-modal .upd-nofiche { font-size: 12px; color: var(--txt2); margin: -.6rem 0 1.3rem; }
 @media (prefers-reduced-motion: reduce) {
   .pp-step { animation: none; }
-  .pp-prog span, label.pp-mod, .pp-mod-ico, .pp-mod-ok, .maj-chev, button.pp-first, .pp-first-go { transition: none; }
+  .pp-prog span, label.pp-mod, .pp-mod-ico, .pp-mod-ok, .maj-chev { transition: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -3404,9 +3445,11 @@ html.verre .toast-stack .toast {
       <!-- « Une idée ? » : bulle à côté du prénom (13/10/2026, demande d'Arthur,
            plus en avant que l'ancien lien sous les boutons). Hors de #home-greet,
            réécrit à chaque rendu : la bulle n'apparaît qu'une fois au lancement -->
-      <div class="home-greet"><span class="pilou pilou-accueil" id="home-pilou" aria-hidden="true"></span><span id="home-greet">Bonjour</span><button type="button" class="home-idee"
+      <!-- 12/11/2026 : c'est Pilou qui pose la question (demande d'Arthur) ; il
+           passe après le prénom, la bulle sort de sa bouche -->
+      <div class="home-greet"><span id="home-greet">Bonjour</span><span class="pilou pilou-accueil" id="home-pilou" aria-hidden="true"></span><button type="button" class="home-idee"
               onclick="homeSuggestion()" onanimationend="this.classList.add('vue')"
-              title="Proposer une amélioration à l'auteur de Pilote"><i class="ph ph-lightbulb"></i>Une idée ?</button></div>
+              title="Proposer une idée ou signaler un problème à l'auteur de Pilote">Une idée,<br>un problème&#8239;?</button></div>
       <div class="home-date"  id="home-date"></div>
     </div>
     <!-- Utilisateurs : on change de compte directement ici -->
@@ -5180,9 +5223,12 @@ html.verre .toast-stack .toast {
             <div style="display:flex;gap:8px;align-items:center" role="group" aria-label="Pilou">
               <button type="button" class="btn btn-ghost btn-sm" data-pilou-btn="on"><i class="ph ph-eye"></i> Afficher</button>
               <button type="button" class="btn btn-ghost btn-sm" data-pilou-btn="off"><i class="ph ph-eye-slash"></i> Masquer</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="pilouVisiterMesModules()"
+                      title="Pilou te montre tes modules sur les données de Brice, un profil fictif"><i class="ph ph-compass"></i> Revoir la visite</button>
             </div>
             <p class="set-lead" style="margin:8px 0 0">
-              L'ourson de l'accueil et des écrans encore vides.</p>
+              L'ourson de l'accueil et des écrans encore vides, qui te fait aussi visiter
+              tes modules avec les données d'un profil fictif.</p>
           </div>
           <div class="fg">
             <label>Couleur d'accent</label>
@@ -5748,6 +5794,19 @@ html.verre .toast-stack .toast {
 <div class="ov" id="ov-suggestion" onclick="if(event.target===this)closeOv('ov-suggestion')">
   <div class="modal" style="max-width:560px">
     <h2 id="sug-titre">Une idée pour Pilote ?</h2>
+    <!-- Depuis la bulle de Pilou (12/11/2026) : d'abord le choix entre les deux -->
+    <div id="sug-choix" hidden>
+      <div class="sug-choix">
+        <button type="button" onclick="homeSuggestion(false)"><i class="ph ph-lightbulb"></i>
+          <b>J'ai une idée</b><span>Une amélioration, un module, un détail qui manque</span></button>
+        <button type="button" onclick="homeSuggestion(true)"><i class="ph ph-bug"></i>
+          <b>Quelque chose ne marche pas</b><span>Un bug, un chiffre faux, un écran bizarre</span></button>
+      </div>
+      <div class="mact">
+        <button class="btn btn-ghost" onclick="closeOv('ov-suggestion')">Fermer</button>
+      </div>
+    </div>
+    <div id="sug-corps">
     <p class="sug-txt" id="sug-txt">Une amélioration à proposer : écris à l'auteur de Pilote.</p>
     <div class="sug-adr">
       <span id="sug-adresse"></span>
@@ -5774,6 +5833,7 @@ html.verre .toast-stack .toast {
       <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="homeSuggestionEcrire(true)"><i class="ph ph-google-logo"></i> Écrire avec Gmail</button>
       <button class="btn btn-primary" onclick="homeSuggestionEcrire(false)"><i class="ph ph-envelope-simple"></i> Ouvrir ma messagerie</button>
+    </div>
     </div>
   </div>
 </div>
@@ -11701,6 +11761,7 @@ async function explorerExemple() {
 async function quitterExemple(effacer) {
   const api = window.pywebview && window.pywebview.api;
   if (!(api && api.quitter_exemple)) return;
+  if (typeof _visiteEcrire === "function") _visiteEcrire(null);   // visite avec Pilou finie
   await _gelerEnregistrements();
   const r = await api.quitter_exemple(!!effacer);
   if (r && r.ok) location.reload();
@@ -12452,16 +12513,19 @@ async function _showWelcomeIfFirstRun() {
   }
 
   const nom = (typeof homeDisplayName === "function") ? homeDisplayName() : "";
-  const welcomeTitle = nom ? "Bienvenue, <em>" + escHtml(nom) + "</em>" : "Bienvenue sur Pilote";
-  // Une installation neuve crée l'utilisateur « Moi » : on demande le prénom,
-  // qui devient son nom (accueil, pastille, choix de l'utilisateur)
+  // Une installation neuve crée l'utilisateur « Moi » : Pilou demande le
+  // prénom, qui devient son nom (accueil, pastille, choix de l'utilisateur)
   const aNommer = !!(me && ["Moi", "Mon PEA", "default"].includes(me.label));
+  const surPc = EST_MAC ? "ce Mac" : "ce PC";
+  // Pilou parle (12/11/2026, décidé avec Arthur) : sa première phrase
+  const phraseLocal = `Tout ce que tu mets ici reste sur ${surPc}.`;
+  const phrase1 = aNommer
+    ? "Salut&#8239;! Moi c'est Pilou, je vais t'aider à prendre Pilote en main. Et toi, tu t'appelles comment&#8239;?"
+    : (nom ? "Salut <em>" + escHtml(nom) + "</em>&#8239;! " : "Salut&#8239;! ")
+      + "Moi c'est Pilou, je vais t'aider à prendre Pilote en main. " + phraseLocal;
   const prenomSection = aNommer ? `
-        <div class="pp-prenom">
-          <label for="pp-prenom">Ton prénom</label>
           <input id="pp-prenom" type="text" maxlength="40" autocomplete="given-name"
-            placeholder="Pour t'accueillir et nommer ton espace">
-        </div>` : "";
+            aria-label="Ton prénom" placeholder="Ton prénom">` : "";
 
   const ov = document.createElement("div");
   ov.id = "ov-welcome";
@@ -12472,26 +12536,25 @@ async function _showWelcomeIfFirstRun() {
 
       <section class="pp-step" data-pp="1">
         <div class="pp-kick">Premiers pas · 1 sur 3</div>
-        <h2 class="pp-h" id="pp-t1"><span class="pilou pilou-pp" aria-hidden="true">${pilouSvg("salut")}</span>${welcomeTitle}</h2>
-        <p class="pp-lead">Pilote rassemble tes suivis personnels (bourse, budget, prêt,
-          sport, santé…) dans une seule application, qui tourne entièrement sur ton ordinateur.</p>
-        ${prenomSection}
+        <div class="pp-pl">
+          <span class="pilou" aria-hidden="true" data-pp-pilou>${pilouSvg("salut")}</span>
+          <div class="pp-bulle">
+            <h2 class="pp-h" id="pp-t1" data-pp-dit>${phrase1}</h2>
+            ${prenomSection}
+          </div>
+        </div>
         ${identitySection}
-        <ul class="pp-points">
-          <li title="Pilote ne demande sur internet que les cours de tes titres (sans les quantités ni les montants) et les mises à jour (à GitHub)."><i class="ph ph-lock-simple"></i><span><b>Tout reste sur ${EST_MAC ? "ce Mac" : "ce PC"}.</b>
-            ${dossier ? `Sans compte ni serveur. Tes données sont ici, sauvegardées chaque jour&nbsp;:
-            <span class="dossier-chemin"><span>${escHtml(dossier)}</span>
-              <button type="button" onclick="openDataFolder()"><i class="ph ph-folder-open"></i> Ouvrir</button></span>`
-            : `Pas de compte, pas de serveur : tes données vivent dans le dossier Données,
-            avec une sauvegarde chaque jour.`}</span></li>
-          <li><i class="ph ph-squares-four"></i><span><b>Tu choisis tes modules.</b>
-            Chacun est indépendant, et ceux que tu ne prends pas restent masqués.</span></li>
-          <li><i class="ph ph-users"></i><span><b>Un espace par personne.</b>
-            Plusieurs utilisateurs peuvent cohabiter, chacun avec ses données et,
-            s'il le veut, son code PIN.</span></li>
-          <li><i class="ph ph-arrow-circle-up"></i><span><b>Mises à jour automatiques.</b>
-            Avant chacune, une fiche te dit ce qui change.</span></li>
-        </ul>
+        <!-- Les quatre points d'avant (jusqu'au 12/11/2026), en pastilles ;
+             le détail reste dans l'infobulle -->
+        <div class="pp-chips">
+          <span title="Pilote ne demande sur internet que les cours de tes titres (sans les quantités ni les montants) et les mises à jour (à GitHub)."><i class="ph ph-lock-simple"></i>Pas de compte, pas de serveur</span>
+          <span title="Chaque module est indépendant : ceux que tu ne prends pas restent masqués."><i class="ph ph-squares-four"></i>Tu choisis tes modules</span>
+          <span title="Plusieurs utilisateurs peuvent cohabiter, chacun avec ses données et, s'il le veut, son code PIN."><i class="ph ph-users"></i>Un espace par personne</span>
+          <span title="Avant chacune, une fiche te dit ce qui change."><i class="ph ph-arrow-circle-up"></i>Mises à jour automatiques</span>
+        </div>
+        ${dossier ? `<div class="pp-dossier">Tes données, sauvegardées chaque jour&nbsp;:
+          <span class="dossier-chemin"><span>${escHtml(dossier)}</span>
+            <button type="button" onclick="openDataFolder()"><i class="ph ph-folder-open"></i> Ouvrir</button></span></div>` : ""}
         ${recoverySection}
         <div class="pp-acts">
           <span class="pp-sp"></span>
@@ -12501,9 +12564,14 @@ async function _showWelcomeIfFirstRun() {
 
       <section class="pp-step" data-pp="2" hidden>
         <div class="pp-kick">Premiers pas · 2 sur 3</div>
-        <h2 class="pp-h">Qu'est-ce que tu veux suivre&#8239;?</h2>
-        <p class="pp-lead">Coche les modules à afficher. Les autres seront masqués, pas
-          supprimés : Paramètres → Modules les remet quand tu veux.</p>
+        <div class="pp-pl">
+          <span class="pilou" aria-hidden="true" data-pp-pilou>${pilouSvg("pensif")}</span>
+          <div class="pp-bulle">
+            <h2 class="pp-h" id="pp-t2" data-pp-dit>Qu'est-ce que tu veux suivre&#8239;?</h2>
+            <small>Coche les modules à afficher. Les autres seront juste masqués&nbsp;:
+              Paramètres → Modules les remet quand tu veux.</small>
+          </div>
+        </div>
         <div class="pp-mods">${NAV_SECTIONS.filter(s => s.id !== "sec-pret").map(s => _modCarteHtml(s, false)).join("")}</div>
         <div class="pp-acts">
           <button class="btn btn-ghost" data-pp-go="1"><i class="ph ph-arrow-left"></i> Retour</button>
@@ -12515,23 +12583,26 @@ async function _showWelcomeIfFirstRun() {
 
       <section class="pp-step" data-pp="3" hidden>
         <div class="pp-kick">Premiers pas · 3 sur 3</div>
-        <h2 class="pp-h">Par où commencer</h2>
-        <p class="pp-lead">Un premier geste par module. Clique sur l'un d'eux pour y aller
-          tout de suite, ou commence par l'accueil.</p>
-        <div class="pp-firsts" id="pp-firsts"></div>
-        <div class="pp-exemple">
-          <i class="ph ph-flask"></i>
-          <span class="pp-exemple-txt"><b>Envie de voir avant de saisir&#8239;?</b>
-            Explore Pilote rempli avec les données d'un profil fictif. Tes données restent à part,
-            et un bandeau te ramène ici d'un clic.</span>
-          <button type="button" class="btn btn-ghost btn-sm" data-pp-exemple>Explorer avec des données d'exemple</button>
+        <!-- Jusqu'au 12/11/2026 : un « premier geste » par module et un encart
+             « Explorer avec des données d'exemple ». Pilou propose désormais de
+             faire visiter l'exemple ; les premiers gestes sont devenus ses
+             astuces de premier passage (pilouApresNavigation) -->
+        <div class="pp-pl">
+          <span class="pilou" aria-hidden="true" data-pp-pilou>${pilouSvg("joyeux")}</span>
+          <div class="pp-bulle">
+            <h2 class="pp-h" id="pp-t3" data-pp-dit>C'est tout bon&#8239;! Avant de remplir quoi que ce soit, tu veux que je te fasse visiter&#8239;?</h2>
+            <small>On regarde ensemble Pilote rempli avec les données de Brice, un profil pour de faux.
+              Je t'explique les écrans de tes modules, et tes données restent à part.</small>
+            <div class="pp-bulle-acts">
+              <button type="button" class="btn btn-primary" data-pp-visite>Visiter avec Pilou</button>
+              <button type="button" class="btn btn-ghost" data-pp-fin>Non merci, je commence</button>
+            </div>
+          </div>
         </div>
         <p class="pp-note"><i class="ph ph-gear-six"></i> Thème, couleur d'accent et code PIN :
           Paramètres, en bas de la barre de gauche.</p>
         <div class="pp-acts">
           <button class="btn btn-ghost" data-pp-go="2"><i class="ph ph-arrow-left"></i> Retour</button>
-          <span class="pp-sp"></span>
-          <button class="btn btn-primary" data-pp-fin>Commencer</button>
         </div>
       </section>
     </div>`;
@@ -12540,8 +12611,9 @@ async function _showWelcomeIfFirstRun() {
   const choix = () => [...ov.querySelectorAll(".pp-mods input:checked")].map(i => i.value);
 
   const aller = n => {
-    if (n === 3) remplirPremiersPas();
     ov.querySelectorAll(".pp-step").forEach(s => { s.hidden = s.dataset.pp !== String(n); });
+    const dit = ov.querySelector(`.pp-step[data-pp="${n}"] [data-pp-dit]`);
+    if (dit && !(n === 2 && choix().length)) pilouEcrit(dit);
     ov.querySelectorAll(".pp-prog span").forEach((b, i) => b.classList.toggle("on", i < n));
     ov.querySelector(".pp").scrollTop = 0;
     const st = ov.querySelector(`.pp-step[data-pp="${n}"]`);
@@ -12554,7 +12626,17 @@ async function _showWelcomeIfFirstRun() {
   if (champPrenom) {
     champPrenom.onkeydown = e => { if (e.key === "Enter") aller(2); };
     setTimeout(() => champPrenom.focus(), 60);
+    // Pilou répond dès qu'on tape son prénom
+    champPrenom.oninput = () => {
+      const p = champPrenom.value.trim();
+      pilouFin(ov.querySelector("#pp-t1"));
+      ov.querySelector("#pp-t1").innerHTML = p
+        ? "Enchanté, <em>" + escHtml(p) + "</em>&#8239;! " + phraseLocal
+        : phrase1;
+      ov.querySelector('[data-pp="1"] [data-pp-pilou]').innerHTML = pilouSvg(p ? "joyeux" : "salut");
+    };
   }
+  pilouEcrit(ov.querySelector("#pp-t1"));
   // Le prénom devient le nom de l'utilisateur, comme dans Paramètres → Utilisateurs
   const nommer = () => {
     const prenom = champPrenom ? champPrenom.value.trim() : "";
@@ -12574,23 +12656,15 @@ async function _showWelcomeIfFirstRun() {
     ov.querySelector("#pp-compte").textContent =
       n ? n + (n > 1 ? " modules choisis" : " module choisi") : "Aucun module choisi";
   };
-  ov.querySelectorAll(".pp-mods input").forEach(i => { i.onchange = majCompte; });
-
-  function remplirPremiersPas() {
-    const box = ov.querySelector("#pp-firsts");
-    const pris = choix();
-    box.innerHTML = NAV_SECTIONS.filter(s => pris.includes(s.id)).map(s => {
-      const m = NAV_MODULES[s.id] || {};
-      return `<button type="button" class="pp-first" data-pp-ouvrir="${m.tab || "home"}"
-                title="Ouvrir ${escHtml(s.label)}">
-          <span class="pp-mod-ico"><i class="ph ph-${NAV_ICONS[s.id] || "circle"}"></i></span>
-          <span class="pp-first-txt"><b>${escHtml(s.label)}</b><span>${escHtml(m.pas || "")}</span>${m.besoin
-            ? `<span class="pp-besoin"><i class="ph ph-info"></i> ${escHtml(m.besoin)}</span>` : ""}</span>
-          <i class="ph ph-arrow-up-right pp-first-go"></i>
-        </button>`;
-    }).join("");
-    box.querySelectorAll("[data-pp-ouvrir]").forEach(b => { b.onclick = () => terminer(b.dataset.ppOuvrir); });
-  }
+  // Pilou réagit au module qu'on vient de cocher, revient à la question sinon
+  const t2 = ov.querySelector("#pp-t2"), pilou2 = ov.querySelector('[data-pp="2"] [data-pp-pilou]');
+  ov.querySelectorAll(".pp-mods input").forEach(i => { i.onchange = () => {
+    majCompte();
+    pilouFin(t2);
+    const reaction = i.checked && PILOU_REACTIONS[i.value];
+    t2.innerHTML = reaction || (choix().length ? "Autre chose à suivre&#8239;?" : "Qu'est-ce que tu veux suivre&#8239;?");
+    pilou2.innerHTML = pilouSvg(reaction ? "content" : "pensif");
+  }; });
 
   // Modules non cochés masqués, tuiles de l'accueil prises dans les modules
   // choisis, puis on part sur l'onglet demandé (ou on reste à l'accueil)
@@ -12602,6 +12676,10 @@ async function _showWelcomeIfFirstRun() {
     S.uiPrefs.premiersPas = true;
     S.uiPrefs.modulesConnus = NAV_SECTIONS.map(s => s.id);   // tous proposés ici
     S.uiPrefs.montresProposees = true;                       // Montres compris
+    // Pilou (12/11/2026) : astuces de premier passage pour ce nouvel
+    // utilisateur seulement ; la visite vient de lui être proposée
+    S.uiPrefs.astuces = {};
+    S.uiPrefs.visiteProposee = true;
     if (hist && hist.version) S.uiPrefs.nouveautesVues = hist.version;
     _enregistrerUiPrefs();
     const nomme = nommer();
@@ -12613,10 +12691,12 @@ async function _showWelcomeIfFirstRun() {
   }
   ov.querySelector("[data-pp-fin]").onclick = () => terminer(null);
   // Les choix de l'assistant sont d'abord gardés pour SON utilisateur (il ne
-  // le reverra pas en revenant), puis bascule sur l'utilisateur Exemple
-  ov.querySelector("[data-pp-exemple]").onclick = async () => {
+  // le reverra pas en revenant), puis visite de l'utilisateur Exemple, sur
+  // les seuls modules choisis
+  ov.querySelector("[data-pp-visite]").onclick = async () => {
+    const pris = choix();
     try { await terminer(null); } catch (e) {}
-    explorerExemple();
+    pilouVisiter(pris);
   };
 
   // Plus de bouton « Importer un fichier » ici (27/10/2026, demande d'Arthur) :
@@ -22269,8 +22349,17 @@ let _sugProbleme = false;
 let _sugRapport = null;
 
 async function homeSuggestion(probleme) {
-  _sugProbleme = !!probleme;
   const $ = id => document.getElementById(id);
+  // Sans argument (bulle de Pilou) : on choisit d'abord entre idée et problème
+  const choix = probleme === undefined;
+  $("sug-choix").hidden = !choix;
+  $("sug-corps").hidden = choix;
+  if (choix) {
+    $("sug-titre").textContent = "Une idée, un problème ?";
+    openOvTop("ov-suggestion");
+    return;
+  }
+  _sugProbleme = !!probleme;
   $("sug-titre").textContent = _sugProbleme ? "Signaler un problème" : "Une idée pour Pilote ?";
   $("sug-txt").textContent = _sugProbleme
     ? "Quelque chose ne marche pas ? Écris ce que tu vois : ton texte ouvre un mail, que tu relis avant de l'envoyer."
@@ -29560,8 +29649,13 @@ function gaRenderTout() {
   if (typeof cfgRenderModule === "function") cfgRenderModule("garmin");
 }
 
-function gaKpi(lbl, val, sub, accent) {
-  return `<div class="mkpi${accent ? " accent" : ""}"><span class="mkpi-lbl">${escHtml(lbl)}</span>
+/** Une case du haut de Ma forme. Avec `mesure` (clé de GA_MESURES), un clic
+    montre cette mesure dans la courbe, et la case affichée par la courbe est en couleur. */
+function gaKpi(lbl, val, sub, mesure) {
+  const clic = mesure ? ` ga-kpi-clic${mesure === GA.mesure ? " accent" : ""}" role="button" tabindex="0"
+    title="Voir dans la courbe" onclick="GA.mesure='${mesure}';gaRenderForme()"
+    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}` : "";
+  return `<div class="mkpi${clic}"><span class="mkpi-lbl">${escHtml(lbl)}</span>
     <span class="mkpi-val">${val}</span><span class="mkpi-sub">${escHtml(sub || "")}</span></div>`;
 }
 
@@ -29609,13 +29703,13 @@ function gaRenderForme() {
     const [jP, p] = gaDernier("pas");
     const moyF = gaMoyenne("fcRepos", 30);
     const kpis = [
-      s ? gaKpi("Sommeil", gaDuree(s.sommeil), gaNuit(jS), true) : "",
+      s ? gaKpi("Sommeil", gaDuree(s.sommeil), gaNuit(jS), "sommeil") : "",
       s && s.sommeilScore != null ? gaKpi("Score de sommeil", String(s.sommeilScore), gaScoreSommeil(s.sommeilScore)
-        + (gaMoyenne("sommeilScore", 7) != null ? " · moyenne 7 j : " + gaMoyenne("sommeilScore", 7) : "")) : "",
-      b ? gaKpi("Body Battery", String(b.bbMax), "au plus haut " + gaLeJour(jB) + (b.bbFin != null ? " · dernière valeur " + b.bbFin : "")) : "",
-      v ? gaKpi("VFC de la nuit", v.vfc + " ms", (GA_VFC[v.vfcStatut] || "") + (GA_VFC[v.vfcStatut] ? " · " : "") + dashDateCourte(jV)) : "",
-      f ? gaKpi("FC au repos", f.fcRepos + " bpm", (moyF ? "moyenne 30 j : " + moyF + " · " : "") + dashDateCourte(jF)) : "",
-      p ? gaKpi("Pas", Number(p.pas).toLocaleString("fr-FR"), (p.objectifPas ? "objectif " + Number(p.objectifPas).toLocaleString("fr-FR") + " · " : "") + gaLeJour(jP)) : "",
+        + (gaMoyenne("sommeilScore", 7) != null ? " · moyenne 7 j : " + gaMoyenne("sommeilScore", 7) : ""), "sommeilScore") : "",
+      b ? gaKpi("Body Battery", String(b.bbMax), "au plus haut " + gaLeJour(jB) + (b.bbFin != null ? " · dernière valeur " + b.bbFin : ""), "bbMax") : "",
+      v ? gaKpi("VFC de la nuit", v.vfc + " ms", (GA_VFC[v.vfcStatut] || "") + (GA_VFC[v.vfcStatut] ? " · " : "") + dashDateCourte(jV), "vfc") : "",
+      f ? gaKpi("FC au repos", f.fcRepos + " bpm", (moyF ? "moyenne 30 j : " + moyF + " · " : "") + dashDateCourte(jF), "fcRepos") : "",
+      p ? gaKpi("Pas", Number(p.pas).toLocaleString("fr-FR"), (p.objectifPas ? "objectif " + Number(p.objectifPas).toLocaleString("fr-FR") + " · " : "") + gaLeJour(jP), "pas") : "",
     ].join("");
     // Deuxième rangée : ce que la montre mesure en plus (rien si elle ne le mesure pas)
     const [jO, o] = gaDernier("spo2");
@@ -29627,10 +29721,10 @@ function gaRenderForme() {
     const kpis2 = [
       hor ? gaKpi("Coucher et lever", hor.coucher + " → " + hor.lever,
                   "moyenne 30 j · coucher régulier à ± " + hor.ecart + " min") : "",
-      im ? gaKpi("Minutes intenses", im.total + " min", "cette semaine" + (im.objectif ? " · objectif " + im.objectif + " min" : "")) : "",
+      im ? gaKpi("Minutes intenses", im.total + " min", "cette semaine" + (im.objectif ? " · objectif " + im.objectif + " min" : ""), "intensite") : "",
       rc ? gaKpi("Récupération", rc.recup + " %", "d'après Coros · " + gaLeJour(jC)) : "",
-      o ? gaKpi("SpO2", o.spo2 + " %", "moyenne du jour · " + dashDateCourte(jO)) : "",
-      rs ? gaKpi("Respiration", rs.respiration + " /min", "moyenne du jour · " + dashDateCourte(jR)) : "",
+      o ? gaKpi("SpO2", o.spo2 + " %", "moyenne du jour · " + dashDateCourte(jO), "spo2") : "",
+      rs ? gaKpi("Respiration", rs.respiration + " /min", "moyenne du jour · " + dashDateCourte(jR), "respiration") : "",
       age ? gaKpi("Âge physique", String(age.age).replace(".", ",") + " ans",
                   (age.reel ? "âge réel " + age.reel + " ans" : "") + (age.atteignable ? (age.reel ? " · " : "") + "atteignable " + String(age.atteignable).replace(".", ",") : "")) : "",
     ].join("");
@@ -30222,6 +30316,334 @@ function dashGaRecords() {
   };
 })();
 
+/* ══════════════════════════════════════════════════════════════════════════
+   PILOU GUIDE (12/11/2026, décidé avec Arthur) — docs/accueil.md
+   1. pilouEcrit : sa phrase s'écrit lettre par lettre (Premiers pas).
+   2. Visite avec Pilou : sur l'utilisateur Exemple (Brice), il montre
+      plusieurs écrans de chaque module choisi, une bulle par écran. L'étape
+      en cours vit dans sessionStorage (« pilote.visite ») : explorerExemple()
+      recharge la page, la visite reprend après (pilouDemarrage).
+   3. Astuces : la première fois qu'un nouvel utilisateur ouvre un module, le
+      « premier geste » de NAV_MODULES, une fois (S.uiPrefs.astuces). Les
+      utilisateurs d'avant n'ont pas de S.uiPrefs.astuces : rien ne s'affiche.
+   4. Ceux d'avant : la visite leur est proposée une fois sur l'accueil
+      (S.uiPrefs.visiteProposee), puis Paramètres → Général la relance.
+   Dernier patch de goTab (après Garmin).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** Écrit le texte de l'élément lettre par lettre ; un clic sur la bulle
+    (ou pilouFin) l'affiche d'un coup. Rien d'animé si le système réduit les
+    mouvements. */
+function pilouEcrit(el) {
+  if (!el) return;
+  pilouFin(el);
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const noeuds = [];
+  const marche = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  while (marche.nextNode()) noeuds.push([marche.currentNode, marche.currentNode.nodeValue]);
+  noeuds.forEach(([n]) => { n.nodeValue = ""; });
+  let i = 0, k = 0;
+  const finir = () => { clearInterval(el._pilouMinuteur); el._pilouMinuteur = null;
+    noeuds.forEach(([n, t]) => { n.nodeValue = t; }); };
+  el._pilouFinir = finir;
+  el._pilouMinuteur = setInterval(() => {
+    if (i >= noeuds.length) { finir(); return; }
+    const [n, t] = noeuds[i];
+    n.nodeValue = t.slice(0, ++k);
+    if (k >= t.length) { i++; k = 0; }
+  }, 16);
+  const bulle = el.closest(".pp-bulle");
+  if (bulle) bulle.addEventListener("click", () => pilouFin(el), { once: true });
+}
+function pilouFin(el) { if (el && el._pilouMinuteur && el._pilouFinir) el._pilouFinir(); }
+
+/** Ce que dit Pilou quand on coche un module (Premiers pas, étape 2) */
+const PILOU_REACTIONS = {
+  "sec-pea":     "Le PEA&#8239;? Je suivrai tes lignes et leurs cours chaque jour.",
+  "sec-cto":     "Un compte-titres&#8239;? Chacun aura sa section à lui.",
+  "sec-crypto":  "Les cryptos&#8239;? Je les suis en euros, comme des actions.",
+  "sec-comptes": "Le budget&#8239;? On saura où passe chaque euro.",
+  "sec-sport":   "Le sport&#8239;? Bon choix. Je garderai tes séances et tes objectifs.",
+  "sec-patri":   "Le patrimoine&#8239;? Un relevé par mois, et tu vois ta valeur nette évoluer.",
+  "sec-sante":   "La santé&#8239;? Je dessinerai la courbe de tes pesées.",
+  "sec-garmin":  "Une montre&#8239;? Ses séances arriveront toutes seules dans Sports.",
+  "sec-actus":   "Les newsletters&#8239;? Tu les liras ici, dans Pilote.",
+  "sec-agenda":  "L'agenda&#8239;? Tout ce qui a une date, au même endroit.",
+  "sec-pret":    "Le prêt&#8239;? Je suivrai ce qui est remboursé et ce qui reste.",
+};
+
+/* Les arrêts de la visite, module par module (ordre de NAV_SECTIONS). tab :
+   l'onglet, ou une fonction qui le donne (null = arrêt sauté) ; c : ce qu'on
+   entoure (par défaut la première carte de l'écran) ; h : l'humeur de Pilou. */
+const _visiteCto = n => () => { const c = (typeof ctoComptesTitres === "function") && ctoComptesTitres()[0];
+  return c ? n + "@" + c.id : null; };
+const _visiteCrypto = n => () => ((typeof cryptoCompte === "function") && cryptoCompte()) ? n : null;
+const PILOU_VISITE = {
+  "sec-pea": [
+    { tab: "dash", h: "content", t: "Son PEA en un coup d'œil",
+      x: "Valeur, plus-value, frais, dividendes, et la courbe de son capital comparée aux indices." },
+    { tab: "pos", t: "Ligne par ligne",
+      x: "Ce qu'il possède, au cours du jour, avec la plus-value de chaque ligne. Pour le tien, pas besoin de tout taper&nbsp;: importe le relevé de ta banque." },
+    { tab: "div", h: "joyeux", t: "Ses dividendes",
+      x: "Ce que ses titres lui ont rapporté, et ce qui doit encore tomber." },
+    { tab: "dep", h: "pensif", t: "Ses versements",
+      x: "Chaque versement sur le PEA, jusqu'au plafond de 150&nbsp;000&nbsp;€." },
+  ],
+  "sec-cto": [
+    { tab: _visiteCto("cto-dash"), t: "Son compte-titres",
+      x: "Les mêmes écrans que le PEA, pour chaque compte-titres, avec les frais de son courtier." },
+    { tab: _visiteCto("cto-tx"), h: "pensif", t: "Ses achats et ses ventes",
+      x: "Tout l'historique du compte. Il s'importe depuis le relevé du courtier, Trade Republic par exemple." },
+  ],
+  "sec-crypto": [
+    { tab: _visiteCrypto("crypto-dash"), t: "Ses cryptos",
+      x: "Bitcoin, Ethereum… suivis comme un compte-titres, avec les cours en euros." },
+    { tab: _visiteCrypto("crypto-pos"), h: "pensif", t: "Crypto par crypto",
+      x: "Chaque crypto avec sa plus-value. L'historique s'importe depuis Trade Republic ou depuis ta plateforme." },
+  ],
+  "sec-comptes": [
+    { tab: "fin-month", c: "#card-fin-chart-pie", t: "Ses dépenses du mois",
+      x: "Chaque dépense et chaque revenu dans sa catégorie, avec les prélèvements qui reviennent tous les mois." },
+    { tab: "fin-year", c: "#card-fin-year-chart", h: "pensif", t: "Son année",
+      x: "Le récap des douze mois&nbsp;: où passe l'argent, et ce qui reste chaque mois." },
+  ],
+  "sec-pret": [
+    { tab: "pr-overview", t: "Son prêt",
+      x: "Ce qu'il a remboursé, ce qui reste, et l'argent qu'il a placé en attendant." },
+    { tab: "pr-params", h: "pensif", t: "Les réglages du prêt",
+      x: "Montant, dates, mensualité&nbsp;: tu les donnes une fois, Pilote calcule le reste." },
+  ],
+  "sec-sport": [
+    { tab: "sp-agenda", h: "joyeux", t: "Ses séances",
+      x: "Chaque séance dans l'agenda, avec ses sports à lui. Les heures se cumulent toutes seules." },
+    { tab: "sp-goals", t: "Ses objectifs",
+      x: "Des objectifs datés, et où il en est pour chacun." },
+    { tab: "sp-stats", h: "pensif", t: "Ses statistiques",
+      x: "Ses heures et ses distances, semaine après semaine." },
+  ],
+  "sec-patri": [
+    { tab: "pa-vue", t: "Tout ce qu'il possède",
+      x: "Sa valeur nette&nbsp;: comptes et placements, moins ses dettes, mois après mois." },
+    { tab: "pa-comptes", h: "pensif", t: "Le relevé du mois",
+      x: "Une fois par mois, il note le solde de chaque compte. Deux minutes, et la courbe se met à jour." },
+    { tab: "sim", h: "joyeux", t: "Les simulateurs",
+      x: "Combien rapporterait un versement chaque mois pendant dix ans&#8239;? Les simulateurs répondent." },
+  ],
+  "sec-sante": [
+    { tab: "sa-suivi", t: "Son poids",
+      x: "Ses pesées et leur courbe. Elles se saisissent à la main, ou se lisent sur une capture de l'app FitDays." },
+    { tab: "sa-mesures", h: "pensif", t: "Toutes ses mesures",
+      x: "Chaque pesée, avec le détail quand sa balance le donne." },
+    { tab: "sa-goals", t: "Ses objectifs",
+      x: "Un poids à atteindre pour une date, et le chemin qui reste." },
+  ],
+  "sec-garmin": [
+    { tab: "ga-forme", t: "Sa forme du jour",
+      x: "Sommeil, VFC, pas&nbsp;: ce que dit sa montre, chaque matin." },
+    { tab: "ga-connexion", h: "pensif", t: "Brancher sa montre",
+      x: "Garmin, Coros, ou n'importe quelle montre par ses fichiers .fit. Ses séances arrivent toutes seules dans Sports." },
+  ],
+  "sec-actus": [
+    { tab: "ac-boite", t: "Ses newsletters",
+      x: "Les newsletters de ta boîte Gmail s'affichent ici, dans Pilote. Brice n'a pas branché la sienne&nbsp;: c'est pour ça que c'est vide." },
+    { tab: "ac-connexion", h: "pensif", t: "La connexion",
+      x: "Il faut un compte Gmail et un code d'application&nbsp;: cet onglet explique tout, pas à pas." },
+  ],
+  "sec-agenda": [
+    { tab: "ag-cal", t: "Son calendrier",
+      x: "Tout ce que Pilote sait dater (séances, objectifs, mensualités) et ses notes, au même endroit." },
+    { tab: "ag-connexion", h: "pensif", t: "Sur son iPhone",
+      x: "Avec son agenda iCloud, ses notes et ce qu'il coche apparaissent aussi sur son iPhone." },
+  ],
+};
+
+const _VISITE_CLE = "pilote.visite";
+function _visiteLire() { try { return JSON.parse(sessionStorage.getItem(_VISITE_CLE) || "null"); } catch (e) { return null; } }
+function _visiteEcrire(v) {
+  try { if (v) sessionStorage.setItem(_VISITE_CLE, JSON.stringify(v)); else sessionStorage.removeItem(_VISITE_CLE); } catch (e) {}
+}
+
+/** Les arrêts pour ces modules : l'accueil, ceux de chaque module, la fin */
+function _visiteArrets(mods) {
+  const arrets = [{ tab: "home", c: "#home-cards", h: "salut", t: "Voici l'accueil de Brice",
+    x: "Brice est un profil pour de faux, rempli pour la visite. Chaque tuile résume un de ses modules&nbsp;: un clic dessus t'y emmène." }];
+  NAV_SECTIONS.forEach(s => {
+    if (!mods.includes(s.id)) return;
+    (PILOU_VISITE[s.id] || []).forEach(a => {
+      const tab = typeof a.tab === "function" ? a.tab() : a.tab;
+      if (tab) arrets.push(Object.assign({}, a, { tab }));
+    });
+  });
+  arrets.push({ tab: "home", fin: true, h: "joyeux", t: "Voilà, tu as fait le tour&#8239;!",
+    x: "Rien de tout ça n'est chez toi&nbsp;: c'est Brice. Reviens à ton profil quand tu veux, je t'y attends." });
+  return arrets;
+}
+
+async function _estExemple() {
+  try {
+    const st = await _loadUsers();
+    const u = st && st.users.find(x => x.slug === st.active);
+    return !!(u && u.exemple);
+  } catch (e) { return false; }
+}
+
+/** Lance la visite sur ces modules (ids de NAV_SECTIONS) : bascule sur
+    l'utilisateur Exemple, qui recharge la page, puis pilouDemarrage reprend. */
+async function pilouVisiter(mods) {
+  mods = (mods || []).filter(id => PILOU_VISITE[id]);
+  _visiteEcrire({ mods, i: 0 });
+  if (await _estExemple()) { _visiteMontrer(); return; }
+  explorerExemple();
+}
+
+function _visiteNettoyer() {
+  document.querySelectorAll(".vis-cible").forEach(e => e.classList.remove("vis-cible"));
+  document.querySelectorAll("#pilou-visite, .pl-voile").forEach(e => e.remove());
+}
+
+async function _visiteMontrer() {
+  const v = _visiteLire();
+  if (!v) { _visiteNettoyer(); return; }
+  const arrets = _visiteArrets(v.mods || []);
+  v.i = Math.max(0, Math.min(v.i || 0, arrets.length - 1));
+  const a = arrets[v.i];
+  _visiteNettoyer();
+  goTab(a.tab);
+  _setActiveSidebar(a.tab);
+  await new Promise(r => setTimeout(r, 300));   // le temps que l'écran se dessine
+  if (_visiteLire() === null) return;           // visite arrêtée entre-temps
+  const pane = document.querySelector(".pane.active");
+  // La carte nommée, sinon la première carte visible de l'écran
+  const visible = e => e && e.offsetParent !== null;
+  const cible = a.fin ? null : [a.c && document.querySelector(a.c), ...(pane ? pane.querySelectorAll(".card") : [])].find(visible);
+  if (cible) {
+    cible.classList.add("vis-cible");
+    // Pas de scrollIntoView : il fait aussi défiler la page entière, et la
+    // fenêtre (barre de titre comprise) glissait vers le bas (vu le 12/11/2026).
+    // Seule la zone qui défile autour de la carte bouge.
+    for (let p = cible.parentElement; p && p !== document.body; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowY;
+      if ((o === "auto" || o === "scroll") && p.scrollHeight > p.clientHeight) {
+        const r = cible.getBoundingClientRect(), rp = p.getBoundingClientRect();
+        if (r.top < rp.top || r.bottom > rp.bottom) p.scrollTop += r.top - rp.top - 24;
+        break;
+      }
+    }
+  }
+  const n = v.i + 1, total = arrets.length;
+  const box = document.createElement("div");
+  box.id = "pilou-visite";
+  box.className = "pl-flot" + (a.fin ? " pl-centre" : "");
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "Visite avec Pilou");
+  box.innerHTML = `<span class="pilou" aria-hidden="true">${pilouSvg(a.h || "content")}</span>
+    <div class="pp-bulle">
+      <div class="pl-flot-kick">Visite avec Pilou · ${n} sur ${total}</div>
+      <div class="pl-flot-t">${a.t}</div>${a.x}
+      <div class="pl-flot-acts">
+        ${a.fin
+          ? `<span class="sp"></span>
+             <button type="button" class="btn btn-ghost btn-sm" data-vis="rester">Rester sur l'exemple</button>
+             <button type="button" class="btn btn-primary btn-sm" data-vis="retour"><i class="ph ph-arrow-u-up-left"></i> Revenir à mon profil</button>`
+          : `<span class="sp"></span>
+             ${v.i > 0 ? `<button type="button" class="btn btn-ghost btn-sm" data-vis="prec" title="Écran précédent" aria-label="Écran précédent"><i class="ph ph-arrow-left"></i></button>` : ""}
+             <button type="button" class="btn btn-ghost btn-sm" data-vis="passer">Passer</button>
+             <button type="button" class="btn btn-primary btn-sm" data-vis="suite">Suivant <i class="ph ph-arrow-right"></i></button>`}
+      </div>
+    </div>`;
+  if (a.fin) {   // fin de visite : au centre, sur un voile
+    const voile = document.createElement("div");
+    voile.className = "pl-voile";
+    document.body.appendChild(voile);
+  }
+  document.body.appendChild(box);
+  const aller = d => { _visiteEcrire({ mods: v.mods, i: v.i + d }); _visiteMontrer(); };
+  box.querySelectorAll("[data-vis]").forEach(b => { b.onclick = () => {
+    const quoi = b.dataset.vis;
+    if (quoi === "suite") aller(1);
+    else if (quoi === "prec") aller(-1);
+    else if (quoi === "retour") { _visiteEcrire(null); _visiteNettoyer(); quitterExemple(false); }
+    else { _visiteEcrire(null); _visiteNettoyer(); goTab("home"); _setActiveSidebar("home"); }   // passer, rester
+  }; });
+  const suivant = box.querySelector('[data-vis="suite"], [data-vis="retour"]');
+  if (suivant) suivant.focus();
+}
+
+/** Après le chargement des modules (boot) : reprendre la visite si on vient
+    de basculer sur l'exemple, sinon la proposer une fois à qui ne l'a pas vue. */
+async function pilouDemarrage() {
+  const ex = await _estExemple();
+  if (_visiteLire()) {
+    if (ex) _visiteMontrer();
+    else _visiteEcrire(null);   // bascule ratée : on n'y revient pas
+    return;
+  }
+  if (ex || !_hydrationDone || !S.uiPrefs || S.uiPrefs.visiteProposee) return;
+  if (document.getElementById("ov-welcome")) return;   // Premiers pas en cours
+  S.uiPrefs.visiteProposee = true;
+  _enregistrerUiPrefs();
+  const box = document.createElement("div");
+  box.id = "pilou-astuce";
+  box.className = "pl-flot";
+  box.innerHTML = `<span class="pilou" aria-hidden="true">${pilouSvg("salut")}</span>
+    <div class="pp-bulle"><button type="button" class="pl-flot-x" aria-label="Fermer"><i class="ph ph-x"></i></button>
+      <div class="pl-flot-t">Nouveau&#8239;: je fais les visites&#8239;!</div>
+      Je te montre Pilote rempli avec les données de Brice, un profil pour de faux, écran par écran.
+      Tes données restent à part.
+      <div class="pl-flot-acts"><span class="sp"></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-non>Plus tard</button>
+        <button type="button" class="btn btn-primary btn-sm" data-oui><i class="ph ph-compass"></i> Visiter avec Pilou</button>
+      </div></div>`;
+  document.body.appendChild(box);
+  box.querySelector("[data-oui]").onclick = () => { box.remove(); pilouVisiterMesModules(); };
+  box.querySelectorAll("[data-non], .pl-flot-x").forEach(b => { b.onclick = () => box.remove(); });
+}
+
+/** La visite des modules affichés (Paramètres → Général, proposition unique) */
+function pilouVisiterMesModules() {
+  try { closeOv("ov-config"); } catch (e) {}
+  pilouVisiter(NAV_SECTIONS.map(s => s.id).filter(id => _modulesVisibles().has(id)));
+}
+
+/** Astuce de premier passage dans un module (nouveaux utilisateurs) */
+function pilouApresNavigation(n) {
+  const old = document.getElementById("pilou-astuce");
+  if (old) old.remove();
+  if (_visiteLire() || document.body.classList.contains("mode-exemple")) return;
+  const vues = S.uiPrefs && S.uiPrefs.astuces;
+  if (!vues || typeof vues !== "object") return;   // utilisateur d'avant : rien
+  const sec = _navSectionOf(n);
+  const m = sec && NAV_MODULES[sec.id];
+  if (!m || !m.pas || vues[sec.id]) return;
+  vues[sec.id] = true;
+  _enregistrerUiPrefs();
+  const box = document.createElement("div");
+  box.id = "pilou-astuce";
+  box.className = "pl-flot";
+  box.innerHTML = `<span class="pilou" aria-hidden="true">${pilouSvg("content")}</span>
+    <div class="pp-bulle"><button type="button" class="pl-flot-x" aria-label="Fermer"><i class="ph ph-x"></i></button>
+      <div class="pl-flot-t">Premier passage dans ${escHtml(sec.label)}&#8239;!</div>
+      ${escHtml(m.pas)}${m.besoin ? `<small><i class="ph ph-info"></i> ${escHtml(m.besoin)}</small>` : ""}
+      <div class="pl-flot-acts"><span class="sp"></span>
+        <button type="button" class="btn btn-primary btn-sm" data-ok>Compris</button></div></div>`;
+  document.body.appendChild(box);
+  box.querySelectorAll("[data-ok], .pl-flot-x").forEach(b => { b.onclick = () => box.remove(); });
+}
+
+(function patchGoTabPilou() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    try { pilouApresNavigation(n); } catch (e) {}
+  };
+})();
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  const b = document.querySelector('#pilou-visite [data-vis="passer"], #pilou-astuce .pl-flot-x');
+  if (b && !document.querySelector(".ov.open")) b.click();
+});
+
 /* Chargement de chaque module : [nom du journal, section de NAV_SECTIONS,
    chargement]. boot() ne charge que les sections affichées ; une section
    cochée plus tard dans Paramètres → Modules se charge à ce moment-là. Santé
@@ -30364,6 +30786,9 @@ function _appReady() {
                                  e => { console.warn("[" + nom + "] bootstrap KO:", e);
                                         _jn(nom + " KO : " + ((e && e.message) || e)); })));
       _jn("modules charges");
+      // Pilou : reprendre la visite après la bascule sur l'exemple, ou la
+      // proposer une fois aux utilisateurs d'avant
+      pilouDemarrage().catch(e => console.warn("[visite Pilou]", e));
       // Un module arrivé avec la mise à jour : l'afficher ? (il faut le
       // portefeuille crypto lu pour savoir si Crypto sert déjà)
       _demanderNouveauxModules().catch(e => console.warn("[nouveaux modules]", e));

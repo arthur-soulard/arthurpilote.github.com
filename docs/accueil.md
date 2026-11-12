@@ -14,10 +14,12 @@ premiers pas et le titre du code PIN (« cet utilisateur »).
 Mise en page alignée à gauche : grande salutation en serif (`clamp(40px, 5vw, 60px)`),
 écrite par `homeRenderGreeting()` avec le prénom dans un `<em>` (italique, couleur
 d'accent) ; `renderHomeUsers()` la rappelle quand la liste des utilisateurs arrive.
-Pilou (la mascotte, 4.4.67, `docs/design-carnet.md`) salue juste avant
-« Bonjour », à la hauteur du texte (`#home-pilou`, dessiné une fois par
-`homeRenderGreeting()`). Puis la date en italique. Juste après le prénom, la bulle **« Une idée ? »**
-(voir plus bas). **À droite de la salutation** (4.3.19), l'un sous l'autre :
+Pilou (la mascotte, 4.4.67, `docs/design-carnet.md`) salue juste **après**
+le prénom, une fois et demie la taille du texte (90 px à 1366 px de large,
+marges négatives : le bandeau reste à 108 px) (`#home-pilou`, dessiné une fois par
+`homeRenderGreeting()` ; avant « Bonjour » jusqu'au 12/11/2026). C'est lui qui
+pose la question : sa bulle de parole **« Une idée, un problème ? »** (voir plus
+bas). Puis la date en italique. **À droite de la salutation** (4.3.19), l'un sous l'autre :
 les utilisateurs (`#home-users`, cliquables pour basculer + « Nouvel utilisateur »),
 les boutons Modifier les tuiles / Paramètres / Téléverser vers clé USB (« Mettre
 en place une sauvegarde » tant que rien n'est en place : `docs/sauvegarde-usb.md`), puis
@@ -51,7 +53,23 @@ place vient d'Exporter et Importer, retirés en 4.4.12 : à 1366 × 720 le
 bandeau reste à 109 px et la dernière tuile à 680 px avec ses vraies tuiles.
 Mesuré : jusqu'à un prénom de dix lettres (« Bonsoir Christophe ») rien ne
 bouge ; au-delà (« Maximilien »), les boutons passent sur deux lignes
-(bandeau de 145 px), comme dans une fenêtre étroite. Elle ouvre `ov-suggestion` : l'adresse d'Arthur
+(bandeau de 145 px), comme dans une fenêtre étroite.
+
+**Depuis le 12/11/2026** (Arthur : « c'est Pilou qui demande "une idée, un
+problème ?" ») : Pilou passe après le prénom et la bulle devient une bulle de
+parole qui sort de lui (pointe à gauche, coin bas gauche moins arrondi), texte
+**« Une idée, / un problème ? »** sur deux lignes, sans icône. Sur une seule
+ligne, « Bonsoir Arthur » faisait passer les boutons de droite à la ligne à
+1366 × 720 (mesuré : bandeau de 136 px au lieu de 103) ; sur deux, la bulle et
+sa marge prennent 128 px, contre 135 pour l'ancienne « Une idée ? ». Pilou
+masqué (Paramètres → Général) : retour à la bulle de pensée et à ses deux petits
+ronds (`html.sans-pilou .home-idee`). Au clic, la fenêtre s'ouvre d'abord sur
+**deux choix** (`#sug-choix`) : « J'ai une idée » ou « Quelque chose ne marche
+pas », qui mènent aux deux écrans d'avant (`homeSuggestion(false|true)`).
+`homeSuggestion()` sans argument montre ce choix ; « Signaler un problème » des
+Paramètres appelle toujours `homeSuggestion(true)` et va droit au but.
+
+Elle ouvre `ov-suggestion` : l'adresse d'Arthur
 (`SUGGESTION_ADRESSE`, pilote.appli+idee@gmail.com depuis le 09/11/2026 :
 la boîte de Pilote, plus l'adresse perso d'Arthur) avec un bouton Copier,
 « Ouvrir ma messagerie » (lien `mailto:`) et « Écrire avec Gmail » (page de
@@ -81,10 +99,56 @@ rafraîchit aussi l'état de la clé USB (`svRenderUsbState()`) et sort du mode
 demandé par Arthur le 11/10/2026. 1) ce qu'est Pilote (avec, si besoin, de quel
 espace il s'agit et la récupération d'une installation **extérieure**, voir
 `scan_orphan_data`) ; 2) les modules à cocher, **aucun coché d'office** (au moins un
-pour continuer) ; 3) le premier geste de chaque module choisi, en cartes cliquables
-qui mènent à leur onglet. `NAV_MODULES` porte pour chaque section sa description, ce
-premier geste, l'onglet et les tuiles de l'accueil à allumer : **une nouvelle section
-de `NAV_SECTIONS` y ajoute son entrée** (sinon sa carte reste sans texte).
+pour continuer) ; 3) la visite avec Pilou, proposée (voir « Pilou guide » plus bas).
+Jusqu'au 12/11/2026, l'étape 3 montrait le premier geste de chaque module en cartes
+cliquables, plus un encart « Explorer avec des données d'exemple » : Arthur a gardé
+la visite, les premiers gestes sont devenus les astuces de premier passage.
+`NAV_MODULES` porte pour chaque section sa description, ce premier geste (`pas`,
+`besoin`), l'onglet et les tuiles de l'accueil à allumer : **une nouvelle section
+de `NAV_SECTIONS` y ajoute son entrée** (sinon sa carte reste sans texte), **ainsi que
+ses arrêts dans `PILOU_VISITE` et sa réaction dans `PILOU_REACTIONS`**.
+
+**Pilou guide** (12/11/2026, décidé avec Arthur, bloc « PILOU GUIDE » d'index.html,
+juste après le patch de `goTab` de Garmin) :
+
+* **Pilou parle dans les Premiers pas.** Chaque étape est une bulle (`.pp-pl`,
+  `.pp-bulle`), sa phrase s'écrit lettre par lettre (`pilouEcrit`, 16 ms par lettre ;
+  un clic l'affiche d'un coup ; rien d'animé si le système réduit les mouvements).
+  Étape 1 : il se présente et demande le prénom dans sa bulle (« Moi » seulement),
+  répond « Enchanté, X ! » dès la frappe ; les quatre points d'avant sont devenus des
+  pastilles (détail en infobulle), le chemin des données reste dessous. Étape 2 : il
+  réagit au module qu'on coche (`PILOU_REACTIONS`). Étape 3 : « tu veux que je te
+  fasse visiter ? », boutons « Visiter avec Pilou » et « Non merci, je commence »
+  (accueil). Pilou masqué : la bulle reste, sans pointe ni ourson.
+* **Visite avec Pilou** (`pilouVisiter(modules)`) : bascule sur l'utilisateur Exemple
+  (`explorerExemple`, qui recharge la page), puis `pilouDemarrage` reprend l'étape
+  rangée dans `sessionStorage` (« pilote.visite » : modules et numéro d'arrêt). Arrêts :
+  l'accueil, puis **plusieurs écrans par module choisi** (`PILOU_VISITE`, choix
+  d'Arthur : « peu de personnes cocheront tout »), puis la fin (« Revenir à mon
+  profil » ou « Rester sur l'exemple »). Chaque arrêt ouvre l'onglet, entoure la
+  carte dont Pilou parle (`.vis-cible`, la carte nommée ou la première visible) et
+  montre une carte flottante en bas à droite (`.pl-flot`) : « n sur N », retour,
+  Passer, Suivant ; Échap = Passer. Un arrêt CTO ou Crypto sans compte est sauté.
+  Pas de `scrollIntoView` : il faisait glisser toute la fenêtre, barre de titre
+  comprise ; seule la zone qui défile bouge. Plus de petits points de progression :
+  à 17 arrêts, ils repoussaient Suivant sur une deuxième ligne. La carte est en
+  position fixe : elle reste quand on fait défiler la page. Son apparition ne joue
+  que sur la position, pas sur l'opacité : une animation bloquée (fenêtre en
+  arrière-plan) l'avait laissée invisible. La fin de visite s'affiche **au centre**,
+  sur un voile (`.pl-centre`, `.pl-voile`, demande d'Arthur).
+* **Astuces de premier passage** (`pilouApresNavigation`, patch de `goTab`, le
+  dernier de la chaîne) : la première fois qu'un utilisateur ouvre un module, Pilou
+  donne son premier geste (`NAV_MODULES.pas`, et `besoin`), une fois par module
+  (`S.uiPrefs.astuces`). Seulement pour qui a fait les nouveaux Premiers pas
+  (`terminer()` crée `astuces = {}`) : les utilisateurs d'avant n'ont pas la clé,
+  rien ne s'affiche. Jamais sur l'exemple ni pendant la visite.
+* **Utilisateurs d'avant** : la visite leur est proposée **une fois** sur l'accueil
+  après la mise à jour (`S.uiPrefs.visiteProposee`), puis Paramètres → Général,
+  à côté du réglage de Pilou, « Revoir la visite » (`pilouVisiterMesModules` : les
+  modules affichés).
+* Mesuré à 1366 × 720 : l'étape 1 la plus chargée (prénom, 2e utilisateur, ancienne
+  installation, chemin) fait 638 px pour 646 ; l'étape 2 défile dans sa fenêtre
+  (760 px), comme avant mais 60 px de plus avec la bulle.
 
 * En fin d'assistant : les modules non cochés sont masqués (tous leurs onglets dans
   `S.uiPrefs.hiddenSidebar`, le mécanisme de l'œil), `S.uiPrefs.dash` ne garde que
@@ -94,10 +158,9 @@ de `NAV_SECTIONS` y ajoute son entrée** (sinon sa carte reste sans texte).
 * **Prénom et prérequis** (27/10/2026, Pilote prêt pour d'autres utilisateurs) : si
   l'utilisateur s'appelle encore « Moi » (installation neuve), l'étape 1 demande son
   prénom, enregistré par `Api.update_user` en fin d'assistant (vide : il reste « Moi »).
-  L'étape 3 dit sous la carte d'un module ce qu'il faut avoir (`besoin` dans
-  `NAV_MODULES` : Gmail en deux étapes pour Actus, compte Apple pour l'Agenda).
-  Avec le prénom ET une ancienne installation détectée, l'étape 1 défile de 18 px à
-  1366 × 720 (cas rare : une installation extérieure à côté d'un PC neuf).
+  Ce qu'il faut avoir pour un module (`besoin` dans `NAV_MODULES` : Gmail en deux
+  étapes pour Actus, compte Apple pour l'Agenda) est dit par l'astuce de premier
+  passage depuis le 12/11/2026 (sous les cartes de l'étape 3 avant).
 * S'affiche si le PEA est vide **et** `premiersPas` absent : une seule fois par
   utilisateur. Jusqu'à la 4.3.36, l'écran de bienvenue revenait à chaque lancement
   tant que le PEA restait vide, même pour qui ne s'en sert pas. Un utilisateur déjà
