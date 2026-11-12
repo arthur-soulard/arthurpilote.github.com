@@ -13,6 +13,7 @@
 #
 # 12/11/2026 (4.4.68) : Pilou guide (accueil, Parametres -> General : Revoir la visite) ;
 # Ma forme, case Body Battery cliquee : courbe et case en couleur.
+# (Test Mac relance le 12/11 : aucun Mac libre chez GitHub au premier essai.)
 home
 js:openSettings('general')
 ga-forme
