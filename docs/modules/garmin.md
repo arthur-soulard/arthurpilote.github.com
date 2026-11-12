@@ -166,7 +166,10 @@ nouveau ou une panne.
   6 mois ou 1 an (`GA_PERIODES` ; à partir de 6 mois, la moyenne de chaque
   semaine, 26 ou 52 points : `gaPoints`) au choix (sommeil, score de sommeil,
   Body Battery, VFC, FC au repos, pas, stress, minutes intenses, SpO2,
-  respiration), les records de course (temps, allure, date, nom de la séance),
+  respiration ; un clic sur une case du haut qui a sa courbe la choisit aussi,
+  et cette case est en couleur d'accent : `gaKpi(…, mesure)`, 12/11/2026 ;
+  coucher et lever, récupération et âge physique n'ont pas de courbe),
+  les records de course (temps, allure, date, nom de la séance),
   la carte du cycle (jour, phase, prochaines
   règles, barre règles / fenêtre fertile / aujourd'hui), puis les 8 dernières
   séances venues de la montre, records marqués. Garmin date le sommeil du jour

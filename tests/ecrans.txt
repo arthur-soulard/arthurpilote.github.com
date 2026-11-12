@@ -11,6 +11,9 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 11/11/2026 (4.4.67) : Pilou a cote de « Bonjour » ; reglage Afficher / Masquer dans Parametres -> General.
+# 12/11/2026 (4.4.68) : Pilou guide (accueil, Parametres -> General : Revoir la visite) ;
+# Ma forme, case Body Battery cliquee : courbe et case en couleur.
 home
 js:openSettings('general')
+ga-forme
+js:GA.mesure='bbMax',goTab('ga-forme')
