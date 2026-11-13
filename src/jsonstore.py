@@ -11,13 +11,11 @@ dans <app_dir>/users/<slug>/ a cote de pea_data.json.
 """
 from __future__ import annotations
 
-import os
-import json
 import datetime
-import tempfile
 from pathlib import Path
 from typing import Callable, Optional
 
+import donnees
 import storage
 
 
@@ -59,8 +57,7 @@ class JsonStore:
         self._bloque.pop(str(path), None)
         if path.exists():
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                data = donnees.lire_json(path)
                 if not isinstance(data, dict):
                     raise ValueError("contenu inattendu (%s)" % type(data).__name__)
                 v = (data.get("_meta") or {}).get("version", 1)
@@ -73,8 +70,7 @@ class JsonStore:
                 backup = self._latest_backup()
                 if backup and backup.exists():
                     try:
-                        with open(backup, "r", encoding="utf-8") as f:
-                            return self._merge_defaults(json.load(f))
+                        return self._merge_defaults(donnees.lire_json(backup))
                     except Exception:
                         pass
                 # Ni le fichier ni un backup : les valeurs par defaut ne doivent
@@ -118,21 +114,7 @@ class JsonStore:
         data["_meta"].setdefault("version",   1)
         data["_meta"].setdefault("createdAt", datetime.date.today().isoformat())
 
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fd, tmp_path = tempfile.mkstemp(prefix=f".{self.stem}_", suffix=".tmp",
-                                        dir=str(path.parent))
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
-            storage.remplacer(tmp_path, path)
-        except Exception:
-            try:
-                os.remove(tmp_path)
-            except Exception:
-                pass
-            raise
+        donnees.ecrire_json(path, data, prefixe=self.stem)
 
         self._daily_backup(data)
 
@@ -143,19 +125,7 @@ class JsonStore:
         backup_dir = self.backup_dir()
         try:
             # Temporaire puis renommage (voir storage._daily_backup)
-            fd, tmp = tempfile.mkstemp(prefix=f".{self.stem}_bak_", suffix=".tmp", dir=str(backup_dir))
-            try:
-                with os.fdopen(fd, "w", encoding="utf-8") as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                    f.flush()
-                    os.fsync(f.fileno())
-                storage.remplacer(tmp, backup_dir / f"{self.stem}_{today}.json")
-            except Exception:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                raise
+            donnees.ecrire_json(backup_dir / f"{self.stem}_{today}.json", data, prefixe=self.stem + "_bak")
         except Exception as e:
             print(f"[{self.stem}] backup quotidien KO: {e}", flush=True)
             return
@@ -175,8 +145,7 @@ class JsonStore:
                 if not storage.date_backup_ok(b.name):
                     continue
                 try:
-                    with open(b, "r", encoding="utf-8") as f:
-                        json.load(f)
+                    donnees.lire_json(b)
                     return b
                 except Exception:
                     continue

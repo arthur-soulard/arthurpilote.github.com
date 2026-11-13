@@ -67,6 +67,21 @@ class PinFreine(unittest.TestCase):
         self.assertNotEqual(st, 200)
         self.assertTrue(server.pin_check("1234", "brice"))
 
+    def test_page_servie_sans_le_jeton(self):
+        """docs/securite.md, « c » : un programme qui lit `/` n'y trouve plus
+        le jeton (la page le demande au pont, Api.jeton)."""
+        page_ui = Path(__file__).resolve().parent.parent / "src" / "ui" / "index.html"
+        self.addCleanup(setattr, server, "_html_file_path", server._html_file_path)
+        server._html_file_path = str(page_ui)
+        c = http.client.HTTPConnection("127.0.0.1", self.httpd.server_address[1], timeout=10)
+        c.request("GET", "/", headers={"Host": "127.0.0.1"})
+        r = c.getresponse()
+        page = r.read().decode("utf-8", "replace")
+        c.close()
+        self.assertEqual(r.status, 200)
+        self.assertIn("api.jeton", page)
+        self.assertNotIn(server._SESSION_TOKEN, page)
+
 
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)

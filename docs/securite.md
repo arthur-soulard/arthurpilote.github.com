@@ -7,8 +7,8 @@ restent dans `CLAUDE.md` (« Le serveur local n'est PAS un endroit privé »).
 | | Faiblesse | État |
 |---|---|---|
 | a | Sauvegardes USB et Google Drive en clair | **Fait** : archives chiffrées par mot de passe (`docs/sauvegarde-usb.md`, « Chiffrement par mot de passe ») |
-| b | Données en clair sur le disque | **Pas fait**, plan ci-dessous |
-| c | Un autre programme du PC lit `/data` pendant que Pilote tourne | **Pas fait**, plan ci-dessous |
+| b | Données en clair sur le disque | **Étape 1 faite** (12/11/2026, `donnees.py`) ; étape 2 (le chiffrement) à faire |
+| c | Un autre programme du PC lit `/data` pendant que Pilote tourne | **Fait** (12/11/2026) : jeton demandé au pont |
 | d | Revue du code | **Faite** : une faille corrigée (`/pin/set`, `docs/utilisateurs-et-pin.md`, « Revue du 09/11/2026 ») |
 
 ## d. Revue du 09/11/2026
@@ -31,6 +31,20 @@ internes y passent), le zip-slip de la restauration, les routes PIN.
   données avant l'écran de verrouillage. C'est (b) qui changerait ça.
 
 ## c. Lecture de `/data` par un autre programme
+
+**Fait le 12/11/2026** (branche `maj-chiffrement-etape1`, décidé avec Arthur) : la
+page servie par `/` ne contient plus le jeton. Le bloc posé en tête par
+`_inject_session_token` le demande au pont (`Api.jeton`, dès qu'il répond,
+`pywebviewready` ou essais toutes les 50 ms), et le wrapper de `fetch` fait attendre
+chaque appel au serveur jusqu'à l'avoir. Sans pont au bout de 20 s (page ouverte
+dans un navigateur), les appels échouent. Le repli `_hydrateFromHttp` reste : il
+attend le jeton comme les autres. Les trois verrous restent. Test :
+`tests/test_serveur.py`, `test_page_servie_sans_le_jeton`. Essayé sous Windows
+(démarrage à froid sur les données de Brice : données, cours, courbe) ; **pas encore
+essayé sur Mac** (pywebview 6.2.1, `adapter_pont_mac`) : à lire dans le test de la
+branche `mac` avant de publier.
+
+Ce qui suit est le plan d'origine, gardé pour l'histoire.
 
 **Le trou réel.** Les fichiers vivent dans `%LocalAppData%`, que les autres comptes
 Windows ne peuvent pas lire. Mais tout programme du PC, même d'un autre compte,
@@ -62,6 +76,26 @@ savent que parler HTTP. **Ne protège pas** d'un programme malveillant du même
 compte (il lit les fichiers, et pourrait déchiffrer DPAPI : voir b).
 
 ## b. Chiffrement des données sur le disque
+
+**Étape 1 faite le 12/11/2026** (branche `maj-chiffrement-etape1`) : `src/donnees.py`
+est le seul passage pour lire ou écrire un fichier de données (`lire_json`,
+`lire_texte`, `texte_de`, `ecrire_json`, `ecrire_texte` ; écriture atomique avec
+fsync, `storage.remplacer` en est un alias). Y passent : `pea_data.json` et ses
+backups, `users.json`, tous les modules de `jsonstore`, `finances.json` et ses
+backups, `sauvegarde.json`, `pin.hash`, la fusion de `users.json` à la restauration,
+la lecture du PEA par l'Agenda, l'utilisateur Exemple. L'export du PEA est écrit en
+clair à partir de `lire_texte` (fichier que l'utilisateur emporte). Restent hors du
+passage, volontairement : les copies telles quelles (corbeille, avant import,
+archives), les données publiques ou régénérables (`etf_compositions.json`, icônes,
+journaux), les fichiers venus de l'utilisateur. Rien n'est encore chiffré : les
+fichiers sont identiques à avant. `tests/test_donnees_passage.py` fait échouer les
+tests si un module lit ou écrit un JSON sans passer par `donnees.py`.
+
+**Étape 2, choix d'Arthur du 12/11/2026** : une case « Chiffrer mes données » dans
+Paramètres, décochée par défaut, avec un **mot de passe de secours choisi par
+l'utilisateur** (comme les sauvegardes USB chiffrées), qui chiffre une copie de la
+clé d'installation. Il ne restera qu'à faire déchiffrer `texte_de` et chiffrer
+`octets_de`, puis la migration fichier par fichier (points 2 à 5 du plan ci-dessous).
 
 **Ce qu'il faudrait.** Une clé de 32 octets par installation, gardée par DPAPI
 (Windows) ou le Trousseau (Mac), comme la clé des sauvegardes (`chiffrement.py`).

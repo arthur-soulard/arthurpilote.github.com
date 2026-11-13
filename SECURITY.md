@@ -20,8 +20,9 @@ nouvelle version, et la fiche de cette version le mentionne.
 
 - Le serveur local (127.0.0.1) refuse les pages web étrangères : jeton de session, refus
   des `Origin` et `Host` étrangers.
-- Tant que Pilote tourne, un autre programme de ton ordinateur peut lire la page locale,
-  donc le jeton, puis tes données. Pilote ne protège pas contre un programme malveillant
-  déjà installé sur ta machine.
+- La page locale ne contient plus le jeton : seule la fenêtre de Pilote peut le demander.
+  Un autre programme de ton ordinateur, ou un autre compte Windows, ne peut donc plus lire
+  tes données par le serveur local. Pilote ne protège pas pour autant contre un programme
+  malveillant déjà installé sur ta session : il peut lire les fichiers directement.
 - Les fichiers de données ne sont pas chiffrés ; le code PIN ne fait que séparer les
   utilisateurs dans l'app.

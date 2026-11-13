@@ -64,6 +64,7 @@ Pilote/
 │   ├── budget_releves.py # Import des relevés de banque dans Mes comptes : lecture, libellés, classement
 │   ├── budget_marchands.py # Marchands connus, synonymes des catégories, codes MCC (pour budget_releves)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
+│   ├── donnees.py      # LE passage pour lire/écrire un fichier de Donnees/ (étape 1 du chiffrement)
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
 │   ├── splash.py       # Petite fenêtre de chargement affichée au lancement
@@ -382,10 +383,12 @@ les comptes, le patrimoine et la santé — le serveur répondait avec
 Trois verrous, chacun couvrant ce que les autres ne couvrent pas. **Ne pas en
 retirer un en pensant que les deux autres suffisent :**
 
-1. **Jeton de session** (`_SESSION_TOKEN`) — régénéré à chaque lancement, injecté
-   dans la page au moment de la servir par `_inject_session_token()`, exigé sur tous
-   les endpoints de données. Le bloc injecté enveloppe `window.fetch` une fois pour
-   toutes : les appels existants n'ont rien à savoir du jeton. → contre le scan de port.
+1. **Jeton de session** (`_SESSION_TOKEN`) — régénéré à chaque lancement, exigé sur
+   tous les endpoints de données. Il n'est **pas** dans la page servie (depuis le
+   12/11/2026) : le bloc que `_inject_session_token()` pose en tête le demande au pont
+   (`Api.jeton`), puis enveloppe `window.fetch` une fois pour toutes, chaque appel
+   attendant le jeton : les appels existants n'ont rien à savoir de lui. → contre le
+   scan de port, et contre un autre programme du PC qui lirait `/`.
 2. **Refus de tout `Origin` étranger** — notre page n'en envoie pas sur un GET
    same-origin, une page tierce en envoie toujours un. → contre le navigateur complice.
 3. **Vérification du `Host`** — un domaine attaquant pointé sur `127.0.0.1` arrive
@@ -414,9 +417,12 @@ Corollaires à ne pas défaire :
   Le paramètre `user` des routes `/pin/*` doit être un utilisateur de `users.json`
   (4.4.21) : sinon « DEMO » ou « ./demo » contournaient le blocage, et `../x` écrivait
   hors de `Donnees/`.
-* **Limite assumée** : tant que Pilote tourne, un autre programme du PC (même un autre
-  compte Windows) peut demander `/`, y lire le jeton, puis lire `/data`. Les trois verrous
-  visent les pages web, pas un programme local ; c'est écrit dans `SECURITY.md`.
+* **Limite assumée** : un programme malveillant de la **même** session Windows lit les
+  fichiers de `Donnees/` directement ; le jeton ne l'arrête pas. Jusqu'au 12/11/2026,
+  n'importe quel programme du PC (même d'un autre compte) pouvait aussi lire `/`, y
+  trouver le jeton, puis lire `/data` : fermé en le demandant au pont
+  (`docs/securite.md`, « c »). Une page ouverte dans un navigateur n'a pas de pont :
+  ses appels au serveur échouent au bout de 20 s, c'est voulu.
 * Tout nom venu de l'extérieur (Yahoo, justETF, relevé importé, mail) passe par
   `escHtml` avant d'entrer dans du HTML : la CSP autorise `'unsafe-inline'`, elle
   n'arrêterait pas un `onerror=` injecté, qui aurait tout le pont. `Api.open_url`

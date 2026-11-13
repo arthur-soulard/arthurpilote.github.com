@@ -920,6 +920,12 @@ class Api:
 
     # -- Fenetre / divers --------------------------------------------------
 
+    def jeton(self) -> str:
+        """Le jeton de session du serveur local, pour le bloc injecte dans la
+        page (server._TOKEN_SNIPPET). Il n'est plus ecrit dans la page servie :
+        seule la fenetre de Pilote atteint le pont (docs/securite.md, « c »)."""
+        return server._SESSION_TOKEN
+
     def app_ready(self) -> dict:
         """Appele par boot() (index.html) quand l'accueil est pret : ouvre
         la fenetre principale et ferme l'ecran de chargement."""

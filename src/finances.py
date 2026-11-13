@@ -10,14 +10,12 @@ Ecriture atomique (.tmp -> rename) + rotation 7 jours, comme storage.py.
 """
 from __future__ import annotations
 
-import os
-import json
 import shutil
 import datetime
-import tempfile
 from pathlib import Path
 from typing import Optional
 
+import donnees
 import storage
 
 
@@ -189,8 +187,7 @@ def load_data() -> dict:
     _bloque.pop(str(path), None)
     if path.exists():
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = donnees.lire_json(path)
             merged = default_data()
             # Conserve les valeurs sauvegardees, complete avec les defauts manquants
             for k, v in data.items():
@@ -210,8 +207,7 @@ def load_data() -> dict:
             backup = _latest_backup()
             if backup and backup.exists():
                 try:
-                    with open(backup, "r", encoding="utf-8") as f:
-                        return json.load(f)
+                    return donnees.lire_json(backup)
                 except Exception:
                     pass
             _bloque[str(path)] = ("finances.json est illisible : rien n'est ecrit par-dessus "
@@ -237,20 +233,7 @@ def _save_data(data: dict) -> None:
     data["_meta"].setdefault("version",   1)
     data["_meta"].setdefault("createdAt", datetime.date.today().isoformat())
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(prefix=".fin_", suffix=".tmp", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
-        storage.remplacer(tmp_path, path)
-    except Exception:
-        try:
-            os.remove(tmp_path)
-        except Exception:
-            pass
-        raise
+    donnees.ecrire_json(path, data, prefixe="fin")
 
     _daily_backup(data)
 
@@ -261,19 +244,7 @@ def _daily_backup(data: dict) -> None:
     backup_path = backup_dir / f"finances_{today}.json"
     try:
         # Temporaire puis renommage (voir storage._daily_backup)
-        fd, tmp = tempfile.mkstemp(prefix=".fin_bak_", suffix=".tmp", dir=str(backup_dir))
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
-            storage.remplacer(tmp, backup_path)
-        except Exception:
-            try:
-                os.remove(tmp)
-            except Exception:
-                pass
-            raise
+        donnees.ecrire_json(backup_path, data, prefixe="fin_bak")
     except Exception as e:
         print(f"[finances] backup quotidien KO: {e}", flush=True)
         return
@@ -293,8 +264,7 @@ def _latest_backup() -> Optional[Path]:
         if not storage.date_backup_ok(b.name):
             continue
         try:
-            with open(b, "r", encoding="utf-8") as f:
-                json.load(f)
+            donnees.lire_json(b)
             return b
         except Exception:
             continue
