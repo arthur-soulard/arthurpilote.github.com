@@ -6,7 +6,7 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 Modale unique à colonne de sections (`setGoSection(id)`), plus « paramètres du PEA » :
 
-Colonne, dans l'ordre : Général, Utilisateurs, Accueil, Modules, Masqués, puis le
+Colonne, dans l'ordre : Général, Utilisateurs, Accueil, Modules, Masqués, Mon année, puis le
 titre « Mes modules » et une entrée par module, puis un trait et les réglages de l'app.
 
 | Section    | Contenu                                                            |
@@ -16,6 +16,7 @@ titre « Mes modules » et une entrée par module, puis un trait et les réglage
 | accueil    | tuiles du tableau de bord (idem bouton ✎ de l'accueil)             |
 | nav        | « Modules » : modules à cocher                                      |
 | masques    | une case par module où quelque chose est caché (4.4.34)             |
+| annee      | « Mon année » : le bilan de chaque année avec Pilou, une ligne par année (4.4.71, `docs/accueil.md`) |
 | pea        | prénom, banque, date d'ouverture, récap fiscal, rapport annuel      |
 | cto        | chaque CTO (nom, courtier) avec « Réglages du compte », « Nouveau CTO » |
 | actus      | état de la boîte Gmail, renvoi vers l'onglet `ac-connexion`         |

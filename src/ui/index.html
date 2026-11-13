@@ -1578,6 +1578,12 @@ button.set-res:hover { background: var(--hover); }
 /* Masqués : une case par module (_cfgRenderMasques). Petits textes en --txt2 :
    --txt3 n'a que 2,8:1 en thème clair */
 .set-masq-liste { display: flex; flex-direction: column; gap: 10px; }
+/* Mon année : une ligne par année (anRenderReglages) */
+#cfg-anbilan { display: flex; flex-direction: column; gap: 8px; }
+.an-annee { display: flex; align-items: center; gap: 14px; border: 1px solid var(--brd); border-radius: 12px;
+  background: var(--bg2); padding: 10px 14px; }
+.an-annee-t { font-family: var(--serif); font-size: 22px; color: var(--txt); min-width: 56px; }
+.an-annee-s { flex: 1; font-size: 12.5px; color: var(--txt2); }
 .set-masq { border: 1px solid var(--brd); border-radius: 12px; background: var(--bg2); padding: 10px 14px 4px; }
 .set-masq-h { display: flex; align-items: baseline; gap: 8px; padding-bottom: 8px; }
 .set-masq-ico {
@@ -5321,6 +5327,8 @@ html.verre .toast-stack .toast {
                 onclick="setGoSection('nav')"><span class="set-nav-ico"><i class="ph ph-squares-four"></i></span>Modules</button>
         <button type="button" class="set-nav-btn" data-set="masques"
                 onclick="setGoSection('masques')"><span class="set-nav-ico"><i class="ph ph-eye-slash"></i></span>Masqués</button>
+        <button type="button" class="set-nav-btn" data-set="annee"
+                onclick="setGoSection('annee')"><span class="set-nav-ico"><i class="ph ph-sparkle"></i></span>Mon année</button>
         <!-- Un réglage par module coché, dans l'ordre de la barre latérale (_setNavModules) -->
         <div class="set-nav-grp" id="set-nav-mods">Mes modules</div>
         <button type="button" class="set-nav-btn" data-set="pea" data-mod="sec-pea"
@@ -5380,8 +5388,6 @@ html.verre .toast-stack .toast {
               <button type="button" class="btn btn-ghost btn-sm" data-pilou-btn="off"><i class="ph ph-eye-slash"></i> Masquer</button>
               <button type="button" class="btn btn-ghost btn-sm" onclick="pilouVisiterMesModules()"
                       title="Pilou te montre tes modules sur les données de Brice, un profil fictif"><i class="ph ph-compass"></i> Revoir la visite</button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="anOuvrir()"
-                      title="Tes cartes de l'année, sans aucun montant"><i class="ph ph-sparkle"></i> Mon année</button>
             </div>
             <p class="set-lead" style="margin:8px 0 0">
               L'ourson de l'accueil et des écrans encore vides, qui te fait aussi visiter
@@ -5470,6 +5476,15 @@ html.verre .toast-stack .toast {
           <p class="set-lead">Ce que tu as caché avec l'icône <i class="ph ph-eye-slash"></i>, rangé par
             module. « Réafficher » le remet à sa place.</p>
           <div class="set-masq-liste" id="cfg-masques"></div>
+        </div>
+
+        <!-- ──── MON ANNÉE : le bilan de chaque année avec Pilou (anRenderReglages) ──── -->
+        <div class="set-sec" data-sec="annee">
+          <h3>Mon année</h3>
+          <p class="set-lead">Ton bilan de l'année avec Pilou, en cartes à garder ou à partager. Celui
+            de 2026 se met à jour au fil de l'année ; ensuite, le bilan d'une année arrive le
+            1ᵉʳ janvier suivant. Les années passées restent ici.</p>
+          <div id="cfg-anbilan"></div>
         </div>
 
         <!-- ──── CTO ──── -->
@@ -13194,6 +13209,7 @@ function setGoSection(id) {
   if (id === "accueil" && typeof dashRenderConfig === "function") dashRenderConfig();
   if (id === "nav") cfgRenderModules();
   if (id === "masques") _cfgRenderMasques();
+  if (id === "annee") anRenderReglages();
   if (id === "cto" || id === "actus" || id === "agenda" || id === "garmin") cfgRenderModule(id);
   if (id === "comptes" || id === "sport") _setCorps(id);
   if (id === "maj") majRenderSection();
@@ -25803,7 +25819,7 @@ function ctoSetCourtier(id, courtier, tarif) {
 async function ctoSupprimerCompte() {
   const c = ctoCompte(_ctoEdition);
   if (!c) return;
-  const n = (ctoEtat(c.id).transactions || []).length;
+  const n = ((ctoEtat(c.id) || {}).transactions || []).length;
   const crypto = ctoEstCrypto(c);
   if (!confirm(`Supprimer ${crypto ? "le portefeuille crypto" : "le CTO"} « ${c.nom} » ?` + (n ? `\n\nSes ${n} opération(s) seront effacées de Pilote (la sauvegarde du jour les garde).` : ""))) return;
   closeOv("ov-cto-compte");
@@ -31252,14 +31268,30 @@ document.addEventListener("keydown", e => {
 
 let _anCartes = [], _anPolices = null;
 
-/** Du 1er décembre au 31 janvier */
-function anPeriode() { const m = new Date().getMonth(); return m === 11 || m === 0; }
-/** L'année racontée : celle d'avant en janvier */
-function anAnnee() { const d = new Date(); return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear(); }
+/** 2026, première année du bilan, se suit en direct (choix d'Arthur, 13/11/2026).
+    Ensuite, une année n'a son bilan qu'à partir du 1er janvier suivant. */
+const AN_DIRECT = 2026;
+function anDisponible(an) {
+  const c = new Date().getFullYear();
+  return an < c || (an === c && an === AN_DIRECT);
+}
+/** L'année annoncée sur l'accueil : celle qui vient de finir */
+function anAnnee() { return new Date().getFullYear() - 1; }
+/** Bilan d'une année terminée déjà ouvert (le message de l'accueil disparaît) */
+function anVu(an) { return ((S.uiPrefs && S.uiPrefs.anVus) || []).includes(an); }
 
 function anPct(v, signe) {
   const t = Math.abs(v).toFixed(Math.abs(v) < 10 ? 1 : 0).replace(".", ",");
   return (signe ? (v >= 0 ? "+" : "−") : "") + t + " %";
+}
+/** « 1 234 € », « +1 234 € » ; espaces insécables classiques (l'espace fine
+    de toLocaleString n'est pas dans toutes les polices de l'image) */
+function anEur(v, signe) {
+  const t = Math.round(Math.abs(v)).toLocaleString("fr-FR").replace(/\s/g, " ") + " €";
+  return (Math.round(v) < 0 ? "−" : signe ? "+" : "") + t;
+}
+function anKg(v, signe) {
+  return (v < 0 ? "−" : signe ? "+" : "") + Math.abs(v).toFixed(1).replace(".", ",") + " kg";
 }
 function anHeures(min) {
   const h = Math.floor(min / 60), m = Math.round(min % 60);
@@ -31267,60 +31299,147 @@ function anHeures(min) {
 }
 function anMoisNom(m) { return ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
   "septembre", "octobre", "novembre", "décembre"][m]; }
+/** « 14 mars », « 1ᵉʳ mai » */
+function anDate(iso) {
+  const d = spParseISO(String(iso).slice(0, 10));
+  return d.getDate() + (d.getDate() === 1 ? "ᵉʳ" : "") + " " + anMoisNom(d.getMonth());
+}
+function anLundi(iso) {
+  const d = spParseISO(iso), j = new Date(d);
+  j.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return spDateISO(j);
+}
 
-/** Tous les chiffres de l'année : une entrée par carte qui a quelque chose à dire */
+/** Tous les chiffres de l'année : une entrée par page qui a quelque chose à dire.
+    Seulement les modules affichés de l'utilisateur, et jamais une page vide. */
 async function anCalculer(an) {
-  const vis = _modulesVisibles(), ys = String(an), c = [];
-  const res = { an, sport: null, pea: null, budget: null, sante: null, taches: null };
+  const vis = _modulesVisibles(), ys = String(an), finAn = ys + "-12-31", cur = new Date().getFullYear();
+  const moisEcoules = an < cur ? 12 : new Date().getMonth() + 1;
+  // Les chiffres « à ce jour » (cours actuels) ne valent que pour l'année en
+  // cours ou celle qui vient de finir
+  const recent = an >= cur - 1;
+  const res = { an, sport: null, sportObj: [], pea: null, cto: [], crypto: null, budget: null,
+                patri: null, pret: null, sante: null, mois: null };
 
-  // Sport : heures (le chiffre qui compte, docs/modules/sports.md), séances, sports, mois record
+  // Sport : heures (le chiffre qui compte, docs/modules/sports.md), séances,
+  // sports, mois record, records de l'année, objectifs atteints
   if (vis.has("sec-sport") && SP && SP.sessions) {
+    const nomSport = id => ((typeof spSportById === "function" && spSportById(id)) || {}).label || "Autre";
     const l = SP.sessions.filter(s => String(s.date || "").startsWith(ys));
     const min = l.reduce((t, s) => t + (Number(s.duration) || 0), 0);
     if (l.length && min > 0) {
-      const parSport = {}, parMois = Array(12).fill(0);
+      const parSport = {}, parMois = Array(12).fill(0), rec = {};
       l.forEach(s => {
-        const d = Number(s.duration) || 0;
+        const d = Number(s.duration) || 0, km = spDistKm(s), el = Number(s.elevation) || 0;
         parSport[s.sport] = (parSport[s.sport] || 0) + d;
         parMois[Number(s.date.slice(5, 7)) - 1] += d;
+        if (d > 0 && (!rec.duree || d > rec.duree.v)) rec.duree = { v: d, sport: nomSport(s.sport), date: s.date };
+        if (km > 0 && (!rec.km || km > rec.km.v)) rec.km = { v: km, sport: nomSport(s.sport), date: s.date };
+        if (el > 0 && (!rec.elev || el > rec.elev.v)) rec.elev = { v: el, sport: nomSport(s.sport), date: s.date };
       });
       const sports = Object.entries(parSport).sort((a, b) => b[1] - a[1]).slice(0, 3)
-        .map(([id, d]) => ({ nom: ((typeof spSportById === "function" && spSportById(id)) || {}).label || "Autre", pct: d / min * 100 }));
+        .map(([id, d]) => ({ nom: nomSport(id), pct: d / min * 100 }));
       const mr = parMois.indexOf(Math.max(...parMois));
-      res.sport = { min, seances: l.length, sports, moisRecord: anMoisNom(mr), minRecord: parMois[mr] };
+      // La plus longue suite de semaines avec au moins une séance
+      let serie = 0, suite = 0, avant = null;
+      [...new Set(l.map(s => anLundi(s.date)))].sort().forEach(x => {
+        const d = spParseISO(x);
+        suite = avant && Math.round((d - avant) / 864e5) === 7 ? suite + 1 : 1;
+        avant = d; serie = Math.max(serie, suite);
+      });
+      res.sport = { min, seances: l.length, sports, moisRecord: anMoisNom(mr), minRecord: parMois[mr], parMois,
+                    rec, serie, km: l.reduce((t, s) => t + spDistKm(s), 0) };
     }
+    res.sportObj = spGoals().filter(g => g.status === "done" && String(g.doneAt || "").startsWith(ys))
+      .sort((a, b) => String(a.doneAt).localeCompare(String(b.doneAt)))
+      .map(g => ({ titre: g.title || "Objectif", date: g.doneAt }));
   }
 
   // PEA : la performance de l'année sur la courbe du capital (même calcul que
-  // la tuile, période YTD), les mois avec un versement, la ligne de l'année
+  // la tuile, période YTD), les versements, la ligne de l'année, puis les
+  // journées : meilleure, records battus, et les dividendes
   if (vis.has("sec-pea") && !_estCto() && (S.transactions || []).length) {
     let full = null;
     try { full = await perfSeriesAsync(); } catch (e) {}
     if (_estCto()) full = null;
     if (Array.isArray(full) && full.length >= 2) {
       let i0 = -1, i1 = -1;
-      full.forEach((p, i) => { const d = normDate(p.date); if (d <= (an - 1) + "-12-31") i0 = i; if (d <= ys + "-12-31") i1 = i; });
+      full.forEach((p, i) => { const d = normDate(p.date); if (d <= (an - 1) + "-12-31") i0 = i; if (d <= finAn) i1 = i; });
       const s = i1 >= 0 ? full.slice(Math.max(i0, 0), i1 + 1) : [];
       const r = s.length >= 2 ? computePnl(s, "YTD") : null;
       const mois = new Set((S.depots || []).filter(d => String(normDate(d.date)).startsWith(ys) && (d.amount || 0) > 0)
         .map(d => normDate(d.date).slice(5, 7)));
-      const moisEcoules = an < new Date().getFullYear() ? 12 : new Date().getMonth() + 1;
       // La ligne qui a le plus monté sur l'année (cours du 31/12 d'avant au dernier connu)
       let star = null;
       const h = _perfHistory;
       if (h && typeof h === "object") S.positions.forEach(p => {
         const m = h[p.ticker] ? buildSortedPriceMap(h[p.ticker]) : null;
-        const a = m && priceAt(m, (an - 1) + "-12-31"), z = m && priceAt(m, ys + "-12-31");
+        const a = m && priceAt(m, (an - 1) + "-12-31"), z = m && priceAt(m, finAn);
         if (a > 0 && z > 0 && (!star || z / a > star.r)) star = { nom: p.name || p.ticker, r: z / a };
       });
+      // Rendement de chaque jour, versements retirés : la meilleure journée, les
+      // jours où le PEA bat son record (indice des rendements), et le mois par mois
+      const deps = (S.depots || []).filter(d => d.date && d.amount).map(d => ({ date: normDate(d.date), a: Number(d.amount) || 0 }));
+      let meilleur = null, records = 0, indice = 1, haut = 1;
+      const moisR = Array(12).fill(null);
+      for (let i = 1; i < full.length; i++) {
+        const a = full[i - 1], b = full[i], da = normDate(a.date), db = normDate(b.date);
+        if (db > finAn) break;
+        if (!(a.val > 50)) continue;
+        const flux = deps.reduce((t, d) => (d.date > da && d.date <= db ? t + d.a : t), 0);
+        const rj = (b.val - a.val - flux) / a.val;
+        if (!isFinite(rj) || Math.abs(rj) > 0.3) continue;   // point aberrant (cours manquant)
+        indice *= 1 + rj;
+        if (db.startsWith(ys)) {
+          if (indice > haut * (1 + 1e-9)) records++;
+          if (!meilleur || rj > meilleur.r) meilleur = { r: rj, date: db };
+          const m = Number(db.slice(5, 7)) - 1;
+          moisR[m] = (moisR[m] == null ? 1 : moisR[m]) * (1 + rj);
+        }
+        haut = Math.max(haut, indice);
+      }
+      const divs = (S.divReceived || []).filter(d => d.date && String(normDate(d.date)).startsWith(ys) && (d.montant || 0) > 0);
       if (r && r.pnlPct != null)
-        res.pea = { pct: r.pnlPct, mois: mois.size, moisEcoules,
-                    star: star && star.r > 1.005 ? { nom: star.nom, pct: (star.r - 1) * 100 } : null };
+        res.pea = { pct: r.pnlPct, eur: r.pnlEur, mois: mois.size, moisEcoules,
+                    star: star && star.r > 1.005 ? { nom: star.nom, pct: (star.r - 1) * 100 } : null,
+                    meilleur: meilleur && meilleur.r > 0 ? { pct: meilleur.r * 100, date: meilleur.date } : null,
+                    records, divN: divs.length, divEur: divs.reduce((t, d) => t + d.montant, 0),
+                    moisPct: moisR.map(x => (x == null ? null : (x - 1) * 100)) };
     }
   }
 
-  // Mes comptes : les mois « dans le vert » (revenus ≥ dépenses), et la
-  // catégorie qui a le plus baissé sur l'an dernier (si l'an dernier est suivi)
+  // CTO et Crypto : achats de l'année, dividendes, plus-value à ce jour
+  // (ctoResume, le seul calcul des chiffres d'un compte) et la ligne star
+  try {
+    if (CTO && typeof ctoComptesTitres === "function") {
+      const lire = (c, crypto) => {
+        const e = ctoEtat(c.id);
+        if (!e) return null;
+        const achats = (e.transactions || []).filter(t => t.type === "Achat" && String(normDate(t.date)).startsWith(ys));
+        const z = recent ? ctoResume(c.id) : null;
+        if (!achats.length && !(z && z.n)) return null;
+        let star = null;
+        if (z) (e.positions || []).forEach(p => {
+          const x = computePos(p, e.transactions || []);
+          if (x.qty > 0.0001 && x.val != null && x.inv > 0) {
+            const pc = (x.val / x.inv - 1) * 100;
+            if (!star || pc > star.pct) star = { nom: p.name || p.ticker, pct: pc };
+          }
+        });
+        const div = (e.divReceived || []).filter(d => d.date && String(normDate(d.date)).startsWith(ys))
+          .reduce((t, d) => t + (d.montant || 0), 0);
+        return { nom: c.nom || (crypto ? "Crypto" : "CTO"), achats: achats.length,
+                 investi: achats.reduce((t, x) => t + brutOrdre(x) + (x.frais || 0), 0), div,
+                 pv: z ? z.pv : null, pvPct: z ? z.pvPct : null, star: star && star.pct > 0.5 ? star : null };
+      };
+      if (vis.has("sec-cto")) res.cto = ctoComptesTitres().map(c => lire(c, false)).filter(Boolean).slice(0, 3);
+      const cc = vis.has("sec-crypto") ? cryptoCompte() : null;
+      if (cc) res.crypto = lire(cc, true);
+    }
+  } catch (e) { console.warn("[bilan annuel] CTO", e); }
+
+  // Mes comptes : solde de l'année, mois « dans le vert » (revenus ≥ dépenses),
+  // meilleur mois, catégorie qui a le plus baissé sur l'an dernier
   if (vis.has("sec-comptes") && typeof F !== "undefined" && F && F.transactions) {
     const t = finComputeYearTotals(an);
     const suivis = t.monthly.filter(m => m.income || m.expense);
@@ -31335,31 +31454,82 @@ async function anCalculer(an) {
           if (r < -0.05 && (!eco || r < eco.r)) eco = { nom: (finCatById(id) || {}).name || "Une catégorie", r };
         });
       }
-      res.budget = { vert: vert.filter(v => v).length, suivis: suivis.length, mois: vert,
+      const parMois = t.monthly.map(m => (m.income || m.expense) ? m.income - m.expense : null);
+      const bm = parMois.reduce((b, v, i) => (v != null && v > 0 && (b < 0 || v > parMois[b]) ? i : b), -1);
+      res.budget = { vert: vert.filter(v => v).length, suivis: suivis.length, mois: vert, net: t.net, parMois,
+                     meilleur: bm >= 0 ? { mois: anMoisNom(bm), eur: parMois[bm] } : null,
                      eco: eco ? { nom: eco.nom, pct: eco.r * 100 } : null };
     }
   }
 
-  // Santé : semaines suivies, pesées, objectif de poids atteint dans l'année
-  if (vis.has("sec-sante") && SA) {
-    const l = saSorted().filter(m => String(m.date || "").startsWith(ys) && m.poids != null && m.poids !== "");
-    if (l.length) {
-      const semaines = new Set(l.map(m => { const d = spParseISO(m.date); const j = new Date(d); j.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return spDateISO(j); }));
-      let atteint = null;
-      (SA.goals || []).filter(g => (g.metric || "poids") === "poids" && g.target != null).forEach(g => {
-        const baisse = g.start == null || Number(g.start) >= Number(g.target);
-        const m = l.find(x => baisse ? Number(x.poids) <= Number(g.target) : Number(x.poids) >= Number(g.target));
-        if (m && (!atteint || m.date < atteint)) atteint = m.date;
-      });
-      res.sante = { pesees: l.length, semaines: semaines.size, atteint };
+  // Patrimoine : la valeur nette du début à la fin de l'année (série mensuelle
+  // calculée par patrimoine.py), et le plus beau mois
+  if (vis.has("sec-patri") && Array.isArray(_paSerie) && _paSerie.length) {
+    const avant = _paSerie.filter(p => p.date < ys + "-01-01"), dans = _paSerie.filter(p => String(p.date).startsWith(ys));
+    const depart = avant.length ? avant[avant.length - 1] : dans[0], fin = dans[dans.length - 1];
+    if (dans.length && depart && fin && fin !== depart) {
+      const parMois = Array(12).fill(null);
+      let prec = avant.length ? avant[avant.length - 1].net : null;
+      dans.forEach(p => { if (prec != null) parMois[Number(p.date.slice(5, 7)) - 1] = p.net - prec; prec = p.net; });
+      const bm = parMois.reduce((b, v, i) => (v != null && v > 0 && (b < 0 || v > parMois[b]) ? i : b), -1);
+      res.patri = { depart: depart.net, fin: fin.net, eur: fin.net - depart.net,
+                    pct: depart.net > 0 ? (fin.net / depart.net - 1) * 100 : null, parMois,
+                    meilleur: bm >= 0 ? { mois: anMoisNom(bm), eur: parMois[bm] } : null };
     }
   }
 
-  // Tâches : faites dans l'année (récurrentes comprises)
-  if (vis.has("sec-taches") && TC) {
-    let n = TC.taches.filter(t => String(t.fait || "").startsWith(ys)).length;
-    Object.values(TC.faites || {}).forEach(l => { n += (l || []).filter(d => String(d).startsWith(ys)).length; });
-    if (n) res.taches = { faites: n };
+  // Prêt : la part du capital remboursée à la fin de l'année, les mensualités
+  // payées dans l'année (même règle que prCapitalDu : la part de capital
+  // quand elle est saisie, sinon tout le montant)
+  if (vis.has("sec-pret") && typeof PR !== "undefined" && PR && PR.pret && prN(PR.pret.montant) > 0) {
+    const rb = (PR.remboursements || []).filter(x => x.date && x.date <= finAn && prPasse(x));
+    const dansAn = rb.filter(x => x.date.startsWith(ys));
+    if (dansAn.length) {
+      const capital = rb.reduce((t, x) => t + (x.capital != null ? prN(x.capital) : prN(x.montant)), 0);
+      const duree = prN(PR.pret.duree_remboursement);
+      res.pret = { nom: prNom(), pct: Math.min(100, capital / prN(PR.pret.montant) * 100), n: dansAn.length,
+                   eur: dansAn.reduce((t, x) => t + prN(x.montant), 0),
+                   restantes: duree > 0 && recent ? Math.max(0, duree - rb.length) : null };
+    }
+  }
+
+  // Santé : seulement avec un objectif de poids (choix d'Arthur : « 12 pesées »
+  // ne dit rien). Le chemin fait (saGoalProgress, comme l'onglet Objectifs),
+  // le poids du début à la fin de l'année, la date où l'objectif est atteint
+  if (vis.has("sec-sante") && SA) {
+    const gs = saGoals().filter(g => (g.metric || "poids") === "poids" && g.target != null && g.target !== "");
+    const l = saSorted().filter(m => String(m.date || "").startsWith(ys) && m.poids != null && m.poids !== "");
+    if (gs.length && l.length) {
+      const g = Object.assign({}, gs.filter(x => x.status !== "done").pop() || gs[gs.length - 1], { metric: "poids" });
+      let atteint = null;
+      gs.forEach(x => {
+        const baisse = x.start == null || x.start === "" || Number(x.start) >= Number(x.target);
+        const m = l.find(y => baisse ? Number(y.poids) <= Number(x.target) : Number(y.poids) >= Number(x.target));
+        if (m && (!atteint || m.date < atteint)) atteint = m.date;
+      });
+      const p = saGoalProgress(g);
+      res.sante = { cible: Number(g.target), pct: recent ? p.pct : null, atteint,
+                    debut: Number(l[0].poids), fin: Number(l[l.length - 1].poids), mesures: l.length };
+    }
+  }
+
+  // Le mois de l'année : celui où tout s'est le mieux passé. Chaque module
+  // donne une note au mois (sa valeur rapportée à son meilleur mois), on additionne
+  const series = [];
+  if (res.sport) series.push({ v: res.sport.parMois, dit: v => anHeures(v) + " de sport" });
+  if (res.budget) series.push({ v: res.budget.parMois, dit: v => anEur(v, true) + " de budget" });
+  if (res.pea) series.push({ v: res.pea.moisPct, dit: v => anPct(v, true) + " pour le PEA" });
+  if (res.patri) series.push({ v: res.patri.parMois, dit: v => anEur(v, true) + " de patrimoine" });
+  if (series.length >= 2) {
+    const note = Array(12).fill(0);
+    series.forEach(s => {
+      const max = Math.max(0, ...s.v.filter(v => v != null));
+      if (max > 0) s.v.forEach((v, i) => { if (v > 0) note[i] += v / max; });
+    });
+    let best = 0;
+    for (let i = 1; i < moisEcoules; i++) if (note[i] > note[best]) best = i;
+    const lignes = series.filter(s => s.v[best] > 0).map(s => s.dit(s.v[best]));
+    if (note[best] > 0 && lignes.length >= 2) res.mois = { nom: anMoisNom(best), lignes };
   }
   return res;
 }
@@ -31403,8 +31573,12 @@ function anLignes(t, n) {
   });
   return out;
 }
+/** Une ligne d'au plus n caractères, avec « … » si elle est coupée */
+function anCourt(t, n) { t = String(t); return t.length <= n ? t : t.slice(0, n - 1).trim() + "…"; }
 
-function anCarte(sombre, corps, an) {
+/** Le fond d'une carte. Plus de « Fait avec Pilote · 2026 » en bas : l'année
+    est déjà en haut de chaque carte (demande d'Arthur, 13/11/2026). */
+function anCarte(sombre, corps) {
   const k = anCouleurs(), fond = sombre ? k.fonce : k.clair, txt = sombre ? k.txtF : k.txtC;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" color="${txt}">
     <style>${_anPolices || ""}
@@ -31420,8 +31594,6 @@ function anCarte(sombre, corps, an) {
     <rect width="1080" height="1920" rx="0" fill="${fond}"/>
     <circle cx="980" cy="120" r="260" fill="${k.acc}" opacity="${sombre ? 0.18 : 0.08}"/>
     ${corps}
-    ${anTexte(96, 1830, "Fait avec Pilote", 34, { op: 0.7 })}
-    ${anTexte(984, 1830, String(an), 34, { op: 0.7, fin: true })}
   </svg>`;
 }
 
@@ -31440,18 +31612,24 @@ function anPuce(x, y, t, k) {
 function anComposer(r, prenom) {
   const k = anCouleurs(), cartes = [], an = r.an;
   const enCours = an === new Date().getFullYear() && new Date().getMonth() < 11;
-  let n = 0;
+  let n = 0, s;
   const sombre = () => (n++ % 2) === 0;
+  const vif = () => (s ? anMelange(k.acc, "#ffffff", 0.45) : k.acc);   // l'accent, lisible sur les deux fonds
+  const tete = t => anTexte(96, 200, t + " · " + an, 36, { esp: 6, op: 0.75 });
+  const pl = x => (x > 1 ? "s" : "");
+  const ajoute = (id, nom, corps) => cartes.push({ id, nom, svg: anCarte(s, corps) });
 
-  let s = sombre();
-  cartes.push({ id: "couverture", nom: "Couverture", svg: anCarte(s, `
+  // 1. Couverture : « Voici ton année 2026 » en grand
+  s = sombre();
+  ajoute("couverture", "Couverture", `
     ${anTexte(96, 200, "PILOTE · " + an, 36, { esp: 6, op: 0.75 })}
-    ${anTexte(96, 470, "Ton année", 150, { serif: true })}
-    ${anTexte(96, 630, "avec Pilote", 150, { serif: true, c: s ? anMelange(k.acc, "#ffffff", 0.45) : k.acc })}
-    ${anTexte(96, 760, (prenom ? prenom + ", " : "") + (enCours ? "voici ton année jusqu'ici." : "Pilou a tout relu."), 46, { op: 0.85 })}
+    ${anTexte(96, 450, "Voici ton", 160, { serif: true })}
+    ${anTexte(96, 620, "année " + an, 160, { serif: true, c: vif() })}
+    ${anTexte(96, 760, (prenom ? prenom + ", " : "") + (enCours ? (prenom ? "voici" : "Voici") + " où tu en es." : "Pilou a tout relu."), 46, { op: 0.85 })}
     ${anTexte(96, 830, "On fait le tour ?", 46, { op: 0.85 })}
-    ${anPilou("salut", 230, 1000, 620)}`, an) });
+    ${anPilou("salut", 230, 1000, 620)}`);
 
+  // 2. Sport
   if (r.sport) {
     const sp = r.sport; s = sombre();
     let y = 860;
@@ -31459,81 +31637,207 @@ function anComposer(r, prenom) {
       const b = anTexte(96, y, x.nom, 42) + anTexte(984, y, anPct(x.pct), 42, { fin: true, poids: 500 }) + anBarre(96, y + 26, 888, x.pct, k, s);
       y += 130; return b;
     }).join("");
-    cartes.push({ id: "sport", nom: "Sport", svg: anCarte(s, `
-      ${anTexte(96, 200, "SPORT", 36, { esp: 6, op: 0.75 })}
+    ajoute("sport", "Sport", `
+      ${tete("SPORT")}
       ${anTexte(96, 480, anHeures(sp.min), 210, { serif: true })}
-      ${anTexte(96, 580, "de sport, en " + sp.seances + " séance" + (sp.seances > 1 ? "s" : ""), 48, { op: 0.85 })}
+      ${anTexte(96, 580, "de sport, en " + sp.seances + " séance" + pl(sp.seances), 48, { op: 0.85 })}
       ${barres}
       ${anPuce(96, y + 10, "Mois record : " + sp.moisRecord + ", " + anHeures(sp.minRecord), k)}
-      ${anPilou("content", 640, 1400, 340)}`, an) });
+      ${anPilou("content", 640, 1400, 340)}`);
   }
 
+  // 2 bis. Objectifs de sport atteints dans l'année
+  if (r.sportObj.length) {
+    const o = r.sportObj; s = sombre();
+    const liste = o.slice(0, 5).map((x, i) => {
+      const y = 760 + i * 150;
+      return anTexte(96, y, anCourt(x.titre, 30), 58, { serif: true }) + anTexte(96, y + 52, "le " + anDate(x.date), 36, { op: 0.7 });
+    }).join("") + (o.length > 5 ? anTexte(96, 760 + 5 * 150, "et " + (o.length - 5) + " autre" + pl(o.length - 5) + "…", 40, { op: 0.75 }) : "");
+    ajoute("sport-objectifs", "Objectifs de sport", `
+      ${tete("SPORT")}
+      ${anTexte(96, 480, String(o.length), 210, { serif: true, c: vif() })}
+      ${anTexte(96, 580, "objectif" + pl(o.length) + " atteint" + pl(o.length) + " cette année", 48, { op: 0.85 })}
+      ${liste}
+      ${anPilou("joyeux", 640, 1460, 320)}`);
+  }
+
+  // 2 ter. Records de l'année
+  if (r.sport && r.sport.seances >= 3) {
+    const sp = r.sport, rc = sp.rec; s = sombre();
+    const lignes = [];
+    if (rc.duree) lignes.push(["Plus longue séance", anHeures(rc.duree.v), rc.duree.sport + ", le " + anDate(rc.duree.date)]);
+    if (rc.km) lignes.push(["Plus longue distance", rc.km.v.toFixed(rc.km.v < 100 ? 1 : 0).replace(".", ",") + " km", rc.km.sport + ", le " + anDate(rc.km.date)]);
+    if (rc.elev) lignes.push(["Plus gros dénivelé", Math.round(rc.elev.v).toLocaleString("fr-FR").replace(/\s/g, " ") + " m", rc.elev.sport + ", le " + anDate(rc.elev.date)]);
+    if (sp.serie >= 2) lignes.push(["Semaines d'affilée", sp.serie + " semaines", "avec au moins une séance"]);
+    if (sp.km >= 1) lignes.push(["Distance totale", Math.round(sp.km).toLocaleString("fr-FR").replace(/\s/g, " ") + " km", "sur toute l'année"]);
+    if (lignes.length >= 2) {
+      const corps = lignes.slice(0, 5).map(([t, v, d], i) => {
+        const y = 560 + i * 240;
+        return anTexte(96, y, t, 38, { op: 0.7 }) + anTexte(96, y + 88, v, 84, { serif: true }) + anTexte(96, y + 140, anCourt(d, 44), 36, { op: 0.75 });
+      }).join("");
+      ajoute("sport-records", "Records", `
+        ${tete("SPORT")}
+        ${anTexte(96, 400, "Tes records", 150, { serif: true })}
+        ${corps}`);
+    }
+  }
+
+  // 3. Bourse : la performance du PEA, les versements, la ligne de l'année
   if (r.pea) {
     const p = r.pea; s = sombre();
     cartes.push({ id: "bourse", nom: "Bourse", svg: anCarte(s, `
-      ${anTexte(96, 200, "BOURSE", 36, { esp: 6, op: 0.75 })}
+      ${tete("BOURSE")}
       ${anTexte(96, 480, anPct(p.pct, true), 210, { serif: true })}
       ${anTexte(96, 580, "pour ton PEA " + (enCours ? "depuis le 1ᵉʳ janvier" : "sur l'année"), 48, { op: 0.85 })}
-      ${anTexte(96, 760, p.mois + " versement" + (p.mois > 1 ? "s" : "") + " sur " + p.moisEcoules + " mois", 52, { poids: 500 })}
-      ${anTexte(96, 830, p.mois >= p.moisEcoules ? "Pas un mois oublié." : p.mois ? "La régularité, ça paie." : "Aucun versement cette année.", 46, { op: 0.85 })}
-      ${p.star ? anTexte(96, 990, "Ta ligne de l'année", 40, { op: 0.75 }) + anLignes(p.star.nom, 30).slice(0, 2).map((l, i) => anTexte(96, 1060 + i * 64, l, 56, { serif: true })).join("")
-                 + anPuce(96, 1180, anPct(p.star.pct, true) + " sur l'année", k) : ""}
-      ${anPilou("pensif", 640, 1400, 340)}`, an) });
+      ${p.eur != null ? anTexte(96, 660, "soit " + anEur(p.eur, true) + (p.eur >= 0 ? " de gain" : " de perte"), 48, { poids: 500, c: vif() }) : ""}
+      ${anTexte(96, 800, p.mois + " versement" + pl(p.mois) + " sur " + p.moisEcoules + " mois", 52, { poids: 500 })}
+      ${anTexte(96, 870, p.mois >= p.moisEcoules ? "Pas un mois oublié." : p.mois ? "La régularité, ça paie." : "Aucun versement cette année.", 46, { op: 0.85 })}
+      ${p.star ? anTexte(96, 1020, "Ta ligne de l'année", 40, { op: 0.75 }) + anLignes(p.star.nom, 30).slice(0, 2).map((l, i) => anTexte(96, 1090 + i * 64, l, 56, { serif: true })).join("")
+                 + anPuce(96, 1210, anPct(p.star.pct, true) + " sur l'année", k) : ""}
+      ${anPilou("pensif", 640, 1400, 340)}`) });
   }
 
+  // 3 bis. Les journées du PEA : meilleure, records battus, dividendes
+  if (r.pea && (r.pea.meilleur || r.pea.divN)) {
+    const p = r.pea; s = sombre();
+    let y = 330, corps = "";
+    if (p.meilleur) {
+      corps += anTexte(96, y, "Ta meilleure journée", 40, { op: 0.75 })
+             + anTexte(96, y + 200, anPct(p.meilleur.pct, true), 190, { serif: true, c: vif() })
+             + anTexte(96, y + 280, "le " + anDate(p.meilleur.date), 48, { op: 0.85 });
+      y += 420;
+    }
+    if (p.records > 0) {
+      corps += anTexte(96, y + 100, String(p.records), 130, { serif: true })
+             + anTexte(96, y + 170, "jour" + pl(p.records) + " où ton PEA a battu son record", 44, { op: 0.85 });
+      y += 280;
+    }
+    if (p.divN) {
+      corps += anTexte(96, y + 100, String(p.divN), 130, { serif: true })
+             + anTexte(96, y + 170, "dividende" + pl(p.divN) + " reçu" + pl(p.divN) + ", " + anEur(p.divEur) + " au total", 44, { op: 0.85 });
+    }
+    ajoute("bourse-jours", "Tes journées en bourse", `${tete("BOURSE")}${corps}${anPilou("content", 640, 1440, 320)}`);
+  }
+
+  // 3 ter. Chaque CTO, puis le portefeuille crypto
+  const compte = (c, titre, id) => {
+    s = sombre();
+    const pv = c.pvPct != null && c.pv != null;
+    const lignes = [];
+    if (c.achats) lignes.push(c.achats + " achat" + pl(c.achats) + " en " + an + ", " + anEur(c.investi) + " investis");
+    if (c.div > 0) lignes.push(anEur(c.div) + " de dividendes reçus");
+    ajoute(id, titre, `
+      ${tete(titre.toUpperCase())}
+      ${id === "crypto" ? "" : anTexte(96, 330, anCourt(c.nom, 26), 64, { serif: true, op: 0.9 })}
+      ${pv ? anTexte(96, 560, anPct(c.pvPct, true), 210, { serif: true }) + anTexte(96, 650, (c.pv >= 0 ? "soit " + anEur(c.pv, true) + " de gain" : "soit " + anEur(c.pv, true)) + " à ce jour", 48, { op: 0.85 })
+           : anTexte(96, 560, String(c.achats), 210, { serif: true }) + anTexte(96, 650, "achat" + pl(c.achats) + " en " + an, 48, { op: 0.85 })}
+      ${lignes.map((l, i) => anTexte(96, 820 + i * 80, anCourt(l, 38), 44, { poids: i ? 400 : 500 })).join("")}
+      ${c.star ? anTexte(96, 1040, id === "crypto" ? "Ta crypto star" : "Ta ligne star", 40, { op: 0.75 })
+                 + anTexte(96, 1110, anCourt(c.star.nom, 28), 58, { serif: true }) + anPuce(96, 1150, anPct(c.star.pct, true) + " à ce jour", k) : ""}
+      ${anPilou("pensif", 640, 1400, 340)}`);
+  };
+  r.cto.forEach((c, i) => compte(c, "CTO", "cto" + (i ? "-" + (i + 1) : "")));
+  if (r.crypto) compte(r.crypto, "Crypto", "crypto");
+
+  // 4. Budget : l'année dans le vert ou dans le rouge, les mois, le meilleur
+  // mois, la plus belle économie (pas de taux d'épargne : une dépense peut
+  // être un versement sur un CTO, choix d'Arthur)
   if (r.budget) {
     const b = r.budget; s = sombre();
-    const cases = b.mois.map((v, i) => `<rect x="${96 + i * 76}" y="700" width="62" height="120" rx="14"
+    const vertAn = b.net >= 0;
+    const cases = b.mois.map((v, i) => `<rect x="${96 + i * 76}" y="760" width="62" height="120" rx="14"
       fill="${v ? (s ? anMelange(k.acc, "#ffffff", 0.3) : k.acc) : (s ? "#ffffff" : "#2a1822")}" opacity="${v ? 1 : v === false ? 0.14 : 0.05}"/>`).join("");
-    const lettres = "JFMAMJJASOND".split("").map((l, i) => anTexte(127 + i * 76, 870, l, 30, { milieu: true, op: 0.6 })).join("");
-    cartes.push({ id: "budget", nom: "Budget", svg: anCarte(s, `
-      ${anTexte(96, 200, "BUDGET", 36, { esp: 6, op: 0.75 })}
-      ${anTexte(96, 480, b.vert + " / " + b.suivis, 210, { serif: true })}
-      ${anTexte(96, 580, "mois où tu as gagné plus que dépensé", 46, { op: 0.85 })}
+    const lettres = "JFMAMJJASOND".split("").map((l, i) => anTexte(127 + i * 76, 930, l, 30, { milieu: true, op: 0.6 })).join("");
+    ajoute("budget", "Budget", `
+      ${tete("BUDGET")}
+      ${anTexte(96, 420, vertAn ? "Dans le vert" : "Dans le rouge", 150, { serif: true, c: vertAn ? vif() : null })}
+      ${anTexte(96, 520, anEur(b.net, true) + " sur l'année", 56, { poids: 500 })}
+      ${anTexte(96, 680, b.vert + " mois sur " + b.suivis + " où tu as gagné plus que dépensé", 40, { op: 0.85 })}
       ${cases}${lettres}
-      ${b.eco ? anTexte(96, 1010, "Ta plus belle économie", 40, { op: 0.75 }) + anTexte(96, 1085, b.eco.nom, 60, { serif: true })
-                + anPuce(96, 1130, anPct(b.eco.pct, true) + " sur l'an dernier", k) : ""}
-      ${anPilou("content", 640, 1400, 340)}`, an) });
+      ${b.meilleur ? anTexte(96, 1040, "Ton meilleur mois", 40, { op: 0.75 }) + anPuce(96, 1070, b.meilleur.mois + " : " + anEur(b.meilleur.eur, true), k) : ""}
+      ${b.eco ? anTexte(96, 1240, "Ta plus belle économie", 40, { op: 0.75 }) + anTexte(96, 1310, anCourt(b.eco.nom, 26), 60, { serif: true })
+                + anPuce(96, 1345, anPct(b.eco.pct, true) + " sur l'an dernier", k) : ""}
+      ${anPilou("content", 680, 1480, 300)}`);
   }
 
+  // 5. Patrimoine
+  if (r.patri) {
+    const p = r.patri; s = sombre();
+    ajoute("patrimoine", "Patrimoine", `
+      ${tete("PATRIMOINE")}
+      ${anTexte(96, 480, p.pct != null ? anPct(p.pct, true) : anEur(p.eur, true), p.pct != null ? 210 : 150, { serif: true })}
+      ${anTexte(96, 580, "pour ton patrimoine net " + (enCours ? "depuis janvier" : "sur l'année"), 46, { op: 0.85 })}
+      ${anTexte(96, 760, "De " + anEur(p.depart) + " à " + anEur(p.fin), 52, { poids: 500 })}
+      ${p.pct != null ? anTexte(96, 830, anEur(p.eur, true) + (enCours ? " depuis janvier" : " en un an"), 46, { op: 0.85, c: vif() }) : ""}
+      ${p.meilleur ? anTexte(96, 990, "Ton plus beau mois", 40, { op: 0.75 }) + anPuce(96, 1020, p.meilleur.mois + " : " + anEur(p.meilleur.eur, true), k) : ""}
+      ${anPilou("content", 640, 1400, 340)}`);
+  }
+
+  // 6. Prêt
+  if (r.pret) {
+    const p = r.pret; s = sombre();
+    ajoute("pret", p.nom || "Prêt", `
+      ${tete(anCourt(p.nom || "Prêt", 24).toUpperCase())}
+      ${anTexte(96, 480, anPct(p.pct), 210, { serif: true })}
+      ${anTexte(96, 580, "du capital remboursé", 48, { op: 0.85 })}
+      ${anBarre(96, 640, 888, p.pct, k, s)}
+      ${anTexte(96, 800, p.n + " mensualité" + pl(p.n) + " payée" + pl(p.n) + " en " + an, 52, { poids: 500 })}
+      ${anTexte(96, 870, anEur(p.eur) + " remboursés cette année", 46, { op: 0.85 })}
+      ${p.restantes != null ? anPuce(96, 960, p.restantes ? "Encore " + p.restantes + " mensualité" + pl(p.restantes) : "Prêt remboursé !", k) : ""}
+      ${anPilou("content", 640, 1400, 340)}`);
+  }
+
+  // 7. Santé : seulement avec un objectif de poids
   if (r.sante) {
     const h = r.sante; s = sombre();
-    const atteint = h.atteint ? spParseISO(h.atteint) : null;
-    cartes.push({ id: "sante", nom: "Santé", svg: anCarte(s, `
-      ${anTexte(96, 200, "SANTÉ", 36, { esp: 6, op: 0.75 })}
-      ${atteint ? anTexte(96, 400, "Objectif de poids", 96, { serif: true }) + anTexte(96, 510, "atteint le " + atteint.getDate() + " " + anMoisNom(atteint.getMonth()), 96, { serif: true })
-                : anTexte(96, 480, String(h.semaines), 210, { serif: true }) + anTexte(96, 580, "semaine" + (h.semaines > 1 ? "s" : "") + " suivie" + (h.semaines > 1 ? "s" : ""), 48, { op: 0.85 })}
-      ${anTexte(96, atteint ? 620 : 700, h.pesees + " pesée" + (h.pesees > 1 ? "s" : "") + (atteint ? ", " + h.semaines + " semaines suivies" : "") + ".", 46, { op: 0.85 })}
-      ${anPilou("joyeux", 260, 1000, 560)}`, an) });
+    const ecart = h.fin - h.debut;
+    const haut = h.atteint
+      ? anTexte(96, 400, "Objectif de poids", 96, { serif: true }) + anTexte(96, 510, "atteint le " + anDate(h.atteint), 96, { serif: true, c: vif() })
+      : h.pct != null
+        ? anTexte(96, 480, anPct(h.pct), 210, { serif: true }) + anTexte(96, 580, "du chemin vers ton objectif de " + anKg(h.cible), 46, { op: 0.85 })
+          + anBarre(96, 640, 888, h.pct, k, s)
+        : anTexte(96, 480, anKg(ecart, true), 190, { serif: true }) + anTexte(96, 580, "vers ton objectif de " + anKg(h.cible), 46, { op: 0.85 });
+    ajoute("sante", "Santé", `
+      ${tete("SANTÉ")}
+      ${haut}
+      ${h.mesures >= 2 && Math.abs(ecart) >= 0.1 ? anTexte(96, 800, "Sur l'année : " + anKg(ecart, true), 52, { poids: 500 })
+            + anTexte(96, 870, "de " + anKg(h.debut) + " à " + anKg(h.fin), 46, { op: 0.85 }) : ""}
+      ${anPilou("joyeux", 260, 1000, 560)}`);
   }
 
-  if (r.taches) {
+  // 8. Le mois de l'année
+  if (r.mois) {
     s = sombre();
-    cartes.push({ id: "taches", nom: "Tâches", svg: anCarte(s, `
-      ${anTexte(96, 200, "TÂCHES", 36, { esp: 6, op: 0.75 })}
-      ${anTexte(96, 480, String(r.taches.faites), 210, { serif: true })}
-      ${anTexte(96, 580, "tâche" + (r.taches.faites > 1 ? "s" : "") + " cochée" + (r.taches.faites > 1 ? "s" : "") + ". Une de moins à chaque fois.", 46, { op: 0.85 })}
-      ${anPilou("content", 260, 1000, 560)}`, an) });
+    ajoute("mois", "Ton mois de l'année", `
+      ${tete("TON MOIS DE L'ANNÉE")}
+      ${anTexte(96, 520, r.mois.nom.charAt(0).toUpperCase() + r.mois.nom.slice(1), 190, { serif: true, c: vif() })}
+      ${anTexte(96, 620, "Le mois où tout a souri :", 46, { op: 0.85 })}
+      ${r.mois.lignes.map((l, i) => anPuce(96, 700 + i * 110, l, k)).join("")}
+      ${anPilou("joyeux", 600, 1340, 380)}`);
   }
 
-  // Le récap : quatre chiffres au plus, ceux des cartes présentes
+  // 9. Le récap : les quatre meilleurs chiffres des pages présentes
   const chiffres = [];
   if (r.sport) chiffres.push([anHeures(r.sport.min), "de sport"]);
-  if (r.pea) chiffres.push([anPct(r.pea.pct, true), "PEA"]);
-  if (r.budget) chiffres.push([r.budget.vert + " / " + r.budget.suivis, "mois dans le vert"]);
-  if (r.sante) chiffres.push([String(r.sante.semaines), "semaines suivies"]);
-  if (r.taches) chiffres.push([String(r.taches.faites), "tâches faites"]);
+  if (r.pea) chiffres.push([anPct(r.pea.pct, true), "pour le PEA"]);
+  if (r.budget) chiffres.push([anEur(r.budget.net, true), "de budget"]);
+  if (r.patri && r.patri.pct != null) chiffres.push([anPct(r.patri.pct, true), "de patrimoine"]);
+  if (r.sportObj.length) chiffres.push([String(r.sportObj.length), "objectif" + pl(r.sportObj.length) + " atteint" + pl(r.sportObj.length)]);
+  if (r.sante && r.sante.mesures >= 2 && Math.abs(r.sante.fin - r.sante.debut) >= 0.1) chiffres.push([anKg(r.sante.fin - r.sante.debut, true), "sur la balance"]);
+  if (r.pret) chiffres.push([anPct(r.pret.pct), "du prêt remboursé"]);
+  if (r.crypto && r.crypto.pvPct != null) chiffres.push([anPct(r.crypto.pvPct, true), "en crypto"]);
+  r.cto.forEach(c => { if (c.pvPct != null) chiffres.push([anPct(c.pvPct, true), anCourt(c.nom, 16)]); });
   if (chiffres.length >= 2) {
     s = sombre();
     const grille = chiffres.slice(0, 4).map(([v, l], i) => {
       const x = 96 + (i % 2) * 460, y = 470 + Math.floor(i / 2) * 260;
-      return anTexte(x, y, v, 100, { serif: true }) + anTexte(x, y + 64, l, 40, { op: 0.75 });
+      return anTexte(x, y, v, v.length > 8 ? 76 : 100, { serif: true }) + anTexte(x, y + 64, l, 40, { op: 0.75 });
     }).join("");
-    cartes.push({ id: "recap", nom: "Ton année en chiffres", svg: anCarte(s, `
+    ajoute("recap", "Ton année en chiffres", `
       ${anTexte(96, 200, "TON ANNÉE EN " + Math.min(4, chiffres.length) + " CHIFFRES", 36, { esp: 6, op: 0.75 })}
       ${grille}
       ${anPilou("joyeux", 300, 1120, 480)}
-      ${anTexte(540, 1720, "@pilote.appli", 40, { milieu: true, op: 0.8 })}`, an) });
+      ${anTexte(540, 1720, "@pilote.appli", 40, { milieu: true, op: 0.8 })}`);
   }
   return cartes;
 }
@@ -31558,7 +31862,10 @@ async function anChargerPolices() {
 let _anIndex = 0;
 
 async function anOuvrir(an) {
-  an = an || anAnnee();
+  const cur = new Date().getFullYear();
+  an = an || (anDisponible(cur) ? cur : anAnnee());
+  // Les chiffres du PEA se lisent dans S : un CTO affiché laisse sa place
+  if (_estCto() && typeof goTab === "function") goTab("home");
   let ov = document.getElementById("ov-anbilan");
   if (!ov) {
     ov = document.createElement("div");
@@ -31583,8 +31890,15 @@ async function anOuvrir(an) {
     <div class="an-pied" id="an-pied"></div>
   </div>`;
   ov.classList.add("open");
+  // Une année finie, ouverte une fois : le message de l'accueil disparaît
   S.uiPrefs = S.uiPrefs || {};
-  if (S.uiPrefs.anBilanVu !== an) { S.uiPrefs.anBilanVu = an; _enregistrerUiPrefs(); }
+  if (an < cur && !anVu(an)) {
+    S.uiPrefs.anVus = ((S.uiPrefs.anVus) || []).concat([an]);
+    _enregistrerUiPrefs();
+    if (typeof dashRender === "function") dashRender();
+    const fl = document.getElementById("pilou-anbilan");
+    if (fl) fl.remove();
+  }
   await anChargerPolices();
   const r = await anCalculer(an);
   _anCartes = anComposer(r, (S.config && S.config.prenom) || "");
@@ -31594,7 +31908,7 @@ async function anOuvrir(an) {
   if (_anCartes.length < 2) {
     scene.className = "an-attente";
     scene.innerHTML = `<div class="m-empty">${pilouVide("pensif")}Pas encore assez de choses notées en ${an} pour raconter ton année.
-      Reviens quand tu auras quelques séances, pesées ou mois de budget.</div>`;
+      Reviens quand tu auras quelques séances, mois de budget ou ordres de bourse.</div>`;
     return;
   }
   scene.className = "an-scene";
@@ -31680,22 +31994,23 @@ async function anPartager() {
   }
 }
 
-/** Tuile d'accueil, du 1er décembre au 31 janvier seulement */
+/** Tuile d'accueil : à partir du 1er janvier, le bilan de l'année qui vient de
+    finir, jusqu'à ce qu'il ait été ouvert (choix d'Arthur, 13/11/2026). */
 function dashAnBilan() {
-  if (!anPeriode()) return null;
   const an = anAnnee();
+  if (an < AN_DIRECT || !S || anVu(an)) return null;
   return { lbl: "Ton année " + an, val: null, go: null, vizCls: "dash-viz-haut",
-           sub: S.uiPrefs && S.uiPrefs.anBilanVu === an ? "Tes cartes de l'année, à revoir ou partager." : "Pilou a préparé ton bilan de l'année.",
+           sub: "Pilou a préparé ton bilan de l'année.",
            viz: `<div class="an-tuile"><span class="pilou" aria-hidden="true">${pilouSvg("salut")}</span>
-             <button type="button" class="btn btn-primary btn-sm dash-tile-btn" onclick="event.stopPropagation();anOuvrir()">
+             <button type="button" class="btn btn-primary btn-sm dash-tile-btn" onclick="event.stopPropagation();anOuvrir(${an})">
                <i class="ph ph-sparkle"></i> Voir mon année</button></div>` };
 }
 
-/** Au lancement, dans la période : la tuile mise en tête une fois par an, et
-    Pilou qui le propose une fois (carte flottante, comme ses astuces). */
+/** Au lancement, tant que le bilan de l'année finie n'a pas été ouvert : la
+    tuile mise en tête une fois, et Pilou qui le propose (carte flottante). */
 function anDemarrer() {
-  if (!anPeriode() || !S || _estCto()) return;
   const an = anAnnee();
+  if (an < AN_DIRECT || !S || _estCto() || anVu(an)) return;
   S.uiPrefs = S.uiPrefs || {};
   if (S.uiPrefs.anBilanTuile !== an) {
     S.uiPrefs.anBilanTuile = an;
@@ -31703,22 +32018,47 @@ function anDemarrer() {
     _enregistrerUiPrefs();
     if (typeof dashRender === "function") dashRender();
   }
-  if (S.uiPrefs.anBilanVu === an || S.uiPrefs.anBilanPropose === an || document.querySelector(".pl-flot, .ov.open")) return;
-  S.uiPrefs.anBilanPropose = an;
-  _enregistrerUiPrefs();
+  if (document.querySelector(".pl-flot, .ov.open")) return;
   const box = document.createElement("div");
   box.id = "pilou-anbilan";
   box.className = "pl-flot";
   box.innerHTML = `<span class="pilou" aria-hidden="true">${pilouSvg("salut")}</span>
     <div class="pp-bulle"><button type="button" class="pl-flot-x" aria-label="Fermer"><i class="ph ph-x"></i></button>
       <div class="pl-flot-t">Ton année ${an} est prête&#8239;!</div>
-      J'ai relu tes séances, ton budget et ta bourse. Des cartes à garder ou à partager, sans aucun montant.
+      J'ai relu toute ton année : des cartes à garder ou à partager.
       <div class="pl-flot-acts"><span class="sp"></span>
         <button type="button" class="btn btn-ghost btn-sm" data-non>Plus tard</button>
         <button type="button" class="btn btn-primary btn-sm" data-ok>Voir mon année</button></div></div>`;
   document.body.appendChild(box);
   box.querySelectorAll("[data-non], .pl-flot-x").forEach(b => { b.onclick = () => box.remove(); });
   box.querySelector("[data-ok]").onclick = () => { box.remove(); anOuvrir(an); };
+}
+
+/** Paramètres → Mon année : chaque année qui a des données et un bilan
+    disponible, la plus récente en tête */
+function anRenderReglages() {
+  const box = document.getElementById("cfg-anbilan");
+  if (!box) return;
+  const cur = new Date().getFullYear(), ans = new Set();
+  const note = d => { const y = Number(String(d || "").slice(0, 4)); if (y >= 2000 && y <= cur && anDisponible(y)) ans.add(y); };
+  try {
+    const pea = _etatPea() || {};
+    (pea.transactions || []).forEach(x => note(normDate(x.date)));
+    if (SP && SP.sessions) SP.sessions.forEach(x => note(x.date));
+    if (typeof F !== "undefined" && F && F.transactions) F.transactions.forEach(x => note(x.date));
+    if (SA) saSorted().forEach(x => note(x.date));
+    if (Array.isArray(_paSerie)) _paSerie.forEach(x => note(x.date));
+    if (CTO) ctoComptes().forEach(c => ((ctoEtat(c.id) || {}).transactions || []).forEach(x => note(normDate(x.date))));
+    if (typeof PR !== "undefined" && PR) (PR.remboursements || []).forEach(x => note(x.date));
+  } catch (e) { console.warn("[bilan annuel] années", e); }
+  const liste = [...ans].sort((a, b) => b - a);
+  box.innerHTML = liste.length ? liste.map(y => `<div class="an-annee">
+      <span class="an-annee-t">${y}</span>
+      <span class="an-annee-s">${y === cur ? "En cours : il se met à jour au fil de l'année" : "Année terminée"}</span>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="anOuvrir(${y})"><i class="ph ph-sparkle"></i> Voir</button>
+    </div>`).join("")
+    : `<div class="m-empty">${pilouVide("pensif")}Rien à raconter pour l'instant : note quelques séances,
+        un mois de budget ou des ordres de bourse.</div>`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

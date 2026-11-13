@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.71",
+      "date": "2026-11-13",
+      "titre": "Ton année, revue avec Pilou",
+      "nouveau": [
+        "Mon année a sa place dans les Paramètres, sous Masqués : le bilan de chaque année, avec les années passées. Celui de 2026 se met à jour au fil de l'année ; ensuite, le bilan d'une année arrive le 1er janvier, annoncé sur l'accueil jusqu'à ce que tu l'ouvres.",
+        "De nouvelles cartes : tes objectifs de sport atteints, tes records (plus longue séance, plus longue distance, dénivelé, semaines d'affilée), ta meilleure journée en bourse, les records battus par ton PEA et tes dividendes, chaque CTO, ton portefeuille crypto, ton patrimoine, ton prêt, et ton mois de l'année.",
+        "Les montants en euros sont maintenant là quand ils disent quelque chose : gain du PEA, solde de l'année de ton budget, évolution de ton patrimoine."
+      ],
+      "ameliore": [
+        "Budget : l'année est dite « dans le vert » ou « dans le rouge », avec ton meilleur mois.",
+        "Santé : la carte n'apparaît qu'avec un objectif de poids, et montre le chemin fait vers lui.",
+        "Seuls les modules que tu utilises ont leur carte, et jamais une carte vide. La carte des tâches est retirée, et la couverture dit en grand « Voici ton année »."
+      ]
+    },
+    {
       "version": "4.4.70",
       "date": "2026-11-13",
       "titre": "Tes relevés de banque, tes tâches et ton année",

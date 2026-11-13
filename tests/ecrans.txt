@@ -11,12 +11,11 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 4.4.70 (13/11/2026) : module Tâches (liste, tâches dans le calendrier),
-# recherche Ctrl+K, bilan de l'année avec Pilou (Paramètres -> Général : Mon année) ;
-# Mes comptes : bouton « Importer un relevé » et bandeau « À classer » (4.4.70).
-home
-tc-liste
-ag-cal
-js:rgOuvrir(),document.getElementById('rg-champ').value='velo',rgChercher()
+# 4.4.71 (13/11/2026) : bilan de l'année revu (Paramètres -> Mon année, nouvelles
+# cartes : records, journées en bourse, CTO, crypto, patrimoine, prêt, mois de l'année).
+js:openSettings('general'),setGoSection('annee')
 js:anOuvrir(2026)
-fin-month
+js:anOuvrir(2026),setTimeout(function(){anAller(3)},1500)
+js:anOuvrir(2026),setTimeout(function(){anAller(5)},1500)
+js:anOuvrir(2026),setTimeout(function(){anAller(8)},1500)
+js:anOuvrir(2026),setTimeout(function(){anAller(12)},1500)
