@@ -61,6 +61,8 @@ Pilote/
 │   ├── fit.py          # Fichiers .fit de toute montre -> séances de Sports (rien d'enregistré)
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
+│   ├── budget_releves.py # Import des relevés de banque dans Mes comptes : lecture, libellés, classement
+│   ├── budget_marchands.py # Marchands connus, synonymes des catégories, codes MCC (pour budget_releves)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
@@ -219,7 +221,7 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/accueil.md` | page d'accueil, tuiles du tableau de bord, recherche Ctrl+K, bilan de l'année avec Pilou | `home*`, `dash*`, `DASH_WIDGETS`, `rg*`, `an*` |
 | `docs/parametres.md` | sections de la fenêtre Paramètres | `openSettings`, `setGoSection` |
 | `docs/modules/pea.md` | Expositions, frais des ETF, Prochain achat, simulateur d'ordres, courbe du capital | `expositions.py`, `pac*`, `so*`, `renderPerf` |
-| `docs/modules/comptes.md` | Mes comptes | `finances.py`, `fin*` |
+| `docs/modules/comptes.md` | Mes comptes, import des relevés de banque (classement, « À classer ») | `finances.py`, `budget_releves.py`, `budget_marchands.py`, `fin*`, `finReleve*` |
 | `docs/modules/pret.md` | Prêt (nom libre, « Prêt étudiant » jusqu'à la 4.3.33) : un seul prêt, le prêt générique de la 4.4.17 retiré en 4.4.18, retour du schéma 7 au schéma 6 | `pret.py`, `pr*` |
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine, biens immobiliers (ligne du bien + ligne de son crédit, 4.4.18) | `patrimoine.py`, `pa*` |

@@ -87,10 +87,12 @@ Autres pistes :
   voie. Livrets et assurances vie restent des lignes saisies à la main dans
   Patrimoine ; les placements d'un prêt gardent leurs propres calculs.
 - **Import du relevé bancaire dans « Mes comptes »** : écarté par Arthur le
-  13/10/2026, même jour et même raison, y compris dans sa version minimale (CSV
-  de sa banque seule, catégorie reprise de l'historique, liste à cocher, pas de
-  doublon). Mes comptes reste en saisie à la main. `releves.py` ne lit que la
-  bourse (PEA et CTO).
+  13/10/2026 (« laisser l'appli simple »), puis **repris à sa demande le
+  12/11/2026** : « le top 2 des fonctionnalités après le PEA ». Fait dans
+  `budget_releves.py` (docs/modules/comptes.md, « Import des relevés ») : la
+  saisie à la main reste entière, et aucune règle à gérer (Pilote apprend de
+  ce que l'utilisateur a déjà classé). Ne pas reproposer d'écran de règles
+  « libellé → catégorie » : écarté le 01/11/2026, toujours valable.
 
 - **Prêt générique (plusieurs prêts, échéancier calculé)** : publié en 4.4.17 le
   13/10/2026 (taux, assurance, différé, in fine, remboursements anticipés, prêt à

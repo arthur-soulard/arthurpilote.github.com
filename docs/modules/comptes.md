@@ -76,3 +76,98 @@ rien ne passe par Python avant l'enregistrement habituel (`finPersist`).
   crédit, tout est une dépense.
 * Catégorie, sous-catégorie et source retrouvées par leur nom, sinon créées.
   Doublon (même date, type, montant, libellé) ignoré. Aperçu avant « Importer ».
+  Depuis la 4.4.70, ce chemin ne sert plus qu'aux JSON et aux CSV d'une autre
+  appli de budget (colonne catégorie, aucune banque reconnue) : tout autre
+  fichier passe d'abord par l'import des relevés ci-dessous.
+
+## Import des relevés de banque (4.4.70, demandé par Arthur le 12/11/2026)
+
+« Le top 2 des fonctionnalités après le PEA. » Trois façons de faire, toutes
+gardées : importer et laisser Pilote classer ; ranger dans ses propres
+catégories (Pilote les retrouve par leur nom et des synonymes) ; continuer à la
+main. Bouton « Importer un relevé » de l'en-tête du mois (plusieurs fichiers à
+la fois), et tuile d'accueil `fin-releve` (« Relevés de banque » : nombre à
+classer, date du dernier import, boutons Importer et Classer).
+
+**Lecture** (`src/budget_releves.py`, pont `Api.budget_lire_releve`) : CSV
+(séparateur, encodage, lignes de compte avant l'en-tête, libellés sur
+plusieurs lignes, ligne de total, fichier sans en-tête de LCL), Excel .xlsx,
+.xls et page HTML nommée .xls, .ods, OFX 1 (SGML) et 2 (XML), QIF, CAMT.053,
+zip. Lecteurs de fichiers repris de `releves.py`. Colonnes reconnues par leur
+nom (`_COLS`) : date d'opération préférée à la date de comptabilisation (le
+jour de l'achat), montant signé ou Débit / Crédit, frais déduits (Revolut),
+lignes en attente, refusées ou annulées ignorées (statut), libellé + tiers +
+détail réunis sans redite (le libellé abrégé de la Société Générale cède la
+place à son détail). Trade Republic : seules les lignes d'espèces du compte
+(cartes, virements) ; ses ordres de bourse restent à l'import du PEA ou d'un
+CTO. Un PDF est refusé avec la marche à suivre (télécharger le CSV ou l'OFX).
+
+Formats d'après les exemples publiés par d'autres projets libres : Carbure
+(PR 116 : Banque Postale, SG, Crédit Mutuel, Fortuneo, Caisse d'Épargne, BNP,
+N26 actuel et ancien, Revolut, Qonto), My-PiggyBank (PR 70) et gleba (PR 43).
+Pas d'exemple public pour LCL, Shine, Lydia, BforBank, Monabanq : le lecteur
+universel et l'OFX les couvrent, à vérifier sur un vrai fichier.
+
+**Libellé lisible** (`nettoyer`) : préfixes bancaires (CB, CARTE X1234,
+PRLV SEPA, FACTURE CARTE DU 111026…), dates, numéros de carte, références de
+prélèvement (ECH/…, ID EMETTEUR/…), prestataires de paiement (PAYPAL *, SUMUP *)
+retirés ; un virement garde son tiers (« VIR SEPA RECU /DE EMPLOYEUR SA /MOTIF
+SALAIRE » -> « Employeur SA »). Le libellé de la banque reste dans la
+transaction (`libelleBanque`).
+
+**Classement** (`classer`), le premier qui répond :
+1. l'historique de l'utilisateur (libellé déjà classé, mêmes mots) : c'est
+   ainsi que Pilote apprend, sans écran de règles ;
+2. les marchands connus (`src/budget_marchands.py`, quelque 1 700 enseignes
+   et mots en motifs, du plus précis au plus général ; un virement vers
+   « PAUL » n'est pas la boulangerie Paul : `_PAR_VIREMENT`) ;
+3. la catégorie donnée par la banque (BoursoBank, BNP, Caisse d'Épargne, Qonto,
+   QIF), retrouvée dans celles de l'utilisateur ;
+4. le code commerçant de la carte (MCC), quand le fichier le donne ;
+5. sinon « À classer ».
+Une notion absente des catégories de l'utilisateur n'est jamais forcée
+ailleurs : la ligne reste à classer et l'aperçu propose de créer la catégorie
+(« Impôts & taxes », « Aides & allocations »…, `propose`). Un retrait sans
+catégorie « Retraits » va dans Autres dépenses › Divers. Un revenu chez un
+marchand de dépense (carte, prélèvement) est un remboursement ; un virement
+reçu d'une mutuelle aussi ; un virement reçu « MOTIF LOYER » d'un particulier
+ne l'est pas.
+
+**Ni dépense ni revenu, pas cochés** : virement vers son épargne ou entre ses
+comptes (livret, PEA, Trade Republic, top-up Revolut…, ou deux virements
+opposés de même montant dans deux relevés importés ensemble) ; total d'une
+carte à débit différé quand ses achats sont aussi dans l'import (sinon
+signalé) ; opération déjà saisie à la main (même montant, même sens, à trois
+jours près). Une opération déjà importée (empreinte `releve` : date, montant,
+libellé de la banque, rang) n'est pas reproposée.
+
+**Aperçu** (`finReleveApercu`) : chaque ligne avec sa catégorie (liste « À
+classer » + catégories et sous-catégories), une icône dit d'où elle vient
+(historique, marchand, banque, code commerçant, toi ; la raison au survol).
+Changer une ligne change aussi les autres lignes du même libellé que
+l'utilisateur n'a pas touchées. Filtres Toutes / À classer / Pas cochées.
+Rien n'est écrit avant « Importer N opérations » ; « Annuler » dans le toast
+(10 s, `finToastAnnuler`) défait tout l'import.
+
+**À classer ensuite** : une opération importée sans catégorie entre dans
+« Autres dépenses / revenus » avec `aClasser` = l'id de cette catégorie.
+`finAClasser(tx)` est vrai tant qu'elle y est : la ranger ailleurs, par
+n'importe quel chemin (modifier, lot, « Faire pareil »), suffit, rien à
+remettre à zéro. La modifier et garder « Autres » efface aussi le drapeau.
+Filtre « À classer (n) » dans la liste, bandeau au-dessus avec « Les
+classer ».
+
+**Entraînement et mesure** : `tests/corpus_budget.py` fabrique des relevés
+fictifs aux formats des 17 banques et formats (libellés tels que chaque banque
+les écrit, encodages, lignes de compte, totaux, lignes en attente) ;
+`python tests/mesurer_budget.py [n] [--validation] [--erreurs]` mesure.
+Au 13/11/2026, sur 1 020 relevés (40 179 opérations) : 100 % lues (date et
+montant exacts, rien d'inventé), 99,8 % bien classées, 0 % mal classées,
+aucun marchand inconnu rangé à tort. **Mesure honnête** : le jeu de
+validation (`corpus_budget_validation.py`, 340 relevés, autres marchands et
+autres orthographes) écrit après le réglage donnait au premier passage 96,8 %
+bien classées, 2,7 % à classer, 0,5 % mal classées ; 99,8 % après des
+corrections générales (parapharmacie avant l'enseigne, noms collés,
+« supérette »). Ces relevés restent écrits par Claude : aucun vrai relevé
+public n'existe. Le premier vrai relevé d'Arthur dira le vrai chiffre.
+`tests/test_budget_releves.py` garde ces seuils et les exemples publiés.

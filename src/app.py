@@ -60,6 +60,7 @@ import sports
 import pret
 import cto
 import releves
+import budget_releves
 import patrimoine
 import sante
 import taches
@@ -312,6 +313,16 @@ class Api:
         Voir releves.py et docs/import-releves.md."""
         try:
             return releves.lire(fichiers or [])
+        except Exception as e:
+            return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
+
+    def budget_lire_releve(self, fichiers: list, categories: list, historique: list) -> dict:
+        """Releve d'un compte courant (CSV, Excel, OFX, QIF, en base64) ->
+        operations nettoyees et classees pour Mes comptes (rien n'est ecrit).
+        categories : celles de l'utilisateur ; historique : ce qu'il a deja
+        classe. Voir budget_releves.py et docs/modules/comptes.md."""
+        try:
+            return budget_releves.lire(fichiers or [], categories or [], historique or [])
         except Exception as e:
             return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
 

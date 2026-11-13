@@ -923,6 +923,44 @@ body.has-shell .wrap { margin-left: 220px; max-width: calc(1120px + 220px); }
 .fin-tx-act-btn:hover { background: var(--bg3); color: var(--txt); }
 .fin-tx-act-btn.del:hover { background: var(--r2); color: var(--r); border-color: var(--r); }
 .fin-tx-row.sel { background: var(--accent-soft); }
+/* Import d'un relevé : aperçu (finReleveApercu) et bandeau « À classer » */
+.fin-aclasser-bar {
+  display: flex; align-items: center; gap: 8px; margin: 0 1rem 8px;
+  padding: 8px 12px; border-radius: 8px; font-size: 12px;
+  background: var(--accent-soft); color: var(--accent-text);
+}
+.fin-aclasser-bar[hidden] { display: none; }
+.fin-aclasser-bar span { flex: 1; }
+.fin-rel-barre { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0 6px; }
+.fin-rel-filtre {
+  border: 1px solid var(--brd2); background: transparent; color: var(--txt2);
+  border-radius: 99px; padding: 3px 11px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.fin-rel-filtre:hover { background: var(--bg3); color: var(--txt); }
+.fin-rel-filtre.active { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; font-weight: 700; }
+.fin-rel-liste { max-height: min(52vh, 520px); overflow-y: auto; border: 1px solid var(--brd); border-radius: 8px; }
+.fin-rel-row {
+  display: grid; grid-template-columns: 22px 74px minmax(0, 1fr) 20px minmax(150px, 230px) 96px;
+  align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--brd); font-size: 12px;
+}
+.fin-rel-row:last-child { border-bottom: 0; }
+.fin-rel-row.off { opacity: .5; }
+.fin-rel-row .fin-tx-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-rel-row .fin-tx-meta { font-family: var(--font); font-size: 11px; }
+.fin-rel-how { color: var(--txt3); font-size: 14px; text-align: center; cursor: help; }
+.fin-rel-cat { width: 100%; min-width: 0; }
+.fin-rel-cat.vide { border-color: var(--accent); color: var(--accent-text); }
+.fin-rel-prop {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 12px;
+  border: 1px dashed var(--brd2); border-radius: 8px; font-size: 12px;
+}
+.fin-rel-prop span { flex: 1; }
+.dash-releve-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .fin-rel-row { grid-template-columns: 22px minmax(0, 1fr) 90px; }
+  .fin-rel-row .fin-tx-date, .fin-rel-how { display: none; }
+  .fin-rel-row .fin-rel-cat { grid-column: 2 / 4; }
+}
 .fin-tx-chk { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--accent); }
 
 /* Barre des transactions cochées (finRenderSelBar) */
@@ -3974,8 +4012,8 @@ html.verre .toast-stack .toast {
       <button class="btn btn-ghost"    onclick="finOpenRecurrences()"><i class="ph ph-arrows-clockwise"></i> Récurrents</button>
       <button class="btn btn-ghost"    onclick="finOpenCategories()"><i class="ph ph-squares-four"></i> Catégories</button>
       <button class="btn btn-ghost"    onclick="finOpenSources()"><i class="ph ph-credit-card"></i> Sources</button>
-      <label class="btn btn-ghost" title="Importer les transactions d'une autre appli (JSON ou CSV)"><i class="ph ph-download-simple"></i> Importer
-        <input type="file" accept=".json,.csv,.tsv,.txt,application/json,text/csv" onchange="finImportLire(this)" hidden></label>
+      <label class="btn btn-ghost" title="Importer le relevé de ta banque (CSV, Excel, OFX, QIF) ou les transactions d'une autre appli (JSON, CSV) : Pilote classe chaque opération, tu corriges avant d'enregistrer"><i class="ph ph-download-simple"></i> Importer un relevé
+        <input type="file" id="fin-import-fichier" multiple accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,.ofx,.qfx,.qif,.xml,.zip,.json,application/json,text/csv" onclick="finImportPrep(this)" onchange="finImportLire(this)" hidden></label>
       <button class="btn btn-ghost" onclick="openSettings('comptes')" title="Paramètres de Mes comptes"><i class="ph ph-gear-six"></i></button>
     </div>
   </div>
@@ -4047,6 +4085,7 @@ html.verre .toast-stack .toast {
         </select>
       </div>
     </div>
+    <div class="fin-aclasser-bar" id="fin-aclasser-bar" hidden></div>
     <div class="fin-selbar" id="fin-selbar" hidden></div>
     <div class="fin-tx-head">
       <input type="checkbox" class="fin-tx-chk" id="fin-tx-chk-tout" onchange="finSelTout(this.checked)" title="Tout cocher" aria-label="Tout cocher"><span>Date</span><span>Libellé</span><span>Catégorie</span><span>Source</span><span style="text-align:right">Montant</span><span></span>
@@ -5070,8 +5109,8 @@ html.verre .toast-stack .toast {
 
 <!-- Modale : aperçu d'un import (JSON ou CSV d'une autre appli) -->
 <div class="ov" id="ov-fin-import" onclick="if(event.target===this)closeOv('ov-fin-import')">
-  <div class="modal" style="max-width:620px">
-    <h2>Importer des transactions</h2>
+  <div class="modal" id="fin-import-modal" style="max-width:620px">
+    <h2 id="fin-import-titre">Importer des transactions</h2>
     <div id="fin-import-corps"></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeOv('ov-fin-import')">Annuler</button>
@@ -12445,7 +12484,7 @@ const NAV_MODULES = {
   "sec-comptes": {
     desc: "Budget mois par mois, catégories, prélèvements récurrents, récap de l'année.",
     pas:  "Ajoute les dépenses et les revenus du mois, chacun dans sa catégorie.",
-    tab: "fin-month", tuiles: ["depense"] },
+    tab: "fin-month", tuiles: ["depense", "fin-releve"] },
   "sec-pret": {
     desc: "Étudiant ou autre : remboursements, argent placé (PEA, assurance vie, livret A), frais.",
     pas:  "Renseigne le montant, les dates et la mensualité, et donne-lui un nom.",
@@ -18502,7 +18541,9 @@ function finRefreshFilters() {
   const catSel = document.getElementById("fin-filter-cat");
   if (catSel) {
     const cur = catSel.value;
+    const nAc = F.transactions.filter(finAClasser).length;   // opérations importées sans catégorie
     catSel.innerHTML = `<option value="">Toutes catégories</option>` +
+      (nAc || cur === "aclasser" ? `<option value="aclasser">À classer (${nAc})</option>` : "") +
       finCatsOrdered("expense").concat(finCatsOrdered("income")).map(c =>
         `<option value="${c.id}">${_finEsc(finCatIcon(c) + "  " + c.name)} (${c.type === "income" ? "Rev" : "Dép"})</option>`
       ).join("");
@@ -18531,7 +18572,16 @@ function finRenderTxList() {
 
   let txs = tousMois ? F.transactions.slice()
                      : F.transactions.filter(tx => finTxIsInMonth(tx, _finMonth.year, _finMonth.month));
-  if (catFilt) txs = txs.filter(tx => String(tx.categoryId) === String(catFilt));
+  if (catFilt === "aclasser") txs = txs.filter(finAClasser);
+  else if (catFilt) txs = txs.filter(tx => String(tx.categoryId) === String(catFilt));
+  // Bandeau : des opérations importées attendent une catégorie
+  const bandeau = document.getElementById("fin-aclasser-bar");
+  if (bandeau) {
+    const nAc = F.transactions.filter(finAClasser).length;
+    bandeau.hidden = !nAc || catFilt === "aclasser";
+    bandeau.innerHTML = nAc ? `<i class="ph ph-tag"></i> <span><b>${nAc}</b> opération${nAc > 1 ? "s" : ""} importée${nAc > 1 ? "s" : ""}
+      attend${nAc > 1 ? "ent" : ""} une catégorie.</span> <button type="button" class="btn btn-ghost btn-sm" onclick="finVoirAClasser()">Les classer</button>` : "";
+  }
   if (srcFilt) txs = txs.filter(tx => String(tx.sourceId)   === String(srcFilt));
   if (search) {
     txs = txs.filter(tx => {
@@ -18565,9 +18615,11 @@ function finRenderTxList() {
     const cat = finCatById(tx.categoryId);
     const sub = finSubById(tx.categoryId, tx.subcategoryId);
     const src = finSrcById(tx.sourceId);
-    const catName = cat ? (finCatIcon(cat) + " " + cat.name) : "—";
-    const subPart = sub ? " · " + finSubIcon(sub) + " " + sub.name : "";
-    const pillStyle = cat ? `background:${cat.color}22;color:color-mix(in srgb, ${cat.color} 45%, var(--txt))` : "";
+    const aClasser = finAClasser(tx);
+    const catName = aClasser ? "À classer" : cat ? (finCatIcon(cat) + " " + cat.name) : "—";
+    const subPart = sub && !aClasser ? " · " + finSubIcon(sub) + " " + sub.name : "";
+    const pillStyle = aClasser ? "background:var(--accent-soft);color:var(--accent-text)"
+                    : cat ? `background:${cat.color}22;color:color-mix(in srgb, ${cat.color} 45%, var(--txt))` : "";
     const amountStr = (tx.type === "income" ? "+" : "−") + finFmtAbs(Number(tx.amount) || 0);
     const recIcon = tx.recurrenceId ? ` <span title="Issue d'un récurrent" style="color:var(--txt3);font-size:10px">↻</span>` : "";
     const coche = _finSel.has(tx.id);
@@ -18877,6 +18929,7 @@ function finSaveTx() {
     if (tx) {
       const avant = { categoryId: tx.categoryId, subcategoryId: tx.subcategoryId || null };
       Object.assign(tx, { date, amount, label, type: _finTxModalType, categoryId: catId, subcategoryId: subId, sourceId: srcId, note });
+      delete tx.aClasser;   // catégorie validée par l'utilisateur, même « Autres »
       if (avant.categoryId !== catId || avant.subcategoryId !== subId) pareil = tx;
     }
   } else {
@@ -19053,9 +19106,19 @@ function _finImpNormaliser(brutes) {
 }
 
 async function finImportLire(input) {
-  const f = input.files && input.files[0];
+  const fichiers = [...(input.files || [])];
   input.value = "";
+  const f = fichiers[0];
   if (!f) return;
+  // Relevé de banque (CSV, Excel, OFX, QIF…) : lu et classé par Python
+  // (budget_releves.py). Un CSV d'une autre appli de budget, avec sa colonne
+  // catégorie, revient ici (finReleveLire répond « texte »).
+  const unJson = fichiers.length === 1 && /\.json$/i.test(f.name);
+  if (!unJson && window.pywebview && pywebview.api && pywebview.api.budget_lire_releve) {
+    if (await finReleveLire(fichiers) !== "texte") return;
+  }
+  document.getElementById("fin-import-modal").style.maxWidth = "620px";
+  document.getElementById("fin-import-titre").textContent = "Importer des transactions";
   let txt;
   try { txt = (await f.text()).replace(/^﻿/, ""); }
   catch (e) { showToastModern("Fichier illisible : " + e, "err"); return; }
@@ -19134,6 +19197,7 @@ function _finImpSrc(nom) {
 }
 
 function finImportValider() {
+  if (_finImp && _finImp.mode === "releve") return finReleveValider();
   if (!_finImp || !_finImp.nouvelles.length) return;
   const maintenant = new Date().toISOString();
   _finImp.nouvelles.forEach(t => {
@@ -19151,6 +19215,271 @@ function finImportValider() {
   finRenderAll();
   if (typeof dashRender === "function") dashRender();
   showToastModern(n + " transaction" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : ""), "ok");
+}
+
+// ════════════════════════════════════════════════════════
+// IMPORT D'UN RELEVÉ DE BANQUE (4.4.70, budget_releves.py)
+// Python lit le fichier, nettoie les libellés et propose une catégorie :
+// d'abord ce que l'utilisateur a déjà classé, puis les marchands connus,
+// la catégorie de la banque, le code commerçant. Ici, l'aperçu : cocher,
+// corriger (une correction vaut pour les autres lignes du même marchand),
+// puis « Importer ». Rien n'est écrit avant.
+// Une opération sans catégorie entre dans « Autres dépenses / revenus » avec
+// aClasser = l'id de cette catégorie : elle reste « À classer » tant qu'on ne
+// l'a pas rangée ailleurs (finAClasser), sans rien à défaire ailleurs.
+// ════════════════════════════════════════════════════════
+function finAClasser(tx) { return !!tx.aClasser && tx.categoryId === tx.aClasser; }
+
+/* Mac : pywebview filtre le sélecteur par types MIME, pas par extensions (docs/mac.md) */
+function finImportPrep(inp) {
+  if (EST_MAC) inp.accept = inp.accept.split(",").filter(a => a.startsWith(".")).join(",");
+}
+
+/* Ce que l'utilisateur a déjà classé : le libellé saisi, et celui de la
+   banque s'il vient d'un relevé (c'est lui qui reviendra au prochain import) */
+function _finRelHistorique() {
+  const h = [];
+  F.transactions.forEach(t => {
+    if (finAClasser(t)) return;
+    const c = finCatById(t.categoryId); if (!c) return;
+    const s = finSubById(t.categoryId, t.subcategoryId);
+    const base = { type: t.type, cat: c.name, sub: s ? s.name : null, date: t.date };
+    h.push(Object.assign({ label: t.label }, base));
+    if (t.libelleBanque && t.libelleBanque !== t.label) h.push(Object.assign({ label: t.libelleBanque }, base));
+  });
+  return h;
+}
+
+/* Lit les fichiers par Python. Renvoie « texte » quand l'ancien import (CSV
+   d'une autre appli, avec ses catégories) doit le reprendre. */
+async function finReleveLire(fichiers) {
+  let r;
+  try {
+    const f64 = await Promise.all(fichiers.map(async f => ({ nom: f.name, b64: await _ctoImpBase64(f) })));
+    const cats = F.categories.map(c => ({ name: c.name, type: c.type, subs: (c.subs || []).map(s => ({ name: s.name })) }));
+    r = await pywebview.api.budget_lire_releve(f64, cats, _finRelHistorique());
+  } catch (e) { showToastModern("Lecture impossible : " + e, "err"); return true; }
+  const unTexte = fichiers.length === 1 && /\.(csv|tsv|txt)$/i.test(fichiers[0].name);
+  if (unTexte && (!r || !r.ok || r.operations.every(o => o.categorieFichier))) return "texte";
+  if (!r || !r.ok) { showToastModern((r && r.erreur) || "Aucune opération trouvée.", "err", 9000); return true; }
+  // Déjà dans Pilote : même opération d'un relevé déjà importé (empreinte),
+  // ou saisie à la main du même montant à trois jours près (décochée)
+  const empreintes = new Set(F.transactions.map(t => t.releve).filter(Boolean));
+  const libres = F.transactions.filter(t => !t.releve);
+  const pris = new Set();
+  let doublons = 0;
+  const ops = [];
+  r.operations.forEach(o => {
+    if (empreintes.has(o.empreinte)) { doublons++; return; }
+    const j = _finParseISO(o.date).getTime();
+    const deja = libres.find(t => !pris.has(t.id) && t.type === o.type && Math.abs(Number(t.amount) - o.montant) < 0.005
+                                  && Math.abs(_finParseISO(t.date).getTime() - j) <= 3 * 864e5);
+    if (deja) pris.add(deja.id);
+    o.deja = deja ? { date: deja.date, label: deja.label } : null;
+    o.coche = !deja && !o.interne && !o.doubleCarte;
+    o.parToi = false;
+    ops.push(o);
+  });
+  _finImp = { mode: "releve", ops, doublons, docs: r.documents || [], filtre: "" };
+  document.getElementById("fin-import-modal").style.maxWidth = "960px";
+  document.getElementById("fin-import-titre").textContent = "Importer un relevé";
+  finReleveApercu();
+  openOvTop("ov-fin-import");
+  return true;
+}
+
+const FIN_REL_COMMENT = {
+  historique: "clock-counter-clockwise", marchand: "storefront", banque: "bank",
+  mcc: "credit-card", toi: "user-check",
+};
+
+/* Options du choix de catégorie d'une ligne : « À classer », chaque catégorie
+   du type et ses sous-catégories ; une catégorie proposée à la création en plus */
+function _finRelOptions(o) {
+  const egal = (a, b) => finNorm(a) === finNorm(b);
+  let trouve = !o.cat;
+  const opts = [`<option value="">À classer</option>`];
+  finCatsOrdered(o.type).forEach(c => {
+    const selC = !!o.cat && egal(o.cat, c.name) && !o.sub;
+    trouve = trouve || selC;
+    opts.push(`<option value="${_finEsc(c.name + "|")}"${selC ? " selected" : ""}>${_finEsc(finCatIcon(c) + " " + c.name)}</option>`);
+    (c.subs || []).forEach(s => {
+      const sel = !!o.cat && egal(o.cat, c.name) && !!o.sub && egal(o.sub, s.name);
+      trouve = trouve || sel;
+      opts.push(`<option value="${_finEsc(c.name + "|" + s.name)}"${sel ? " selected" : ""}>   ${_finEsc(c.name + " › " + s.name)}</option>`);
+    });
+  });
+  if (!trouve) opts.push(`<option value="${_finEsc(o.cat + "|" + (o.sub || ""))}" selected>+ ${_finEsc(o.cat + (o.sub ? " › " + o.sub : ""))} (nouvelle)</option>`);
+  return opts.join("");
+}
+
+function _finRelNote(o) {
+  const fd = d => d.split("-").reverse().join("/");
+  if (o.deja) return `Déjà saisie le ${fd(o.deja.date)} (« ${_finEsc(o.deja.label)} ») : pas cochée.`;
+  if (o.doubleCarte) return "Total de ta carte à débit différé : ses achats sont déjà dans la liste, pas coché.";
+  if (o.interne) return "Virement entre tes comptes ou vers ton épargne : ni dépense ni revenu, pas coché.";
+  if (o.totalCarte) return "Total d'une carte à débit différé : importe aussi le détail de la carte pour avoir les catégories.";
+  if (o.devise) return "Payé en " + _finEsc(o.devise) + ", montant débité en euros.";
+  return "";
+}
+
+function finReleveApercu() {
+  const I = _finImp, ops = I.ops;
+  const coches = ops.filter(o => o.coche);
+  const aClasser = coches.filter(o => !o.cat);
+  const dep = coches.filter(o => o.type === "expense"), rev = coches.filter(o => o.type === "income");
+  const somme = a => finFmtAbs(a.reduce((s, o) => s + o.montant, 0));
+  const fd = d => d.split("-").reverse().join("/");
+  const dates = ops.map(o => o.date).sort();
+  const banques = [...new Set(I.docs.map(d => d.banque).filter(b => b && !["Tableau", "OFX", "QIF", "CAMT.053"].includes(b)))];
+  const erreurs = I.docs.filter(d => d.erreur);
+  const ignorees = I.docs.reduce((n, d) => n + Object.values(d.ignorees || {}).reduce((a, b) => a + b, 0), 0);
+  // Catégories que Pilote propose de créer (absentes du profil)
+  const props = {};
+  ops.forEach(o => { if (o.coche && !o.cat && o.propose) { const k = o.propose.cat; (props[k] = props[k] || { p: o.propose, n: 0 }).n++; } });
+  const nDecoche = ops.length - coches.length;
+  const vis = ops.map((o, i) => [o, i]).filter(([o]) =>
+    I.filtre === "aclasser" ? (o.coche && !o.cat) : I.filtre === "decoche" ? !o.coche : true);
+  const lignes = vis.map(([o, i]) => {
+    const note = _finRelNote(o);
+    const ic = FIN_REL_COMMENT[o.comment];
+    return `<div class="fin-rel-row${o.coche ? "" : " off"}">
+      <input type="checkbox" class="fin-tx-chk" ${o.coche ? "checked" : ""} onchange="finRelCocher(${i}, this.checked)" aria-label="Importer ${_finEsc(o.libelle)}">
+      <span class="fin-tx-date">${fd(o.date)}</span>
+      <div class="fin-rel-lib">
+        <div class="fin-tx-label" title="${_finEsc(o.brut)}">${_finEsc(o.libelle)}</div>
+        ${note ? `<div class="fin-tx-meta">${note}</div>` : ""}
+      </div>
+      <span class="fin-rel-how" title="${_finEsc(o.raison || (o.cat ? "" : "Pilote ne reconnaît pas ce libellé"))}">${ic ? `<i class="ph ph-${ic}"></i>` : ""}</span>
+      <select class="fin-input-sm fin-rel-cat${o.cat ? "" : " vide"}" onchange="finRelCat(${i}, this.value)" aria-label="Catégorie de ${_finEsc(o.libelle)}">${_finRelOptions(o)}</select>
+      <span class="fin-tx-amount ${o.type}">${o.type === "income" ? "+" : "−"}${finFmtAbs(o.montant)}</span>
+    </div>`;
+  }).join("");
+  const filtre = (f, txt) => `<button type="button" class="fin-rel-filtre${I.filtre === f ? " active" : ""}" onclick="finRelFiltre('${f}')">${txt}</button>`;
+  document.getElementById("fin-import-corps").innerHTML = `
+    <p class="m-note">${banques.length ? _finEsc(banques.join(", ")) + " · " : ""}<b>${ops.length}</b> opération${ops.length > 1 ? "s" : ""}
+      ${dates.length ? "du " + fd(dates[0]) + " au " + fd(dates[dates.length - 1]) : ""}.
+      ${I.doublons ? I.doublons + " déjà importée" + (I.doublons > 1 ? "s" : "") + ", ignorée" + (I.doublons > 1 ? "s" : "") + "." : ""}
+      ${ignorees ? ignorees + " ligne" + (ignorees > 1 ? "s" : "") + " en attente, refusée" + (ignorees > 1 ? "s" : "") + " ou de solde, ignorée" + (ignorees > 1 ? "s" : "") + "." : ""}</p>
+    ${erreurs.map(d => `<p class="m-note" style="color:var(--r)">${_finEsc(d.nom)} : ${_finEsc(d.erreur)}</p>`).join("")}
+    <div class="mkpis">
+      <div class="mkpi"><span>Dépenses cochées</span><b>${dep.length} · ${somme(dep)}</b></div>
+      <div class="mkpi"><span>Revenus cochés</span><b>${rev.length} · ${somme(rev)}</b></div>
+      <div class="mkpi"><span>Classées par Pilote</span><b>${coches.length - aClasser.length} / ${coches.length}</b></div>
+    </div>
+    ${Object.values(props).map(({ p, n }) => `<div class="fin-rel-prop">
+      <span>${_finEsc(p.icone || "")} ${n} opération${n > 1 ? "s" : ""} ressemble${n > 1 ? "nt" : ""} à « ${_finEsc(p.cat)} », qui n'est pas dans tes catégories.</span>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="finRelCreer('${_finEsc(p.cat).replace(/'/g, "\\'")}')"><i class="ph ph-plus"></i> Créer et classer</button></div>`).join("")}
+    <div class="fin-rel-barre">
+      ${filtre("", "Toutes (" + ops.length + ")")}
+      ${filtre("aclasser", "À classer (" + aClasser.length + ")")}
+      ${nDecoche ? filtre("decoche", "Pas cochées (" + nDecoche + ")") : ""}
+      <span style="flex:1"></span>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="finRelTout(true)">Tout cocher</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="finRelTout(false)">Tout décocher</button>
+    </div>
+    <div class="fin-rel-liste">${lignes || `<div class="fin-empty">Rien ici.</div>`}</div>
+    <p class="m-note">Une catégorie changée vaut aussi pour les autres lignes du même libellé, et Pilote s'en souviendra au prochain import.
+      Les opérations laissées « À classer » vont dans « Autres », avec le filtre « À classer » de la liste pour les ranger plus tard.</p>`;
+  const ok = document.getElementById("fin-import-ok");
+  ok.style.display = coches.length ? "" : "none";
+  ok.textContent = "Importer " + coches.length + " opération" + (coches.length > 1 ? "s" : "");
+}
+
+function finRelCocher(i, on) { _finImp.ops[i].coche = on; finReleveApercu(); }
+function finRelFiltre(f) { _finImp.filtre = f; finReleveApercu(); }
+/* Coche ou décoche les lignes affichées (le filtre en cours) */
+function finRelTout(on) {
+  const I = _finImp;
+  I.ops.forEach(o => {
+    const vu = I.filtre === "aclasser" ? (o.coche && !o.cat) : I.filtre === "decoche" ? !o.coche : true;
+    if (vu) o.coche = on;
+  });
+  finReleveApercu();
+}
+
+/* Catégorie choisie pour une ligne : aussi pour les autres lignes du même
+   libellé que l'utilisateur n'a pas encore touchées */
+function finRelCat(i, v) {
+  const I = _finImp, o = I.ops[i];
+  const p = v.indexOf("|");
+  const cat = p < 0 ? "" : v.slice(0, p), sub = p < 0 ? "" : v.slice(p + 1);
+  const poser = x => Object.assign(x, { cat: cat || null, sub: sub || null, comment: cat ? "toi" : "aucun",
+                                        raison: cat ? "Choisie par toi" : "" });
+  poser(o); o.parToi = true;
+  const autres = I.ops.filter(x => x !== o && !x.parToi && x.cle && x.cle === o.cle && x.type === o.type);
+  autres.forEach(poser);
+  finReleveApercu();
+  if (autres.length) showToastModern("Aussi pour " + (autres.length > 1 ? "les " + autres.length + " autres" : "l'autre") + " « " + o.libelle + " »", "ok");
+}
+
+/* Crée (à l'import) une catégorie que Pilote propose, et y range ses opérations */
+function finRelCreer(nom) {
+  _finImp.ops.forEach(o => {
+    if (o.cat || !o.propose || o.propose.cat !== nom) return;
+    Object.assign(o, { cat: o.propose.cat, sub: o.propose.sub || null, comment: "marchand", raison: o.propose.raison, creer: true });
+  });
+  finReleveApercu();
+}
+
+/* Source d'après le genre de l'opération, si l'utilisateur en a une qui y ressemble */
+function _finRelSource(genre) {
+  const motif = { carte: /\b(cb|carte)\b/, retrait: /\b(cb|carte|especes)\b/, prelevement: /prelev/,
+                  virement: /virement/, cheque: /cheque|virement/ }[genre];
+  const s = motif && F.sources.find(s => motif.test(finNorm(s.name)));
+  return s ? s.id : _finImpSrc("");
+}
+
+function finReleveValider() {
+  const I = _finImp;
+  const ops = I ? I.ops.filter(o => o.coche) : [];
+  if (!ops.length) return;
+  const snap = finSnapshot();
+  const maintenant = new Date().toISOString();
+  let nAc = 0;
+  ops.forEach(o => {
+    const existait = !!o.cat && F.categories.some(c => c.type === o.type && finNorm(c.name) === finNorm(o.cat));
+    const c = _finImpCat(o.type, o.cat || null);
+    if (o.cat && !existait && o.creer && o.propose && o.propose.icone) c.icon = o.propose.icone;
+    const tx = {
+      id: finUid("tx"), date: o.date, amount: o.montant, label: o.libelle, type: o.type,
+      categoryId: c.id, subcategoryId: o.cat ? _finImpSub(c, o.sub) : null, sourceId: _finRelSource(o.genre),
+      note: o.devise ? "Payé en " + o.devise : "", createdAt: maintenant,
+      releve: o.empreinte, libelleBanque: o.brut,
+    };
+    if (!o.cat) { tx.aClasser = c.id; nAc++; }
+    F.transactions.push(tx);
+  });
+  _finImp = null;
+  closeOv("ov-fin-import");
+  finPersist();
+  finRefreshFilters();
+  finRenderAll();
+  if (typeof dashRender === "function") dashRender();
+  const n = ops.length;
+  finToastAnnuler(n + " opération" + (n > 1 ? "s" : "") + " importée" + (n > 1 ? "s" : "") +
+                  (nAc ? ", dont " + nAc + " à classer" : ", toutes classées"), snap);
+}
+
+/* Tuile d'accueil et bandeau : la liste filtrée sur « À classer » */
+async function finVoirAClasser() {
+  if (typeof goTab === "function") goTab("fin-month");
+  if (!_finBootstrapped && typeof finBootstrap === "function") await finBootstrap();
+  finRefreshFilters();
+  const per = document.getElementById("fin-filter-periode"), cat = document.getElementById("fin-filter-cat");
+  if (per) per.value = "tout";
+  if (cat) cat.value = "aclasser";
+  finRenderTxList();
+  const carte = document.getElementById("card-fin-tx");
+  if (carte) carte.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function dashImporterReleve() {
+  if (!_finBootstrapped && typeof finBootstrap === "function") await finBootstrap();
+  if (typeof F === "undefined" || !F) { showToastModern("Mes comptes n'est pas encore chargé", "warn"); return; }
+  const inp = document.getElementById("fin-import-fichier");
+  finImportPrep(inp);
+  inp.click();
 }
 
 // ════════════════════════════════════════════════════════
@@ -26792,6 +27121,23 @@ const DASH_WIDGETS = [
                go: "Voir mes comptes",
                viz: `<button type="button" class="btn btn-primary btn-sm dash-add-exp"
                        onclick="event.stopPropagation();dashAddExpense()"><i class="ph ph-plus"></i> Ajouter une dépense</button>` };
+    },
+  },
+  {
+    // Import des relevés (budget_releves.py) : le bouton d'import, et ce qui
+    // reste à classer (finAClasser) avec un raccourci vers la liste filtrée
+    id: "fin-releve", label: "Importer un relevé", module: "Comptes", tab: "fin-month",
+    render() {
+      if (typeof F === "undefined" || !F) return null;
+      const n = F.transactions.filter(finAClasser).length;
+      const dern = F.transactions.filter(t => t.releve).map(t => t.createdAt || "").sort().pop();
+      return { lbl: "Relevés de banque", val: n ? n + " à classer" : dern ? "Tout est classé" : "Aucun import",
+               sub: dern ? "dernier import le " + _finDateToFR(dern.slice(0, 10)) : "CSV, Excel, OFX ou QIF de ta banque",
+               go: "Voir mes comptes",
+               viz: `<span class="dash-releve-btns"><button type="button" class="btn btn-primary btn-sm dash-add-exp"
+                       onclick="event.stopPropagation();dashImporterReleve()"><i class="ph ph-download-simple"></i> Importer un relevé</button>` +
+                    (n ? `<button type="button" class="btn btn-ghost btn-sm"
+                       onclick="event.stopPropagation();finVoirAClasser()">Classer</button>` : "") + `</span>` };
     },
   },
   {

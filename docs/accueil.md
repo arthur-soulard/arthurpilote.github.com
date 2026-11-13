@@ -301,6 +301,7 @@ jamais un second calcul :
 | Santé | `sante-rappel`, `sante-ajout` | `saMesures`, `saLast` |
 | Prêt | `pret-mensualite`, `pret-gains` | configuration du prêt, `prOverview().benefice_net` |
 | Comptes | `fin-solde`, `fin-revenu` | `finComputeMonthTotals` |
+| Comptes | `fin-releve` (4.4.70) | opérations importées à classer (`finAClasser`), date du dernier import ; boutons « Importer un relevé » (`dashImporterReleve`) et « Classer » (`finVoirAClasser`) : `docs/modules/comptes.md` |
 | Pense-bête | `pense-bete` | `S.uiPrefs.penseBete` |
 | Bilan | `bilan` (01/11/2026) | total de la bourse sur la semaine passée (`_bilanCache`, calculé 15 s après le lancement si la tuile est affichée), bouton « Voir le bilan » |
 
