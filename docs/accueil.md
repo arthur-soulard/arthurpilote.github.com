@@ -527,7 +527,7 @@ l'ancien modèle « Ce que je faisais / Ce qui s'est passé ». La zone se vide
 après « Ouvrir ma messagerie » ou « Écrire avec Gmail », et garde le texte si
 l'on referme sans envoyer.
 
-## Recherche globale : Ctrl+K (12/11/2026, prochaine version)
+## Recherche globale : Ctrl+K (12/11/2026, 4.4.70)
 
 Bouton « Rechercher » dans la barre du haut, ou Ctrl+K (⌘K sur Mac), partout sauf
 sur l'écran du code PIN. Bloc `rg*` d'index.html, fenêtre `ov-recherche` créée à
@@ -541,7 +541,7 @@ groupe, les titres qui commencent par le mot d'abord, puis les plus récents.
 ↑ ↓ pour choisir, Entrée pour ouvrir : l'onglet s'ouvre, puis la fiche de
 l'élément (transaction, séance, pesée, compte, tâche, note).
 
-## Bilan de l'année avec Pilou (12/11/2026, prochaine version)
+## Bilan de l'année avec Pilou (12/11/2026, 4.4.70)
 
 Maquette montrée à Arthur le 12/11 : des cartes au format story (1080 × 1920),
 présentées par Pilou, **sans aucun montant en euros** (des heures, des % et des

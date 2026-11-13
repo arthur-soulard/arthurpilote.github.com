@@ -11,10 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# Prochaine version (12/11/2026) : module Tâches (liste, tâches dans le calendrier),
-# recherche Ctrl+K, bilan de l'année avec Pilou (Paramètres -> Général : Mon année).
+# 4.4.70 (13/11/2026) : module Tâches (liste, tâches dans le calendrier),
+# recherche Ctrl+K, bilan de l'année avec Pilou (Paramètres -> Général : Mon année) ;
+# Mes comptes : bouton « Importer un relevé » et bandeau « À classer » (4.4.70).
 home
 tc-liste
 ag-cal
 js:rgOuvrir(),document.getElementById('rg-champ').value='velo',rgChercher()
 js:anOuvrir(2026)
+fin-month

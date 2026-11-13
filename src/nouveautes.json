@@ -2,6 +2,21 @@
   "_lisez_moi": "Une fiche par version, la plus récente en tête. Elle s'affiche avant l'installation (lue sur GitHub au tag de la version), une fois après, puis dans Paramètres → Mises à jour. Écrite pour l'utilisateur : ce qui change pour lui, pas pour le code. Clés : version, date (AAAA-MM-JJ), titre, nouveau, ameliore, corrige (listes, chacune facultative). Gras : ce qui précède « : » en tête de ligne l'est tout seul ; **texte** met autre chose en gras, mais seulement à partir de la fiche de la 4.4.54 (une 4.4.52 afficherait les étoiles dans « Mise à jour disponible »).",
   "versions": [
     {
+      "version": "4.4.70",
+      "date": "2026-11-13",
+      "titre": "Tes relevés de banque, tes tâches et ton année",
+      "nouveau": [
+        "Importer un relevé dans Mes comptes : le fichier CSV, Excel, OFX ou QIF que ta banque propose au téléchargement. Pilote nettoie les libellés et classe chaque opération (d'abord comme tes saisies précédentes, puis d'après les marchands qu'il connaît). Tu corriges dans l'aperçu avant d'enregistrer, et il s'en souvient au prochain import.",
+        "À classer : ce que Pilote n'a pas reconnu va dans « Autres », avec un filtre, un bandeau et une tuile d'accueil pour le ranger quand tu veux. Les virements vers ton épargne et les opérations déjà saisies ne sont pas cochés.",
+        "Tâches : une nouvelle section sous Vie perso, avec échéance, priorité, projet et répétition. Les tâches du jour apparaissent dans le calendrier de l'Agenda, et deux tuiles d'accueil montrent celles du jour et celles en retard.",
+        "Recherche : le bouton Rechercher de la barre du haut (ou Ctrl+K) trouve un onglet, une ligne du PEA, une dépense, une séance, une pesée, une tâche ou une note.",
+        "Ton année avec Pilou : des cartes à partager, sans aucun montant en euros, à enregistrer en image. Pilou te les propose en décembre et janvier ; le reste de l'année, dans Paramètres → Général → Mon année."
+      ],
+      "ameliore": [
+        "Sécurité : un autre programme de ton ordinateur ne peut plus lire tes données par la page locale de Pilote pendant qu'il tourne. Seule la fenêtre de Pilote y a accès."
+      ]
+    },
+    {
       "version": "4.4.69",
       "date": "2026-11-12",
       "titre": "L'exemple s'en va quand tu le quittes",
