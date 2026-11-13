@@ -3285,6 +3285,64 @@ html.verre .toast-stack .toast {
   html.verre :is(.sidebar, .modal, .toast-stack .toast, .titlebar) { background: var(--bg2); backdrop-filter: none; }
 }
 
+/* Tâches (12/11/2026) : lignes à cocher, groupées par échéance */
+.tc-groupe { margin-bottom: 14px; }
+.tc-nb { margin-left: 8px; font-size: 12px; color: var(--txt3); font-variant-numeric: tabular-nums; }
+.tc-liste { display: flex; flex-direction: column; }
+.tc-ligne { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-top: 1px solid var(--brd); min-width: 0; }
+.tc-liste .tc-ligne:first-child { border-top: 0; }
+.tc-case { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.tc-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 0; border: 0;
+  background: none; color: var(--txt); font: inherit; text-align: left; cursor: pointer; }
+.tc-corps:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.tc-titre { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-note { font-size: 12px; color: var(--txt2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-drap { margin-right: 5px; font-size: 13px; color: var(--accent-text); }
+.tc-p2 .tc-drap { color: var(--r); }
+.tc-projet { flex: none; }
+.tc-rec { flex: none; color: var(--txt3); }
+.tc-date { flex: none; min-width: 5.5em; text-align: right; font-size: 12px; color: var(--txt2); font-variant-numeric: tabular-nums; }
+.tc-retard { color: var(--r); font-weight: 500; }
+.tc-fait .tc-titre { color: var(--txt3); text-decoration: line-through; }
+.tc-aide { margin: 10px 4px 0; font-size: 12px; color: var(--txt3); }
+.ag-t-tache { --c: var(--txt3); }
+.dash-tcs { display: flex; flex-direction: column; gap: 2px; }
+.dash-tc { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 3px 4px; margin: 0 -4px;
+  border-radius: 6px; font-size: 13px; cursor: pointer; }
+.dash-tc:hover { background: var(--hover); }
+.dash-tc input { flex: none; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.dash-tc span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-tc em { flex: none; font-style: normal; font-size: 11.5px; color: var(--r); }
+/* Recherche globale (Ctrl+K, 12/11/2026) */
+.rg-ov { align-items: flex-start; padding-top: 12vh; }
+.rg-modal { width: min(620px, calc(100vw - 32px)); max-width: none; padding: 0; overflow: hidden; }
+.rg-barre { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--brd); }
+.rg-barre > i { font-size: 18px; color: var(--txt3); }
+.rg-barre input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--txt); font: inherit; font-size: 15px; padding: 4px 0; }
+.rg-barre kbd { font: 11px var(--font); color: var(--txt3); border: 1px solid var(--brd); border-radius: 5px; padding: 1px 6px; }
+.rg-liste { max-height: min(56vh, 460px); overflow-y: auto; padding: 6px; }
+.rg-groupe { padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--txt3); }
+.rg-res { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px;
+  background: none; color: var(--txt); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; min-width: 0; }
+.rg-res.on { background: var(--accent-soft); }
+.rg-res > i { flex: none; font-size: 16px; color: var(--accent-text); }
+.rg-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rg-s { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--txt2); }
+.rg-vide { padding: 22px 12px; text-align: center; font-size: 13px; color: var(--txt3); }
+/* Bilan de l'année avec Pilou (12/11/2026) : cartes story en rangée */
+.an-modal { width: min(1180px, calc(100vw - 40px)); max-width: none; }
+.an-tete { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.an-tete h2 { margin: 0; }
+.an-tete .m-iconbtn { margin-left: auto; align-self: center; }
+.an-aide { font-size: 12.5px; color: var(--txt2); flex: 1; min-width: 240px; }
+.an-rangee { display: flex; gap: 16px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x mandatory; }
+.an-carte { flex: none; width: 230px; margin: 0; scroll-snap-align: start; }
+.an-img { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, .14); aspect-ratio: 9 / 16; }
+.an-img svg { display: block; width: 100%; height: auto; }
+.an-carte figcaption { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 2px 0; font-size: 13px; font-weight: 500; }
+.an-attente { padding: 60px 20px; color: var(--txt2); font-size: 13px; }
+.an-tuile { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; }
+.an-tuile .pilou { width: 74px; display: block; }
 </style>
 </head>
 <body>
@@ -3307,6 +3365,7 @@ html.verre .toast-stack .toast {
       <span class="refresh-lbl" id="stext">Dernière actualisation —</span>
       <button class="btn btn-ghost btn-sm" onclick="manualRefresh()" title="Actualiser les cours (Ctrl+R)"><i class="ph ph-arrows-clockwise"></i> Actualiser</button>
     </div>
+    <button class="btn btn-ghost btn-sm" onclick="rgOuvrir()" title="Rechercher dans Pilote (Ctrl+K)"><i class="ph ph-magnifying-glass"></i> Rechercher</button>
     <button class="btn btn-ghost btn-sm" id="btn-undo" onclick="undoLast()" disabled title="Annuler la dernière action"><i class="ph ph-arrow-u-up-left"></i> Retour</button>
     <button class="btn btn-ghost btn-sm" onclick="openCours()"><i class="ph ph-pencil-simple"></i> Cours manuels</button>
   </div>
@@ -4262,6 +4321,54 @@ html.verre .toast-stack .toast {
     <button class="btn btn-primary" onclick="saOpenGoal(null)"><i class="ph ph-plus"></i> Objectif</button>
   </div>
   <div id="sa-goals-body"></div>
+</div>
+
+<!-- ════════════════════ TÂCHES ════════════════════ -->
+
+<!-- Tâches (12/11/2026) : rendu par tcRender() (taches.json) -->
+<div class="pane" id="pane-tc-liste">
+  <div class="m-head">
+    <span class="m-nav-lbl">À faire</span>
+    <div class="ac-filtres" id="tc-filtres"></div>
+    <div class="m-spacer"></div>
+    <button class="btn btn-primary" onclick="tcOuvrir(null)"><i class="ph ph-plus"></i> Tâche</button>
+  </div>
+  <div id="tc-corps"></div>
+</div>
+
+<div class="pane" id="pane-tc-faites">
+  <div class="m-head">
+    <span class="m-nav-lbl">Faites</span>
+    <div class="m-spacer"></div>
+  </div>
+  <div id="tc-faites"></div>
+</div>
+
+<div class="ov" id="ov-tc" onclick="if(event.target===this)closeOv('ov-tc')">
+  <div class="modal" style="max-width:520px">
+    <h2 id="tc-ov-titre">Nouvelle tâche</h2>
+    <div class="fg"><label for="tc-f-titre">Quoi ?</label>
+      <input id="tc-f-titre" maxlength="200" placeholder="Renvoyer le dossier de la mutuelle"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();tcEnregistrer()}"></div>
+    <div class="fg-row">
+      <div class="fg"><label for="tc-f-date">Pour quand ?</label><input id="tc-f-date" type="date"></div>
+      <div class="fg"><label for="tc-f-prio">Priorité</label>
+        <select id="tc-f-prio"><option value="0">Normale</option><option value="1">Haute</option><option value="2">Urgente</option></select></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label for="tc-f-projet">Projet <span style="color:var(--txt3);font-weight:400">(optionnel)</span></label>
+        <input id="tc-f-projet" list="tc-f-projets" maxlength="40" placeholder="Papiers"><datalist id="tc-f-projets"></datalist></div>
+      <div class="fg"><label for="tc-f-rec">Revient</label>
+        <select id="tc-f-rec"><option value="">Jamais</option><option value="jour">Chaque jour</option><option value="semaine">Chaque semaine</option><option value="mois">Chaque mois</option><option value="an">Chaque année</option></select></div>
+    </div>
+    <div class="fg"><label for="tc-f-note">Note</label><input id="tc-f-note" maxlength="1000" placeholder="un détail à ne pas oublier"></div>
+    <div class="mact">
+      <button class="btn btn-ghost" id="tc-f-suppr" style="display:none" onclick="tcSupprimer()"><i class="ph ph-trash"></i> Supprimer</button>
+      <div class="m-spacer" style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeOv('ov-tc')">Annuler</button>
+      <button class="btn btn-primary" onclick="tcEnregistrer()">Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 <!-- ════════════════════ ACTUS ════════════════════ -->
@@ -5225,6 +5332,8 @@ html.verre .toast-stack .toast {
               <button type="button" class="btn btn-ghost btn-sm" data-pilou-btn="off"><i class="ph ph-eye-slash"></i> Masquer</button>
               <button type="button" class="btn btn-ghost btn-sm" onclick="pilouVisiterMesModules()"
                       title="Pilou te montre tes modules sur les données de Brice, un profil fictif"><i class="ph ph-compass"></i> Revoir la visite</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="anOuvrir()"
+                      title="Tes cartes de l'année, sans aucun montant"><i class="ph ph-sparkle"></i> Mon année</button>
             </div>
             <p class="set-lead" style="margin:8px 0 0">
               L'ourson de l'accueil et des écrans encore vides, qui te fait aussi visiter
@@ -12364,6 +12473,10 @@ const NAV_MODULES = {
     pas:  "Ajoute une note dans le calendrier, ou connecte ton agenda iCloud.",
     besoin: "Pour l'iPhone : un compte Apple avec la double authentification. Sans iPhone, le calendrier marche quand même.",
     tab: "ag-cal", tuiles: ["ag-jour", "ag-notes", "ag-alertes"] },
+  "sec-taches": {
+    desc: "Ce que tu as à faire : échéance, priorité, projet, tâches qui reviennent chaque mois.",
+    pas:  "Ajoute ta première tâche : elle apparaîtra aussi sur l'accueil le jour venu.",
+    tab: "tc-liste", tuiles: ["tc-jour", "tc-retard"] },
   "sec-garmin": {
     desc: "Tes montres Garmin et Coros, ou toute autre par ses fichiers .fit : séances ajoutées à Sports, sommeil, VFC, pas.",
     pas:  "Connecte ta montre Garmin ou Coros, ou importe un fichier .fit : chaque onglet explique comment.",
@@ -16564,6 +16677,11 @@ const NAV_SECTIONS = [
     { id: "ag-notifs",    label: "Notifications" },
     { id: "ag-connexion", label: "iCloud"     },
   ]},
+  // Tâches (12/11/2026) : à faire, avec échéance, priorité, projet, récurrence
+  { id: "sec-taches", label: "Tâches", children: [
+    { id: "tc-liste",  label: "À faire" },
+    { id: "tc-faites", label: "Faites"  },
+  ]},
 ];
 
 // Liste plate : conserve l'API historique (onglets masques, Ctrl+1..7, config)
@@ -16631,7 +16749,7 @@ function _updateCrumb(id) {
    le premier CTO prend la place de la section CTO qui l'attendait, et celle-ci
    revient à la place du dernier CTO supprimé. */
 const NAV_ORDRE_DEFAUT = ["sec-pea", "sec-cto", "sec-crypto", "sec-actus", "@perso",
-                          "sec-agenda", "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante", "sec-garmin"];
+                          "sec-agenda", "sec-taches", "sec-comptes", "sec-pret", "sec-sport", "sec-patri", "sec-sante", "sec-garmin"];
 
 /* Les blocs de la barre : {cle, sec, label, enfants: [{id, base, label}]} */
 function _navBlocs() {
@@ -16766,6 +16884,7 @@ const NAV_ICONS = {
   "sec-comptes": "wallet", "sec-pret": "hand-coins",
   "sec-sport": "person-simple-run", "sec-patri": "bank", "sec-sante": "heartbeat",
   "sec-actus": "newspaper", "sec-agenda": "calendar-blank", "sec-garmin": "watch",
+  "sec-taches": "check-square",
 };
 
 function _injectSidebar() {
@@ -17584,6 +17703,9 @@ async function _demanderNouveauxModules() {
   ov.querySelector("[data-mod-ok]").onclick = () => {
     const pris = [...ov.querySelectorAll(".pp-mods input:checked")].map(i => i.value);
     neufs.forEach(s => _afficherModule(s.id, pris.includes(s.id)));
+    // Les tuiles d'accueil des modules pris s'allument (Tâches, 12/11/2026)
+    const tuiles = new Set(pris.flatMap(id => (NAV_MODULES[id] || {}).tuiles || []));
+    if (tuiles.size) S.uiPrefs.dash = dashConfig().map(c => tuiles.has(c.id) ? { id: c.id, on: true } : c);
     S.uiPrefs.modulesConnus = [...new Set([...S.uiPrefs.modulesConnus, ...neufs.map(s => s.id)])];
     _enregistrerUiPrefs();
     ov.remove();
@@ -26724,6 +26846,20 @@ const DASH_WIDGETS = [
     },
   },
   {
+    // Bilan de l'année avec Pilou (12/11/2026) : du 1er décembre au 31 janvier
+    id: "an-bilan", label: "Ton année avec Pilou", module: "Bilan", tab: null,
+    render() { return dashAnBilan(); },
+  },
+  {
+    // Tâches (12/11/2026) : toujours là une fois lues, on en ajoute d'ici
+    id: "tc-jour", label: "Tâches du jour", module: "Tâches", tab: "tc-liste",
+    render() { return dashTcJour(); },
+  },
+  {
+    id: "tc-retard", label: "Tâches en retard", module: "Tâches", tab: "tc-liste",
+    render() { return dashTcRetard(); },
+  },
+  {
     // Agenda (22/10/2026) : ce que montre le calendrier aujourd'hui (iCloud + notes)
     id: "ag-jour", label: "Aujourd'hui dans l'agenda", module: "Agenda", tab: "ag-cal",
     render() { return dashAgJour(); },
@@ -28302,7 +28438,7 @@ const DASH_ICONS = {
   "Santé": "heartbeat", "Prêt": "hand-coins",
   "Sauvegarde": "usb", "Comptes": "wallet", "CTO": "briefcase", "Crypto": "currency-btc",
   "Bourse": "globe-hemisphere-west", "Actus": "newspaper", "Pense-bête": "note-pencil",
-  "Agenda": "calendar-blank", "Bilan": "chart-bar", "Garmin": "watch", "Montres": "watch",
+  "Agenda": "calendar-blank", "Tâches": "check-square", "Bilan": "chart-bar", "Garmin": "watch", "Montres": "watch",
 };
 function dashIcon(w) {
   const ic = DASH_ICONS[w.module];
@@ -28729,6 +28865,7 @@ async function agDeconnecter() {
 const AG_TYPES = {
   note:   { nom: "Note",   ico: "note-pencil" },
   icloud: { nom: "iCloud", ico: "calendar-blank" },
+  tache:  { nom: "Tâche",  ico: "check-square" },
 };
 const AG_RELIRE_MS = 60000;   // iCloud relu en revenant sur un mois lu il y a plus d'une minute
 
@@ -28795,7 +28932,10 @@ function agDuJour(iso, icloud) {
   const ic = (icloud || AG.icloud[agFenetre().debut] || []).filter(e => e.debut <= iso && e.fin >= iso)
     .map(e => ({ type: "icloud", titre: e.titre, heure: e.debut === iso ? e.heure : "",
                  heureFin: e.debut === iso ? e.heureFin : "", agenda: e.agenda, couleur: e.couleur }));
-  return notes.concat(ic).sort((a, b) => (a.heure || "99").localeCompare(b.heure || "99"));
+  // Tâches à faire ce jour-là (module Tâches), sans heure
+  const tc = (typeof _tcBootstrapped !== "undefined" && _tcBootstrapped) ? tcAFaire().filter(t => t.echeance === iso)
+    .map(t => ({ type: "tache", id: t.id, titre: t.titre, heure: "", heureFin: "", texte: t.note, agenda: "Tâches" })) : [];
+  return notes.concat(ic, tc).sort((a, b) => (a.heure || "99").localeCompare(b.heure || "99"));
 }
 
 function agLigneHtml(e) {
@@ -28878,7 +29018,7 @@ function agDessinerGrille() {
   if (leg) {
     const vus = new Map();
     agFenetre().jours.forEach(d => agDuJour(spDateISO(d)).forEach(e => {
-      const nom = e.type === "note" ? "Notes" : e.agenda;
+      const nom = e.type === "note" ? "Notes" : e.type === "tache" ? "Tâches" : e.agenda;
       if (!vus.has(nom)) vus.set(nom, e);
     }));
     leg.innerHTML = [...vus].map(([nom, e]) => {
@@ -28907,6 +29047,9 @@ function agOuvrirJour(iso) {
         <div class="sp-smeta">${escHtml(quand)} · ${escHtml(source)}</div>
         ${e.texte ? `<div class="sp-snote">${escHtml(e.texte)}</div>` : ""}
       </div>
+      ${e.type === "tache" ? `<div class="m-acts">
+        <button class="m-iconbtn" title="Modifier" onclick="tcOuvrir(${Number(e.id)})"><i class="ph ph-pencil-simple"></i></button>
+      </div>` : ""}
       ${e.type === "note" ? `<div class="m-acts">
         <button class="m-iconbtn" title="Modifier" onclick="agOuvrirNote('${escHtml(e.id)}', null)"><i class="ph ph-pencil-simple"></i></button>
       </div>` : ""}
@@ -30318,6 +30461,842 @@ function dashGaRecords() {
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════
+   MODULE TÂCHES (12/11/2026, décidé avec Arthur) — docs/modules/taches.md
+   Données : taches.json via le pont (load_taches / save_taches). Tout se
+   calcule ici, Python ne fait que garder le fichier.
+   Une tâche : {id, titre, note, echeance, priorite 0|1|2, projet, recurrence
+   ""|jour|semaine|mois|an, fait (date cochée), cree}. Une tâche récurrente
+   cochée repart à sa prochaine échéance ; la date est notée dans TC.faites
+   (bilan de l'année). Les tâches du jour vont aussi dans l'Agenda (agDuJour).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+let TC = null;
+let _tcBootstrapped = false;
+let _tcFiltre = "";          // projet affiché ("" = tous)
+let _tcEditId = null;
+
+const TC_PRIO = [
+  { nom: "Normale", cls: "" },
+  { nom: "Haute",   cls: "tc-p1" },
+  { nom: "Urgente", cls: "tc-p2" },
+];
+const TC_REC = { "": "Jamais", jour: "Chaque jour", semaine: "Chaque semaine", mois: "Chaque mois", an: "Chaque année" };
+
+function tcApi() { return window.pywebview && window.pywebview.api && window.pywebview.api.load_taches ? window.pywebview.api : null; }
+
+async function tcBootstrap() {
+  if (_tcBootstrapped) return;
+  const api = tcApi();
+  if (!api) return;
+  try {
+    const r = await api.load_taches();
+    if (!r || !r.ok) { console.warn("[taches] load KO", r); return; }
+    TC = r.data;
+    TC.taches = TC.taches || []; TC.projets = TC.projets || []; TC.faites = TC.faites || {};
+    TC._nid = TC._nid || { tache: 1 };
+    _tcBootstrapped = true;
+  } catch (e) { console.warn("[taches] load KO", e); return; }
+  tcRender();
+  if (typeof homeRender === "function") homeRender();
+}
+
+async function tcPersist() {
+  const api = tcApi();
+  if (!TC || !api) return;
+  try {
+    const r = await api.save_taches(TC);
+    if (r && !r.ok) showToastModern("Tâches non enregistrées : " + (r.error || "?"), "err");
+  } catch (e) { showToastModern("Tâches non enregistrées", "err"); }
+}
+
+/** Après chaque changement : le fichier, la section, l'accueil, l'agenda */
+function tcChange() {
+  tcPersist();
+  tcRender();
+  if (typeof homeRender === "function") homeRender();
+  if (typeof agDessinerGrille === "function" && document.getElementById("ag-cal-grid")) {
+    try { agDessinerGrille(); } catch (e) {}
+  }
+}
+
+function tcAFaire() { return TC ? TC.taches.filter(t => !t.fait) : []; }
+function tcEnRetard() { const auj = todayISO(); return tcAFaire().filter(t => t.echeance && t.echeance < auj); }
+function tcDuJour() { const auj = todayISO(); return tcAFaire().filter(t => t.echeance === auj); }
+
+/** Plus urgente d'abord, puis la plus proche, puis la plus ancienne */
+function tcTri(a, b) {
+  return (b.priorite || 0) - (a.priorite || 0)
+      || (a.echeance || "9999").localeCompare(b.echeance || "9999")
+      || (a.id - b.id);
+}
+
+/** Date + n jours, semaines, mois ou années (le 31 reste en fin de mois) */
+function tcDecaler(iso, rec) {
+  const d = spParseISO(iso);
+  if (rec === "jour") d.setDate(d.getDate() + 1);
+  else if (rec === "semaine") d.setDate(d.getDate() + 7);
+  else {
+    const j = d.getDate();
+    d.setDate(1);
+    if (rec === "mois") d.setMonth(d.getMonth() + 1); else d.setFullYear(d.getFullYear() + 1);
+    const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(j, fin));
+  }
+  return spDateISO(d);
+}
+
+function tcCocher(id) {
+  const t = TC && TC.taches.find(x => x.id === id);
+  if (!t) return;
+  const auj = todayISO();
+  if (t.fait) { t.fait = ""; tcChange(); return; }
+  if (t.recurrence) {
+    // Elle repart : prochaine échéance après aujourd'hui
+    (TC.faites[t.id] = TC.faites[t.id] || []).push(auj);
+    let n = tcDecaler(t.echeance || auj, t.recurrence);
+    while (n <= auj) n = tcDecaler(n, t.recurrence);
+    t.echeance = n;
+    showToastModern("Faite. Prochaine fois : " + dashDateCourte(n), "ok");
+  } else {
+    t.fait = auj;
+  }
+  tcChange();
+}
+
+/** « aujourd'hui », « demain », « hier », « il y a 3 j », « ven. 14 nov. » */
+function tcQuand(iso) {
+  if (!iso) return "";
+  const j = dashJours(iso);
+  if (j === 0) return "aujourd'hui";
+  if (j === 1) return "demain";
+  if (j === -1) return "hier";
+  if (j < 0) return "il y a " + (-j) + " j";
+  return dashDateCourte(iso);
+}
+
+function tcLigneHtml(t) {
+  const retard = t.echeance && !t.fait && t.echeance < todayISO();
+  const p = TC_PRIO[t.priorite || 0] || TC_PRIO[0];
+  return `<div class="tc-ligne${t.fait ? " tc-fait" : ""} ${p.cls}">
+    <input type="checkbox" class="tc-case" ${t.fait ? "checked" : ""} aria-label="Cocher « ${escHtml(t.titre)} »"
+           onclick="event.stopPropagation();tcCocher(${Number(t.id)})">
+    <button type="button" class="tc-corps" onclick="tcOuvrir(${Number(t.id)})">
+      <span class="tc-titre">${p.cls ? `<i class="ph ph-flag tc-drap" title="Priorité ${escHtml(p.nom.toLowerCase())}"></i>` : ""}${escHtml(t.titre)}</span>
+      ${t.note ? `<span class="tc-note">${escHtml(t.note)}</span>` : ""}
+    </button>
+    ${t.projet ? `<span class="m-tag tc-projet">${escHtml(t.projet)}</span>` : ""}
+    ${t.recurrence ? `<i class="ph ph-repeat tc-rec" title="${escHtml(TC_REC[t.recurrence] || "")}"></i>` : ""}
+    <span class="tc-date${retard ? " tc-retard" : ""}">${escHtml(t.fait ? "faite " + tcQuand(t.fait) : tcQuand(t.echeance))}</span>
+  </div>`;
+}
+
+function tcGroupeHtml(titre, liste, cls) {
+  if (!liste.length) return "";
+  return `<div class="card tc-groupe ${cls || ""}"><div class="card-h"><span class="card-t">${escHtml(titre)}</span>
+    <span class="tc-nb">${liste.length}</span></div><div class="tc-liste">${liste.map(tcLigneHtml).join("")}</div></div>`;
+}
+
+function tcFiltrer(l) { return _tcFiltre ? l.filter(t => (t.projet || "") === _tcFiltre) : l; }
+
+function tcRenderFiltres() {
+  const box = document.getElementById("tc-filtres");
+  if (!box || !TC) return;
+  const projets = [...new Set(TC.projets.concat(TC.taches.map(t => t.projet).filter(Boolean)))];
+  if (_tcFiltre && !projets.includes(_tcFiltre)) _tcFiltre = "";
+  box.innerHTML = projets.length ? ["", ...projets].map(p =>
+    `<button type="button" class="ac-chip${p === _tcFiltre ? " active" : ""}" onclick="_tcFiltre=${escHtml(JSON.stringify(p))};tcRender()">${escHtml(p || "Tout")}</button>`).join("") : "";
+}
+
+function tcRender() {
+  if (!TC) return;
+  tcRenderFiltres();
+  const box = document.getElementById("tc-corps");
+  if (box) {
+    const auj = todayISO();
+    const fin7 = spDateISO(new Date(Date.now() + 7 * 864e5));
+    const l = tcFiltrer(tcAFaire()).sort(tcTri);
+    const retard = l.filter(t => t.echeance && t.echeance < auj);
+    const jour = l.filter(t => t.echeance === auj);
+    const semaine = l.filter(t => t.echeance > auj && t.echeance <= fin7);
+    const plusTard = l.filter(t => t.echeance > fin7);
+    const sansDate = l.filter(t => !t.echeance);
+    box.innerHTML = l.length
+      ? tcGroupeHtml("En retard", retard, "tc-g-retard") + tcGroupeHtml("Aujourd'hui", jour)
+        + tcGroupeHtml("Les 7 prochains jours", semaine) + tcGroupeHtml("Plus tard", plusTard)
+        + tcGroupeHtml("Sans date", sansDate)
+      : `<div class="card"><div class="m-empty">${typeof pilouVide === "function" ? pilouVide("joyeux") : ""}
+          Rien à faire${_tcFiltre ? " dans « " + escHtml(_tcFiltre) + " »" : ""}. Ajoute une tâche avec le bouton du haut.</div></div>`;
+  }
+  const faites = document.getElementById("tc-faites");
+  if (faites) {
+    const l = tcFiltrer(TC.taches.filter(t => t.fait)).sort((a, b) => b.fait.localeCompare(a.fait));
+    faites.innerHTML = l.length
+      ? `<div class="card"><div class="tc-liste">${l.map(tcLigneHtml).join("")}</div></div>
+         <p class="tc-aide">Décoche une tâche pour la remettre à faire. Les tâches qui reviennent (chaque jour, chaque mois…) ne s'affichent pas ici : cochées, elles repartent à leur prochaine date.</p>`
+      : `<div class="card"><div class="m-empty">${typeof pilouVide === "function" ? pilouVide() : ""}Aucune tâche faite pour l'instant.</div></div>`;
+  }
+}
+
+/* ── Fenêtre d'une tâche ─────────────────────────────────────────────────── */
+
+function tcOuvrir(id, echeance) {
+  if (!TC) { showToastModern("Les tâches ne sont pas encore chargées", "warn"); return; }
+  const t = id ? TC.taches.find(x => x.id === id) : null;
+  _tcEditId = t ? t.id : null;
+  document.getElementById("tc-ov-titre").textContent = t ? "Modifier la tâche" : "Nouvelle tâche";
+  document.getElementById("tc-f-titre").value = t ? t.titre : "";
+  document.getElementById("tc-f-date").value = t ? (t.echeance || "") : (echeance === undefined ? todayISO() : echeance);
+  document.getElementById("tc-f-prio").value = String(t ? (t.priorite || 0) : 0);
+  document.getElementById("tc-f-projet").value = t ? (t.projet || "") : (_tcFiltre || "");
+  document.getElementById("tc-f-rec").value = t ? (t.recurrence || "") : "";
+  document.getElementById("tc-f-note").value = t ? (t.note || "") : "";
+  document.getElementById("tc-f-projets").innerHTML = [...new Set(TC.projets.concat(TC.taches.map(x => x.projet).filter(Boolean)))]
+    .map(p => `<option value="${escHtml(p)}">`).join("");
+  document.getElementById("tc-f-suppr").style.display = t ? "" : "none";
+  const ov = document.getElementById("ov-tc");
+  if (document.querySelector(".ov.open")) openOvTop("ov-tc"); else ov.classList.add("open");
+  setTimeout(() => document.getElementById("tc-f-titre").focus(), 30);
+}
+
+function tcEnregistrer() {
+  const titre = document.getElementById("tc-f-titre").value.trim();
+  if (!titre) { showToastModern("Donne un nom à la tâche", "warn"); document.getElementById("tc-f-titre").focus(); return; }
+  const rec = document.getElementById("tc-f-rec").value;
+  let echeance = document.getElementById("tc-f-date").value || "";
+  if (rec && !echeance) echeance = todayISO();   // une tâche qui revient a besoin d'un point de départ
+  const projet = document.getElementById("tc-f-projet").value.trim().slice(0, 40);
+  const champs = { titre: titre.slice(0, 200), echeance, recurrence: rec, projet,
+                   priorite: Number(document.getElementById("tc-f-prio").value) || 0,
+                   note: document.getElementById("tc-f-note").value.trim().slice(0, 1000) };
+  if (_tcEditId) Object.assign(TC.taches.find(x => x.id === _tcEditId) || {}, champs);
+  else {
+    const id = Number(TC._nid.tache) || 1;
+    TC._nid.tache = id + 1;
+    TC.taches.push(Object.assign({ id, fait: "", cree: todayISO() }, champs));
+  }
+  if (projet && !TC.projets.includes(projet)) TC.projets.push(projet);
+  closeOv("ov-tc");
+  tcChange();
+}
+
+function tcSupprimer() {
+  const t = TC && TC.taches.find(x => x.id === _tcEditId);
+  if (!t || !confirm("Supprimer « " + t.titre + " » ?")) return;
+  TC.taches = TC.taches.filter(x => x.id !== t.id);
+  delete TC.faites[t.id];
+  closeOv("ov-tc");
+  tcChange();
+}
+
+/* ── Tuiles d'accueil ────────────────────────────────────────────────────── */
+
+function dashTcLignes(l) {
+  return `<div class="dash-tcs">${l.slice(0, 3).map(t => `<label class="dash-tc" onclick="event.stopPropagation()">
+      <input type="checkbox" onchange="tcCocher(${Number(t.id)})"><span>${escHtml(t.titre)}</span>
+      ${t.echeance && t.echeance < todayISO() ? `<em>${escHtml(tcQuand(t.echeance))}</em>` : ""}</label>`).join("")}</div>`;
+}
+
+/** Toujours affichée une fois les tâches lues : c'est d'elle qu'on en ajoute une */
+function dashTcJour() {
+  if (!_tcBootstrapped) return null;
+  const l = tcDuJour().sort(tcTri), retard = tcEnRetard().length;
+  const plus = `<div class="dash-notes-pied"><button type="button" class="btn btn-ghost btn-sm dash-tile-btn"
+      onclick="event.stopPropagation();tcOuvrir(null)"><i class="ph ph-plus"></i> Ajouter</button>
+      ${l.length > 3 ? `<span class="dash-ag-plus">+ ${l.length - 3} autre${l.length > 4 ? "s" : ""}</span>` : ""}</div>`;
+  return { lbl: "Tâches du jour", val: l.length ? null : "0", vizCls: "dash-viz-haut", go: null,
+           sub: l.length ? (retard ? retard + " en retard" : "") : "Rien d'autre aujourd'hui" + (retard ? ", mais " + retard + " en retard" : "") + ".",
+           viz: (l.length ? dashTcLignes(l) : "") + plus };
+}
+
+function dashTcRetard() {
+  if (!_tcBootstrapped) return null;
+  const l = tcEnRetard().sort(tcTri);
+  if (!l.length) return null;   // rien en retard : la tuile s'efface
+  return { lbl: "Tâches en retard", val: String(l.length), vizCls: "dash-viz-haut", go: "Voir les tâches",
+           sub: l.length > 1 ? "tâches à rattraper" : "tâche à rattraper", viz: dashTcLignes(l) };
+}
+
+(function patchGoTabTaches() {
+  const _prev = window.goTab;
+  if (typeof _prev !== "function") return;
+  window.goTab = function(n) {
+    _prev.call(this, n);
+    if (n !== "tc-liste" && n !== "tc-faites") return;
+    if (!_tcBootstrapped) { tcBootstrap(); return; }
+    tcRender();
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RECHERCHE GLOBALE (Ctrl+K, ⌘K sur Mac ; 12/11/2026) — docs/accueil.md
+   Cherche dans ce qui est déjà en mémoire (rien n'est relu sur le disque) :
+   les onglets, les positions du PEA, Mes comptes, les séances, les pesées,
+   les comptes du Patrimoine, les tâches et les notes de l'Agenda. Un module
+   masqué ou pas encore chargé ne donne rien. Sans accents ni majuscules.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+let _rgResultats = [], _rgSel = 0;
+
+function rgNorm(t) { return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
+
+/** Va sur un onglet (avec la barre latérale), puis fait l'action */
+function rgAller(tab, puis) {
+  closeOv("ov-recherche");
+  goTab(tab); _setActiveSidebar(tab);
+  if (puis) setTimeout(() => { try { puis(); } catch (e) { console.warn("[recherche]", e); } }, 60);
+}
+
+function rgDateCourte(iso) {
+  try { return spParseISO(String(iso).slice(0, 10)).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }); }
+  catch (e) { return iso || ""; }
+}
+
+/** Toutes les lignes cherchables : {groupe, ico, titre, sous, txt (normalisé), go} */
+function rgSources() {
+  const out = [], vis = _modulesVisibles();
+  const add = (groupe, ico, titre, sous, mots, go, date) =>
+    out.push({ groupe, ico, titre: String(titre || ""), sous: sous || "", txt: rgNorm([titre, sous, mots].join(" ")), go, date });
+  // Onglets
+  _navBlocs().forEach(b => {
+    if (!vis.has(b.sec.id)) return;
+    b.enfants.forEach(c => add("Aller à", NAV_ICONS[b.sec.id] || "arrow-right", b.label + " › " + c.label, "", "", () => rgAller(c.id)));
+  });
+  // PEA
+  const pea = typeof _etatPea === "function" ? _etatPea() : S;
+  if (vis.has("sec-pea") && pea) (pea.positions || []).forEach(p =>
+    add("PEA", "chart-line-up", p.name || p.ticker, p.ticker, p.isin, () => rgAller("pos")));
+  // Mes comptes
+  if (vis.has("sec-comptes") && typeof F !== "undefined" && F && F.transactions) F.transactions.forEach(t => {
+    const cat = (typeof finCatById === "function" && finCatById(t.categoryId)) || {};
+    add("Mes comptes", "wallet", t.label || cat.name || "Transaction",
+        rgDateCourte(t.date) + " · " + eur(Math.abs(Number(t.amount) || 0)) + (cat.name ? " · " + cat.name : ""), t.note,
+        () => { const d = spParseISO(String(t.date).slice(0, 10)); _finMonth = { year: d.getFullYear(), month: d.getMonth() };
+                rgAller("fin-month", () => finEditTx(t.id)); }, t.date);
+  });
+  // Sports
+  if (vis.has("sec-sport") && SP && SP.sessions) SP.sessions.forEach(s => {
+    const sp = (typeof spSportById === "function" && spSportById(s.sport)) || {};
+    add("Sports", "person-simple-run", sp.label || "Séance", rgDateCourte(s.date) + (s.duration ? " · " + spFmtDur(s.duration) : ""),
+        [s.note, s.subtype, s.lieu].join(" "), () => rgAller("sp-agenda", () => spOpenSession(s.id)), s.date);
+  });
+  // Santé
+  if (vis.has("sec-sante") && SA) saMesures().forEach(m => {
+    if (m.poids == null || m.poids === "") return;
+    add("Santé", "heartbeat", "Pesée du " + rgDateCourte(m.date), String(m.poids).replace(".", ",") + " kg", m.note,
+        () => rgAller("sa-mesures", () => saOpenMesure(m.id)), m.date);
+  });
+  // Patrimoine
+  if (vis.has("sec-patri") && PA && PA.comptes) PA.comptes.forEach(c => {
+    if (c.archived) return;
+    add("Patrimoine", "bank", c.label, "Compte du patrimoine", c.note, () => rgAller("pa-comptes", () => paOpenCompte(c.id)));
+  });
+  // Tâches
+  if (vis.has("sec-taches") && TC) TC.taches.forEach(t =>
+    add("Tâches", "check-square", t.titre, (t.fait ? "faite " + tcQuand(t.fait) : t.echeance ? "pour " + tcQuand(t.echeance) : "sans date") + (t.projet ? " · " + t.projet : ""),
+        t.note, () => rgAller(t.fait ? "tc-faites" : "tc-liste", () => tcOuvrir(t.id))));
+  // Notes de l'Agenda
+  if (vis.has("sec-agenda") && AG && AG.notes) AG.notes.forEach(n =>
+    add("Agenda", "calendar-blank", n.titre || "Note", n.date ? rgDateCourte(n.date) : "", n.texte, () => rgAller("ag-cal", () => agOuvrirNote(n.id, null))));
+  return out;
+}
+
+function rgChercher() {
+  const champ = document.getElementById("rg-champ");
+  const mots = rgNorm(champ.value).split(/\s+/).filter(Boolean);
+  const box = document.getElementById("rg-liste");
+  if (!mots.length) {
+    _rgResultats = [];
+    box.innerHTML = `<div class="rg-vide">Une position, une dépense, une séance, une tâche, un onglet…</div>`;
+    return;
+  }
+  // Tous les mots doivent y être ; au plus 8 par groupe, les titres qui commencent par le mot d'abord
+  const parGroupe = new Map();
+  rgSources().filter(r => mots.every(m => r.txt.includes(m)))
+    .sort((a, b) => (rgNorm(b.titre).startsWith(mots[0]) - rgNorm(a.titre).startsWith(mots[0]))
+                    || String(b.date || "").localeCompare(String(a.date || "")))
+    .forEach(r => { const l = parGroupe.get(r.groupe) || []; if (l.length < 8) l.push(r); parGroupe.set(r.groupe, l); });
+  _rgResultats = [].concat(...parGroupe.values());
+  _rgSel = 0;
+  if (!_rgResultats.length) { box.innerHTML = `<div class="rg-vide">Rien trouvé pour « ${escHtml(champ.value.trim())} ».</div>`; return; }
+  let i = 0;
+  box.innerHTML = [...parGroupe].map(([g, l]) => `<div class="rg-groupe">${escHtml(g)}</div>`
+    + l.map(r => `<button type="button" class="rg-res" role="option" data-i="${i++}">
+        <i class="ph ph-${r.ico}"></i><span class="rg-t">${escHtml(r.titre)}</span>
+        ${r.sous ? `<span class="rg-s">${escHtml(r.sous)}</span>` : ""}</button>`).join("")).join("");
+  box.querySelectorAll(".rg-res").forEach(b => {
+    b.onclick = () => _rgResultats[+b.dataset.i].go();
+    b.onmousemove = () => rgSelection(+b.dataset.i);
+  });
+  rgSelection(0);
+}
+
+function rgSelection(i) {
+  if (!_rgResultats.length) return;
+  _rgSel = (i + _rgResultats.length) % _rgResultats.length;
+  document.querySelectorAll("#rg-liste .rg-res").forEach(b => {
+    const on = +b.dataset.i === _rgSel;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    if (on) b.scrollIntoView({ block: "nearest" });
+  });
+}
+
+function rgOuvrir() {
+  let ov = document.getElementById("ov-recherche");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "ov-recherche";
+    ov.className = "ov rg-ov";
+    ov.innerHTML = `<div class="modal rg-modal" role="dialog" aria-modal="true" aria-label="Rechercher dans Pilote">
+      <div class="rg-barre"><i class="ph ph-magnifying-glass"></i>
+        <input id="rg-champ" type="search" placeholder="Rechercher dans Pilote" autocomplete="off" spellcheck="false"
+               role="combobox" aria-controls="rg-liste" aria-expanded="true">
+        <kbd>Échap</kbd></div>
+      <div class="rg-liste" id="rg-liste" role="listbox"></div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click", e => { if (e.target === ov) closeOv("ov-recherche"); });
+    const champ = ov.querySelector("#rg-champ");
+    champ.addEventListener("input", rgChercher);
+    champ.addEventListener("keydown", e => {
+      if (e.key === "ArrowDown") { e.preventDefault(); rgSelection(_rgSel + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); rgSelection(_rgSel - 1); }
+      else if (e.key === "Enter") { e.preventDefault(); const r = _rgResultats[_rgSel]; if (r) r.go(); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeOv("ov-recherche"); }
+    });
+  }
+  const champ = ov.querySelector("#rg-champ");
+  champ.value = "";
+  rgChercher();
+  ov.classList.add("open");
+  setTimeout(() => champ.focus(), 20);
+}
+
+document.addEventListener("keydown", e => {
+  if ((EST_MAC ? e.metaKey : e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === "k" || e.key === "K")) {
+    // Pas par-dessus l'écran du code PIN
+    if (document.querySelector(".lock-ecran")) return;
+    e.preventDefault();
+    const ov = document.getElementById("ov-recherche");
+    if (ov && ov.classList.contains("open")) closeOv("ov-recherche"); else rgOuvrir();
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BILAN DE L'ANNÉE AVEC PILOU (12/11/2026, décidé avec Arthur) — docs/accueil.md
+   Des cartes au format story (1080 × 1920), présentées par Pilou, à garder
+   ou à partager : AUCUN montant en euros, seulement des heures, des % et des
+   mois. Chaque carte est un SVG ; « Enregistrer l'image » le dessine dans un
+   canvas puis l'envoie au pont (Api.image_enregistrer, fenêtre « Enregistrer
+   sous »). Du 1er décembre au 31 janvier : une tuile d'accueil et Pilou le
+   propose une fois ; le reste de l'année, Paramètres → Général. En janvier,
+   c'est l'année d'avant. Les chiffres viennent des mêmes calculs que leurs
+   modules (computePnl pour le PEA, finComputeYearTotals pour Mes comptes).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+let _anCartes = [], _anPolices = null;
+
+/** Du 1er décembre au 31 janvier */
+function anPeriode() { const m = new Date().getMonth(); return m === 11 || m === 0; }
+/** L'année racontée : celle d'avant en janvier */
+function anAnnee() { const d = new Date(); return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear(); }
+
+function anPct(v, signe) {
+  const t = Math.abs(v).toFixed(Math.abs(v) < 10 ? 1 : 0).replace(".", ",");
+  return (signe ? (v >= 0 ? "+" : "−") : "") + t + " %";
+}
+function anHeures(min) {
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h >= 10 || !m ? h + " h" : h + " h " + String(m).padStart(2, "0");
+}
+function anMoisNom(m) { return ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
+  "septembre", "octobre", "novembre", "décembre"][m]; }
+
+/** Tous les chiffres de l'année : une entrée par carte qui a quelque chose à dire */
+async function anCalculer(an) {
+  const vis = _modulesVisibles(), ys = String(an), c = [];
+  const res = { an, sport: null, pea: null, budget: null, sante: null, taches: null };
+
+  // Sport : heures (le chiffre qui compte, docs/modules/sports.md), séances, sports, mois record
+  if (vis.has("sec-sport") && SP && SP.sessions) {
+    const l = SP.sessions.filter(s => String(s.date || "").startsWith(ys));
+    const min = l.reduce((t, s) => t + (Number(s.duration) || 0), 0);
+    if (l.length && min > 0) {
+      const parSport = {}, parMois = Array(12).fill(0);
+      l.forEach(s => {
+        const d = Number(s.duration) || 0;
+        parSport[s.sport] = (parSport[s.sport] || 0) + d;
+        parMois[Number(s.date.slice(5, 7)) - 1] += d;
+      });
+      const sports = Object.entries(parSport).sort((a, b) => b[1] - a[1]).slice(0, 3)
+        .map(([id, d]) => ({ nom: ((typeof spSportById === "function" && spSportById(id)) || {}).label || "Autre", pct: d / min * 100 }));
+      const mr = parMois.indexOf(Math.max(...parMois));
+      res.sport = { min, seances: l.length, sports, moisRecord: anMoisNom(mr), minRecord: parMois[mr] };
+    }
+  }
+
+  // PEA : la performance de l'année sur la courbe du capital (même calcul que
+  // la tuile, période YTD), les mois avec un versement, la ligne de l'année
+  if (vis.has("sec-pea") && !_estCto() && (S.transactions || []).length) {
+    let full = null;
+    try { full = await perfSeriesAsync(); } catch (e) {}
+    if (_estCto()) full = null;
+    if (Array.isArray(full) && full.length >= 2) {
+      let i0 = -1, i1 = -1;
+      full.forEach((p, i) => { const d = normDate(p.date); if (d <= (an - 1) + "-12-31") i0 = i; if (d <= ys + "-12-31") i1 = i; });
+      const s = i1 >= 0 ? full.slice(Math.max(i0, 0), i1 + 1) : [];
+      const r = s.length >= 2 ? computePnl(s, "YTD") : null;
+      const mois = new Set((S.depots || []).filter(d => String(normDate(d.date)).startsWith(ys) && (d.amount || 0) > 0)
+        .map(d => normDate(d.date).slice(5, 7)));
+      const moisEcoules = an < new Date().getFullYear() ? 12 : new Date().getMonth() + 1;
+      // La ligne qui a le plus monté sur l'année (cours du 31/12 d'avant au dernier connu)
+      let star = null;
+      const h = _perfHistory;
+      if (h && typeof h === "object") S.positions.forEach(p => {
+        const m = h[p.ticker] ? buildSortedPriceMap(h[p.ticker]) : null;
+        const a = m && priceAt(m, (an - 1) + "-12-31"), z = m && priceAt(m, ys + "-12-31");
+        if (a > 0 && z > 0 && (!star || z / a > star.r)) star = { nom: p.name || p.ticker, r: z / a };
+      });
+      if (r && r.pnlPct != null)
+        res.pea = { pct: r.pnlPct, mois: mois.size, moisEcoules,
+                    star: star && star.r > 1.005 ? { nom: star.nom, pct: (star.r - 1) * 100 } : null };
+    }
+  }
+
+  // Mes comptes : les mois « dans le vert » (revenus ≥ dépenses), et la
+  // catégorie qui a le plus baissé sur l'an dernier (si l'an dernier est suivi)
+  if (vis.has("sec-comptes") && typeof F !== "undefined" && F && F.transactions) {
+    const t = finComputeYearTotals(an);
+    const suivis = t.monthly.filter(m => m.income || m.expense);
+    if (suivis.length) {
+      const vert = t.monthly.map(m => (m.income || m.expense) ? m.income >= m.expense : null);
+      const p = finComputeYearTotals(an - 1);
+      let eco = null;
+      if (p.monthly.filter(m => m.income || m.expense).length >= 6 && p.expense > 0) {
+        Object.entries(p.byCatExpense).forEach(([id, avant]) => {
+          if (avant < p.expense * 0.03) return;   // une petite catégorie ne dit rien
+          const r = ((t.byCatExpense[id] || 0) / suivis.length) / (avant / p.monthly.filter(m => m.income || m.expense).length) - 1;
+          if (r < -0.05 && (!eco || r < eco.r)) eco = { nom: (finCatById(id) || {}).name || "Une catégorie", r };
+        });
+      }
+      res.budget = { vert: vert.filter(v => v).length, suivis: suivis.length, mois: vert,
+                     eco: eco ? { nom: eco.nom, pct: eco.r * 100 } : null };
+    }
+  }
+
+  // Santé : semaines suivies, pesées, objectif de poids atteint dans l'année
+  if (vis.has("sec-sante") && SA) {
+    const l = saSorted().filter(m => String(m.date || "").startsWith(ys) && m.poids != null && m.poids !== "");
+    if (l.length) {
+      const semaines = new Set(l.map(m => { const d = spParseISO(m.date); const j = new Date(d); j.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return spDateISO(j); }));
+      let atteint = null;
+      (SA.goals || []).filter(g => (g.metric || "poids") === "poids" && g.target != null).forEach(g => {
+        const baisse = g.start == null || Number(g.start) >= Number(g.target);
+        const m = l.find(x => baisse ? Number(x.poids) <= Number(g.target) : Number(x.poids) >= Number(g.target));
+        if (m && (!atteint || m.date < atteint)) atteint = m.date;
+      });
+      res.sante = { pesees: l.length, semaines: semaines.size, atteint };
+    }
+  }
+
+  // Tâches : faites dans l'année (récurrentes comprises)
+  if (vis.has("sec-taches") && TC) {
+    let n = TC.taches.filter(t => String(t.fait || "").startsWith(ys)).length;
+    Object.values(TC.faites || {}).forEach(l => { n += (l || []).filter(d => String(d).startsWith(ys)).length; });
+    if (n) res.taches = { faites: n };
+  }
+  return res;
+}
+
+/* ── Les cartes (SVG 1080 × 1920) ───────────────────────────────────────── */
+
+function anMelange(a, b, t) {
+  const h = x => { x = String(x).trim().replace("#", ""); if (x.length === 3) x = x.split("").map(c => c + c).join("");
+    return [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16) || 0); };
+  const A = h(a), B = h(b);
+  return "#" + A.map((v, i) => Math.round(v * (1 - t) + B[i] * t).toString(16).padStart(2, "0")).join("");
+}
+
+function anCouleurs() {
+  let acc = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  if (!/^#[0-9a-f]{3,8}$/i.test(acc)) acc = "#9c4a7a";
+  acc = acc.slice(0, 7);
+  return { acc, fonce: anMelange(acc, "#150c13", 0.84), clair: anMelange(acc, "#fff9fc", 0.9),
+           accD: anMelange(acc, "#1b0f18", 0.3), accL: anMelange(acc, "#fff8f2", 0.8),
+           cuir: anMelange(acc, "#2a1822", 0.45), verre: anMelange(acc, "#e4f2fb", 0.75),
+           txtF: "#f6ecf2", txtC: "#2a1822" };
+}
+
+/** Pilou dans une carte : son SVG, placé et dimensionné */
+function anPilou(humeur, x, y, l) {
+  return pilouSvg(humeur).replace("<svg ", `<svg x="${x}" y="${y}" width="${l}" height="${Math.round(l * 212 / 200)}" `);
+}
+
+function anTexte(x, y, t, taille, o) {
+  o = o || {};
+  return `<text x="${x}" y="${y}" font-size="${taille}" ${o.serif ? 'class="an-serif"' : ""}
+    ${o.poids ? `font-weight="${o.poids}"` : ""} ${o.op ? `opacity="${o.op}"` : ""} ${o.esp ? `letter-spacing="${o.esp}"` : ""}
+    ${o.fin ? 'text-anchor="end"' : o.milieu ? 'text-anchor="middle"' : ""} fill="${o.c || "currentColor"}">${escHtml(t)}</text>`;
+}
+
+/** Coupe une phrase en lignes d'au plus n caractères */
+function anLignes(t, n) {
+  const out = [];
+  String(t).split(" ").forEach(m => {
+    if (out.length && (out[out.length - 1] + " " + m).length <= n) out[out.length - 1] += " " + m; else out.push(m);
+  });
+  return out;
+}
+
+function anCarte(sombre, corps, an) {
+  const k = anCouleurs(), fond = sombre ? k.fonce : k.clair, txt = sombre ? k.txtF : k.txtC;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" color="${txt}">
+    <style>${_anPolices || ""}
+      text { font-family: Onest, "Segoe UI", system-ui, sans-serif; }
+      text.an-serif { font-family: Newsreader, Georgia, serif; }
+      .pl-b { fill: ${k.acc}; } .pl-d { fill: ${k.accD}; } .pl-l { fill: ${k.accL}; } .pl-k { fill: #2a1822; }
+      .pl-trait { fill: none; stroke: #2a1822; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+      .pl-joue { fill: #ff8fa8; opacity: .45; }
+      .pl-verre { fill: ${k.verre}; fill-opacity: .38; stroke: #c79a55; stroke-width: 4.5; }
+      .pl-cuir { fill: none; stroke: ${k.cuir}; stroke-width: 8; stroke-linecap: round; }
+      .pl-z { fill: ${txt}; opacity: .6; font: italic 500 22px Newsreader, serif; }
+    </style>
+    <rect width="1080" height="1920" rx="0" fill="${fond}"/>
+    <circle cx="980" cy="120" r="260" fill="${k.acc}" opacity="${sombre ? 0.18 : 0.08}"/>
+    ${corps}
+    ${anTexte(96, 1830, "Fait avec Pilote", 34, { op: 0.7 })}
+    ${anTexte(984, 1830, String(an), 34, { op: 0.7, fin: true })}
+  </svg>`;
+}
+
+function anBarre(x, y, l, pct, k, sombre) {
+  return `<rect x="${x}" y="${y}" width="${l}" height="22" rx="11" fill="${sombre ? "#ffffff" : "#2a1822"}" opacity="0.12"/>
+    <rect x="${x}" y="${y}" width="${Math.max(22, l * Math.min(100, pct) / 100)}" height="22" rx="11" fill="${sombre ? anMelange(k.acc, "#ffffff", 0.3) : k.acc}"/>`;
+}
+
+function anPuce(x, y, t, k) {
+  const l = Math.round(t.length * 23 + 64);
+  return `<rect x="${x}" y="${y}" width="${l}" height="76" rx="38" fill="${k.acc}"/>
+    ${anTexte(x + 32, y + 50, t, 38, { c: "#ffffff", poids: 500 })}`;
+}
+
+/** Les cartes de l'année : [{id, nom, svg}] */
+function anComposer(r, prenom) {
+  const k = anCouleurs(), cartes = [], an = r.an;
+  const enCours = an === new Date().getFullYear() && new Date().getMonth() < 11;
+  let n = 0;
+  const sombre = () => (n++ % 2) === 0;
+
+  let s = sombre();
+  cartes.push({ id: "couverture", nom: "Couverture", svg: anCarte(s, `
+    ${anTexte(96, 200, "PILOTE · " + an, 36, { esp: 6, op: 0.75 })}
+    ${anTexte(96, 470, "Ton année", 150, { serif: true })}
+    ${anTexte(96, 630, "avec Pilote", 150, { serif: true, c: s ? anMelange(k.acc, "#ffffff", 0.45) : k.acc })}
+    ${anTexte(96, 760, (prenom ? prenom + ", " : "") + (enCours ? "voici ton année jusqu'ici." : "Pilou a tout relu."), 46, { op: 0.85 })}
+    ${anTexte(96, 830, "On fait le tour ?", 46, { op: 0.85 })}
+    ${anPilou("salut", 230, 1000, 620)}`, an) });
+
+  if (r.sport) {
+    const sp = r.sport; s = sombre();
+    let y = 860;
+    const barres = sp.sports.map(x => {
+      const b = anTexte(96, y, x.nom, 42) + anTexte(984, y, anPct(x.pct), 42, { fin: true, poids: 500 }) + anBarre(96, y + 26, 888, x.pct, k, s);
+      y += 130; return b;
+    }).join("");
+    cartes.push({ id: "sport", nom: "Sport", svg: anCarte(s, `
+      ${anTexte(96, 200, "SPORT", 36, { esp: 6, op: 0.75 })}
+      ${anTexte(96, 480, anHeures(sp.min), 210, { serif: true })}
+      ${anTexte(96, 580, "de sport, en " + sp.seances + " séance" + (sp.seances > 1 ? "s" : ""), 48, { op: 0.85 })}
+      ${barres}
+      ${anPuce(96, y + 10, "Mois record : " + sp.moisRecord + ", " + anHeures(sp.minRecord), k)}
+      ${anPilou("content", 640, 1400, 340)}`, an) });
+  }
+
+  if (r.pea) {
+    const p = r.pea; s = sombre();
+    cartes.push({ id: "bourse", nom: "Bourse", svg: anCarte(s, `
+      ${anTexte(96, 200, "BOURSE", 36, { esp: 6, op: 0.75 })}
+      ${anTexte(96, 480, anPct(p.pct, true), 210, { serif: true })}
+      ${anTexte(96, 580, "pour ton PEA " + (enCours ? "depuis le 1ᵉʳ janvier" : "sur l'année"), 48, { op: 0.85 })}
+      ${anTexte(96, 760, p.mois + " versement" + (p.mois > 1 ? "s" : "") + " sur " + p.moisEcoules + " mois", 52, { poids: 500 })}
+      ${anTexte(96, 830, p.mois >= p.moisEcoules ? "Pas un mois oublié." : p.mois ? "La régularité, ça paie." : "Aucun versement cette année.", 46, { op: 0.85 })}
+      ${p.star ? anTexte(96, 990, "Ta ligne de l'année", 40, { op: 0.75 }) + anLignes(p.star.nom, 30).slice(0, 2).map((l, i) => anTexte(96, 1060 + i * 64, l, 56, { serif: true })).join("")
+                 + anPuce(96, 1180, anPct(p.star.pct, true) + " sur l'année", k) : ""}
+      ${anPilou("pensif", 640, 1400, 340)}`, an) });
+  }
+
+  if (r.budget) {
+    const b = r.budget; s = sombre();
+    const cases = b.mois.map((v, i) => `<rect x="${96 + i * 76}" y="700" width="62" height="120" rx="14"
+      fill="${v ? (s ? anMelange(k.acc, "#ffffff", 0.3) : k.acc) : (s ? "#ffffff" : "#2a1822")}" opacity="${v ? 1 : v === false ? 0.14 : 0.05}"/>`).join("");
+    const lettres = "JFMAMJJASOND".split("").map((l, i) => anTexte(127 + i * 76, 870, l, 30, { milieu: true, op: 0.6 })).join("");
+    cartes.push({ id: "budget", nom: "Budget", svg: anCarte(s, `
+      ${anTexte(96, 200, "BUDGET", 36, { esp: 6, op: 0.75 })}
+      ${anTexte(96, 480, b.vert + " / " + b.suivis, 210, { serif: true })}
+      ${anTexte(96, 580, "mois où tu as gagné plus que dépensé", 46, { op: 0.85 })}
+      ${cases}${lettres}
+      ${b.eco ? anTexte(96, 1010, "Ta plus belle économie", 40, { op: 0.75 }) + anTexte(96, 1085, b.eco.nom, 60, { serif: true })
+                + anPuce(96, 1130, anPct(b.eco.pct, true) + " sur l'an dernier", k) : ""}
+      ${anPilou("content", 640, 1400, 340)}`, an) });
+  }
+
+  if (r.sante) {
+    const h = r.sante; s = sombre();
+    const atteint = h.atteint ? spParseISO(h.atteint) : null;
+    cartes.push({ id: "sante", nom: "Santé", svg: anCarte(s, `
+      ${anTexte(96, 200, "SANTÉ", 36, { esp: 6, op: 0.75 })}
+      ${atteint ? anTexte(96, 400, "Objectif de poids", 96, { serif: true }) + anTexte(96, 510, "atteint le " + atteint.getDate() + " " + anMoisNom(atteint.getMonth()), 96, { serif: true })
+                : anTexte(96, 480, String(h.semaines), 210, { serif: true }) + anTexte(96, 580, "semaine" + (h.semaines > 1 ? "s" : "") + " suivie" + (h.semaines > 1 ? "s" : ""), 48, { op: 0.85 })}
+      ${anTexte(96, atteint ? 620 : 700, h.pesees + " pesée" + (h.pesees > 1 ? "s" : "") + (atteint ? ", " + h.semaines + " semaines suivies" : "") + ".", 46, { op: 0.85 })}
+      ${anPilou("joyeux", 260, 1000, 560)}`, an) });
+  }
+
+  if (r.taches) {
+    s = sombre();
+    cartes.push({ id: "taches", nom: "Tâches", svg: anCarte(s, `
+      ${anTexte(96, 200, "TÂCHES", 36, { esp: 6, op: 0.75 })}
+      ${anTexte(96, 480, String(r.taches.faites), 210, { serif: true })}
+      ${anTexte(96, 580, "tâche" + (r.taches.faites > 1 ? "s" : "") + " cochée" + (r.taches.faites > 1 ? "s" : "") + ". Une de moins à chaque fois.", 46, { op: 0.85 })}
+      ${anPilou("content", 260, 1000, 560)}`, an) });
+  }
+
+  // Le récap : quatre chiffres au plus, ceux des cartes présentes
+  const chiffres = [];
+  if (r.sport) chiffres.push([anHeures(r.sport.min), "de sport"]);
+  if (r.pea) chiffres.push([anPct(r.pea.pct, true), "PEA"]);
+  if (r.budget) chiffres.push([r.budget.vert + " / " + r.budget.suivis, "mois dans le vert"]);
+  if (r.sante) chiffres.push([String(r.sante.semaines), "semaines suivies"]);
+  if (r.taches) chiffres.push([String(r.taches.faites), "tâches faites"]);
+  if (chiffres.length >= 2) {
+    s = sombre();
+    const grille = chiffres.slice(0, 4).map(([v, l], i) => {
+      const x = 96 + (i % 2) * 460, y = 470 + Math.floor(i / 2) * 260;
+      return anTexte(x, y, v, 100, { serif: true }) + anTexte(x, y + 64, l, 40, { op: 0.75 });
+    }).join("");
+    cartes.push({ id: "recap", nom: "Ton année en chiffres", svg: anCarte(s, `
+      ${anTexte(96, 200, "TON ANNÉE EN " + Math.min(4, chiffres.length) + " CHIFFRES", 36, { esp: 6, op: 0.75 })}
+      ${grille}
+      ${anPilou("joyeux", 300, 1120, 480)}
+      ${anTexte(540, 1720, "@pilote.appli", 40, { milieu: true, op: 0.8 })}`, an) });
+  }
+  return cartes;
+}
+
+/* ── Fenêtre du bilan ───────────────────────────────────────────────────── */
+
+/** Les deux polices de Pilote, embarquées dans chaque carte : une image SVG
+    n'a pas accès aux polices de la page. */
+async function anChargerPolices() {
+  if (_anPolices !== null) return;
+  const lire = async (f, famille, style) => {
+    const b = await (await fetch("/vendor/fonts/" + f)).blob();
+    const url = await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(b); });
+    return `@font-face { font-family: ${famille}; font-style: ${style}; font-weight: 300 800; src: url(${url}) format("woff2"); }`;
+  };
+  try {
+    _anPolices = (await Promise.all([lire("onest-latin.woff2", "Onest", "normal"),
+                                      lire("newsreader-latin.woff2", "Newsreader", "normal")])).join("\n");
+  } catch (e) { _anPolices = ""; console.warn("[bilan annuel] polices", e); }
+}
+
+async function anOuvrir(an) {
+  an = an || anAnnee();
+  let ov = document.getElementById("ov-anbilan");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "ov-anbilan";
+    ov.className = "ov";
+    ov.addEventListener("click", e => { if (e.target === ov) closeOv("ov-anbilan"); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<div class="modal an-modal" role="dialog" aria-modal="true" aria-labelledby="an-titre">
+    <div class="an-tete"><h2 id="an-titre">Ton année ${an}</h2>
+      <span class="an-aide">Aucun montant en euros : seulement des heures, des % et des mois. Enregistre une carte pour la garder ou la partager.</span>
+      <button type="button" class="m-iconbtn" onclick="closeOv('ov-anbilan')" aria-label="Fermer"><i class="ph ph-x"></i></button></div>
+    <div class="an-rangee" id="an-rangee"><div class="an-attente"><i class="ph ph-circle-notch ac-tourne"></i> Pilou relit ton année…</div></div>
+  </div>`;
+  ov.classList.add("open");
+  S.uiPrefs = S.uiPrefs || {};
+  if (S.uiPrefs.anBilanVu !== an) { S.uiPrefs.anBilanVu = an; _enregistrerUiPrefs(); }
+  await anChargerPolices();
+  const r = await anCalculer(an);
+  _anCartes = anComposer(r, (S.config && S.config.prenom) || "");
+  _anCartes.an = an;
+  const box = document.getElementById("an-rangee");
+  if (!box) return;
+  if (_anCartes.length < 2) {
+    box.innerHTML = `<div class="m-empty">${pilouVide("pensif")}Pas encore assez de choses notées en ${an} pour raconter ton année.
+      Reviens quand tu auras quelques séances, pesées ou mois de budget.</div>`;
+    return;
+  }
+  box.innerHTML = _anCartes.map((c, i) => `<figure class="an-carte">
+      <div class="an-img">${c.svg}</div>
+      <figcaption>${escHtml(c.nom)}<button type="button" class="btn btn-ghost btn-sm" onclick="anEnregistrer(${i})">
+        <i class="ph ph-download-simple"></i> Enregistrer l'image</button></figcaption></figure>`).join("");
+}
+
+/** Dessine la carte i en PNG (1080 × 1920) et la confie à Python */
+async function anEnregistrer(i) {
+  const c = _anCartes[i];
+  if (!c) return;
+  const api = window.pywebview && pywebview.api;
+  if (!api || !api.image_enregistrer) { showToastModern("Enregistrement possible seulement dans l'app", "warn"); return; }
+  try {
+    const url = URL.createObjectURL(new Blob([c.svg], { type: "image/svg+xml" }));
+    const img = new Image();
+    await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = url; });
+    const cv = document.createElement("canvas");
+    cv.width = 1080; cv.height = 1920;
+    cv.getContext("2d").drawImage(img, 0, 0, 1080, 1920);
+    URL.revokeObjectURL(url);
+    const r = await api.image_enregistrer("Pilote " + (_anCartes.an || anAnnee()) + " - " + c.nom, cv.toDataURL("image/png"));
+    if (r && r.ok) showToastModern("Image enregistrée", "ok");
+    else if (!(r && r.cancelled)) showToastModern("Image non enregistrée : " + ((r && r.error) || "?"), "err");
+  } catch (e) { showToastModern("Image non enregistrée", "err"); console.warn("[bilan annuel]", e); }
+}
+
+/** Tuile d'accueil, du 1er décembre au 31 janvier seulement */
+function dashAnBilan() {
+  if (!anPeriode()) return null;
+  const an = anAnnee();
+  return { lbl: "Ton année " + an, val: null, go: null, vizCls: "dash-viz-haut",
+           sub: S.uiPrefs && S.uiPrefs.anBilanVu === an ? "Tes cartes de l'année, à revoir ou partager." : "Pilou a préparé ton bilan de l'année.",
+           viz: `<div class="an-tuile"><span class="pilou" aria-hidden="true">${pilouSvg("salut")}</span>
+             <button type="button" class="btn btn-primary btn-sm dash-tile-btn" onclick="event.stopPropagation();anOuvrir()">
+               <i class="ph ph-sparkle"></i> Voir mon année</button></div>` };
+}
+
+/** Au lancement, dans la période : la tuile mise en tête une fois par an, et
+    Pilou qui le propose une fois (carte flottante, comme ses astuces). */
+function anDemarrer() {
+  if (!anPeriode() || !S || _estCto()) return;
+  const an = anAnnee();
+  S.uiPrefs = S.uiPrefs || {};
+  if (S.uiPrefs.anBilanTuile !== an) {
+    S.uiPrefs.anBilanTuile = an;
+    S.uiPrefs.dash = [{ id: "an-bilan", on: true }].concat(dashConfig().filter(c => c.id !== "an-bilan"));
+    _enregistrerUiPrefs();
+    if (typeof dashRender === "function") dashRender();
+  }
+  if (S.uiPrefs.anBilanVu === an || S.uiPrefs.anBilanPropose === an || document.querySelector(".pl-flot, .ov.open")) return;
+  S.uiPrefs.anBilanPropose = an;
+  _enregistrerUiPrefs();
+  const box = document.createElement("div");
+  box.id = "pilou-anbilan";
+  box.className = "pl-flot";
+  box.innerHTML = `<span class="pilou" aria-hidden="true">${pilouSvg("salut")}</span>
+    <div class="pp-bulle"><button type="button" class="pl-flot-x" aria-label="Fermer"><i class="ph ph-x"></i></button>
+      <div class="pl-flot-t">Ton année ${an} est prête&#8239;!</div>
+      J'ai relu tes séances, ton budget et ta bourse. Des cartes à garder ou à partager, sans aucun montant.
+      <div class="pl-flot-acts"><span class="sp"></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-non>Plus tard</button>
+        <button type="button" class="btn btn-primary btn-sm" data-ok>Voir mon année</button></div></div>`;
+  document.body.appendChild(box);
+  box.querySelectorAll("[data-non], .pl-flot-x").forEach(b => { b.onclick = () => box.remove(); });
+  box.querySelector("[data-ok]").onclick = () => { box.remove(); anOuvrir(an); };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PILOU GUIDE (12/11/2026, décidé avec Arthur) — docs/accueil.md
    1. pilouEcrit : sa phrase s'écrit lettre par lettre (Premiers pas).
    2. Visite avec Pilou : sur l'utilisateur Exemple (Brice), il montre
@@ -30370,6 +31349,7 @@ const PILOU_REACTIONS = {
   "sec-garmin":  "Une montre&#8239;? Ses séances arriveront toutes seules dans Sports.",
   "sec-actus":   "Les newsletters&#8239;? Tu les liras ici, dans Pilote.",
   "sec-agenda":  "L'agenda&#8239;? Tout ce qui a une date, au même endroit.",
+  "sec-taches":  "Les tâches&#8239;? Je te rappellerai celles du jour sur l'accueil.",
   "sec-pret":    "Le prêt&#8239;? Je suivrai ce qui est remboursé et ce qui reste.",
 };
 
@@ -30429,6 +31409,10 @@ const PILOU_VISITE = {
       x: "Une fois par mois, il note le solde de chaque compte. Deux minutes, et la courbe se met à jour." },
     { tab: "sim", h: "joyeux", t: "Les simulateurs",
       x: "Combien rapporterait un versement chaque mois pendant dix ans&#8239;? Les simulateurs répondent." },
+  ],
+  "sec-taches": [
+    { tab: "tc-liste", h: "content", t: "Ses tâches",
+      x: "Rangées par échéance : en retard, aujourd'hui, la semaine. Une case à cocher, et celles qui reviennent repartent seules." },
   ],
   "sec-sante": [
     { tab: "sa-suivi", t: "Son poids",
@@ -30661,6 +31645,7 @@ const MODULES_A_CHARGER = [
   ["crypto",     "sec-crypto",  () => ctoBootstrap()],   // même fichier (cto.json), lu une fois
   ["agenda",     "sec-agenda",  () => agBootstrap()],
   ["montres",    "sec-garmin",  () => Promise.all([gaBootstrap(), coBootstrap()])],
+  ["taches",     "sec-taches",  () => tcBootstrap()],
 ];
 
 /** Un module qu'on vient de cocher (il était masqué au lancement, donc pas
@@ -30794,6 +31779,7 @@ function _appReady() {
       // portefeuille crypto lu pour savoir si Crypto sert déjà)
       _demanderNouveauxModules().catch(e => console.warn("[nouveaux modules]", e));
       bilanDemarrer();
+      try { anDemarrer(); } catch (e) { console.warn("[bilan annuel]", e); }
       // CTO : une ligne par compte dans le Patrimoine (il faut les deux lus),
       // et leurs cours tout de suite pour leurs tuiles d'accueil
       if (_ctoBootstrapped && ctoComptes().length) {

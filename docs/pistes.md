@@ -4,22 +4,13 @@ Fiche détaillée tirée de `CLAUDE.md`, qui garde les règles générales (dont
 
 ## Pistes en attente (proposées, non décidées)
 
-**Les trois qui manquent le plus** — sans elles, Pilote n'est pas « l'app où je fais
-tout ». Recommandées dans cet ordre :
-
-- **Module Tâches** (`taches.json`) : échéance, priorité, projet, récurrence
-- **Module Agenda** (`agenda.json`) : mois + semaine, fusionnant séances de sport,
-  échéances de prêt, relevé de patrimoine, pesée du 1er
-- **Écran « Aujourd'hui »** : tâches du jour + événements + séance prévue + échéances.
-  Le premier écran à ouvrir le matin.
+**Les trois qui manquaient le plus** : faites. Agenda (22/10/2026, avec la tuile
+« Aujourd'hui »), Tâches (12/11/2026, `docs/modules/taches.md`).
 
 Autres pistes :
 
-- Objectif d'heures hebdomadaire, avec jauge en haut de l'agenda sport
-- Courbe d'heures cumulées année N vs N−1 dans les statistiques sport
 - Simulateur de sortie : « si je vends tout et solde le prêt, il me reste X € »
   (proposé de nouveau le 13/10/2026 avec le prêt générique, pas pris)
-- Recherche globale (Ctrl+K) sur transactions, séances, pesées, comptes
 - Onglet Stratégie (brainstorming du 03/10/2026, non retenues ce jour-là) :
   projection sur 12 mois d'un scénario répété (écart à la cible et frais
   cumulés) ; rééquilibrage avec ventes, en calcul affiché seulement ; seuil de
@@ -27,6 +18,11 @@ Autres pistes :
   un gros versement sur deux mois pour deux ordres gratuits
 
 **Écartées, ne pas y revenir sans raison nouvelle :**
+
+- **Sport : objectif d'heures par semaine et courbe N contre N−1** : détaillé à
+  Arthur le 12/11/2026 (jauge en haut de l'agenda sport, tuile « Objectif de la
+  semaine », heures cumulées depuis le 1er janvier contre l'an dernier), écarté le
+  même jour (« tout sauf le point 3 »).
 
 - **Module Formation** (formations, certificats, export CV) : retiré à la demande
   d'Arthur le 11/10/2026, il en avait masqué les quatre onglets. `formation.json` et
@@ -126,7 +122,8 @@ Autres pistes :
   passe par son serveur MCP, toute autre montre par ses fichiers .fit
   (`docs/modules/montres.md`).
 
-**Traité depuis** : l'emoji par défaut des catégories créées par l'utilisateur est
+**Traité depuis** : la recherche globale (Ctrl+K) et le bilan de l'année avec
+Pilou (12/11/2026, `docs/accueil.md`). Avant : l'emoji par défaut des catégories créées par l'utilisateur est
 deviné d'après le libellé (4.2.7, `finGuessIcon`). L'export de tout l'espace utilisateur, longtemps en attente, est
 couvert par la sauvegarde USB (archive zip de tout `Donnees/`). L'import par fichier,
 lui, ne couvre toujours que `pea_data.json`.

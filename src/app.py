@@ -62,6 +62,7 @@ import cto
 import releves
 import patrimoine
 import sante
+import taches
 import balances
 import actus
 import agenda
@@ -335,6 +336,21 @@ class Api:
             return {"ok": True, "net": patrimoine.net_worth(d),
                     "serie": patrimoine.serie_mensuelle(d),
                     "moisSaisi": patrimoine.mois_saisi(d)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # -- Taches (propre a l'utilisateur actif, docs/modules/taches.md) ----
+
+    def load_taches(self) -> dict:
+        try:
+            return {"ok": True, "data": taches.load_data(), "erreur": taches.erreur()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
+
+    def save_taches(self, data: dict) -> dict:
+        try:
+            taches.save_data(data or {})
+            return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -866,6 +882,30 @@ class Api:
         path = result[0] if isinstance(result, (list, tuple)) else result
         ok, msg = storage.import_from(path)
         return {"ok": ok, "message": msg}
+
+    def image_enregistrer(self, nom: str, png_b64: str) -> dict:
+        """Bilan de l'annee (index.html, an*) : enregistre une carte en PNG la
+        ou l'utilisateur le choisit. Rien n'est ecrit dans Donnees/."""
+        import base64
+        import re as _re
+        try:
+            octets = base64.b64decode(str(png_b64 or "").split(",")[-1], validate=True)
+            if not octets.startswith(bytes([0x89]) + b"PNG"):
+                return {"ok": False, "error": "image invalide"}
+            propre = _re.sub(r"[^\w .-]+", "", str(nom or "pilote"))[:80].strip() or "pilote"
+            win = webview.windows[0]
+            result = win.create_file_dialog(_dialogue("SAVE"), save_filename=propre + ".png",
+                                            file_types=("Image PNG (*.png)",))
+            if not result:
+                return {"ok": False, "cancelled": True}
+            cible = result if isinstance(result, str) else result[0]
+            if not str(cible).lower().endswith(".png"):
+                cible = str(cible) + ".png"
+            with open(cible, "wb") as f:
+                f.write(octets)
+            return {"ok": True, "path": str(cible)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     # -- Fenetre / divers --------------------------------------------------
 
