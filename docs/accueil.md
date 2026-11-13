@@ -564,9 +564,19 @@ d'index.html (à ne pas confondre avec `bilan*`, le bilan de la semaine).
 * **Mêmes calculs que les modules** : la performance du PEA est celle de la tuile
   (computePnl sur la courbe, période YTD ; égale à la tuile sur Brice, vérifié le
   12/11), les totaux de Mes comptes sont ceux de `finComputeYearTotals`.
+* **Une carte à la fois** (demande d'Arthur du 13/11, sur captures : « juste une
+  feuille au début ») : la couverture seule, un clic sur la carte montre la
+  suivante (à gauche, la précédente ; flèches du clavier), les cartes déjà vues
+  partent sur la gauche, la suivante dépasse dessous comme une pile ; barres de
+  progression en haut. Sur la dernière : « Télécharger mon année », « Partager »,
+  « Revoir ».
 * **Image** : chaque carte est un SVG qui embarque Onest et Newsreader en data URL
   (`anChargerPolices` : une image SVG n'a pas accès aux polices de la page),
-  dessiné dans un canvas puis envoyé à `Api.image_enregistrer` (fenêtre
-  « Enregistrer sous », en-tête PNG vérifié, rien dans `Donnees/`). Couleurs
+  dessiné dans un canvas (`anPng`). « Télécharger mon année » envoie toutes les
+  cartes à `Api.images_enregistrer` : un dossier choisi, un sous-dossier
+  « Pilote - Mon année 2026 » avec une image numérotée par carte, ouvert ensuite
+  (en-tête PNG vérifié, rien dans `Donnees/`). « Partager » ouvre le partage de
+  Windows quand la page y a accès (`navigator.share`), sinon copie l'image dans
+  le presse-papiers. Couleurs
   tirées de l'accent choisi. Dans le SVG, la police passe par une classe
   (`an-serif`) : la règle CSS `text {}` l'emporterait sur un attribut `font-family`.

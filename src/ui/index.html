@@ -3367,18 +3367,27 @@ html.verre .toast-stack .toast {
 .rg-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rg-s { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--txt2); }
 .rg-vide { padding: 22px 12px; text-align: center; font-size: 13px; color: var(--txt3); }
-/* Bilan de l'année avec Pilou (12/11/2026) : cartes story en rangée */
-.an-modal { width: min(1180px, calc(100vw - 40px)); max-width: none; }
-.an-tete { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-.an-tete h2 { margin: 0; }
-.an-tete .m-iconbtn { margin-left: auto; align-self: center; }
-.an-aide { font-size: 12.5px; color: var(--txt2); flex: 1; min-width: 240px; }
-.an-rangee { display: flex; gap: 16px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x mandatory; }
-.an-carte { flex: none; width: 230px; margin: 0; scroll-snap-align: start; }
-.an-img { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, .14); aspect-ratio: 9 / 16; }
-.an-img svg { display: block; width: 100%; height: auto; }
-.an-carte figcaption { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 2px 0; font-size: 13px; font-weight: 500; }
-.an-attente { padding: 60px 20px; color: var(--txt2); font-size: 13px; }
+/* Bilan de l'année avec Pilou : une carte à la fois, comme une story (13/11/2026,
+   demande d'Arthur). Un clic sur la carte montre la suivante, à gauche la
+   précédente ; à la fin, Télécharger mon année et Partager. */
+.an-modal { width: auto; max-width: none; padding: 18px 22px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; }
+.an-fermer { position: absolute; top: 10px; right: 10px; }
+.an-barres { display: flex; gap: 4px; width: var(--an-l); }
+.an-barres i { flex: 1; height: 4px; border-radius: 2px; background: var(--brd2); overflow: hidden; }
+.an-barres i.vu { background: var(--accent); }
+.an-scene { position: relative; width: var(--an-l); height: var(--an-h); cursor: pointer; user-select: none; }
+.an-scene:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 18px; }
+.an-feuille { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 34px rgba(0, 0, 0, .22);
+  transition: transform .45s cubic-bezier(.2, .8, .2, 1.05), opacity .35s ease; }
+.an-feuille svg { display: block; width: 100%; height: 100%; }
+.an-feuille.avant { opacity: 0; transform: translateX(-46%) rotate(-7deg) scale(.9); pointer-events: none; }
+.an-feuille.apres { opacity: 0; transform: translateY(5%) scale(.94); pointer-events: none; }
+.an-feuille.dessous { opacity: 1; transform: translate(10px, 8px) rotate(2.5deg) scale(.97); filter: brightness(.86); }
+.an-pied { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; min-height: 34px; width: max(var(--an-l), 440px); }
+.an-modal:focus { outline: none; }
+.an-astuce { font-size: 12.5px; color: var(--txt2); display: inline-flex; align-items: center; gap: 6px; }
+.an-attente { width: var(--an-l); height: var(--an-h); display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--txt2); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .an-feuille { transition: opacity .2s; } .an-feuille.avant, .an-feuille.apres { transform: none; } }
 .an-tuile { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; }
 .an-tuile .pilou { width: 74px; display: block; }
 </style>
@@ -31232,9 +31241,10 @@ document.addEventListener("keydown", e => {
    BILAN DE L'ANNÉE AVEC PILOU (12/11/2026, décidé avec Arthur) — docs/accueil.md
    Des cartes au format story (1080 × 1920), présentées par Pilou, à garder
    ou à partager : AUCUN montant en euros, seulement des heures, des % et des
-   mois. Chaque carte est un SVG ; « Enregistrer l'image » le dessine dans un
-   canvas puis l'envoie au pont (Api.image_enregistrer, fenêtre « Enregistrer
-   sous »). Du 1er décembre au 31 janvier : une tuile d'accueil et Pilou le
+   mois. Une carte à la fois, comme une story (un clic : la suivante) ; à la
+   fin, « Télécharger mon année » (toutes les cartes en PNG dans un dossier
+   choisi, Api.images_enregistrer) et « Partager » (partage du système, sinon
+   image copiée). Chaque carte est un SVG dessiné dans un canvas. Du 1er décembre au 31 janvier : une tuile d'accueil et Pilou le
    propose une fois ; le reste de l'année, Paramètres → Général. En janvier,
    c'est l'année d'avant. Les chiffres viennent des mêmes calculs que leurs
    modules (computePnl pour le PEA, finComputeYearTotals pour Mes comptes).
@@ -31545,6 +31555,8 @@ async function anChargerPolices() {
   } catch (e) { _anPolices = ""; console.warn("[bilan annuel] polices", e); }
 }
 
+let _anIndex = 0;
+
 async function anOuvrir(an) {
   an = an || anAnnee();
   let ov = document.getElementById("ov-anbilan");
@@ -31553,13 +31565,22 @@ async function anOuvrir(an) {
     ov.id = "ov-anbilan";
     ov.className = "ov";
     ov.addEventListener("click", e => { if (e.target === ov) closeOv("ov-anbilan"); });
+    ov.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "Enter") { if (e.target.closest(".an-pied")) return; e.preventDefault(); anAller(_anIndex + 1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); anAller(_anIndex - 1); }
+      else if (e.key === "Escape") closeOv("ov-anbilan");
+    });
     document.body.appendChild(ov);
   }
-  ov.innerHTML = `<div class="modal an-modal" role="dialog" aria-modal="true" aria-labelledby="an-titre">
-    <div class="an-tete"><h2 id="an-titre">Ton année ${an}</h2>
-      <span class="an-aide">Aucun montant en euros : seulement des heures, des % et des mois. Enregistre une carte pour la garder ou la partager.</span>
-      <button type="button" class="m-iconbtn" onclick="closeOv('ov-anbilan')" aria-label="Fermer"><i class="ph ph-x"></i></button></div>
-    <div class="an-rangee" id="an-rangee"><div class="an-attente"><i class="ph ph-circle-notch ac-tourne"></i> Pilou relit ton année…</div></div>
+  // Hauteur de la carte : ce que la fenêtre laisse (barres, pied, marges), au
+  // plus 600 px ; largeur au format story (9/16)
+  const h = Math.max(320, Math.min(600, window.innerHeight - 190));
+  ov.innerHTML = `<div class="modal an-modal" tabindex="-1" role="dialog" aria-modal="true" aria-label="Ton année ${an}"
+      style="--an-h:${h}px;--an-l:${Math.round(h * 9 / 16)}px">
+    <button type="button" class="m-iconbtn an-fermer" onclick="closeOv('ov-anbilan')" aria-label="Fermer"><i class="ph ph-x"></i></button>
+    <div class="an-barres" id="an-barres"></div>
+    <div class="an-attente" id="an-scene"><i class="ph ph-circle-notch ac-tourne"></i> Pilou relit ton année…</div>
+    <div class="an-pied" id="an-pied"></div>
   </div>`;
   ov.classList.add("open");
   S.uiPrefs = S.uiPrefs || {};
@@ -31568,37 +31589,95 @@ async function anOuvrir(an) {
   const r = await anCalculer(an);
   _anCartes = anComposer(r, (S.config && S.config.prenom) || "");
   _anCartes.an = an;
-  const box = document.getElementById("an-rangee");
-  if (!box) return;
+  const scene = document.getElementById("an-scene");
+  if (!scene) return;
   if (_anCartes.length < 2) {
-    box.innerHTML = `<div class="m-empty">${pilouVide("pensif")}Pas encore assez de choses notées en ${an} pour raconter ton année.
+    scene.className = "an-attente";
+    scene.innerHTML = `<div class="m-empty">${pilouVide("pensif")}Pas encore assez de choses notées en ${an} pour raconter ton année.
       Reviens quand tu auras quelques séances, pesées ou mois de budget.</div>`;
     return;
   }
-  box.innerHTML = _anCartes.map((c, i) => `<figure class="an-carte">
-      <div class="an-img">${c.svg}</div>
-      <figcaption>${escHtml(c.nom)}<button type="button" class="btn btn-ghost btn-sm" onclick="anEnregistrer(${i})">
-        <i class="ph ph-download-simple"></i> Enregistrer l'image</button></figcaption></figure>`).join("");
+  scene.className = "an-scene";
+  scene.tabIndex = 0;
+  scene.setAttribute("role", "button");
+  scene.innerHTML = _anCartes.map((c, i) => `<div class="an-feuille" data-i="${i}" aria-label="${escHtml(c.nom)}">${c.svg}</div>`).join("");
+  document.getElementById("an-barres").innerHTML = _anCartes.map(() => "<i></i>").join("");
+  // Clic à gauche : la carte d'avant ; ailleurs : la suivante
+  scene.onclick = e => {
+    const b = scene.getBoundingClientRect();
+    anAller(_anIndex + (e.clientX - b.left < b.width * 0.28 ? -1 : 1));
+  };
+  anAller(0);
+  // Le focus dans la fenêtre (pour les flèches du clavier), sans contour sur la carte
+  scene.closest(".an-modal").focus();
 }
 
-/** Dessine la carte i en PNG (1080 × 1920) et la confie à Python */
-async function anEnregistrer(i) {
-  const c = _anCartes[i];
-  if (!c) return;
-  const api = window.pywebview && pywebview.api;
-  if (!api || !api.image_enregistrer) { showToastModern("Enregistrement possible seulement dans l'app", "warn"); return; }
+/** Montre la carte i : celles d'avant partent sur la gauche, la suivante
+    attend dessous, comme une pile de feuilles */
+function anAller(i) {
+  if (!_anCartes.length) return;
+  _anIndex = Math.max(0, Math.min(_anCartes.length - 1, i));
+  document.querySelectorAll("#an-scene .an-feuille").forEach(f => {
+    const k = Number(f.dataset.i);
+    f.className = "an-feuille" + (k < _anIndex ? " avant" : k === _anIndex + 1 ? " dessous" : k > _anIndex ? " apres" : "");
+    f.style.zIndex = String(100 - k);
+    f.setAttribute("aria-hidden", k === _anIndex ? "false" : "true");
+  });
+  document.querySelectorAll("#an-barres i").forEach((b, k) => b.classList.toggle("vu", k <= _anIndex));
+  const pied = document.getElementById("an-pied");
+  const dernier = _anIndex === _anCartes.length - 1;
+  pied.innerHTML = dernier
+    ? `<button type="button" class="btn btn-primary btn-sm" onclick="anTelecharger()"><i class="ph ph-download-simple"></i> Télécharger mon année</button>
+       <button type="button" class="btn btn-ghost btn-sm" onclick="anPartager()"><i class="ph ph-share-network"></i> Partager</button>
+       <button type="button" class="btn btn-ghost btn-sm" onclick="anAller(0)"><i class="ph ph-arrow-counter-clockwise"></i> Revoir</button>`
+    : `<span class="an-astuce"><i class="ph ph-hand-tap"></i> Clique sur la carte pour la suivante · ${_anIndex + 1} / ${_anCartes.length}</span>`;
+}
+
+/** La carte i en PNG 1080 × 1920 (data URL) */
+async function anPng(i) {
+  const url = URL.createObjectURL(new Blob([_anCartes[i].svg], { type: "image/svg+xml" }));
   try {
-    const url = URL.createObjectURL(new Blob([c.svg], { type: "image/svg+xml" }));
     const img = new Image();
     await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = url; });
     const cv = document.createElement("canvas");
     cv.width = 1080; cv.height = 1920;
     cv.getContext("2d").drawImage(img, 0, 0, 1080, 1920);
-    URL.revokeObjectURL(url);
-    const r = await api.image_enregistrer("Pilote " + (_anCartes.an || anAnnee()) + " - " + c.nom, cv.toDataURL("image/png"));
-    if (r && r.ok) showToastModern("Image enregistrée", "ok");
-    else if (!(r && r.cancelled)) showToastModern("Image non enregistrée : " + ((r && r.error) || "?"), "err");
-  } catch (e) { showToastModern("Image non enregistrée", "err"); console.warn("[bilan annuel]", e); }
+    return cv.toDataURL("image/png");
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/** Toutes les cartes dans un dossier choisi (« Pilote - Mon année 2026 ») */
+async function anTelecharger() {
+  const api = window.pywebview && pywebview.api;
+  if (!api || !api.images_enregistrer) { showToastModern("Possible seulement dans l'app", "warn"); return; }
+  try {
+    const cartes = [];
+    for (let i = 0; i < _anCartes.length; i++) cartes.push({ nom: _anCartes[i].nom, png: await anPng(i) });
+    const r = await api.images_enregistrer("Pilote - Mon année " + (_anCartes.an || anAnnee()), cartes);
+    if (r && r.ok) {
+      showToastModern(r.n + " images enregistrées", "ok");
+    } else if (!(r && r.cancelled)) showToastModern("Images non enregistrées : " + ((r && r.error) || "?"), "err");
+  } catch (e) { showToastModern("Images non enregistrées", "err"); console.warn("[bilan annuel]", e); }
+}
+
+/** Partager la carte affichée : la fenêtre de partage du système quand elle
+    existe, sinon l'image est copiée, à coller dans WhatsApp, Instagram… */
+async function anPartager() {
+  try {
+    const png = await anPng(_anIndex);
+    const blob = await (await fetch(png)).blob();
+    const nom = "Pilote " + (_anCartes.an || anAnnee()) + " - " + _anCartes[_anIndex].nom + ".png";
+    const fichier = new File([blob], nom, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+      try { await navigator.share({ files: [fichier], title: "Mon année avec Pilote" }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    showToastModern("Image copiée : colle-la dans ta story, WhatsApp ou un mail (Ctrl+V)", "ok");
+  } catch (e) {
+    showToastModern("Partage impossible ici : utilise « Télécharger mon année »", "warn");
+    console.warn("[bilan annuel] partage", e);
+  }
 }
 
 /** Tuile d'accueil, du 1er décembre au 31 janvier seulement */

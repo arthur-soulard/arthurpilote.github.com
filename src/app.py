@@ -894,27 +894,41 @@ class Api:
         ok, msg = storage.import_from(path)
         return {"ok": ok, "message": msg}
 
-    def image_enregistrer(self, nom: str, png_b64: str) -> dict:
-        """Bilan de l'annee (index.html, an*) : enregistre une carte en PNG la
-        ou l'utilisateur le choisit. Rien n'est ecrit dans Donnees/."""
+    def images_enregistrer(self, dossier: str, cartes: list) -> dict:
+        """Bilan de l'annee : « Telecharger mon annee » enregistre toutes les
+        cartes ([{nom, png}], PNG en base64) dans un dossier choisi par
+        l'utilisateur, sous-dossier « dossier ». Rien dans Donnees/."""
         import base64
         import re as _re
         try:
-            octets = base64.b64decode(str(png_b64 or "").split(",")[-1], validate=True)
-            if not octets.startswith(bytes([0x89]) + b"PNG"):
-                return {"ok": False, "error": "image invalide"}
-            propre = _re.sub(r"[^\w .-]+", "", str(nom or "pilote"))[:80].strip() or "pilote"
+            images = []
+            for c in (cartes or [])[:20]:
+                octets = base64.b64decode(str(c.get("png") or "").split(",")[-1], validate=True)
+                if not octets.startswith(bytes([0x89]) + b"PNG"):
+                    return {"ok": False, "error": "image invalide"}
+                nom = _re.sub(r"[^\w .-]+", "", str(c.get("nom") or "carte"))[:80].strip() or "carte"
+                images.append((nom, octets))
+            if not images:
+                return {"ok": False, "error": "aucune image"}
             win = webview.windows[0]
-            result = win.create_file_dialog(_dialogue("SAVE"), save_filename=propre + ".png",
-                                            file_types=("Image PNG (*.png)",))
-            if not result:
+            choix = win.create_file_dialog(_dialogue("FOLDER"))
+            if not choix:
                 return {"ok": False, "cancelled": True}
-            cible = result if isinstance(result, str) else result[0]
-            if not str(cible).lower().endswith(".png"):
-                cible = str(cible) + ".png"
-            with open(cible, "wb") as f:
-                f.write(octets)
-            return {"ok": True, "path": str(cible)}
+            base = Path(choix if isinstance(choix, str) else choix[0])
+            sous = _re.sub(r"[^\w .-]+", "", str(dossier or "Pilote"))[:60].strip() or "Pilote"
+            cible = base / sous
+            n = 2
+            while cible.exists():
+                cible = base / ("%s (%d)" % (sous, n))
+                n += 1
+            cible.mkdir(parents=True)
+            for i, (nom, octets) in enumerate(images, 1):
+                (cible / ("%02d - %s.png" % (i, nom))).write_bytes(octets)
+            try:
+                plateforme.ouvrir(str(cible))   # le dossier s'ouvre : les images sont la
+            except Exception:
+                pass
+            return {"ok": True, "path": str(cible), "n": len(images)}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
