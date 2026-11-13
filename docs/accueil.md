@@ -543,27 +543,58 @@ l'élément (transaction, séance, pesée, compte, tâche, note).
 
 ## Bilan de l'année avec Pilou (12/11/2026, 4.4.70)
 
-Maquette montrée à Arthur le 12/11 : des cartes au format story (1080 × 1920),
-présentées par Pilou, **sans aucun montant en euros** (des heures, des % et des
-mois), à enregistrer en PNG pour les garder ou les partager. Bloc `an*`
-d'index.html (à ne pas confondre avec `bilan*`, le bilan de la semaine).
+Maquette montrée à Arthur le 12/11, revue avec lui le 13/11 (4.4.71) : des
+cartes au format story (1080 × 1920), présentées par Pilou, à enregistrer en
+PNG pour les garder ou les partager. Bloc `an*` d'index.html (à ne pas
+confondre avec `bilan*`, le bilan de la semaine). **Montants en euros permis**
+depuis le 13/11 (ils étaient exclus en 4.4.70).
 
-* **Quand** (choix d'Arthur) : du 1er décembre au 31 janvier, la tuile
-  `an-bilan` est mise en tête de l'accueil une fois par an (`S.uiPrefs.anBilanTuile`),
-  et Pilou le propose une fois (carte flottante, `anBilanPropose`). Le reste de
-  l'année : Paramètres → Général → « Mon année ». En janvier, c'est l'année d'avant
-  (`anAnnee`).
-* **Cartes** (`anComposer`), une seulement si le module a de quoi dire :
-  couverture, Sport (heures, séances, trois sports en %, mois record), Bourse
-  (performance du PEA sur l'année, mois avec un versement, ligne de l'année),
-  Budget (mois où les revenus dépassent les dépenses, catégorie qui a le plus
-  baissé si l'an dernier a au moins 6 mois suivis), Santé (semaines suivies,
-  pesées, objectif de poids atteint), Tâches (cochées, récurrentes comprises),
-  récap en quatre chiffres. Moins de deux cartes : « pas encore assez de choses
-  notées ».
+* **Quand** (choix d'Arthur, 13/11) : 2026 se suit en direct dans Paramètres →
+  « Mon année » (`AN_DIRECT`). À partir de 2027, une année n'a son bilan qu'à
+  partir du 1er janvier suivant (`anDisponible`) : 2027 se verra le 1er janvier
+  2028, pas avant. Les années passées restent dans Paramètres → Mon année
+  (entrée de la colonne entre « Masqués » et « Mes modules », pas dans le
+  réglage de Pilou ; `anRenderReglages` liste les années qui ont des données).
+* **Message du 1er janvier** : la tuile `an-bilan` mise en tête une fois
+  (`S.uiPrefs.anBilanTuile`) et la carte flottante de Pilou à chaque lancement,
+  **jusqu'à ce que le bilan de l'année finie ait été ouvert** (`S.uiPrefs.anVus`,
+  liste des années ouvertes une fois finies ; ouvrir 2026 en cours d'année ne
+  compte pas). Essayé avec une date simulée au 02/01/2027 : tuile et Pilou,
+  puis plus rien après l'ouverture. L'ancienne clé `anBilanVu` est ignorée.
+* **Cartes** (`anComposer`), chacune seulement si le module est affiché pour
+  l'utilisateur (`_modulesVisibles`) **et** a de quoi dire, jamais de carte vide :
+  couverture (« Voici ton année 2026 » en grand) ; Sport (heures, séances, trois
+  sports, mois record), objectifs de sport atteints dans l'année (`doneAt`),
+  records (plus longue séance, distance, dénivelé, semaines d'affilée, distance
+  totale ; dès 3 séances) ; Bourse (performance du PEA et gain en €, versements,
+  ligne de l'année), journées du PEA (meilleure journée, jours de record, dividendes) ;
+  une carte par CTO (3 au plus) et une Crypto (achats de l'année, plus-value à ce
+  jour par `ctoResume`, ligne star) ; Budget (« dans le vert / le rouge » et
+  solde de l'année, mois dans le vert, meilleur mois, plus belle économie) ;
+  Patrimoine (net du début à la fin de l'année par `_paSerie`, plus beau mois) ;
+  Prêt (part du capital remboursée, mensualités de l'année) ; Santé **seulement
+  avec un objectif de poids** (chemin fait par `saGoalProgress`, poids du début à
+  la fin de l'année, date de l'objectif atteint) ; mois de l'année ; récap des
+  quatre meilleurs chiffres. **Pas de carte Tâches** ni de taux d'épargne (une
+  dépense peut être un versement sur un CTO : choix d'Arthur). Moins de deux
+  cartes : « pas encore assez de choses notées ».
+* **Journées du PEA** : rendement de chaque jour sur la courbe du capital,
+  versements retirés (`(v1 − v0 − versements) / v0`), un point à plus de 30 %
+  écarté (cours manquant). « Jours de record » : l'indice de ces rendements
+  dépasse son plus haut (versements sans effet). Mois de l'année : chaque
+  module note ses mois (valeur rapportée à son meilleur mois), on additionne ;
+  au moins deux modules qui disent quelque chose ce mois-là.
+* **« À ce jour »** : la plus-value d'un CTO, la ligne star et le chemin vers
+  l'objectif de poids viennent des cours et mesures actuels ; ils ne sont
+  montrés que pour l'année en cours ou celle qui vient de finir.
+* **Pied de carte retiré** (13/11) : plus de « Fait avec Pilote · 2026 », l'année
+  est en haut de chaque carte (« SPORT · 2026 »).
 * **Mêmes calculs que les modules** : la performance du PEA est celle de la tuile
   (computePnl sur la courbe, période YTD ; égale à la tuile sur Brice, vérifié le
   12/11), les totaux de Mes comptes sont ceux de `finComputeYearTotals`.
+* **Essai** (13/11) : sur une copie de l'app avec Brice (`tests/donnees_exemple.py`),
+  les 14 cartes rendues en PNG ; avec PEA et Mes comptes seuls : couverture,
+  Bourse, journées, Budget, mois de l'année, récap.
 * **Une carte à la fois** (demande d'Arthur du 13/11, sur captures : « juste une
   feuille au début ») : la couverture seule, un clic sur la carte montre la
   suivante (à gauche, la précédente ; flèches du clavier), les cartes déjà vues
