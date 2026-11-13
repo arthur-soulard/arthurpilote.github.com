@@ -17,9 +17,10 @@ src/, livrées avec l'exe. tests/donnees_exemple.py reste la commande du test.
 Usage : python3 tests/donnees_exemple.py <dossier Donnees>
 """
 import datetime as dt
-import json
 import os
 import sys
+
+import donnees
 
 AUJ = dt.date.today()
 
@@ -396,17 +397,15 @@ def ecrire_utilisateur(dossier_utilisateur, version=None, prefs=None):
             for cle in ("theme", "accent"):
                 if prefs.get(cle):
                     contenu["uiPrefs"][cle] = prefs[cle]
-        with open(os.path.join(dossier_utilisateur, nom), "w", encoding="utf-8") as f:
-            json.dump(contenu, f, ensure_ascii=False, indent=1)
+        donnees.ecrire_json(os.path.join(dossier_utilisateur, nom), contenu, indent=1)
     return len(FICHIERS)
 
 
 def ecrire(dossier):
     utilisateur = os.path.join(dossier, "users", "demo")
     n = ecrire_utilisateur(utilisateur)
-    with open(os.path.join(dossier, "users.json"), "w", encoding="utf-8") as f:
-        json.dump({"active": "demo", "users": [
-            {"slug": "demo", "label": "Brice", "emoji": "", "color": ""}]}, f, ensure_ascii=False, indent=1)
+    donnees.ecrire_json(os.path.join(dossier, "users.json"), {"active": "demo", "users": [
+        {"slug": "demo", "label": "Brice", "emoji": "", "color": ""}]}, indent=1)
     print("donnees d'exemple ecrites dans %s (%d fichiers)" % (dossier, n + 1))
 
 

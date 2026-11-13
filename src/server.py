@@ -482,8 +482,8 @@ def pin_set(pin_str: str, slug=None, old_pin: str = "") -> None:
             try: p.unlink()
             except Exception: pass
         return
-    with open(p, "w", encoding="utf-8") as f:
-        f.write(_pin_hash(pin_str))
+    import donnees
+    donnees.ecrire_texte(p, _pin_hash(pin_str), prefixe="pin")
 
 
 def with_pin_flags(state: dict) -> dict:
@@ -500,8 +500,8 @@ def pin_check(pin_str: str, slug=None) -> bool:
     if not p.exists():
         return True  # pas de PIN → toujours OK
     try:
-        with open(p, "r", encoding="utf-8") as f:
-            stored = f.read().strip()
+        import donnees
+        stored = donnees.lire_texte(p).strip()
         # compare_digest : temps constant, pas de fuite par la duree
         return hmac.compare_digest(stored, _pin_hash(pin_str))
     except Exception:
@@ -1320,10 +1320,14 @@ def dump_cache() -> dict:
 
 # ─── Injection du jeton dans la page ──────────────────────────────────────────
 #
-# Le jeton n'est PAS ecrit dans index.html : il est pose a la volee au moment
-# de servir la page, et change a chaque lancement. Le bloc injecte enveloppe
-# window.fetch une fois pour toutes, de sorte que les appels existants n'ont
-# rien a savoir du jeton.
+# Le jeton n'est ni dans index.html ni dans la page servie (12/11/2026,
+# docs/securite.md, « c ») : jusque-la il y etait pose en clair, et n'importe
+# quel programme du PC, meme d'un autre compte Windows, pouvait demander `/`,
+# y lire le jeton, puis lire /data. Le bloc injecte le demande maintenant au
+# pont pywebview (Api.jeton), que seule la fenetre de Pilote atteint, et
+# enveloppe window.fetch une fois pour toutes : chaque appel au serveur attend
+# le jeton, les appels existants n'ont rien a savoir de lui. Sans pont au bout
+# de 20 s (page ouverte dans un navigateur), les appels echouent.
 
 _CSP = (
     "default-src 'self'; "
@@ -1340,7 +1344,25 @@ _CSP = (
 
 _TOKEN_SNIPPET = """<script>
 (function () {
-  var T = "%TOKEN%";
+  var T = null, ok, ko, enCours = false, t0 = Date.now();
+  var pret = new Promise(function (a, b) { ok = a; ko = b; });
+  pret.catch(function () {});
+  function demander() {
+    if (T || enCours) return;
+    var api = window.pywebview && window.pywebview.api;
+    if (api && typeof api.jeton === "function") {
+      enCours = true;
+      Promise.resolve(api.jeton()).then(function (t) {
+        enCours = false;
+        if (t) { T = t; ok(t); } else setTimeout(demander, 100);
+      }, function () { enCours = false; setTimeout(demander, 200); });
+      return;
+    }
+    if (Date.now() - t0 > 20000) { ko(new Error("pont pywebview absent : pas de jeton")); return; }
+    setTimeout(demander, 50);
+  }
+  window.addEventListener("pywebviewready", demander);
+  demander();
   var raw = window.fetch.bind(window);
   var here = "http://127.0.0.1:" + location.port + "/";
   window.fetch = function (input, init) {
@@ -1348,14 +1370,15 @@ _TOKEN_SNIPPET = """<script>
     var mine = url.charAt(0) === "/" ||
                url.indexOf(location.origin + "/") === 0 ||
                url.indexOf(here) === 0;
-    if (mine) {
+    if (!mine) return raw(input, init);
+    return pret.then(function (jeton) {
       init = Object.assign({}, init || {});
       var h = new Headers(init.headers ||
         (typeof input === "object" && input && input.headers) || {});
-      h.set("X-Pilote-Token", T);
+      h.set("X-Pilote-Token", jeton);
       init.headers = h;
-    }
-    return raw(input, init);
+      return raw(input, init);
+    });
   };
 })();
 </script>
@@ -1418,8 +1441,9 @@ def publier_mail(html: str) -> str:
 
 
 def _inject_session_token(body: bytes) -> bytes:
-    """Pose le bloc jeton juste apres <head>, avant tout autre script."""
-    snippet = _TOKEN_SNIPPET.replace("%TOKEN%", _SESSION_TOKEN).encode("utf-8")
+    """Pose le bloc du jeton juste apres <head>, avant tout autre script. Le
+    jeton lui-meme n'y est pas : la page le demande au pont (Api.jeton)."""
+    snippet = _TOKEN_SNIPPET.encode("utf-8")
     marker = b"<head>"
     idx = body.find(marker)
     if idx < 0:

@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import base64
 import datetime
+import donnees
 import hashlib
 import json
 import re
@@ -441,7 +442,7 @@ def _pea() -> dict:
         return {}
     try:
         with storage.verrou(chemin):
-            return json.loads(chemin.read_text(encoding="utf-8"))
+            return donnees.lire_json(chemin)
     except (OSError, ValueError):
         raise ErreurAgenda("config", "Le fichier du PEA est illisible : rien n'a été envoyé.")
 

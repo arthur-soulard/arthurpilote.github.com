@@ -27,7 +27,6 @@ from __future__ import annotations
 import os
 import re
 import sys
-import json
 import shutil
 import zipfile
 import datetime
@@ -35,6 +34,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Tuple
 
+import donnees
 import storage
 import chiffrement
 
@@ -108,8 +108,7 @@ def load_config() -> dict:
     cfg = default_config()
     if p.exists():
         try:
-            with open(p, "r", encoding="utf-8") as f:
-                saved = json.load(f)
+            saved = donnees.lire_json(p)
             for k, v in (saved or {}).items():
                 cfg[k] = v
         except Exception as e:
@@ -118,19 +117,7 @@ def load_config() -> dict:
 
 
 def save_config(cfg: dict) -> None:
-    p = _config_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".sauvegarde_", suffix=".tmp", dir=str(p.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, p)
-    except Exception:
-        try:
-            os.remove(tmp)
-        except Exception:
-            pass
-        raise
+    donnees.ecrire_json(_config_path(), cfg, prefixe="sauvegarde")
 
 
 # ─── Detection des volumes amovibles (Windows) ────────────────────────────────
@@ -1026,9 +1013,9 @@ def _fusionner_users(contenu: bytes, cible: Path) -> None:
     un utilisateur cree apres l'archive ne disparait pas de la liste (la fiche
     docs/sauvegarde-usb.md le promettait, le code le remplacait, DAT-09)."""
     import json as _json
-    archive = _json.loads(contenu.decode("utf-8"))
+    archive = _json.loads(donnees.texte_de(contenu))
     try:
-        actuel = _json.loads(cible.read_text(encoding="utf-8"))
+        actuel = donnees.lire_json(cible)
     except Exception:
         actuel = {"users": []}
     slugs = {u.get("slug") for u in archive.get("users", [])}
