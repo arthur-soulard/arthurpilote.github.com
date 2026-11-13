@@ -60,8 +60,10 @@ import sports
 import pret
 import cto
 import releves
+import budget_releves
 import patrimoine
 import sante
+import taches
 import balances
 import actus
 import agenda
@@ -75,7 +77,7 @@ import splash
 
 
 APP_NAME    = "Pilote"
-APP_VERSION = "4.4.69"
+APP_VERSION = "4.4.70"
 SINGLE_INSTANCE_PORT = 50317          # port arbitraire pour le verrou single-instance
 WINDOW_DEFAULT_SIZE  = (1280, 800)
 WINDOW_MIN_SIZE      = (960, 640)
@@ -314,6 +316,16 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
 
+    def budget_lire_releve(self, fichiers: list, categories: list, historique: list) -> dict:
+        """Releve d'un compte courant (CSV, Excel, OFX, QIF, en base64) ->
+        operations nettoyees et classees pour Mes comptes (rien n'est ecrit).
+        categories : celles de l'utilisateur ; historique : ce qu'il a deja
+        classe. Voir budget_releves.py et docs/modules/comptes.md."""
+        try:
+            return budget_releves.lire(fichiers or [], categories or [], historique or [])
+        except Exception as e:
+            return {"ok": False, "erreur": "Lecture impossible : " + str(e)}
+
     # -- Patrimoine (propre a l'utilisateur actif) -------------------------
 
     def load_patrimoine(self) -> dict:
@@ -335,6 +347,21 @@ class Api:
             return {"ok": True, "net": patrimoine.net_worth(d),
                     "serie": patrimoine.serie_mensuelle(d),
                     "moisSaisi": patrimoine.mois_saisi(d)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # -- Taches (propre a l'utilisateur actif, docs/modules/taches.md) ----
+
+    def load_taches(self) -> dict:
+        try:
+            return {"ok": True, "data": taches.load_data(), "erreur": taches.erreur()}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()}
+
+    def save_taches(self, data: dict) -> dict:
+        try:
+            taches.save_data(data or {})
+            return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -867,7 +894,37 @@ class Api:
         ok, msg = storage.import_from(path)
         return {"ok": ok, "message": msg}
 
+    def image_enregistrer(self, nom: str, png_b64: str) -> dict:
+        """Bilan de l'annee (index.html, an*) : enregistre une carte en PNG la
+        ou l'utilisateur le choisit. Rien n'est ecrit dans Donnees/."""
+        import base64
+        import re as _re
+        try:
+            octets = base64.b64decode(str(png_b64 or "").split(",")[-1], validate=True)
+            if not octets.startswith(bytes([0x89]) + b"PNG"):
+                return {"ok": False, "error": "image invalide"}
+            propre = _re.sub(r"[^\w .-]+", "", str(nom or "pilote"))[:80].strip() or "pilote"
+            win = webview.windows[0]
+            result = win.create_file_dialog(_dialogue("SAVE"), save_filename=propre + ".png",
+                                            file_types=("Image PNG (*.png)",))
+            if not result:
+                return {"ok": False, "cancelled": True}
+            cible = result if isinstance(result, str) else result[0]
+            if not str(cible).lower().endswith(".png"):
+                cible = str(cible) + ".png"
+            with open(cible, "wb") as f:
+                f.write(octets)
+            return {"ok": True, "path": str(cible)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # -- Fenetre / divers --------------------------------------------------
+
+    def jeton(self) -> str:
+        """Le jeton de session du serveur local, pour le bloc injecte dans la
+        page (server._TOKEN_SNIPPET). Il n'est plus ecrit dans la page servie :
+        seule la fenetre de Pilote atteint le pont (docs/securite.md, « c »)."""
+        return server._SESSION_TOKEN
 
     def app_ready(self) -> dict:
         """Appele par boot() (index.html) quand l'accueil est pret : ouvre

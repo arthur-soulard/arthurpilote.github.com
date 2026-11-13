@@ -301,6 +301,7 @@ jamais un second calcul :
 | Santé | `sante-rappel`, `sante-ajout` | `saMesures`, `saLast` |
 | Prêt | `pret-mensualite`, `pret-gains` | configuration du prêt, `prOverview().benefice_net` |
 | Comptes | `fin-solde`, `fin-revenu` | `finComputeMonthTotals` |
+| Comptes | `fin-releve` (4.4.70) | opérations importées à classer (`finAClasser`), date du dernier import ; boutons « Importer un relevé » (`dashImporterReleve`) et « Classer » (`finVoirAClasser`) : `docs/modules/comptes.md` |
 | Pense-bête | `pense-bete` | `S.uiPrefs.penseBete` |
 | Bilan | `bilan` (01/11/2026) | total de la bourse sur la semaine passée (`_bilanCache`, calculé 15 s après le lancement si la tuile est affichée), bouton « Voir le bilan » |
 
@@ -498,6 +499,9 @@ n'est recalculé à part :
 * **Achats programmés** (4.4.40, module Bourse) : `plans-attente` (nombre
   d'échéances à valider, PEA et CTO, mène au compte de la plus ancienne) et
   `plans-prochains` (prochain achat programmé). Les deux disparaissent sans plan.
+* **Tâches** (12/11/2026) : `tc-jour` (toujours là une fois le module lu, cases à
+  cocher et « Ajouter ») et `tc-retard` (s'efface sans retard). Détail :
+  `docs/modules/taches.md`.
 
 ## Signaler un problème (09/11/2026, prochaine version)
 
@@ -522,3 +526,47 @@ clic. Le texte tapé ouvre le mail, suivi du rapport après « -- » ; zone vide
 l'ancien modèle « Ce que je faisais / Ce qui s'est passé ». La zone se vide
 après « Ouvrir ma messagerie » ou « Écrire avec Gmail », et garde le texte si
 l'on referme sans envoyer.
+
+## Recherche globale : Ctrl+K (12/11/2026, 4.4.70)
+
+Bouton « Rechercher » dans la barre du haut, ou Ctrl+K (⌘K sur Mac), partout sauf
+sur l'écran du code PIN. Bloc `rg*` d'index.html, fenêtre `ov-recherche` créée à
+la première ouverture. Elle cherche **dans ce qui est déjà en mémoire**, rien
+n'est relu sur le disque : les onglets des sections affichées, les positions du
+PEA (`_etatPea()`, même section CTO ouverte), les transactions de Mes comptes,
+les séances, les pesées, les comptes du Patrimoine, les tâches et les notes de
+l'Agenda. Un module masqué ou pas encore chargé ne donne rien. Tous les mots
+doivent y être, sans accents ni majuscules (`rgNorm`) ; au plus 8 résultats par
+groupe, les titres qui commencent par le mot d'abord, puis les plus récents.
+↑ ↓ pour choisir, Entrée pour ouvrir : l'onglet s'ouvre, puis la fiche de
+l'élément (transaction, séance, pesée, compte, tâche, note).
+
+## Bilan de l'année avec Pilou (12/11/2026, 4.4.70)
+
+Maquette montrée à Arthur le 12/11 : des cartes au format story (1080 × 1920),
+présentées par Pilou, **sans aucun montant en euros** (des heures, des % et des
+mois), à enregistrer en PNG pour les garder ou les partager. Bloc `an*`
+d'index.html (à ne pas confondre avec `bilan*`, le bilan de la semaine).
+
+* **Quand** (choix d'Arthur) : du 1er décembre au 31 janvier, la tuile
+  `an-bilan` est mise en tête de l'accueil une fois par an (`S.uiPrefs.anBilanTuile`),
+  et Pilou le propose une fois (carte flottante, `anBilanPropose`). Le reste de
+  l'année : Paramètres → Général → « Mon année ». En janvier, c'est l'année d'avant
+  (`anAnnee`).
+* **Cartes** (`anComposer`), une seulement si le module a de quoi dire :
+  couverture, Sport (heures, séances, trois sports en %, mois record), Bourse
+  (performance du PEA sur l'année, mois avec un versement, ligne de l'année),
+  Budget (mois où les revenus dépassent les dépenses, catégorie qui a le plus
+  baissé si l'an dernier a au moins 6 mois suivis), Santé (semaines suivies,
+  pesées, objectif de poids atteint), Tâches (cochées, récurrentes comprises),
+  récap en quatre chiffres. Moins de deux cartes : « pas encore assez de choses
+  notées ».
+* **Mêmes calculs que les modules** : la performance du PEA est celle de la tuile
+  (computePnl sur la courbe, période YTD ; égale à la tuile sur Brice, vérifié le
+  12/11), les totaux de Mes comptes sont ceux de `finComputeYearTotals`.
+* **Image** : chaque carte est un SVG qui embarque Onest et Newsreader en data URL
+  (`anChargerPolices` : une image SVG n'a pas accès aux polices de la page),
+  dessiné dans un canvas puis envoyé à `Api.image_enregistrer` (fenêtre
+  « Enregistrer sous », en-tête PNG vérifié, rien dans `Donnees/`). Couleurs
+  tirées de l'accent choisi. Dans le SVG, la police passe par une classe
+  (`an-serif`) : la règle CSS `text {}` l'emporterait sur un attribut `font-family`.

@@ -17,9 +17,10 @@ src/, livrées avec l'exe. tests/donnees_exemple.py reste la commande du test.
 Usage : python3 tests/donnees_exemple.py <dossier Donnees>
 """
 import datetime as dt
-import json
 import os
 import sys
+
+import donnees
 
 AUJ = dt.date.today()
 
@@ -89,7 +90,7 @@ def pea():
     ]
     # Les tuiles qui montrent le plus de mise en page d'abord (marchés, listes,
     # barres, sélecteurs) : ce sont elles qu'on veut voir rendues sur Mac
-    tuiles = ["mo-derniere", "co-forme", "ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "ga-records", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
+    tuiles = ["mo-derniere", "co-forme", "ga-sommeil", "ga-forme", "ga-pas", "ga-intensite", "ga-cycle", "ga-record", "ga-records", "tc-jour", "tc-retard", "bilan","crypto:c2", "crypto-pv:c2", "crypto-courbe:c2", "pea", "cto-perf:c1", "bourse-perf", "marches", "ag-jour", "ag-semaine", "ag-notes", "pense-bete", "pa-repartition", "pa-objectif", "pea-div",
               "sport-annee", "poids", "bourse-totale", "pea-5ans", "pea-plafond", "sport-semaine",
               "fin-solde", "sante-ajout", "sport-ajout", "pret-mensualite", "pea-wish", "pa-an",
               "sport-derniere", "sport-km", "pret-gains", "fin-revenu", "depense", "pea-div-next",
@@ -129,7 +130,7 @@ def pea():
             "nouveautesVues": "999.0.0",      # pas de fiche des nouveautés par-dessus l'écran
             # ni de fenêtre « Nouveau module » : tous déjà proposés, tous affichés
             "modulesConnus": ["sec-pea", "sec-cto", "sec-crypto", "sec-comptes", "sec-pret", "sec-sport",
-                              "sec-patri", "sec-sante", "sec-garmin", "sec-actus", "sec-agenda"],
+                              "sec-patri", "sec-sante", "sec-garmin", "sec-actus", "sec-agenda", "sec-taches"],
             "montresProposees": True,         # section Montres déjà proposée (4.4.54)
             "dash": [{"id": t, "on": True} for t in tuiles],
             "dashPeaRange": "MAX",
@@ -368,10 +369,30 @@ def coros():
             "choix": {"seances": True, "forme": True}, "vus": [], "apercu": {}}
 
 
+def taches():
+    """Quelques tâches de Brice : une en retard, deux du jour, une récurrente,
+    une faite (tuiles « Tâches du jour » et « En retard », section Tâches)."""
+    t = [
+        {"id": 1, "titre": "Renvoyer le dossier de la mutuelle", "echeance": jour(-2), "priorite": 2,
+         "projet": "Papiers", "recurrence": "", "fait": "", "cree": jour(-9), "note": ""},
+        {"id": 2, "titre": "Virement vers le PEA", "echeance": jour(0), "priorite": 1,
+         "projet": "Argent", "recurrence": "mois", "fait": "", "cree": jour(-60), "note": "Avant le 5 du mois"},
+        {"id": 3, "titre": "Réserver le dossard du 10 km", "echeance": jour(0), "priorite": 0,
+         "projet": "Sport", "recurrence": "", "fait": "", "cree": jour(-3), "note": ""},
+        {"id": 4, "titre": "Faire le relevé du patrimoine", "echeance": jour(4), "priorite": 0,
+         "projet": "Argent", "recurrence": "", "fait": "", "cree": jour(-1), "note": ""},
+        {"id": 5, "titre": "Changer les plaquettes du vélo", "echeance": jour(-5), "priorite": 0,
+         "projet": "Sport", "recurrence": "", "fait": jour(-4), "cree": jour(-12), "note": ""},
+    ]
+    return {"_meta": dict(META, schema="taches.v1"), "taches": t,
+            "projets": ["Papiers", "Argent", "Sport"],
+            "faites": {"2": [mois(-2, 3), mois(-1, 4)]}, "_nid": {"tache": 6}}
+
+
 FICHIERS = {"pea_data.json": pea, "cto.json": cto, "finances.json": finances,
             "sports.json": sports, "sante.json": sante, "pret.json": pret,
             "patrimoine.json": patrimoine, "agenda.json": agenda,
-            "garmin.json": garmin, "coros.json": coros}
+            "garmin.json": garmin, "coros.json": coros, "taches.json": taches}
 
 # Fichier témoin posé dans le dossier de l'utilisateur Exemple de l'app : seul
 # un dossier qui le porte peut être effacé d'un clic (Api.quitter_exemple)
@@ -396,17 +417,15 @@ def ecrire_utilisateur(dossier_utilisateur, version=None, prefs=None):
             for cle in ("theme", "accent"):
                 if prefs.get(cle):
                     contenu["uiPrefs"][cle] = prefs[cle]
-        with open(os.path.join(dossier_utilisateur, nom), "w", encoding="utf-8") as f:
-            json.dump(contenu, f, ensure_ascii=False, indent=1)
+        donnees.ecrire_json(os.path.join(dossier_utilisateur, nom), contenu, indent=1)
     return len(FICHIERS)
 
 
 def ecrire(dossier):
     utilisateur = os.path.join(dossier, "users", "demo")
     n = ecrire_utilisateur(utilisateur)
-    with open(os.path.join(dossier, "users.json"), "w", encoding="utf-8") as f:
-        json.dump({"active": "demo", "users": [
-            {"slug": "demo", "label": "Brice", "emoji": "", "color": ""}]}, f, ensure_ascii=False, indent=1)
+    donnees.ecrire_json(os.path.join(dossier, "users.json"), {"active": "demo", "users": [
+        {"slug": "demo", "label": "Brice", "emoji": "", "color": ""}]}, indent=1)
     print("donnees d'exemple ecrites dans %s (%d fichiers)" % (dossier, n + 1))
 
 

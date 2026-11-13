@@ -16,11 +16,10 @@ import os
 import sys
 import json
 import threading
-import time
 import re
 import shutil
 import datetime
-import tempfile
+import donnees
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -55,18 +54,9 @@ def verrou(chemin) -> "threading.RLock":
         return _verrous[cle]
 
 
-def remplacer(tmp, cible) -> None:
-    """os.replace, reessaye 5 fois : sous Windows, il echoue tant qu'un autre
-    programme (archive USB, antivirus, indexation, OneDrive) tient le fichier
-    ouvert un instant (DAT-05)."""
-    for essai in range(5):
-        try:
-            os.replace(tmp, cible)
-            return
-        except PermissionError:
-            if essai == 4:
-                raise
-            time.sleep(0.1 * (essai + 1))
+# os.replace, reessaye 5 fois (DAT-05) : vit dans donnees.py, garde ici sous
+# son ancien nom pour les modules qui l'appellent
+remplacer = donnees.remplacer
 
 
 def date_backup_ok(nom: str) -> bool:
@@ -228,8 +218,7 @@ def ensure_migrated() -> None:
     legacy_profiles = app / LEGACY_PROFILES_FILE
     if legacy_profiles.exists():
         try:
-            with open(legacy_profiles, "r", encoding="utf-8") as f:
-                st = json.load(f)
+            st = donnees.lire_json(legacy_profiles)
             for pr in st.get("profiles") or []:
                 if pr.get("slug"):
                     entries.append({"slug": pr["slug"], "label": pr.get("label") or pr["slug"]})
@@ -284,8 +273,7 @@ def ensure_migrated() -> None:
     for e in entries:
         if e["label"] in ("Moi", "Mon PEA", "default"):
             try:
-                with open(root / e["slug"] / DATA_FILE, "r", encoding="utf-8") as f:
-                    prenom = ((json.load(f).get("config") or {}).get("prenom") or "").strip()
+                prenom = ((donnees.lire_json(root / e["slug"] / DATA_FILE).get("config") or {}).get("prenom") or "").strip()
                 if prenom:
                     e["label"] = prenom
             except Exception:
@@ -313,8 +301,7 @@ def get_users_state() -> dict:
     p = _users_path()
     if p.exists():
         try:
-            with open(p, "r", encoding="utf-8") as f:
-                d = json.load(f)
+            d = donnees.lire_json(p)
             if isinstance(d.get("users"), list) and d.get("users"):
                 for u in d["users"]:
                     u.setdefault("emoji", "")
@@ -339,8 +326,7 @@ def get_users_state() -> dict:
             continue
         label = dossier.name
         try:
-            with open(dossier / DATA_FILE, "r", encoding="utf-8") as f:
-                label = (json.load(f).get("config") or {}).get("prenom") or label
+            label = (donnees.lire_json(dossier / DATA_FILE).get("config") or {}).get("prenom") or label
         except Exception:
             pass
         users.append({"slug": dossier.name, "label": label, "emoji": "", "color": ""})
@@ -353,19 +339,7 @@ def get_users_state() -> dict:
 
 
 def save_users_state(state: dict) -> None:
-    p = _users_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".users_", suffix=".tmp", dir=str(p.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(state, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, p)
-    except Exception:
-        try:
-            os.remove(tmp)
-        except Exception:
-            pass
-        raise
+    donnees.ecrire_json(_users_path(), state, prefixe="users")
 
 
 PIN_FILE = "pin.hash"
@@ -410,8 +384,7 @@ def ouvrir_exemple(version: str = None) -> dict:
         dossier = get_user_dir(slug)
         prefs = {}
         try:
-            with open(get_user_dir(actif) / DATA_FILE, "r", encoding="utf-8") as f:
-                d = json.load(f)
+            d = donnees.lire_json(get_user_dir(actif) / DATA_FILE)
             prefs = {"ui": d.get("ui"), "theme": (d.get("uiPrefs") or {}).get("theme"),
                      "accent": (d.get("uiPrefs") or {}).get("accent")}
         except Exception:
@@ -596,8 +569,7 @@ def scan_orphan_data() -> list:
                         continue  # probablement vide
                     mtime = found.stat().st_mtime
                     # Lit pour compter positions/tx
-                    with open(found, "r", encoding="utf-8") as f:
-                        d = json.load(f)
+                    d = donnees.lire_json(found)
                     positions = len(d.get("positions") or [])
                     txs       = len(d.get("transactions") or [])
                     deps      = len(d.get("depots") or [])
@@ -630,8 +602,7 @@ def recover_from(source_path: str) -> dict:
     dst = get_data_path()
     dst.parent.mkdir(parents=True, exist_ok=True)
     # Lit + verifie le JSON avant de copier
-    with open(src, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    data = donnees.lire_json(src)
     # Sauvegarde l'ancien fichier au cas ou
     if dst.exists():
         backup = dst.parent / (dst.stem + ".pre-recovery.json")
@@ -767,8 +738,7 @@ def load_data() -> dict:
     # 1. Tente la lecture du fichier principal
     if exists:
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = donnees.lire_json(path)
             merged = default_data()
             for k, v in data.items():
                 merged[k] = v
@@ -799,8 +769,7 @@ def load_data() -> dict:
     backup = _latest_backup()
     if backup and backup.exists():
         try:
-            with open(backup, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = donnees.lire_json(backup)
             _LAST_LOAD_INFO["source"] = "backup:" + backup.name
             return data
         except Exception as e:
@@ -822,22 +791,10 @@ def _save_data(data: dict) -> None:
     data.setdefault("_meta", {})
     data["_meta"]["lastSavedAt"] = datetime.datetime.now().isoformat(timespec="seconds")
 
-    # Ecriture atomique : tmp -> rename
-    fd, tmp_path = tempfile.mkstemp(prefix=".pea_", suffix=".tmp", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            # Sur le disque avant le renommage : apres une coupure de courant,
-            # un fichier renomme mais jamais ecrit pourrait ne contenir que des zeros
-            f.flush()
-            os.fsync(f.fileno())
-        remplacer(tmp_path, path)
-    except Exception:
-        try:
-            os.remove(tmp_path)
-        except Exception:
-            pass
-        raise
+    # Ecriture atomique (tmp -> rename, fsync avant : apres une coupure de
+    # courant, un fichier renomme mais jamais ecrit pourrait ne contenir que
+    # des zeros), par donnees.py comme tout fichier de donnees
+    donnees.ecrire_json(path, data, prefixe="pea")
 
     _daily_backup(data)
 
@@ -864,19 +821,7 @@ def _daily_backup(data: dict) -> None:
     try:
         # Temporaire puis renommage, comme le fichier principal : une coupure
         # pendant l'ecriture ne doit pas abimer le backup en meme temps
-        fd, tmp = tempfile.mkstemp(prefix=".pea_bak_", suffix=".tmp", dir=str(backup_dir))
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(sans_cache, f, ensure_ascii=False, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
-            remplacer(tmp, backup_path)
-        except Exception:
-            try:
-                os.remove(tmp)
-            except Exception:
-                pass
-            raise
+        donnees.ecrire_json(backup_path, sans_cache, prefixe="pea_bak")
     except Exception as e:
         print(f"[storage] Backup quotidien impossible : {e}", flush=True)
         return
@@ -899,8 +844,7 @@ def _latest_backup() -> Optional[Path]:
         if not date_backup_ok(b.name):
             continue
         try:
-            with open(b, "r", encoding="utf-8") as f:
-                json.load(f)
+            donnees.lire_json(b)
             return b
         except Exception:
             continue
@@ -915,7 +859,10 @@ def export_to(target_path: str) -> bool:
     if not src.exists():
         return False
     try:
-        shutil.copyfile(src, target_path)
+        # Relu puis ecrit en clair : un export est un fichier que l'utilisateur
+        # emporte, il doit se lire ailleurs (etape 2 du chiffrement)
+        with open(target_path, "w", encoding="utf-8") as f:
+            f.write(donnees.lire_texte(src))
         return True
     except Exception as e:
         print(f"[storage] Export echoue : {e}", flush=True)
@@ -931,8 +878,7 @@ def import_from(source_path: str) -> Tuple[bool, str]:
     Retourne (ok, message).
     """
     try:
-        with open(source_path, "r", encoding="utf-8") as f:
-            new_data = json.load(f)
+        new_data = donnees.lire_json(source_path)
     except Exception as e:
         return False, f"Fichier illisible : {e}"
 

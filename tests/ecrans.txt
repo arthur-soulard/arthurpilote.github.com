@@ -11,12 +11,12 @@
 # Trois captures par job (lot), 45 au plus : chaque lot a ses 50 annotations.
 # Tour complet de l'app : tests/ecrans-tour.txt.
 #
-# 12/11/2026 (4.4.69) : bandeau de l'exemple a un seul bouton (pas d'ecran : le test
-# n'ouvre pas l'exemple par Explorer). Captures de la 4.4.68 gardees :
-# 12/11/2026 (4.4.68) : Pilou guide (accueil, Parametres -> General : Revoir la visite) ;
-# Ma forme, case Body Battery cliquee : courbe et case en couleur.
-# (Test Mac relance le 12/11 : aucun Mac libre chez GitHub au premier essai.)
+# 4.4.70 (13/11/2026) : module Tâches (liste, tâches dans le calendrier),
+# recherche Ctrl+K, bilan de l'année avec Pilou (Paramètres -> Général : Mon année) ;
+# Mes comptes : bouton « Importer un relevé » et bandeau « À classer » (4.4.70).
 home
-js:openSettings('general')
-ga-forme
-js:GA.mesure='bbMax',goTab('ga-forme')
+tc-liste
+ag-cal
+js:rgOuvrir(),document.getElementById('rg-champ').value='velo',rgChercher()
+js:anOuvrir(2026)
+fin-month

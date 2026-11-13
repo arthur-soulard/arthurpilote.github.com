@@ -53,6 +53,7 @@ Pilote/
 │   ├── sante.py        # Module « Santé »         (sante.json) + lecture OCR FitDays
 │   ├── ocr_win.ps1     # OCR via Windows.Media.Ocr — appelé par sante.py
 │   ├── patrimoine.py   # Module « Patrimoine »    (patrimoine.json)
+│   ├── taches.py       # Module « Tâches »        (taches.json) : échéance, priorité, projet, récurrence
 │   ├── actus.py        # Module « Actus »         (actus.json) : boîte Gmail des newsletters, en IMAP
 │   ├── agenda.py       # Agenda iCloud            (agenda.json) : séances, objectifs, mensualités, en CalDAV
 │   ├── garmin.py       # Module « Garmin »        (garmin.json) : la montre, par la clé API personnelle
@@ -60,7 +61,10 @@ Pilote/
 │   ├── fit.py          # Fichiers .fit de toute montre -> séances de Sports (rien d'enregistré)
 │   ├── expositions.py  # Onglet Expositions : composition des ETF (iShares, Amundi) + mise à jour
 │   ├── expositions_base.py # Compositions livrées avec l'app (généré par `python src/expositions.py`)
+│   ├── budget_releves.py # Import des relevés de banque dans Mes comptes : lecture, libellés, classement
+│   ├── budget_marchands.py # Marchands connus, synonymes des catégories, codes MCC (pour budget_releves)
 │   ├── jsonstore.py    # Socle commun : écriture atomique + backup quotidien 7 j
+│   ├── donnees.py      # LE passage pour lire/écrire un fichier de Donnees/ (étape 1 du chiffrement)
 │   ├── sauvegarde.py   # Sauvegarde externe sur clé USB (miroir + archives zip)
 │   ├── appicon.py      # Icône recolorée selon la couleur d'accent
 │   ├── splash.py       # Petite fenêtre de chargement affichée au lancement
@@ -106,6 +110,7 @@ Donnees/
 │   ├── cto.json              # CTO, tous les comptes-titres, et le portefeuille Crypto (+ backups_cto/)
 │   ├── sante.json            # Santé            (+ backups_sante/)
 │   ├── patrimoine.json       # Patrimoine       (+ backups_patrimoine/)
+│   ├── taches.json           # Tâches           (+ backups_taches/)
 │   ├── actus.json            # Actus : adresse + code d'application chiffré par Windows (+ backups_actus/)
 │   ├── agenda.json           # Agenda iCloud : identifiant, code chiffré, agenda, cases (+ backups_agenda/)
 │   ├── garmin.json           # Garmin : clé chiffrée, cases, forme du jour, vus (+ backups_garmin/)
@@ -214,13 +219,14 @@ changes une partie, mets à jour sa fiche plutôt que ce fichier.
 | `docs/demarrage-et-icone.md` | écran de chargement, exe en dossier, idna, icône à l'accent | `splash.py`, `main()`, `appicon.py`, `build/pilote.spec` |
 | `docs/mise-a-jour.md` | auto-update, repli quand l'API refuse, lire le vrai journal, fiche des nouveautés | `updater.py`, `nouveautes.json`, section `[Run]` d'`installer.iss` |
 | `docs/design-carnet.md` | polices, couleurs, formes, icônes, graphiques, vue d'ensemble du PEA | tout changement visuel, `Chart.defaults` |
-| `docs/accueil.md` | page d'accueil, tuiles du tableau de bord | `home*`, `dash*`, `DASH_WIDGETS` |
+| `docs/accueil.md` | page d'accueil, tuiles du tableau de bord, recherche Ctrl+K, bilan de l'année avec Pilou | `home*`, `dash*`, `DASH_WIDGETS`, `rg*`, `an*` |
 | `docs/parametres.md` | sections de la fenêtre Paramètres | `openSettings`, `setGoSection` |
 | `docs/modules/pea.md` | Expositions, frais des ETF, Prochain achat, simulateur d'ordres, courbe du capital | `expositions.py`, `pac*`, `so*`, `renderPerf` |
-| `docs/modules/comptes.md` | Mes comptes | `finances.py`, `fin*` |
+| `docs/modules/comptes.md` | Mes comptes, import des relevés de banque (classement, « À classer ») | `finances.py`, `budget_releves.py`, `budget_marchands.py`, `fin*`, `finReleve*` |
 | `docs/modules/pret.md` | Prêt (nom libre, « Prêt étudiant » jusqu'à la 4.3.33) : un seul prêt, le prêt générique de la 4.4.17 retiré en 4.4.18, retour du schéma 7 au schéma 6 | `pret.py`, `pr*` |
 | `docs/modules/sports.md` | Sports | `sports.py`, `sp*` |
 | `docs/modules/patrimoine.md` | Patrimoine, biens immobiliers (ligne du bien + ligne de son crédit, 4.4.18) | `patrimoine.py`, `pa*` |
+| `docs/modules/taches.md` | Tâches : section à part, récurrence, tâches dans l'Agenda, tuiles | `taches.py`, `tc*` |
 | `docs/modules/sante.md` | Santé, lecture des captures FitDays | `sante.py`, `ocr_win.ps1`, `sa*` |
 | `docs/modules/cto.md` | CTO : « compte actif » (écrans du PEA), versements déduits, courtiers et frais, import CSV Trade Republic, plans | `cto.py`, `/isin`, `cto*`, `_cptBasculer`, `COURTIERS`, `pac*` |
 | `docs/modules/crypto.md` | Crypto : compte de `cto.json` marqué `crypto`, section à part, catalogue des cotations en euros, import Trade Republic, tuiles | `CRYPTO_CATALOGUE`, `cryptoCompte`, `ctoComptesTitres`, `crypto-*`, `CRYPTO_ISIN` |
@@ -315,6 +321,7 @@ Paramètres.
 | Crypto          | crypto-dash, crypto-pos, crypto-tx (écrans du PEA, comme un CTO : `docs/modules/crypto.md`) |
 | Actus           | ac-boite (« Newsletters »), ac-connexion                           |
 | Agenda          | ag-cal (« Calendrier »), ag-notifs (« Notifications »), ag-connexion (« iCloud ») |
+| Tâches          | tc-liste (« À faire »), tc-faites (« Faites »)                     |
 | Montres (id `sec-garmin`) | ga-forme (« Ma forme »), ga-connexion (« Garmin »), co-connexion (« Coros »), mo-fit (« Fichiers .fit ») |
 | Mes comptes     | fin-month, fin-year                                                |
 | Prêt (nom libre) | pr-overview, pr-pea, pr-av, pr-liv, pr-params                     |
@@ -336,9 +343,9 @@ CTO précis ; `_navSectionOf` ignore le `@…`, `_setActiveSidebar` complète un
 `cto-pos` sans `@` par le CTO affiché (`_ongletComplet`). `body.dataset.activeTab`
 garde l'onglet sans `@`.
 
-Onze blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
-Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO, puis Agenda et Garmin
-après le tableau de bord (`grep -n "window.goTab = function"`). Ils s'enchaînent : ne pas casser l'ordre.
+Douze blocs ajoutent leur propre patch de `window.goTab`, dans cet ordre : Mes comptes,
+Sports, Prêt, Accueil, Santé, Sauvegarde USB, Patrimoine, Actus, CTO, puis Agenda, Garmin
+et Tâches après le tableau de bord (`grep -n "window.goTab = function"`). Ils s'enchaînent : ne pas casser l'ordre.
 
 ## Serveur local (server.py, port 7438)
 
@@ -376,10 +383,12 @@ les comptes, le patrimoine et la santé — le serveur répondait avec
 Trois verrous, chacun couvrant ce que les autres ne couvrent pas. **Ne pas en
 retirer un en pensant que les deux autres suffisent :**
 
-1. **Jeton de session** (`_SESSION_TOKEN`) — régénéré à chaque lancement, injecté
-   dans la page au moment de la servir par `_inject_session_token()`, exigé sur tous
-   les endpoints de données. Le bloc injecté enveloppe `window.fetch` une fois pour
-   toutes : les appels existants n'ont rien à savoir du jeton. → contre le scan de port.
+1. **Jeton de session** (`_SESSION_TOKEN`) — régénéré à chaque lancement, exigé sur
+   tous les endpoints de données. Il n'est **pas** dans la page servie (depuis le
+   12/11/2026) : le bloc que `_inject_session_token()` pose en tête le demande au pont
+   (`Api.jeton`), puis enveloppe `window.fetch` une fois pour toutes, chaque appel
+   attendant le jeton : les appels existants n'ont rien à savoir de lui. → contre le
+   scan de port, et contre un autre programme du PC qui lirait `/`.
 2. **Refus de tout `Origin` étranger** — notre page n'en envoie pas sur un GET
    same-origin, une page tierce en envoie toujours un. → contre le navigateur complice.
 3. **Vérification du `Host`** — un domaine attaquant pointé sur `127.0.0.1` arrive
@@ -408,9 +417,12 @@ Corollaires à ne pas défaire :
   Le paramètre `user` des routes `/pin/*` doit être un utilisateur de `users.json`
   (4.4.21) : sinon « DEMO » ou « ./demo » contournaient le blocage, et `../x` écrivait
   hors de `Donnees/`.
-* **Limite assumée** : tant que Pilote tourne, un autre programme du PC (même un autre
-  compte Windows) peut demander `/`, y lire le jeton, puis lire `/data`. Les trois verrous
-  visent les pages web, pas un programme local ; c'est écrit dans `SECURITY.md`.
+* **Limite assumée** : un programme malveillant de la **même** session Windows lit les
+  fichiers de `Donnees/` directement ; le jeton ne l'arrête pas. Jusqu'au 12/11/2026,
+  n'importe quel programme du PC (même d'un autre compte) pouvait aussi lire `/`, y
+  trouver le jeton, puis lire `/data` : fermé en le demandant au pont
+  (`docs/securite.md`, « c »). Une page ouverte dans un navigateur n'a pas de pont :
+  ses appels au serveur échouent au bout de 20 s, c'est voulu.
 * Tout nom venu de l'extérieur (Yahoo, justETF, relevé importé, mail) passe par
   `escHtml` avant d'entrer dans du HTML : la CSP autorise `'unsafe-inline'`, elle
   n'arrêterait pas un `onerror=` injecté, qui aurait tout le pont. `Api.open_url`
@@ -431,9 +443,10 @@ n'existent plus.
 
 * Tout l'UI vit dans `index.html` (~24 000 lignes). Les modules annexes sont des blocs
   JS autonomes en fin de fichier, préfixés (`fin*`, `sp*`, `pr*`, `sa*`, `pa*`, `ac*`,
-  `cto*`, `dash*`, `sv*`, `home*`, `ag*`, `ga*`), avec leur propre patch de `goTab`. **Ordre des patchs :
+  `cto*`, `dash*`, `sv*`, `home*`, `ag*`, `ga*`, `tc*` ; `rg*` pour la recherche Ctrl+K, `an*` pour
+  le bilan de l'année), avec leur propre patch de `goTab`. **Ordre des patchs :
   Mes comptes → Sports → Prêt → Accueil → Santé → Sauvegarde USB → Patrimoine → Actus → CTO,
-  puis le tableau de bord, Agenda, Garmin et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
+  puis le tableau de bord, Agenda, Garmin, Tâches et `boot()`.** Les patches de `goTab` s'enchaînent, ne pas casser l'ordre.
 * **HTTP pour lire, pont pour écrire.** Le serveur local (`/data`, `/cours`, `/history`,
   `/isin`…) sert les lectures et Yahoo ; toute écriture passe par une méthode `save_*` du
   pont pywebview (`window.pywebview.api`), enveloppée par `_surveillerEcritures` (gel,
